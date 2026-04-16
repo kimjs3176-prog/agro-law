@@ -940,7 +940,7 @@ async function doSearch(){
     allLaws=d.laws; buildTypeFilter(); applyFilter();
     setStatus(`법제처 실시간 · ${allLaws.length}건`);
     document.getElementById('fbar').style.display='flex';
-  }catch(e){setStatus('서버 연결 실패');renderEmpty('서버에 연결할 수 없습니다');}
+  }catch(e){setStatus('서버 연결 실패');renderEmpty(`서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small><br><button class="abtn" style="margin-top:8px" onclick="doSearch()">🔄 다시 시도</button>`);}
   document.getElementById('sbtn').disabled=false;
 }
 
@@ -1265,10 +1265,21 @@ function renderEmpty(msg){document.getElementById('results').innerHTML=`<div cla
 async function checkStatus(){
   const badge=document.getElementById('badge');
   try{
-    const d=await (await fetch('/api/ping',{signal:AbortSignal.timeout(5000)})).json();
-    if(d.law_api){badge.textContent='● 법제처 API 연결됨';badge.style.cssText='background:#E1F5EE;color:#0F6E56';}
-    else{badge.textContent='⚠ API 오류';badge.style.cssText='background:#fffbeb;color:#92400e';}
-  }catch{badge.textContent='● 서버 오프라인';badge.style.cssText='background:#fef2f2;color:#991b1b';}
+    const ctrl=new AbortController();
+    setTimeout(()=>ctrl.abort(),6000);
+    const d=await (await fetch('/api/ping',{signal:ctrl.signal})).json();
+    if(d.law_api){
+      badge.textContent='● API 연결됨';
+      badge.style.cssText='background:#E1F5EE;color:#0F6E56';
+    } else {
+      badge.textContent='⚠ 법제처 응답 없음';
+      badge.style.cssText='background:#fffbeb;color:#92400e';
+      badge.title=d.message||'';
+    }
+  }catch{
+    badge.textContent='● 오프라인';
+    badge.style.cssText='background:#fef2f2;color:#991b1b';
+  }
 }
 
 // ── 즐겨찾기 ──────────────────────────────────────────────────────────────────
@@ -1682,24 +1693,53 @@ async function openFullPanel(lawName, lawUrl, org, type){
   document.getElementById('fullpanel').classList.add('open');
   document.getElementById('overlay').classList.add('show');
   document.body.style.overflow='hidden';
-  document.getElementById('fpBody').innerHTML='<div class="fp-loading"><div class="spinner" style="margin:0 auto 10px;"></div>조문을 불러오는 중...</div>';
+  document.getElementById('fpBody').innerHTML=
+    '<div class="fp-loading"><div class="spinner" style="margin:0 auto 10px;"></div>조문을 불러오는 중...</div>';
   fpArts=[];
   updateFavBtn(lawName);
-  try{
-    const r=await fetch(`/api/law/articles?name=${encodeURIComponent(lawName)}`);
-    const d=await r.json();
-    if(d.error){
-      document.getElementById('fpBody').innerHTML=`<div class="fp-empty">${d.error}<br><a href="${lawUrl}" target="_blank" style="color:var(--g);">법제처에서 직접 확인 →</a></div>`;
-      return;
+
+  const doLoad = async () => {
+    try{
+      const ctrl = new AbortController();
+      const tid  = setTimeout(()=>ctrl.abort(), 55000); // 55초 클라이언트 타임아웃
+      const r = await fetch(`/api/law/articles?name=${encodeURIComponent(lawName)}`,
+                            {signal: ctrl.signal});
+      clearTimeout(tid);
+      const d = await r.json();
+      if(d.error){
+        document.getElementById('fpBody').innerHTML=
+          `<div class="fp-empty">
+            <div style="font-size:20px;margin-bottom:8px;">⚠️</div>
+            <div style="margin-bottom:12px;">${escHtml(d.error)}</div>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+              <button class="fp-tbtn" onclick="openFullPanel(decodeURIComponent('${encodeURIComponent(lawName)}'),'${lawUrl}','${(org||'').replace(/'/g,"\'")}','${type||'법률'}')">🔄 다시 시도</button>
+              <a class="fp-tbtn" href="${lawUrl}" target="_blank">↗ 법제처에서 직접 보기</a>
+            </div>
+          </div>`;
+        return;
+      }
+      fpArts=d.articles||[];
+      renderFpArts(fpArts);
+      const amendBtn=document.getElementById('fpAmendBtn');
+      if(amendBtn){ amendBtn.textContent='🔴 최근 개정'; amendBtn.style.color=''; amendBtn.style.borderColor=''; amendBtn.style.background=''; }
+      setTimeout(()=>checkAmendBadgeAsync(lawName), 800);
+    }catch(e){
+      const isTimeout = e.name==='AbortError' || e.message?.includes('abort');
+      document.getElementById('fpBody').innerHTML=
+        `<div class="fp-empty">
+          <div style="font-size:20px;margin-bottom:8px;">${isTimeout?'⏱️':'🔌'}</div>
+          <div style="margin-bottom:12px;">${isTimeout
+            ?'응답 시간이 초과됐습니다.<br>법령 데이터가 많거나 서버가 바쁜 상태입니다.'
+            :'서버 연결에 실패했습니다.'}</div>
+          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+            <button class="fp-tbtn" onclick="openFullPanel(decodeURIComponent('${encodeURIComponent(lawName)}'),'${lawUrl}','${(org||'').replace(/'/g,"\'")}','${type||'법률'}')">🔄 다시 시도</button>
+            <a class="fp-tbtn" href="${lawUrl}" target="_blank">↗ 법제처에서 직접 보기</a>
+          </div>
+        </div>`;
     }
-    fpArts=d.articles||[];
-    renderFpArts(fpArts);
-    const amendBtn=document.getElementById('fpAmendBtn');
-    if(amendBtn){ amendBtn.textContent='🔴 최근 개정'; amendBtn.style.color=''; amendBtn.style.borderColor=''; amendBtn.style.background=''; }
-    setTimeout(()=>checkAmendBadgeAsync(lawName), 800);
-  }catch{
-    document.getElementById('fpBody').innerHTML='<div class="fp-empty">조문 조회 중 오류가 발생했습니다.</div>';
-  }
+  };
+
+  await doLoad();
 }
 
 // ── ① 조문 메모 (localStorage) ───────────────────────────────────────────────
