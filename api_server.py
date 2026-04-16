@@ -1,41 +1,58 @@
 """
-농업 법령 검색 서비스  v2.0
-실행: python law_search.py
-접속: http://localhost:5100
+농업 법령 검색 서비스
+배포: Vercel / Render / Railway
+로컬: python run_local.py
 """
 
-import subprocess, sys
-
-def _ensure(pkg, import_name=None):
-    try:
-        __import__(import_name or pkg)
-    except ImportError:
-        print(f"[설치 중] {pkg} ...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "-q"])
-
-_ensure("flask"); _ensure("flask_cors", "flask_cors"); _ensure("requests")
-
-from flask import Flask, request, jsonify, Response
-from flask_cors import CORS
-import requests as req_lib, threading, webbrowser, os, json, re
+import os, json, re, threading, webbrowser
 import xml.etree.ElementTree as ET
 import urllib3
+from flask import Flask, request, jsonify, Response
+from flask_cors import CORS
+import requests as req_lib
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-app  = Flask(__name__)
+app = Flask(__name__)
 CORS(app)
 
-OC           = "wlghdkgus1234"
-BASE         = "https://www.law.go.kr/DRF"
+OC   = os.environ.get("LAW_OC", "wlghdkgus1234")
+BASE = "https://www.law.go.kr/DRF"
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    "Accept": "application/json, text/plain, */*",
-    "Referer": "https://www.law.go.kr/",
+    "User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "Accept":          "application/json, text/plain, */*",
+    "Referer":         "https://www.law.go.kr/",
+    "Accept-Language": "ko-KR,ko;q=0.9",
 }
+
+# ── 재시도 정책이 적용된 requests 세션 ────────────────────────────────────────
+def _make_session() -> req_lib.Session:
+    retry = Retry(
+        total=3,
+        backoff_factor=0.5,             # 0.5s → 1s → 2s
+        status_forcelist={500, 502, 503, 504},
+        allowed_methods={"GET", "POST"},
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(
+        max_retries=retry,
+        pool_connections=4,
+        pool_maxsize=10,
+    )
+    s = req_lib.Session()
+    s.mount("https://", adapter)
+    s.mount("http://",  adapter)
+    s.headers.update(HEADERS)
+    s.verify = False
+    return s
+
+_SESSION = _make_session()   # 프로세스 내 전역 재사용
 
 # ── 최근 검색어 (서버 메모리) ─────────────────────────────────────────────────
 recent_searches = []
-favorites = []   # 즐겨찾기: [{name, org, type, url}]
+favorites = []
 
 def add_recent(q):
     global recent_searches
@@ -45,26 +62,41 @@ def add_recent(q):
         recent_searches = recent_searches[:10]
 
 # ── 공통 HTTP 헬퍼 ────────────────────────────────────────────────────────────
-def _decode(raw):
-    for enc in ("euc-kr", "utf-8"):
+# 타임아웃: (연결 대기, 읽기 대기)
+_T_JSON = (5, 12)   # JSON 검색
+_T_XML  = (5, 20)   # XML 조문 전문
+_T_LONG = (5, 30)   # 긴 응답 (조문 전문 대용량)
+
+def _decode(raw: bytes) -> str:
+    for enc in ("utf-8", "euc-kr"):
         try:
             return raw.decode(enc, errors="strict")
         except (UnicodeDecodeError, LookupError):
             continue
     return raw.decode("utf-8", errors="replace")
 
-def _law_get_json(params: dict) -> dict:
-    r = req_lib.get(f"{BASE}/lawSearch.do", params={**params, "OC": OC, "type": "JSON"},
-                    headers=HEADERS, timeout=10, verify=False)
+def _law_get_json(params: dict, timeout=None) -> dict:
+    timeout = timeout or _T_JSON
+    r = _SESSION.get(
+        f"{BASE}/lawSearch.do",
+        params={**params, "OC": OC, "type": "JSON"},
+        timeout=timeout,
+    )
     r.raise_for_status()
     return json.loads(_decode(r.content))
 
-def _law_get_xml(endpoint: str, params: dict) -> ET.Element:
-    r = req_lib.get(f"{BASE}/{endpoint}", params={**params, "OC": OC, "type": "XML"},
-                    headers=HEADERS, timeout=15, verify=False)
+def _law_get_xml(endpoint: str, params: dict, timeout=None) -> ET.Element:
+    timeout = timeout or _T_XML
+    r = _SESSION.get(
+        f"{BASE}/{endpoint}",
+        params={**params, "OC": OC, "type": "XML"},
+        timeout=timeout,
+    )
     r.raise_for_status()
     text = _decode(r.content).strip().lstrip("\ufeff")
     text = re.sub(r"<\?xml[^?]*\?>", "", text, count=1).strip()
+    if not text:
+        raise ValueError("빈 XML 응답")
     return ET.fromstring(text)
 
 # 번호 태그 목록 (이 태그의 텍스트는 내용에서 제외)
@@ -524,12 +556,10 @@ def search_by_article_keyword():
     ]
 
     kw = query.lower()
-    matched_laws = []
 
     import concurrent.futures
 
     def fetch_and_filter(law_name: str):
-        """법령 조문을 불러와 키워드 포함 여부 확인"""
         try:
             mst = _get_mst(law_name)
             if not mst:
@@ -537,7 +567,9 @@ def search_by_article_keyword():
             root = None
             for param in ("MST", "ID"):
                 try:
-                    r = _law_get_xml("lawService.do", {"target": "law", param: mst})
+                    r = _law_get_xml("lawService.do",
+                                     {"target": "law", param: mst},
+                                     timeout=(5, 18))
                     tags = {el.tag for el in r.iter()}
                     if len(tags) > 3:
                         txt = " ".join(el.text or "" for el in r.iter())
@@ -548,13 +580,11 @@ def search_by_article_keyword():
             if root is None:
                 return None
 
-            # 조문 파싱 후 키워드 검색
             lname, law_date, articles = _parse_articles(root)
             matched = [a for a in articles
                        if a.get("type") == "article" and
                        kw in (a.get("조문내용","") + a.get("조문제목","")).lower()]
             if matched:
-                # 법령 메타 정보도 JSON 검색으로 가져오기
                 try:
                     meta_data = _law_get_json({"target": "law", "query": law_name, "display": "1"})
                     meta_laws = meta_data.get("LawSearch", {}).get("law", []) or []
@@ -563,10 +593,10 @@ def search_by_article_keyword():
                 except Exception:
                     meta = {}
                 return {
-                    "법령명한글": lname or law_name,
-                    "법령구분명": meta.get("법령구분명", "법률"),
-                    "소관부처명": meta.get("소관부처명", ""),
-                    "공포일자":   meta.get("공포일자", ""),
+                    "법령명한글":  lname or law_name,
+                    "법령구분명":  meta.get("법령구분명", "법률"),
+                    "소관부처명":  meta.get("소관부처명", ""),
+                    "공포일자":    meta.get("공포일자", ""),
                     "법령일련번호": meta.get("법령일련번호", ""),
                     "_matched_count": len(matched),
                 }
@@ -574,14 +604,20 @@ def search_by_article_keyword():
             print(f"[article-search] {law_name} 오류: {e}")
         return None
 
-    # 병렬 처리 (최대 5개 동시)
+    # Vercel 60초 제한: 워커 3개, 전체 타임아웃 40초
     results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as ex:
-        futures = {ex.submit(fetch_and_filter, name): name for name in CANDIDATE_LAWS}
-        for future in concurrent.futures.as_completed(futures, timeout=25):
-            res = future.result()
-            if res:
-                results.append(res)
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as ex:
+            futures = {ex.submit(fetch_and_filter, name): name for name in CANDIDATE_LAWS}
+            for future in concurrent.futures.as_completed(futures, timeout=40):
+                try:
+                    res = future.result()
+                    if res:
+                        results.append(res)
+                except Exception as e:
+                    print(f"[article-search] future 오류: {e}")
+    except concurrent.futures.TimeoutError:
+        print(f"[article-search] 전체 타임아웃 (40s), 현재 {len(results)}건 반환")
 
     # 매칭 조문 수 기준 정렬
     results.sort(key=lambda x: x.get("_matched_count", 0), reverse=True)
@@ -673,6 +709,12 @@ def get_law_articles():
                         "law_date": law_date,
                         "count": len(articles), "articles": articles})
 
+    except req_lib.exceptions.ConnectTimeout:
+        return jsonify({"error": "법제처 서버 연결 시간 초과 (5초). 잠시 후 다시 시도해주세요."}), 504
+    except req_lib.exceptions.ReadTimeout:
+        return jsonify({"error": "법제처 서버 응답 시간 초과. 법령 데이터가 클 수 있습니다. 잠시 후 다시 시도해주세요."}), 504
+    except req_lib.exceptions.ConnectionError as e:
+        return jsonify({"error": f"법제처 서버에 연결할 수 없습니다: {e}"}), 502
     except req_lib.exceptions.Timeout:
         return jsonify({"error": "법제처 API 응답 시간 초과"}), 504
     except Exception as e:
