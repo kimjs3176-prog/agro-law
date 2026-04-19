@@ -1161,12 +1161,20 @@ def add_recent_api():
 
 @app.route("/api/ping")
 def ping():
+    """서버 생존 확인 - 빠른 응답 (법제처 API 호출 없음)"""
+    return jsonify({"server": True, "ok": True})
+
+
+@app.route("/api/law_check")
+def law_check():
+    """법제처 API 연결 확인 - 별도 비동기 호출용"""
     try:
-        data = _law_get_json({"target": "law", "query": "농지", "display": "1"})
-        ok   = bool(data.get("LawSearch", {}).get("law"))
-        return jsonify({"server": True, "law_api": ok})
+        data = _law_get_json({"target": "law", "query": "농지", "display": "1"},
+                             timeout=(3, 8))
+        ok = bool(data.get("LawSearch", {}).get("law"))
+        return jsonify({"law_api": ok})
     except Exception as e:
-        return jsonify({"server": True, "law_api": False, "message": str(e)})
+        return jsonify({"law_api": False, "message": str(e)})
 
 
 @app.route("/api/debug/law")
