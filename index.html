@@ -3245,6 +3245,207 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 
 
+<script>
+// =====================
+// 기본 상태 관리
+// =====================
+let currentPanelOpen = false;
+
+// =====================
+// 패널 열고 닫기
+// =====================
+function openPanel(title = "법령 전문") {
+  const panel = document.getElementById('fullpanel');
+  const overlay = document.getElementById('overlay');
+  const titleEl = document.getElementById('fpTitle');
+
+  titleEl.textContent = title;
+  panel.classList.add('open');
+  overlay.classList.add('show');
+  currentPanelOpen = true;
+}
+
+function closePanel() {
+  const panel = document.getElementById('fullpanel');
+  const overlay = document.getElementById('overlay');
+
+  panel.classList.remove('open');
+  overlay.classList.remove('show');
+  currentPanelOpen = false;
+}
+
+// =====================
+// 다크모드
+// =====================
+function toggleDark() {
+  document.body.classList.toggle('dark');
+
+  const icon = document.getElementById('mnavDarkIcon');
+  if (icon) {
+    icon.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+  }
+
+  localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+}
+
+// 초기 다크모드 적용
+(function(){
+  if (localStorage.getItem('darkMode') === 'true') {
+    document.body.classList.add('dark');
+  }
+})();
+
+// =====================
+// 즐겨찾기 (localStorage)
+// =====================
+function toggleFavFromPanel() {
+  const btn = document.getElementById('fpFavBtn');
+  btn.classList.toggle('active');
+}
+
+// =====================
+// 비교 패널
+// =====================
+function openCmpFromPanel(){
+  document.getElementById('cmpPanel').classList.add('show');
+}
+
+function closeCmp(){
+  document.getElementById('cmpPanel').classList.remove('show');
+}
+
+function loadCmpLaw(idx){
+  const q = document.getElementById('cmpQ'+idx).value;
+  const title = document.getElementById('cmpTitle'+idx);
+  const body = document.getElementById('cmpBody'+idx);
+
+  if(!q){
+    alert("법령명을 입력하세요");
+    return;
+  }
+
+  title.textContent = q;
+  body.innerHTML = `
+    <div style="padding:10px;font-size:13px;">
+      <div style="margin-bottom:6px;">📄 ${q}</div>
+      <div style="color:#6b7280;">(데모 데이터) 실제 API 연결 필요</div>
+    </div>
+  `;
+}
+
+// =====================
+// 네트워크 패널
+// =====================
+function closeNetPanel(){
+  document.getElementById('netPanel').classList.remove('show');
+}
+
+// =====================
+// 컬렉션
+// =====================
+function openCollModal(){
+  document.getElementById('collModalBg').classList.add('show');
+}
+function closeCollModal(){
+  document.getElementById('collModalBg').classList.remove('show');
+}
+function createCollection(){
+  const input = document.getElementById('collNewName');
+  if(!input.value) return alert("이름 입력");
+
+  alert("컬렉션 생성됨: " + input.value);
+  input.value = "";
+}
+
+// =====================
+// 키워드 편집
+// =====================
+function closeKwEditor(){
+  document.getElementById('kwModalBg').classList.remove('show');
+}
+function addKwItem(){
+  const input = document.getElementById('kwAddInput');
+  if(!input.value) return;
+
+  const list = document.getElementById('kwList');
+  const div = document.createElement('div');
+  div.className = 'kw-item';
+  div.innerHTML = `<span class="kw-item-name">${input.value}</span>`;
+  list.appendChild(div);
+
+  input.value = '';
+}
+function saveKwEditor(){
+  alert("저장 완료");
+  closeKwEditor();
+}
+function resetKeywords(){
+  document.getElementById('kwList').innerHTML = '';
+}
+
+// =====================
+// AI 설정
+// =====================
+function closeAiModal(){
+  document.getElementById('aiModalBg').classList.remove('show');
+}
+function saveAiSettings(){
+  alert("AI 설정 저장됨");
+  closeAiModal();
+}
+function testAiConn(){
+  alert("연결 테스트 (데모)");
+}
+
+// =====================
+// 조문 펼치기/접기
+// =====================
+function fpExpandAll(open){
+  document.querySelectorAll('.fp-art-body').forEach(el=>{
+    el.style.display = open ? 'block' : 'none';
+  });
+}
+
+// =====================
+// 필터
+// =====================
+function fpFilterArts(){
+  const q = document.getElementById('fpFilter').value.toLowerCase();
+  document.querySelectorAll('.fp-art').forEach(el=>{
+    const text = el.innerText.toLowerCase();
+    el.style.display = text.includes(q) ? '' : 'none';
+  });
+}
+
+// =====================
+// 인쇄
+// =====================
+function fpPrint(){
+  window.print();
+}
+
+// =====================
+// ESC 키 닫기
+// =====================
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape'){
+    closePanel();
+    closeCmp();
+    closeCollModal();
+    closeAiModal();
+  }
+});
+
+// =====================
+// 데모용 카드 클릭
+// =====================
+document.addEventListener('click', (e)=>{
+  const card = e.target.closest('.card-head');
+  if(card){
+    const name = card.innerText.trim();
+    openPanel(name);
+  }
+});
 </script>
 </body>
 </html>
