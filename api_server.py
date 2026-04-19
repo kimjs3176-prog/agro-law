@@ -45,7 +45,7 @@ def _make_session() -> req_lib.Session:
     s.mount("https://", adapter)
     s.mount("http://",  adapter)
     s.headers.update(HEADERS)
-    s.verify = true
+    s.verify = True
     return s
 
 _SESSION = _make_session()   # 프로세스 내 전역 재사용
