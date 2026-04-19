@@ -515,8 +515,8 @@ def search_laws():
             print(f"[DEBUG] 검색결과 필드: {list(laws[0].keys())}")
         return jsonify({"success": True, "count": len(laws), "laws": laws})
     except Exception as e:
+        import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-
 
 @app.route("/api/validate")
 def validate_keyword():
@@ -1149,7 +1149,10 @@ def get_art_history():
 
 
     return jsonify({"recent": recent_searches})
-
+    
+@app.route("/api/recent")
+def get_recent():
+    return jsonify({"recent": recent_searches})
 
 @app.route("/api/recent/add")
 def add_recent_api():
