@@ -45,7 +45,7 @@ def _make_session() -> req_lib.Session:
     s.mount("https://", adapter)
     s.mount("http://",  adapter)
     s.headers.update(HEADERS)
-    s.verify = False
+    s.verify = true
     return s
 
 _SESSION = _make_session()   # 프로세스 내 전역 재사용
@@ -607,7 +607,7 @@ def search_by_article_keyword():
     # Vercel 60초 제한: 워커 3개, 전체 타임아웃 40초
     results = []
     try:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as ex:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
             futures = {ex.submit(fetch_and_filter, name): name for name in CANDIDATE_LAWS}
             for future in concurrent.futures.as_completed(futures, timeout=40):
                 try:
@@ -1189,7 +1189,7 @@ def debug_law_xml():
         for param in ("MST", "ID"):
             r = req_lib.get(f"{BASE}/lawService.do",
                             params={"OC": OC, "target": "law", "type": "XML", param: mst},
-                            headers=HEADERS, timeout=15, verify=False)
+                            headers=HEADERS, timeout=15, verify = True)
             text = _decode(r.content)
             if "없습니다" not in text:
                 return Response(text, mimetype="text/xml; charset=utf-8")
