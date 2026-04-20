@@ -887,6 +887,12 @@ const KEYWORDS = new Proxy({}, {
 });
 
 let agency='all', mode='law', allLaws=[], filtered=[], page=1, fpArts=[];
+let mode      = 'law';    // 'law' | 'article'
+let fpArts    = [];       // 조문 전문 패널 데이터
+let allLaws   = [];       // 전체 검색 결과
+let page      = 1;        // 현재 페이지
+let kwEditAgency = 'all'; // 키워드 편집 현재 탭
+let kwEditData   = {};    // 키워드 편집 임시 데이터
 const PS=10;
 
 // ── 키워드 유효성 검증 ──
@@ -906,10 +912,10 @@ async function validateKeywords(){
 
 function renderChips(){
   const kws = getKeywords()[agency] || [];
-  const filtered = kws.filter(k => !window._validKws || window._validKws.has(k));
+  const validKws = kws.filter(k => !window._validKws || window._validKws.has(k));
   const editBtn = `<button class="chip" style="border-color:#9ca3af;color:#6b7280;" onclick="openKwEditor()">✏ 편집</button>`;
   document.getElementById('chips').innerHTML = filtered.length
-    ? filtered.map(k=>`<button class="chip" onclick="quick('${k.replace(/'/g,"\'")}')"> ${k}</button>`).join('') + editBtn
+    ? validKws.map(k=>`<button class="chip" onclick="quick('${k.replace(/'/g,"\'")}')"> ${k}</button>`).join('') + editBtn
     : editBtn;
 }
 
@@ -2479,7 +2485,7 @@ async function fpShowAmendments(){
                 ${no?`<span class="fp-art-no">${escHtml(no)}</span>`:''}
                 <span style="font-size:13px;font-weight:600;">${escHtml(title||no||'조문')}</span>
                 ${adate?`<span style="font-size:11px;color:var(--ht);margin-left:4px;">${adate}</span>`:''}
-                <button class="amend-goto" onclick="event.stopPropagation();closeAmendView(encodeURIComponent(name),encodeURIComponent(lawUrl),${parseInt(a['조문번호'])||0})">조문 보기 →</button>
+                <button class="amend-goto" data-law="${encodeURIComponent(name)}" data-url="${encodeURIComponent(lawUrl)}" data-artno="${parseInt(a['조문번호'])||0}" onclick="event.stopPropagation();closeAmendViewFromBtn(this)">조문 보기 →</button>
               </div>
               ${content?`<div class="amend-item-body">${escHtml(content)}</div>`:''}
             </div>`;
@@ -2501,6 +2507,13 @@ async function fpShowAmendments(){
   if(btn){ btn.textContent='🔴 최근 개정'; btn.disabled=false; }
 }
 
+
+function closeAmendViewFromBtn(btn){
+  const law = decodeURIComponent(btn.dataset.law||'');
+  const url = decodeURIComponent(btn.dataset.url||'');
+  const artNo = parseInt(btn.dataset.artno)||0;
+  closeAmendView(encodeURIComponent(law), encodeURIComponent(url), artNo);
+}
 // 초기화
 initDark();
 checkStatus();
