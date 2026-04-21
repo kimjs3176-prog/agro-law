@@ -18,7 +18,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 app = Flask(__name__)
 CORS(app)
 
-OC   = os.environ.get("LAW_OC", "wlghdkgus1234")
+OC   = os.environ.get("LAW_OC", "tjsl0919")
 BASE = "https://www.law.go.kr/DRF"
 HEADERS = {
     "User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
