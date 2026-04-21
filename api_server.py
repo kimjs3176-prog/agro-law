@@ -1006,6 +1006,7 @@ def get_law_amendments():
 
 
 
+@app.route("/api/law/history")
 def get_law_history():
     """법령 개정이력 조회"""
     law_name = request.args.get("name", "").strip()
