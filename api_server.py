@@ -1149,11 +1149,11 @@ def get_art_history():
 
 
 
-    return jsonify({"recent": recent_searches})
+   
     
 @app.route("/api/recent")
 def get_recent():
-    return jsonify({"recent": recent_searches})
+  
 
 @app.route("/api/recent/add")
 def add_recent_api():
