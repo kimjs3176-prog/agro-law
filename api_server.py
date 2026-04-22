@@ -30,8 +30,8 @@ HEADERS = {
 # ── 재시도 정책이 적용된 requests 세션 ────────────────────────────────────────
 def _make_session() -> req_lib.Session:
     retry = Retry(
-        total=3,
-        backoff_factor=0.5,             # 0.5s → 1s → 2s
+        total=2,
+        backoff_factor=0.3,
         status_forcelist={500, 502, 503, 504},
         allowed_methods={"GET", "POST"},
         raise_on_status=False,
@@ -45,7 +45,7 @@ def _make_session() -> req_lib.Session:
     s.mount("https://", adapter)
     s.mount("http://",  adapter)
     s.headers.update(HEADERS)
-    s.verify = True
+    s.verify = False  # law.go.kr SSL 인증서 검증 비활성화
     return s
 
 _SESSION = _make_session()   # 프로세스 내 전역 재사용
@@ -1153,7 +1153,7 @@ def get_art_history():
     
 @app.route("/api/recent")
 def get_recent():
-  
+    return jsonify({"recent": recent_searches})
 
 @app.route("/api/recent/add")
 def add_recent_api():
