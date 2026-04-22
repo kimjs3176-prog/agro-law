@@ -1193,7 +1193,7 @@ def debug_law_xml():
         for param in ("MST", "ID"):
             r = req_lib.get(f"{BASE}/lawService.do",
                             params={"OC": OC, "target": "law", "type": "XML", param: mst},
-                            headers=HEADERS, timeout=15, verify = True)
+                            headers=HEADERS, timeout=15, verify=False)
             text = _decode(r.content)
             if "없습니다" not in text:
                 return Response(text, mimetype="text/xml; charset=utf-8")
