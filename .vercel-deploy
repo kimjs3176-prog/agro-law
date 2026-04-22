@@ -1,0 +1,3 @@
+deploy at 2026-04-22T10:49:25.152358
+commit: 1d1f421
+fix: SSL verify=False for law.go.kr
