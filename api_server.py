@@ -786,7 +786,7 @@ def ai_interpret():
     try:
         # ── Claude ─────────────────────────────────────────────────────────────
         if provider == "claude":
-            mdl = model or "claude-sonnet-4-20250514"
+            mdl = model or "claude-sonnet-4-5"
             resp = req_lib.post(
                 "https://api.anthropic.com/v1/messages",
                 json={"model": mdl, "max_tokens": 800,
