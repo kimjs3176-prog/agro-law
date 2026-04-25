@@ -1173,10 +1173,27 @@ def ping():
 def law_check():
     """법제처 API 연결 확인 - 별도 비동기 호출용"""
     try:
-        data = _law_get_json({"target": "law", "query": "농지", "display": "1"},
-                             timeout=(3, 8))
-        ok = bool(data.get("LawSearch", {}).get("law"))
-        return jsonify({"law_api": ok})
+       # 1) JSON 검색 확인 (기본)
+        data = _law_get_json(
+            {"target": "law", "query": "농지법", "display": "1"},
+            timeout=(5, 15),
+        )
+        message = data.get("LawSearch", {}).get("message", "")
+        if message:
+            return jsonify({"law_api": False, "message": f"법제처 응답 메시지: {message}"})
+
+        laws = data.get("LawSearch", {}).get("law")
+        if laws:
+            return jsonify({"law_api": True})
+
+        # 2) JSON 결과가 비어 있으면 XML 조회로 재검증
+        root = _law_get_xml(
+            "lawSearch.do",
+            {"target": "law", "query": "농지법", "display": "1"},
+            timeout=(5, 15),
+        )
+        has_result = bool(root.findall(".//law") or root.findall(".//법령"))
+        return jsonify({"law_api": has_result})
     except Exception as e:
         return jsonify({"law_api": False, "message": str(e)})
 
