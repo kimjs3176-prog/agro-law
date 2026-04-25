@@ -1173,7 +1173,7 @@ def ping():
 def law_check():
     """법제처 API 연결 확인 - 별도 비동기 호출용"""
     try:
-       # 1) JSON 검색 확인 (기본)
+        # 1) JSON 검색 확인 (기본)
         data = _law_get_json(
             {"target": "law", "query": "농지법", "display": "1"},
             timeout=(5, 15),
