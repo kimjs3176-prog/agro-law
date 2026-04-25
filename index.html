@@ -2208,8 +2208,7 @@ let refArts = [];   // 우측 준용 패널 조문 데이터
 function applyXref(html, lawName){
   // 1) 「법령명」/ ｢법령명｣ → 준용 법령 링크 (data-reflaw 속성)
   html = html.replace(
-    /[「｢]([^」｣\
-]{2,40}(?:법|령|규칙|조례|훈령))[」｣]/g,
+    /[「｢]([^」｣\n]{2,40}(?:법|령|규칙|조례|훈령))[」｣]/g,
     (match, name) => {
       if(name === lawName) return match;
       const safe = name.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -2301,8 +2300,7 @@ async function openRefLaw(refName, sourceArtNos=[]){
 
 // 조문 목록에서 「법령명」 참조 추출
 function extractLawRefs(arts){
-  const lawRefRe = /[「｢]([^」｣
-]{2,40}(?:법|령|규칙|조례|훈령))[」｣]/g;
+  const lawRefRe = /[「｢]([^」｣\n]{2,40}(?:법|령|규칙|조례|훈령))[」｣]/g;
   const counts = {};
   const currentName = document.getElementById('fpTitle').textContent;
   arts.forEach(a=>{
@@ -2672,8 +2670,7 @@ function buildRefList(){
   }
 
   // 법령별로 어느 조문에서 참조하는지 수집
-  const lawRefRe = /[「｢]([^」｣\
-]{2,40}(?:법|령|규칙|조례|훈령))[」｣]/g;
+  const lawRefRe = /[「｢]([^」｣\n]{2,40}(?:법|령|규칙|조례|훈령))[」｣]/g;
   const refMap   = {};  // { 법령명: [{artNo, artTitle}] }
 
   fpArts.forEach(a => {
@@ -2922,8 +2919,7 @@ async function buildNetwork(){
   const H = document.getElementById('netCanvas').offsetHeight || 500;
   g.innerHTML = `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#9ca3af" font-size="14">법령 조문 분석 중...</text>`;
 
-  const lawRefRe = /[「｢]([^」｣\
-]{2,40}(?:법|령|규칙|조례|훈령))[」｣]/g;
+  const lawRefRe = /[「｢]([^」｣\n]{2,40}(?:법|령|규칙|조례|훈령))[」｣]/g;
 
   // 노드·엣지 수집 (BFS로 depth까지)
   const nodes = [{name:centerName, type:'center', refs:[], artCount:0}];
