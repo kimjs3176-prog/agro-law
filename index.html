@@ -486,6 +486,49 @@ body.dark .card,.dark .spanel,.dark .fullpanel,.dark .cmp-panel,.dark .ai-modal{
 .net-controls{display:flex;gap:6px;padding:8px 14px;border-bottom:1px solid var(--bd);background:var(--sf);flex-shrink:0;flex-wrap:wrap;align-items:center;}
 .net-depth-btn{padding:4px 10px;border:1px solid var(--bd);border-radius:20px;font-size:12px;cursor:pointer;background:transparent;color:var(--mu);transition:.12s;}
 .net-depth-btn.active{background:var(--g);border-color:var(--g);color:#fff;}
+
+/* ── 준용법령 멀티탭 ───────────────────────────────────────── */
+.ref-tabs{display:flex;gap:0;overflow-x:auto;border-bottom:1px solid var(--bd);flex-shrink:0;background:var(--sf);scrollbar-width:none;}
+.ref-tabs::-webkit-scrollbar{display:none;}
+.ref-tab{display:flex;align-items:center;gap:5px;padding:6px 12px;font-size:12px;cursor:pointer;border-right:1px solid var(--bd);white-space:nowrap;color:var(--mu);background:var(--bg);transition:.12s;min-width:0;max-width:160px;flex-shrink:0;}
+.ref-tab:hover{background:var(--gl);color:var(--gd);}
+.ref-tab.active{background:var(--sf);color:var(--tx);font-weight:600;border-bottom:2px solid var(--g);margin-bottom:-1px;}
+.ref-tab-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.ref-tab-close{width:16px;height:16px;border-radius:3px;border:none;background:transparent;color:var(--ht);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ref-tab-close:hover{background:#fecaca;color:#dc2626;}
+.ref-tab-add{padding:6px 10px;color:var(--ht);cursor:pointer;font-size:16px;border:none;background:transparent;flex-shrink:0;}
+.ref-tab-add:hover{color:var(--g);}
+
+/* ── fullpanel 3분할 비교 모드 ─────────────────────────────── */
+.fullpanel.compare-mode{width:min(1400px,100vw);}
+.fullpanel.compare-mode .fp-left{flex:1;}
+.fullpanel.compare-mode .fp-right.open{width:min(560px,50vw);min-width:300px;}
+.fp-sync-btn{font-size:11px;padding:3px 8px;border-radius:12px;border:1px solid var(--bd);background:transparent;color:var(--mu);cursor:pointer;transition:.12s;}
+.fp-sync-btn.active{border-color:var(--g);color:var(--g);background:var(--gl);}
+.compare-divider{width:4px;background:var(--bd);cursor:col-resize;flex-shrink:0;position:relative;}
+.compare-divider:hover,.compare-divider.dragging{background:var(--g);}
+
+/* ── 인라인 팝오버 ─────────────────────────────────────────── */
+.ref-popover{position:fixed;z-index:900;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);box-shadow:0 8px 32px rgba(0,0,0,.18);width:340px;max-height:320px;overflow:hidden;display:none;flex-direction:column;}
+.ref-popover.show{display:flex;}
+.ref-popover-hd{padding:8px 12px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--gl);}
+.ref-popover-title{font-size:12px;font-weight:600;color:var(--gd);flex:1;}
+.ref-popover-body{overflow-y:auto;padding:10px 12px;font-size:12px;line-height:1.8;color:var(--tx);}
+.ref-popover-art{padding:6px 0;border-bottom:1px solid var(--bd);}
+.ref-popover-art:last-child{border:none;}
+.ref-popover-art-no{font-size:11px;font-weight:700;color:var(--g);margin-bottom:2px;}
+.ref-popover-footer{padding:8px 12px;border-top:1px solid var(--bd);flex-shrink:0;display:flex;gap:6px;}
+
+/* ── 조문 동기화 하이라이트 ────────────────────────────────── */
+.art-synced{background:linear-gradient(90deg,var(--gl) 0%,transparent 100%)!important;border-left:3px solid var(--g)!important;transition:background .3s;}
+.ref-synced{background:linear-gradient(90deg,#dbeafe 0%,transparent 100%)!important;border-left:3px solid #3b82f6!important;transition:background .3s;}
+
+/* ── 준용목록 미리보기 카드 ────────────────────────────────── */
+.reflist-preview{position:fixed;z-index:850;background:var(--sf);border:1px solid var(--bd);border-radius:var(--rs);box-shadow:0 4px 20px rgba(0,0,0,.15);width:280px;max-height:220px;overflow-y:auto;padding:10px 12px;font-size:12px;line-height:1.7;display:none;}
+.reflist-preview.show{display:block;}
+.reflist-law-name .open-compare-btn{font-size:10px;padding:2px 7px;border-radius:10px;border:1px solid var(--bd);background:transparent;color:var(--mu);cursor:pointer;margin-left:4px;opacity:0;transition:.12s;}
+.reflist-law-name:hover .open-compare-btn{opacity:1;}
+.reflist-law-name .open-compare-btn:hover{border-color:var(--g);color:var(--g);background:var(--gl);}
 </style>
 </head>
 <body>
@@ -766,14 +809,17 @@ body.dark .card,.dark .spanel,.dark .fullpanel,.dark .cmp-panel,.dark .ai-modal{
   </div>
   <!-- 우측: 준용 법령 비교 (슬라이드) -->
   <div class="fp-right" id="fpRight">
+    <!-- 멀티탭 헤더 -->
+    <div class="ref-tabs" id="refTabs">
+      <button class="ref-tab-add" onclick="openRefLaw()" title="다른 준용 법령 열기">＋</button>
+    </div>
     <div class="fp-right-header">
-      <div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;">
-        <span style="font-size:10px;color:var(--ht);">준용·참조 법령</span>
-        <span class="fp-right-title" id="fpRightTitle"></span>
-      </div>
-      <a id="fpRightExtLink" href="#" target="_blank" class="fp-tbtn" style="flex-shrink:0;">↗ 법제처</a>
-      <input class="fp-finput" id="fpRightFilter" placeholder="조문 검색" oninput="fpRightFilter()" style="width:120px;flex-shrink:0;">
-      <button class="fp-close" onclick="closeRefPanel()" title="준용 법령 닫기">✕</button>
+      <span class="fp-right-title" id="fpRightTitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;"></span>
+      <button class="fp-sync-btn" id="refSyncBtn" onclick="toggleRefSync()" title="현재 조문과 동기화">⇄ 동기화</button>
+      <button class="fp-tbtn" onclick="toggleCompareMode()" id="compareModeBtn" title="비교 모드 (좌우 나란히)">⚖ 비교</button>
+      <a id="fpRightExtLink" href="#" target="_blank" class="fp-tbtn" style="flex-shrink:0;">↗</a>
+      <input class="fp-finput" id="fpRightFilter" placeholder="조문 검색" oninput="fpRightFilterFn()" style="width:110px;flex-shrink:0;">
+      <button class="fp-close" onclick="closeRefPanel()" title="닫기">✕</button>
     </div>
     <div class="fp-right-body" id="fpRightBody">
       <div class="fp-loading">준용 법령을 불러오는 중...</div>
@@ -1923,7 +1969,20 @@ document.addEventListener('DOMContentLoaded',()=>{
     const xref = e.target.closest('.art-xref[data-artno]');
     if(xref){ e.stopPropagation(); jumpToArt(parseInt(xref.dataset.artno)); return; }
     const lawRef = e.target.closest('.law-ref[data-reflaw]');
-    if(lawRef){ e.stopPropagation(); openRefLaw(lawRef.dataset.reflaw); return; }
+    if(lawRef){ e.stopPropagation(); hideRefPopover(); openRefLaw(lawRef.dataset.reflaw); return; }
+    const refLawName = e.target.closest('.reflist-law-name[data-reflaw]');
+    if(refLawName){ e.stopPropagation(); openRefLaw(refLawName.dataset.reflaw); return; }
+    const refArtItem = e.target.closest('.reflist-art-item[data-artno]');
+    if(refArtItem?.dataset.artno){ e.stopPropagation(); jumpToArt(parseInt(refArtItem.dataset.artno)); return; }
+    if(!e.target.closest('#refPopover')) hideRefPopover();
+  });
+  // mouseenter: 법령 링크 팝오버
+  document.addEventListener('mouseover', e=>{
+    const lRef = e.target.closest('.law-ref[data-reflaw]');
+    if(lRef) showRefPopoverDelayed(e, lRef.dataset.reflaw);
+  });
+  document.addEventListener('mouseout', e=>{
+    if(e.target.closest('.law-ref[data-reflaw]')) clearTimeout(_popoverTimer);
   });
 
   // ── 키보드 단축키 ────────────────────────────────────────────────────────
@@ -2234,69 +2293,144 @@ function applyXref(html, lawName){
   return result.join('');
 }
 
-async function openRefLaw(refName, sourceArtNos=[]){
-  const right   = document.getElementById('fpRight');
-  const body    = document.getElementById('fpRightBody');
-  const titleEl = document.getElementById('fpRightTitle');
-  const extLink = document.getElementById('fpRightExtLink');
+// ── 멀티탭 상태 ────────────────────────────────────────────────
+let _refTabs  = [];   // [{name, arts, sourceArtNos}]
+let _refActive = -1;  // 현재 활성 탭 인덱스
+let _refSync  = false; // 동기화 모드
+let _popoverTimer = null;
 
-  // 같은 법령 재클릭 → 토글
-  if(right.classList.contains('open') && titleEl.textContent === refName && !sourceArtNos.length){
-    closeRefPanel(); return;
+async function openRefLaw(refName, sourceArtNos=[]){
+  // 인수 없이 호출 → 탭 추가 안내
+  if(!refName){
+    const name = prompt('열 준용 법령명을 입력하세요:');
+    if(!name) return;
+    refName = name.trim();
   }
 
-  document.querySelectorAll('.law-ref.active').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll(`.law-ref[data-reflaw="${CSS.escape(refName)}"]`)
-    .forEach(el => el.classList.add('active'));
-
+  const right = document.getElementById('fpRight');
   right.classList.add('open');
-  titleEl.textContent = refName;
-  extLink.href = `https://www.law.go.kr/법령/${encodeURIComponent(refName)}`;
-  document.getElementById('fpRightFilter').value = '';
   document.getElementById('fullpanel').style.width = 'min(1200px,100vw)';
-  body.innerHTML = `<div class="fp-loading"><div class="spinner" style="margin:0 auto 10px;"></div>「${escHtml(refName)}」 불러오는 중...</div>`;
-  refArts = [];
+
+  // 이미 탭에 있으면 해당 탭 활성화
+  const existIdx = _refTabs.findIndex(t => t.name === refName);
+  if(existIdx >= 0){
+    activateRefTab(existIdx);
+    return;
+  }
+
+  // 새 탭 추가
+  const tabIdx = _refTabs.length;
+  _refTabs.push({name: refName, arts: null, sourceArtNos, loading: true});
+  renderRefTabs();
+  activateRefTab(tabIdx);
+
+  // 조문 로드
+  const body = document.getElementById('fpRightBody');
+  body.innerHTML = `<div class="fp-loading"><div class="spinner" style="margin:0 auto 8px;"></div>「${escHtml(refName)}」 불러오는 중...</div>`;
 
   try{
     const r = await fetch(`/api/law/articles?name=${encodeURIComponent(refName)}`);
     const d = await r.json();
     if(d.error || !d.articles?.length){
-      body.innerHTML = `<div class="fp-empty">${escHtml(d.error||'조문 정보를 가져오지 못했습니다.')}<br>
-        <a href="${extLink.href}" target="_blank" style="color:var(--g);">법제처 →</a></div>`;
+      _refTabs[tabIdx].arts = [];
+      _refTabs[tabIdx].loading = false;
+      renderRefTabs();
+      body.innerHTML = `<div class="fp-empty">${escHtml(d.error||'조문을 가져오지 못했습니다.')}<br>
+        <a href="https://www.law.go.kr/법령/${encodeURIComponent(refName)}" target="_blank" style="color:var(--g);">법제처 →</a></div>`;
       return;
     }
-    refArts = d.articles;
+    _refTabs[tabIdx].arts = d.articles;
+    _refTabs[tabIdx].loading = false;
+    renderRefTabs();
 
-    // 소스 조문 배지 (어느 조문이 이 법령을 참조했는지)
-    let sourceBadge = '';
-    if(sourceArtNos && sourceArtNos.length){
-      const artLabels = sourceArtNos.map(n=>`<span style="font-weight:600;">제${n}조</span>`).join(', ');
-      sourceBadge = `<div class="ref-source-badge">
-        📎 현재 법령의 ${artLabels}에서 참조
-      </div>`;
-    }
-
-    // 이 법령이 다시 준용하는 법령 체인 탐색
-    const chainRefs = extractLawRefs(refArts);
-    let chainHtml = '';
-    if(chainRefs.length){
-      chainHtml = `<div style="margin-bottom:10px;">
-        <div style="font-size:11px;font-weight:600;color:var(--mu);margin-bottom:4px;">↪ 이 법령이 준용하는 법령</div>
-        ${chainRefs.slice(0,6).map(c=>`
-          <div class="ref-chain-row" onclick="openRefLaw('${c.name.replace(/'/g,"\\'")}')">
-            <span class="ref-chain-arrow">→</span>
-            <span class="ref-chain-name">「${escHtml(c.name)}」</span>
-            <span class="ref-chain-cnt">${c.count}개 조문</span>
-          </div>`).join('')}
-      </div>`;
-    }
-
-    body.innerHTML = sourceBadge + chainHtml;
-    renderRefArts(refArts, '');
+    // 현재 탭이 아직 이 탭이면 렌더
+    if(_refActive === tabIdx) renderActiveRefTab();
   }catch(e){
+    _refTabs[tabIdx].arts = [];
+    _refTabs[tabIdx].loading = false;
+    renderRefTabs();
     body.innerHTML = `<div class="fp-empty">오류: ${escHtml(e.message)}</div>`;
   }
 }
+
+function renderRefTabs(){
+  const tabBar = document.getElementById('refTabs');
+  if(!tabBar) return;
+  const tabs = _refTabs.map((t,i) => `
+    <div class="ref-tab ${i===_refActive?'active':''}" onclick="activateRefTab(${i})" title="${escHtml(t.name)}">
+      <span class="ref-tab-name">${escHtml(t.name.length>12?t.name.slice(0,11)+'…':t.name)}</span>
+      ${t.loading?'<span style="font-size:10px;color:var(--ht);">⏳</span>':''}
+      <button class="ref-tab-close" onclick="event.stopPropagation();closeRefTab(${i})" title="닫기">×</button>
+    </div>`).join('');
+  tabBar.innerHTML = tabs + `<button class="ref-tab-add" onclick="openRefLaw()" title="다른 준용 법령 열기">＋</button>`;
+}
+
+function activateRefTab(idx){
+  if(idx < 0 || idx >= _refTabs.length) return;
+  _refActive = idx;
+  renderRefTabs();
+
+  const t = _refTabs[idx];
+  const titleEl = document.getElementById('fpRightTitle');
+  const extLink = document.getElementById('fpRightExtLink');
+  if(titleEl) titleEl.textContent = t.name;
+  if(extLink) extLink.href = `https://www.law.go.kr/법령/${encodeURIComponent(t.name)}`;
+
+  // 소스 조문 활성화 표시
+  document.querySelectorAll('.law-ref.active').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll(`.law-ref[data-reflaw="${CSS.escape(t.name)}"]`)
+    .forEach(el=>el.classList.add('active'));
+
+  if(!t.arts || t.loading) return;
+  renderActiveRefTab();
+}
+
+function renderActiveRefTab(){
+  const t = _refTabs[_refActive];
+  if(!t || !t.arts) return;
+
+  // 소스 배지
+  let badge = '';
+  if(t.sourceArtNos?.length){
+    const labels = t.sourceArtNos.map(n=>`<span style="font-weight:600;">제${n}조</span>`).join(', ');
+    badge = `<div class="ref-source-badge">📎 ${labels}에서 참조</div>`;
+  }
+
+  // 체인 참조 탐색
+  const chainRefs = extractLawRefs(t.arts);
+  let chainHtml = '';
+  if(chainRefs.length){
+    chainHtml = `<div style="margin-bottom:10px;">
+      <div style="font-size:11px;font-weight:600;color:var(--mu);margin-bottom:4px;">↪ 이 법령이 준용하는 법령</div>
+      ${chainRefs.slice(0,5).map(c=>`
+        <div class="ref-chain-row" onclick="openRefLaw('${c.name.replace(/'/g,"\\'")}')" 
+             onmouseenter="showRefPreview(event,'${c.name.replace(/'/g,"\\'")}',${JSON.stringify(c.name)})"
+             onmouseleave="hideRefPreview()">
+          <span class="ref-chain-arrow">→</span>
+          <span class="ref-chain-name">「${escHtml(c.name)}」</span>
+          <span class="ref-chain-cnt">${c.count}건</span>
+          <button class="fp-tbtn" style="font-size:10px;padding:2px 7px;" 
+            onclick="event.stopPropagation();openRefInCompare('${c.name.replace(/'/g,"\\'")}')">⚖</button>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  const body = document.getElementById('fpRightBody');
+  body.innerHTML = badge + chainHtml;
+  renderRefArts(t.arts, '');
+}
+
+function closeRefTab(idx){
+  _refTabs.splice(idx, 1);
+  if(_refTabs.length === 0){
+    closeRefPanel();
+    return;
+  }
+  _refActive = Math.min(_refActive, _refTabs.length - 1);
+  renderRefTabs();
+  activateRefTab(_refActive);
+}
+
 
 // 조문 목록에서 「법령명」 참조 추출
 function extractLawRefs(arts){
@@ -2378,10 +2512,7 @@ function toggleRefArt(i){
   if(arr) arr.style.transform = open?'':'rotate(180deg)';
 }
 
-function fpRightFilter(){
-  const kw = document.getElementById('fpRightFilter').value.trim();
-  renderRefArts(refArts, kw);
-}
+
 
 function closeRefPanel(){
   document.getElementById('fpRight').classList.remove('open');
@@ -2713,10 +2844,244 @@ function buildRefList(){
           </div>`).join('')}
       </div>
     </div>`).join('');
+
+  // ⚖ 비교 버튼 + hover 미리보기 추가
+  setTimeout(() => {
+    document.querySelectorAll('.reflist-law-name[data-reflaw]').forEach(el=>{
+      const name = el.dataset.reflaw;
+      if(el.querySelector('.open-compare-btn')) return;
+      const btn = document.createElement('button');
+      btn.className = 'open-compare-btn';
+      btn.textContent = '⚖ 비교';
+      btn.title = '비교 모드로 열기';
+      btn.onclick = (e) => { e.stopPropagation(); openRefInCompare(name); };
+      el.appendChild(btn);
+      el.addEventListener('mouseenter', (e) => showRefPreview(e, name));
+      el.addEventListener('mouseleave', hideRefPreview);
+    });
+  }, 50);
 }
 
 // openFullPanel 이후 준용 목록 자동 갱신
 
+
+
+
+// ── 비교 모드 토글 ─────────────────────────────────────────────
+function toggleCompareMode(){
+  const panel = document.getElementById('fullpanel');
+  const btn   = document.getElementById('compareModeBtn');
+  const isOn  = panel.classList.toggle('compare-mode');
+  if(btn) btn.style.cssText = isOn ? 'border-color:var(--g);color:var(--g);background:var(--gl);' : '';
+  panel.style.width = isOn ? 'min(1400px,100vw)' : 'min(1200px,100vw)';
+
+  // 비교 모드 켜면 스크롤 동기화도 활성화
+  if(isOn && !_refSync) toggleRefSync();
+}
+
+// ── 비교 모드로 특정 법령 열기 ─────────────────────────────────
+async function openRefInCompare(refName){
+  await openRefLaw(refName);
+  const panel = document.getElementById('fullpanel');
+  if(!panel.classList.contains('compare-mode')) toggleCompareMode();
+}
+
+// ── 스크롤 동기화 ───────────────────────────────────────────────
+let _syncScrolling = false;
+function toggleRefSync(){
+  _refSync = !_refSync;
+  const btn = document.getElementById('refSyncBtn');
+  if(btn) btn.classList.toggle('active', _refSync);
+
+  if(_refSync) setupScrollSync();
+  else teardownScrollSync();
+}
+
+function setupScrollSync(){
+  const fpBody  = document.getElementById('fpBody');
+  const refBody = document.getElementById('fpRightBody');
+  if(!fpBody || !refBody) return;
+
+  const onFpScroll = () => {
+    if(_syncScrolling) return;
+    _syncScrolling = true;
+    const ratio = fpBody.scrollTop / (fpBody.scrollHeight - fpBody.clientHeight || 1);
+    refBody.scrollTop = ratio * (refBody.scrollHeight - refBody.clientHeight);
+    // 동기화 조문 하이라이트
+    syncArtHighlight(fpBody, refBody);
+    requestAnimationFrame(() => { _syncScrolling = false; });
+  };
+  const onRefScroll = () => {
+    if(_syncScrolling) return;
+    _syncScrolling = true;
+    const ratio = refBody.scrollTop / (refBody.scrollHeight - refBody.clientHeight || 1);
+    fpBody.scrollTop = ratio * (fpBody.scrollHeight - fpBody.clientHeight);
+    requestAnimationFrame(() => { _syncScrolling = false; });
+  };
+
+  fpBody._syncHandler  = onFpScroll;
+  refBody._syncHandler = onRefScroll;
+  fpBody.addEventListener('scroll', onFpScroll);
+  refBody.addEventListener('scroll', onRefScroll);
+}
+
+function teardownScrollSync(){
+  const fpBody  = document.getElementById('fpBody');
+  const refBody = document.getElementById('fpRightBody');
+  if(fpBody?._syncHandler)  { fpBody.removeEventListener('scroll', fpBody._syncHandler); delete fpBody._syncHandler; }
+  if(refBody?._syncHandler) { refBody.removeEventListener('scroll', refBody._syncHandler); delete refBody._syncHandler; }
+  // 하이라이트 제거
+  document.querySelectorAll('.art-synced,.ref-synced').forEach(el=>{
+    el.classList.remove('art-synced','ref-synced');
+  });
+}
+
+function syncArtHighlight(fpBody, refBody){
+  // 뷰포트 중앙에 보이는 fp 조문 번호 찾기
+  const fpRect = fpBody.getBoundingClientRect();
+  const midY   = fpRect.top + fpRect.height / 2;
+  let visNo = null;
+  document.querySelectorAll('.fp-art[id^="fpa"]').forEach(el => {
+    const r = el.getBoundingClientRect();
+    if(r.top <= midY && r.bottom >= midY){
+      const idx = parseInt(el.id.replace('fpa',''));
+      const art = fpArts[idx];
+      if(art && art.type==='article') visNo = art['조문번호'];
+    }
+  });
+  if(!visNo) return;
+
+  // 이전 하이라이트 제거
+  document.querySelectorAll('.art-synced,.ref-synced').forEach(el=>{
+    el.classList.remove('art-synced','ref-synced');
+  });
+
+  // fp 조문 하이라이트
+  document.querySelectorAll('.fp-art[id^="fpa"]').forEach(el=>{
+    const idx = parseInt(el.id.replace('fpa',''));
+    if(fpArts[idx]?.['조문번호'] === visNo) el.classList.add('art-synced');
+  });
+
+  // refBody에서 같은 번호 조문 하이라이트
+  if(_refTabs[_refActive]?.arts){
+    const refArtsArr = _refTabs[_refActive].arts;
+    document.querySelectorAll('.ref-art[id^="refa"]').forEach(el=>{
+      const idx = parseInt(el.id.replace('refa',''));
+      if(refArtsArr[idx]?.['조문번호'] === visNo){
+        el.classList.add('ref-synced');
+        if(!_syncScrolling){
+          el.scrollIntoView({behavior:'smooth', block:'nearest'});
+        }
+      }
+    });
+  }
+}
+
+// ── 인라인 팝오버 ───────────────────────────────────────────────
+const _popoverCache = {};
+
+function showRefPopoverDelayed(e, refName){
+  clearTimeout(_popoverTimer);
+  _popoverTimer = setTimeout(() => showRefPopover(e, refName), 600);
+}
+
+async function showRefPopover(e, refName){
+  const pop   = document.getElementById('refPopover');
+  const title = document.getElementById('refPopoverTitle');
+  const body  = document.getElementById('refPopoverBody');
+  if(!pop) return;
+
+  title.textContent = refName;
+  body.innerHTML = '<div style="color:var(--ht);font-size:12px;">불러오는 중...</div>';
+  pop.classList.add('show');
+
+  // 위치 계산 (뷰포트 벗어나지 않도록)
+  const x = Math.min(e.clientX + 12, window.innerWidth  - 360);
+  const y = Math.min(e.clientY + 8,  window.innerHeight - 340);
+  pop.style.left = x + 'px';
+  pop.style.top  = y + 'px';
+
+  // 캐시 확인
+  if(_popoverCache[refName]){
+    renderPopoverArts(_popoverCache[refName]);
+    return;
+  }
+
+  try{
+    const r = await fetch(`/api/law/articles?name=${encodeURIComponent(refName)}`);
+    const d = await r.json();
+    const arts = (d.articles||[]).filter(a=>a.type==='article').slice(0,6);
+    _popoverCache[refName] = arts;
+    renderPopoverArts(arts);
+  }catch{
+    body.innerHTML = '<div style="color:var(--ht);">조회 실패</div>';
+  }
+}
+
+function renderPopoverArts(arts){
+  const body = document.getElementById('refPopoverBody');
+  if(!arts.length){ body.innerHTML = '<div style="color:var(--ht);">조문 없음</div>'; return; }
+  body.innerHTML = arts.map(a=>`
+    <div class="ref-popover-art">
+      <div class="ref-popover-art-no">제${a['조문번호']||''}조 ${escHtml(a['조문제목']||'')}</div>
+      <div style="color:var(--mu);">${escHtml((a['조문내용']||'').slice(0,80))}${(a['조문내용']||'').length>80?'…':''}</div>
+    </div>`).join('');
+}
+
+function hideRefPopover(){
+  clearTimeout(_popoverTimer);
+  document.getElementById('refPopover')?.classList.remove('show');
+}
+
+// ── 준용목록 hover 미리보기 ─────────────────────────────────────
+let _previewTimer = null;
+const _previewCache = {};
+
+function showRefPreview(e, refName){
+  clearTimeout(_previewTimer);
+  _previewTimer = setTimeout(async () => {
+    const prev = document.getElementById('reflistPreview');
+    if(!prev) return;
+
+    let arts = _previewCache[refName];
+    if(!arts){
+      try{
+        const r = await fetch(`/api/law/articles?name=${encodeURIComponent(refName)}`);
+        const d = await r.json();
+        arts = (d.articles||[]).filter(a=>a.type==='article').slice(0,4);
+        _previewCache[refName] = arts;
+      }catch{ return; }
+    }
+
+    prev.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--g);margin-bottom:6px;">「${escHtml(refName)}」 주요 조문</div>`
+      + arts.map(a=>`<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--bd);">
+          <div style="font-size:11px;font-weight:600;">제${a['조문번호']||''}조 ${escHtml(a['조문제목']||'')}</div>
+          <div style="font-size:11px;color:var(--mu);">${escHtml((a['조문내용']||'').slice(0,60))}…</div>
+        </div>`).join('');
+
+    const x = Math.min(e.clientX + 16, window.innerWidth  - 300);
+    const y = Math.min(e.clientY,      window.innerHeight - 240);
+    prev.style.left = x+'px'; prev.style.top = y+'px';
+    prev.classList.add('show');
+  }, 400);
+}
+
+function hideRefPreview(){
+  clearTimeout(_previewTimer);
+  document.getElementById('reflistPreview')?.classList.remove('show');
+}
+
+// ── applyXref 재정의: 팝오버 연동 ──────────────────────────────
+// law-ref에 팝오버 이벤트 추가 (기존 applyXref는 data-reflaw 사용)
+// → renderFpArts 후에 이벤트 위임에서 처리 (mouseenter/mouseleave)
+
+// ── fpRightFilter → fpRightFilterFn 매핑 ──────────────────────
+function fpRightFilterFn(){
+  const kw = document.getElementById('fpRightFilter')?.value || '';
+  const t  = _refTabs[_refActive];
+  if(!t?.arts) return;
+  renderRefArts(t.arts, kw);
+}
 
 
 // 초기화
@@ -3236,5 +3601,21 @@ async function scoreAndReorderAsync(laws, keywords){
 
 
 </script>
+
+<!-- 인라인 준용 팝오버 -->
+<div class="ref-popover" id="refPopover">
+  <div class="ref-popover-hd">
+    <span class="ref-popover-title" id="refPopoverTitle"></span>
+    <button class="fp-tbtn" onclick="openRefLaw(document.getElementById('refPopoverTitle').textContent)" style="font-size:11px;padding:2px 8px;">전체 보기</button>
+    <button class="fp-close" style="width:20px;height:20px;font-size:11px;" onclick="hideRefPopover()">✕</button>
+  </div>
+  <div class="ref-popover-body" id="refPopoverBody">로딩 중...</div>
+  <div class="ref-popover-footer">
+    <button class="abtn" style="flex:1;" onclick="openRefLaw(document.getElementById('refPopoverTitle').textContent)">📋 조문 전문</button>
+    <button class="abtn" style="flex:1;" onclick="openRefInCompare(document.getElementById('refPopoverTitle').textContent)">⚖ 비교 모드</button>
+  </div>
+</div>
+<!-- 준용목록 조문 미리보기 -->
+<div class="reflist-preview" id="reflistPreview"></div>
 </body>
 </html>
