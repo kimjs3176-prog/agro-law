@@ -21,20 +21,28 @@ CORS(app)
 OC   = os.environ.get("LAW_OC", "tjsl0919")
 BASE = "https://www.law.go.kr/DRF"
 HEADERS = {
-    "User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    "Accept":          "application/json, text/plain, */*",
+    "User-Agent":      ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/124.0.0.0 Safari/537.36"),
+    "Accept":          "application/json, text/html, */*;q=0.9",
+    "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate, br",
     "Referer":         "https://www.law.go.kr/",
-    "Accept-Language": "ko-KR,ko;q=0.9",
+    "Origin":          "https://www.law.go.kr",
+    "Connection":      "keep-alive",
+    "Cache-Control":   "no-cache",
 }
 
 # ── 재시도 정책이 적용된 requests 세션 ────────────────────────────────────────
 def _make_session() -> req_lib.Session:
     retry = Retry(
-        total=2,
-        backoff_factor=0.3,
-        status_forcelist={500, 502, 503, 504},
+        total=4,                              # 최대 4회 재시도
+        backoff_factor=0.8,                   # 0.8→1.6→3.2→6.4s
+        status_forcelist={429, 500, 502, 503, 504},
         allowed_methods={"GET", "POST"},
         raise_on_status=False,
+        # ConnectionReset/ProtocolError 재시도 허용
+        respect_retry_after_header=False,
     )
     adapter = HTTPAdapter(
         max_retries=retry,
@@ -45,7 +53,7 @@ def _make_session() -> req_lib.Session:
     s.mount("https://", adapter)
     s.mount("http://",  adapter)
     s.headers.update(HEADERS)
-    s.verify = False  # law.go.kr SSL 인증서 검증 비활성화
+    s.verify = False
     return s
 
 _SESSION = _make_session()   # 프로세스 내 전역 재사용
@@ -77,27 +85,46 @@ def _decode(raw: bytes) -> str:
 
 def _law_get_json(params: dict, timeout=None) -> dict:
     timeout = timeout or _T_JSON
-    r = _SESSION.get(
-        f"{BASE}/lawSearch.do",
-        params={**params, "OC": OC, "type": "JSON"},
-        timeout=timeout,
-    )
-    r.raise_for_status()
-    return json.loads(_decode(r.content))
+    last_err = None
+    for attempt in range(3):
+        try:
+            r = _SESSION.get(
+                f"{BASE}/lawSearch.do",
+                params={**params, "OC": OC, "type": "JSON"},
+                timeout=timeout,
+            )
+            r.raise_for_status()
+            return json.loads(_decode(r.content))
+        except (req_lib.exceptions.ConnectionError,
+                req_lib.exceptions.ChunkedEncodingError) as e:
+            last_err = e
+            import time; time.sleep(1.5 * (attempt + 1))
+            _SESSION.close()   # 세션 재연결 유도
+            continue
+    raise last_err
 
 def _law_get_xml(endpoint: str, params: dict, timeout=None) -> ET.Element:
     timeout = timeout or _T_XML
-    r = _SESSION.get(
-        f"{BASE}/{endpoint}",
-        params={**params, "OC": OC, "type": "XML"},
-        timeout=timeout,
-    )
-    r.raise_for_status()
-    text = _decode(r.content).strip().lstrip("\ufeff")
-    text = re.sub(r"<\?xml[^?]*\?>", "", text, count=1).strip()
-    if not text:
-        raise ValueError("빈 XML 응답")
-    return ET.fromstring(text)
+    last_err = None
+    for attempt in range(3):
+        try:
+            r = _SESSION.get(
+                f"{BASE}/{endpoint}",
+                params={**params, "OC": OC, "type": "XML"},
+                timeout=timeout,
+            )
+            r.raise_for_status()
+            text = _decode(r.content).strip().lstrip("\ufeff")
+            text = re.sub(r"<\?xml[^?]*\?>", "", text, count=1).strip()
+            if not text:
+                raise ValueError("빈 XML 응답")
+            return ET.fromstring(text)
+        except (req_lib.exceptions.ConnectionError,
+                req_lib.exceptions.ChunkedEncodingError) as e:
+            last_err = e
+            import time; time.sleep(1.5 * (attempt + 1))
+            continue
+    raise last_err
 
 # 번호 태그 목록 (이 태그의 텍스트는 내용에서 제외)
 _NO_TAGS = {"항번호","호번호","목번호","조번호","조문번호","항수","호수","목수",
