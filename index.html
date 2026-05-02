@@ -1105,7 +1105,7 @@ async function doSearch(){
   }
 
   // 자연어 감지 (물음표 또는 서술형 질문 패턴)
-  if(/[?？]|은\\s*무엇|이란|조건|요건|방법|절차|할\\s*수\\s*있|해야\\s*하|받을\\s*수|어떻/.test(q)){
+  if(/[?？]|은\s*무엇|이란|조건|요건|방법|절차|할\s*수\s*있|해야\s*하|받을\s*수|어떻/.test(q)){
     await doNLSearch(q);
     return;
   }
@@ -3325,7 +3325,7 @@ function closeDiff(){document.getElementById('diffPanel').classList.remove('show
 
 function renderDiff(oldT, newT, side){
   // 단어 단위 diff
-  const oldW=oldT.split(/(\\s+)/), newW=newT.split(/(\\s+)/);
+  const oldW=oldT.split(/(\s+)/), newW=newT.split(/(\s+)/);
   const lcs=computeLCS(oldW, newW);
   const result=[], ol=oldW.length, nl=newW.length;
   let oi=0, ni=0, li=0;
@@ -3687,7 +3687,7 @@ async function showArtHistory(idx){
 // ══════════════════════════════════════════════════════════════════════════════
 function isNaturalLang(q){
   // 물음표, 서술형 종결어, 조건어 패턴 감지
-  return /[?？]|은\\s*무엇|이란|조건|요건|경우|방법|절차|할\\s*수\\s*있|해야\\s*하|받을\\s*수|어떻/.test(q);
+  return /[?？]|은\s*무엇|이란|조건|요건|경우|방법|절차|할\s*수\s*있|해야\s*하|받을\s*수|어떻/.test(q);
 }
 
 function extractNLKeywords(q){
@@ -3697,7 +3697,7 @@ function extractNLKeywords(q){
   // 물음표·구두점 제거
   const cleaned=q.replace(/[?？!！。.,·]/g,' ');
   // 공백 분리
-  const tokens=cleaned.split(/\\s+/).filter(Boolean);
+  const tokens=cleaned.split(/\s+/).filter(Boolean);
   const keywords=[];
   tokens.forEach(token=>{
     // 어미·조사 제거
