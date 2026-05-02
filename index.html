@@ -1088,41 +1088,58 @@ function guessOrg(name){
 
 // ── 검색 ──
 async function doSearch(){
-  const q=document.getElementById('q').value.trim();
+  const q = document.getElementById('q').value.trim();
   if(!q) return;
 
-  // 통계 기록
+  const sbtn = document.getElementById('sbtn');
+  sbtn.disabled = true;
+  clearResults();
   recordStat('search', q);
 
-  document.getElementById('sbtn').disabled=true;
-  clearResults();
-
-  // 조문 키워드 모드
-  if(mode==='article'){
-    await doSearchArticle(q);
-    document.getElementById('sbtn').disabled=false;
-    return;
-  }
-
-  // 자연어 감지 (물음표 또는 서술형 질문 패턴)
-  if(/[?？]|은\s*무엇|이란|조건|요건|방법|절차|할\s*수\s*있|해야\s*하|받을\s*수|어떻/.test(q)){
-    await doNLSearch(q);
-    return;
-  }
-
-  // 법령명 검색 (기본)
-  setStatus('법제처 조회 중...',true);
   try{
-    const r=await fetch(`/api/search?query=${encodeURIComponent(q)}&display=20`);
-    const d=await r.json();
-    if(d.error){setStatus(`오류: ${d.error}`);renderEmpty(d.error);return;}
-    if(!d.success||!d.laws?.length){setStatus(`"${q}" 검색 결과가 없습니다`);renderEmpty(`"${q}"에 해당하는 법령을 찾지 못했습니다`);return;}
+    // 조문 키워드 모드
+    if(mode === 'article'){
+      await doSearchArticle(q);
+      return;
+    }
+
+    // 자연어 감지
+    if(/[?？]|은\s*무엇|이란|조건|요건|방법|절차|할\s*수\s*있|해야\s*하|받을\s*수|어떻/.test(q)){
+      await doNLSearch(q);
+      return;
+    }
+
+    // 법령명 검색 (기본)
+    setStatus('법제처 조회 중...', true);
+    const r = await fetch(`/api/search?query=${encodeURIComponent(q)}&display=20`);
+    const d = await r.json();
+
+    if(d.error){
+      setStatus(`오류: ${d.error}`);
+      renderEmpty(d.error);
+      return;
+    }
+    if(!d.success || !d.laws?.length){
+      setStatus(`"${q}" 검색 결과가 없습니다`);
+      renderEmpty(`"${q}"에 해당하는 법령을 찾지 못했습니다`);
+      return;
+    }
+
     addRecent(q);
-    allLaws=d.laws; buildTypeFilter(); applyFilter();
+    allLaws = d.laws;
+    buildTypeFilter();
+    applyFilter();
     setStatus(`법제처 실시간 · ${allLaws.length}건`);
-    document.getElementById('fbar').style.display='flex';
-  }catch(e){setStatus('서버 연결 실패');renderEmpty(`서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small><br><button class="abtn" style="margin-top:8px" onclick="doSearch()">🔄 다시 시도</button>`);}
-  document.getElementById('sbtn').disabled=false;
+    document.getElementById('fbar').style.display = 'flex';
+
+  }catch(e){
+    setStatus('서버 연결 실패');
+    renderEmpty(`서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small><br>
+      <button class="abtn" style="margin-top:8px" onclick="doSearch()">🔄 다시 시도</button>`);
+  }finally{
+    // 어떤 경로로 종료돼도 반드시 버튼 재활성화
+    document.getElementById('sbtn').disabled = false;
+  }
 }
 
 // ── 조문 키워드 검색 ──
@@ -3728,7 +3745,6 @@ function scoreArticleNL(art, keywords){
 }
 
 async function doNLSearch(q){
-  document.getElementById('sbtn').disabled=true;
   clearResults();
   setStatus('✨ 자연어 검색 중...', true);
 
