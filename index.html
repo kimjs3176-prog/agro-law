@@ -993,6 +993,8 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   <div id="results" class="results">
     <div class="empty"><div class="empty-icon">📋</div><p>검색어를 입력하고 검색 버튼을 눌러주세요</p></div>
   </div>
+  <!-- 페이지네이션 -->
+  <div id="pagination" style="display:flex;justify-content:center;gap:6px;margin-top:12px;flex-wrap:wrap;"></div>
 
   <script>
 // ── 상수 ──
@@ -1066,11 +1068,10 @@ function setMode(m){
   clearResults();
 }
 function clearResults(){
-  document.getElementById('fbar').style.display='none';
-  document.getElementById('pagination').innerHTML='';
-  document.getElementById('results').innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>검색어를 입력하고 검색 버튼을 눌러주세요</p></div>';
-  const nb=document.getElementById('nlBanner');
-  if(nb) nb.style.display='none';
+  const fbar=document.getElementById('fbar'); if(fbar) fbar.style.display='none';
+  const pag=document.getElementById('pagination'); if(pag) pag.innerHTML='';
+  const res=document.getElementById('results'); if(res) res.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>검색어를 입력하고 검색 버튼을 눌러주세요</p></div>';
+  const nb=document.getElementById('nlBanner'); if(nb) nb.style.display='none';
   setStatus('');
   const rh=document.getElementById('resultHeader'); if(rh) rh.style.display='none';
 }
