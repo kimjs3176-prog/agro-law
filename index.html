@@ -5,94 +5,94 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>농업 법령 검색</title>
 <style>:root{
-  --g:#1aa06d;--gd:#0e7a52;--gl:#eaf7f1;--gp:#085041;
-  --bg:#f0f2f5;--sf:#ffffff;--bd:#e4e7ed;--tx:#111827;--mu:#6b7280;--ht:#9ca3af;
-  --r:12px;--rs:8px;
-  --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.06);
-  --shadow-md:0 4px 6px rgba(0,0,0,.04),0 10px 30px rgba(0,0,0,.08);
-  --blue:#2563eb;--blue-l:#eff6ff;--amber:#d97706;--amber-l:#fffbeb;
-  --red:#dc2626;--red-l:#fef2f2;
-  --font:'Pretendard Variable',Pretendard,'Malgun Gothic','Apple SD Gothic Neo',sans-serif;
-}px;--rs:8px;
-  --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.06);
-  --shadow-md:0 4px 6px rgba(0,0,0,.04),0 10px 30px rgba(0,0,0,.08);
-  --blue:#2563eb;--blue-l:#eff6ff;--amber:#d97706;--amber-l:#fffbeb;
-  --red:#dc2626;--red-l:#fef2f2;
+  /* Toss 팔레트 */
+  --g:#3182f6;--gd:#1a6fe8;--gl:#eef3fe;--gp:#0f4fa8;
+  --bg:#F9FAFB;--sf:#ffffff;--bd:transparent;--tx:#191F28;--mu:#8B95A1;--ht:#b0bac6;
+  --r:16px;--rs:10px;
+  --shadow:0 2px 8px rgba(0,0,0,.06);
+  --shadow-md:0 4px 20px rgba(0,0,0,.10);
+  --shadow-focus:0 0 0 3px rgba(49,130,246,.18);
+  --blue:#3182f6;--blue-l:#eef3fe;--amber:#f5a623;--amber-l:#fff8ec;
+  --red:#f04452;--red-l:#fff0f1;
   --font:'Pretendard Variable',Pretendard,'Malgun Gothic','Apple SD Gothic Neo',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.min.css');
-body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--tx);}
-/* 상단바 */
-.topbar{background:var(--sf);border-bottom:1px solid var(--bd);padding:0 28px;display:flex;align-items:center;height:58px;gap:12px;position:sticky;top:0;z-index:200;box-shadow:0 1px 0 var(--bd);}
-.logo{width:30px;height:30px;background:var(--g);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:700;flex-shrink:0;}
-.brand{font-size:17px;font-weight:800;letter-spacing:-.4px;color:var(--g);}.brand-sub{font-size:11px;color:var(--mu);font-weight:500;letter-spacing:.2px;text-transform:uppercase;}
-.apibadge{margin-left:auto;font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;background:var(--gl);color:var(--gd);}
+body{font-family:var(--font);background:var(--bg);color:var(--tx);}
+/* 상단바 — Toss blur topbar */
+.topbar{background:rgba(255,255,255,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.06);padding:0 24px;display:flex;align-items:center;height:60px;gap:10px;position:sticky;top:0;z-index:200;box-shadow:0 1px 0 rgba(0,0,0,.04);}
+.logo{width:32px;height:32px;background:var(--g);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:800;flex-shrink:0;box-shadow:0 2px 8px rgba(49,130,246,.35);}
+.brand{font-size:17px;font-weight:800;letter-spacing:-.5px;color:var(--tx);}.brand-sub{font-size:11px;color:var(--mu);font-weight:500;letter-spacing:.1px;}
+.apibadge{margin-left:auto;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;background:var(--gl);color:var(--gd);}
 /* 레이아웃 */
-.main{max-width:980px;margin:0 auto;padding:24px 20px;}
-/* 검색 패널 */
-.spanel{background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:20px 22px;margin-bottom:16px;box-shadow:var(--shadow);}
+.main{max-width:960px;margin:0 auto;padding:28px 20px;}
+/* 검색 패널 — Toss card */
+.spanel{background:var(--sf);border-radius:20px;padding:24px 24px 20px;margin-bottom:20px;box-shadow:var(--shadow-md);}
 /* 기관 탭 */
-.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
-.tab{padding:7px 16px;border-radius:20px;border:1.5px solid var(--bd);font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:var(--mu);transition:.15s;white-space:nowrap;}
-.tab:hover{border-color:var(--g);color:var(--g);}
-.tab.active{background:var(--g);border-color:var(--g);color:#fff;}
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+.tab{padding:7px 18px;border-radius:999px;border:1.5px solid #e5e8ec;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:var(--mu);transition:all .18s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;}
+.tab:hover{border-color:var(--g);color:var(--g);background:var(--gl);}
+.tab.active{background:var(--g);border-color:var(--g);color:#fff;box-shadow:0 2px 10px rgba(49,130,246,.28);}
 /* 모드 토글 */
-.mtoggle{display:flex;gap:0;margin-bottom:12px;border:1px solid var(--bd);border-radius:var(--rs);overflow:hidden;width:fit-content;}
-.mbtn{padding:7px 18px;font-size:13px;cursor:pointer;border:none;background:transparent;color:var(--mu);transition:.15s;}
-.mbtn:hover{background:var(--bg);}
-.mbtn.active{background:var(--g);color:#fff;font-weight:600;}
-/* 검색창 */
-.srow{display:flex;gap:8px;}
-.sinput{flex:1;padding:11px 16px;border:1.5px solid var(--bd);border-radius:10px;font-size:14px;background:var(--bg);color:var(--tx);outline:none;transition:.15s;font-family:var(--font);}
-.sinput:focus{border-color:var(--g);background:#fff;box-shadow:0 0 0 3px rgba(29,158,117,.1);}
-.sbtn{padding:10px 22px;border-radius:var(--rs);border:none;background:var(--g);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;}
-.sbtn:hover{background:var(--gd);}.sbtn:disabled{opacity:.5;cursor:not-allowed;}
+.mtoggle{display:flex;gap:0;margin-bottom:14px;background:#f1f3f6;border-radius:999px;overflow:hidden;width:fit-content;padding:3px;}
+.mbtn{padding:7px 20px;font-size:13px;cursor:pointer;border:none;background:transparent;color:var(--mu);transition:.18s;border-radius:999px;}
+.mbtn:hover{background:rgba(255,255,255,.7);color:var(--tx);}
+.mbtn.active{background:var(--sf);color:var(--g);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.10);}
+/* 검색창 — large Toss style */
+.srow{display:flex;gap:10px;}
+.sinput{flex:1;padding:14px 18px;border:2px solid transparent;border-radius:14px;font-size:15px;background:#f1f3f6;color:var(--tx);outline:none;transition:all .2s cubic-bezier(.34,1.56,.64,1);font-family:var(--font);}
+.sinput:focus{border-color:var(--g);background:#fff;box-shadow:var(--shadow-focus);}
+.sinput::placeholder{color:#b0bac6;}
+.sbtn{padding:12px 26px;border-radius:14px;border:none;background:var(--g);color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:all .18s cubic-bezier(.34,1.56,.64,1);letter-spacing:-.2px;box-shadow:0 2px 10px rgba(49,130,246,.3);}
+.sbtn:hover{background:var(--gd);transform:translateY(-1px);box-shadow:0 4px 16px rgba(49,130,246,.4);}.sbtn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 /* 자주찾는 법령 */
-.qlabel{font-size:11px;color:var(--ht);margin:12px 0 7px;font-weight:500;}
+.qlabel{font-size:11px;color:var(--ht);margin:14px 0 8px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;}
 .chips{display:flex;gap:6px;flex-wrap:wrap;}
-.chip{padding:5px 13px;border-radius:20px;border:1.5px solid var(--bd);font-size:12px;font-weight:500;cursor:pointer;color:var(--mu);background:var(--sf);transition:.12s;}
-.chip:hover{border-color:var(--g);color:var(--g);background:var(--gl);}
+.chip{padding:6px 14px;border-radius:999px;border:none;font-size:12px;font-weight:600;cursor:pointer;color:var(--g);background:var(--gl);transition:all .18s cubic-bezier(.34,1.56,.64,1);}
+.chip:hover{background:var(--g);color:#fff;transform:translateY(-1px);box-shadow:0 2px 8px rgba(49,130,246,.25);}
 .chip.loading{opacity:.5;}
 /* 최근 검색어 */
-.recent{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;min-height:22px;}
-.rec-label{font-size:11px;color:var(--ht);font-weight:500;flex-shrink:0;}
-.rec-chip{padding:3px 9px;border-radius:20px;background:#f0f0f0;font-size:11px;cursor:pointer;color:var(--mu);border:none;transition:.12s;}
+.recent{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:12px;min-height:22px;}
+.rec-label{font-size:11px;color:var(--ht);font-weight:600;flex-shrink:0;}
+.rec-chip{padding:4px 12px;border-radius:999px;background:#f1f3f6;font-size:11px;font-weight:500;cursor:pointer;color:var(--mu);border:none;transition:.15s;}
 .rec-chip:hover{background:var(--gl);color:var(--g);}
 /* 필터바 */
-.fbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
-.fbar select{padding:6px 10px;border:1px solid var(--bd);border-radius:var(--rs);font-size:13px;background:var(--sf);color:var(--tx);cursor:pointer;outline:none;}
-.fbar select:focus{border-color:var(--g);}
-.rcount{font-size:13px;color:var(--mu);margin-left:auto;}
+.fbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.fbar select{padding:8px 12px;border:none;border-radius:10px;font-size:13px;background:var(--sf);color:var(--tx);cursor:pointer;outline:none;box-shadow:var(--shadow);font-family:var(--font);}
+.fbar select:focus{box-shadow:var(--shadow-focus);}
+.rcount{font-size:13px;color:var(--mu);margin-left:auto;font-weight:500;}
 /* 상태바 */
-.status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mu);margin-bottom:10px;min-height:20px;}
-.spinner{width:13px;height:13px;border:2px solid var(--gl);border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+.status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mu);margin-bottom:10px;min-height:20px;font-weight:500;}
+.spinner{width:14px;height:14px;border:2.5px solid var(--gl);border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
 @keyframes spin{to{transform:rotate(360deg);}}
-/* 법령 카드 */
-.results{display:flex;flex-direction:column;gap:8px;}
-.card{background:var(--sf);border:1px solid var(--bd);border-radius:16px;overflow:hidden;transition:box-shadow .2s,transform .2s;box-shadow:var(--shadow);margin-bottom:12px;}
-.card:hover{box-shadow:0 2px 10px rgba(0,0,0,.07);}
-.card-head{display:flex;align-items:center;gap:10px;padding:16px 20px;cursor:pointer;user-select:none;}
-.card-head:hover{background:#fafbfc;}
-.card.open .card-head{border-bottom:1px solid var(--bd);}
-.ltype{font-size:11px;font-weight:700;color:var(--gd);background:var(--gl);padding:4px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;letter-spacing:.3px;text-transform:uppercase;}
-.lname{font-size:15px;font-weight:700;flex:1;min-width:0;letter-spacing:-.2px;line-height:1.4;}
+/* 스켈레톤 로딩 */
+.skeleton{background:linear-gradient(90deg,#f0f2f5 25%,#e4e8ef 50%,#f0f2f5 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:16px;height:80px;margin-bottom:12px;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+/* 법령 카드 — Toss style, no border */
+.results{display:flex;flex-direction:column;gap:0;}
+.card{background:var(--sf);border:none;border-radius:16px;overflow:hidden;transition:box-shadow .22s cubic-bezier(.34,1.56,.64,1),transform .22s cubic-bezier(.34,1.56,.64,1);box-shadow:var(--shadow);margin-bottom:12px;}
+.card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);}
+.card-head{display:flex;align-items:center;gap:10px;padding:18px 20px;cursor:pointer;user-select:none;}
+.card-head:hover{background:rgba(249,250,251,.7);}
+.card.open .card-head{border-bottom:1px solid #f1f3f6;}
+.ltype{font-size:11px;font-weight:700;color:var(--g);background:var(--gl);padding:4px 10px;border-radius:999px;white-space:nowrap;flex-shrink:0;letter-spacing:.3px;}
+.lname{font-size:15px;font-weight:700;flex:1;min-width:0;letter-spacing:-.3px;line-height:1.4;color:var(--tx);}
 .lorg{font-size:11px;color:var(--ht);white-space:nowrap;flex-shrink:0;font-weight:500;}
-.arrow{font-size:11px;color:var(--ht);transition:transform .2s;flex-shrink:0;}
+.arrow{font-size:10px;color:var(--ht);transition:transform .2s;flex-shrink:0;}
 .card.open .arrow{transform:rotate(180deg);}
-.card-body{display:none;padding:16px 20px;border-top:1px solid var(--bd);background:var(--bg);}
+.card-body{display:none;padding:18px 20px;background:#fafbfc;}
 .card.open .card-body{display:block;}
 /* 메타 그리드 */
-.mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:14px;}
-.mbox{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;}
-.mlbl{font-size:11px;color:var(--ht);margin-bottom:3px;font-weight:500;}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px;}
+.mbox{background:var(--sf);border:none;border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.mlbl{font-size:10px;color:var(--ht);margin-bottom:4px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;}
 .mval{font-size:13px;font-weight:600;color:var(--tx);}
 /* 액션 버튼 */
 .actions{display:flex;gap:8px;flex-wrap:wrap;}
-.abtn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:9px;border:1px solid var(--bd);font-size:13px;cursor:pointer;text-decoration:none;color:var(--tx);background:var(--sf);transition:.15s;font-weight:500;font-family:var(--font);}
-.abtn:hover{border-color:var(--g);color:var(--g);background:var(--gl);}
-.abtn.primary{background:var(--g);border-color:var(--g);color:#fff;}
-.abtn.primary:hover{background:var(--gd);}
+.abtn{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;border-radius:10px;border:none;font-size:13px;cursor:pointer;text-decoration:none;color:var(--mu);background:#f1f3f6;transition:all .18s cubic-bezier(.34,1.56,.64,1);font-weight:600;font-family:var(--font);}
+.abtn:hover{background:#e5e8ef;color:var(--tx);}
+.abtn.primary{background:var(--g);color:#fff;box-shadow:0 2px 8px rgba(49,130,246,.3);}
+.abtn.primary:hover{background:var(--gd);box-shadow:0 4px 14px rgba(49,130,246,.4);transform:translateY(-1px);}
 /* 조문 패널 (카드 내) */
 .art-wrap{margin-top:14px;border-top:1px solid var(--bd);padding-top:14px;}
 .art-filterrow{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
@@ -175,21 +175,22 @@ body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;b
 
 /* ── 모바일 반응형 ── */
 @media(max-width:640px){
-  .topbar{padding:0 12px;gap:6px;height:48px;}
+  .topbar{padding:0 14px;gap:6px;height:52px;}
   .brand-sub{display:none;}
   .settings-btn span{display:none;}
-  .main{padding:10px 10px 60px;}
-  .spanel{padding:12px 14px;}
-  .tabs{gap:4px;flex-wrap:wrap;}
-  .tab,.fav-tab-btn{font-size:11px;padding:4px 10px;}
-  .srow{gap:6px;}
-  .sinput{font-size:14px;}
-  .card-head{flex-wrap:wrap;gap:4px;}
+  .main{padding:12px 12px 72px;}
+  .spanel{padding:16px 16px 14px;border-radius:16px;}
+  .tabs{gap:5px;flex-wrap:wrap;}
+  .tab,.fav-tab-btn{font-size:12px;padding:6px 12px;}
+  .srow{gap:8px;}
+  .sinput{font-size:15px;padding:12px 14px;}
+  .sbtn{padding:11px 18px;font-size:14px;}
+  .card-head{flex-wrap:wrap;gap:4px;padding:14px 16px;}
   .ldate{display:none;}
   .lorg{font-size:10px;}
   .mgrid{grid-template-columns:1fr 1fr;}
-  .actions{flex-wrap:wrap;gap:5px;}
-  .abtn{font-size:11px;padding:5px 8px;}
+  .actions{flex-wrap:wrap;gap:6px;}
+  .abtn{font-size:12px;padding:8px 12px;}
   /* 패널 모바일: 전체화면 */
   .fullpanel{width:100vw!important;right:-100vw;}
   .fp-right.open{width:100vw;position:absolute;top:0;left:0;height:100%;}
@@ -202,10 +203,10 @@ body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;b
 @media(min-width:641px){.mobile-nav{display:none!important;}}
 
 /* ── 모바일 하단 네비게이션 ── */
-.mobile-nav{position:fixed;bottom:0;left:0;right:0;height:52px;background:var(--sf);border-top:1px solid var(--bd);z-index:300;align-items:stretch;justify-content:space-around;}
-.mnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;cursor:pointer;color:var(--mu);font-size:9px;transition:.12s;padding:4px 0;}
+.mobile-nav{position:fixed;bottom:0;left:0;right:0;height:60px;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,.07);z-index:300;align-items:stretch;justify-content:space-around;}
+.mnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:transparent;cursor:pointer;color:var(--mu);font-size:9px;font-weight:600;transition:.15s;padding:4px 0;}
 .mnav-btn:hover,.mnav-btn.active{color:var(--g);}
-.mnav-icon{font-size:18px;line-height:1;}
+.mnav-icon{font-size:20px;line-height:1;}
 
 /* ── 인쇄 스타일 개선 ── */
 @media print{
@@ -221,14 +222,14 @@ body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;b
 
 /* 페이지네이션 */
 .pagination{display:flex;justify-content:center;gap:6px;margin-top:24px;flex-wrap:wrap;}
-.pgbtn{padding:6px 12px;border:1px solid var(--bd);border-radius:var(--rs);font-size:13px;cursor:pointer;background:var(--sf);color:var(--mu);transition:.12s;}
-.pgbtn:hover{border-color:var(--g);color:var(--g);}
-.pgbtn.active{background:var(--g);border-color:var(--g);color:#fff;}
+.pgbtn{padding:8px 14px;border:none;border-radius:10px;font-size:13px;cursor:pointer;background:var(--sf);color:var(--mu);transition:.15s;font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.pgbtn:hover:not(:disabled){background:var(--gl);color:var(--g);}
+.pgbtn.active{background:var(--g);color:#fff;box-shadow:0 2px 8px rgba(49,130,246,.3);}
 .pgbtn:disabled{opacity:.4;cursor:not-allowed;}
-/* 빈 상태 */
-.empty{text-align:center;padding:52px 20px;color:var(--ht);}
-.empty-icon{font-size:42px;margin-bottom:12px;opacity:.35;}
-.empty p{font-size:14px;line-height:1.8;}
+/* 빈 상태 — Toss style */
+.empty{text-align:center;padding:60px 20px;color:var(--mu);}
+.empty-icon{font-size:52px;margin-bottom:16px;opacity:.4;}
+.empty p{font-size:14px;line-height:1.9;color:var(--mu);}
 /* 푸터 */
 .footer{text-align:center;padding:22px 0 14px;font-size:12px;color:var(--ht);}
 /* AI 해석 버튼·박스 */
@@ -252,9 +253,9 @@ body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;b
 .hist-date{color:var(--mu);white-space:nowrap;flex-shrink:0;}
 .hist-desc{color:var(--tx);}
 /* 즐겨찾기 탭 */
-.fav-tab-btn{padding:5px 12px;border-radius:20px;border:1px solid var(--bd);font-size:12px;cursor:pointer;background:transparent;color:var(--mu);transition:.15s;display:flex;align-items:center;gap:4px;}
-.fav-tab-btn:hover{border-color:#f59e0b;color:#f59e0b;}
-.fav-tab-btn.active{background:#fffbeb;border-color:#f59e0b;color:#92400e;font-weight:600;}
+.fav-tab-btn{padding:7px 16px;border-radius:999px;border:1.5px solid #e5e8ec;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:var(--mu);transition:all .18s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:4px;}
+.fav-tab-btn:hover{border-color:#f5a623;color:#f5a623;}
+.fav-tab-btn.active{background:#fff8ec;border-color:#f5a623;color:#b36b00;font-weight:700;}
 .fav-empty{text-align:center;padding:30px;color:var(--ht);font-size:13px;}
 /* AI 설정 모달 */
 .ai-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;display:none;align-items:center;justify-content:center;}
@@ -292,8 +293,8 @@ body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;b
 .ai-test-btn{padding:8px 16px;border-radius:var(--rs);border:1px solid var(--bd);background:transparent;color:var(--mu);font-size:13px;cursor:pointer;}
 .ai-test-btn:hover{border-color:var(--g);color:var(--g);}
 /* 상단바 설정 버튼 */
-.settings-btn{padding:5px 10px;border:1px solid var(--bd);border-radius:var(--rs);font-size:12px;cursor:pointer;background:transparent;color:var(--mu);transition:.15s;margin-left:6px;white-space:nowrap;}
-.settings-btn:hover{border-color:var(--g);color:var(--g);background:var(--gl);}
+.settings-btn{padding:6px 12px;border:none;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;background:#f1f3f6;color:var(--mu);transition:.18s;margin-left:4px;white-space:nowrap;}
+.settings-btn:hover{background:var(--gl);color:var(--g);}
 .ai-active-badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:10px;background:#f5f3ff;color:#7c3aed;border:1px solid #a78bfa;margin-left:4px;vertical-align:middle;}
 /* ── 조문 메모 ── */
 .memo-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:var(--rs);border:1px solid var(--bd);font-size:11px;cursor:pointer;color:var(--mu);background:transparent;transition:.15s;}
@@ -335,13 +336,23 @@ body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;b
 .export-btn{padding:5px 11px;border:1px solid var(--bd);border-radius:var(--rs);font-size:12px;cursor:pointer;background:transparent;color:var(--mu);transition:.15s;white-space:nowrap;}
 .export-btn:hover{border-color:var(--g);color:var(--g);background:var(--gl);}
 /* ── 다크모드 ── */
-body.dark{--bg:#141417;--sf:#1e1e24;--bd:#2e2e38;--tx:#e2e4e9;--mu:#9ca3af;--ht:#6b7280;}
-body.dark .topbar{background:#1e1e24;}
-body.dark .sinput,body.dark .ai-input,body.dark .cmp-search,body.dark .fp-finput,body.dark .art-finput{background:#141417;color:#e2e4e9;border-color:#2e2e38;}
+body.dark{--bg:#0f1117;--sf:#1c1f27;--bd:rgba(255,255,255,.06);--tx:#e2e4e9;--mu:#8b95a1;--ht:#5a636e;}
+body.dark .topbar{background:rgba(28,31,39,.88);border-bottom-color:rgba(255,255,255,.06);}
+body.dark .spanel,body.dark .card,body.dark .mbox{background:#1c1f27;box-shadow:0 2px 12px rgba(0,0,0,.3);}
+body.dark .card-body{background:#161920;}
+body.dark .sinput{background:#161920;color:#e2e4e9;border-color:transparent;}
+body.dark .sinput:focus{background:#1c1f27;border-color:var(--g);}
+body.dark .ai-input,body.dark .cmp-search,body.dark .fp-finput,body.dark .art-finput{background:#161920;color:#e2e4e9;}
 body.dark .ai-box{background:linear-gradient(135deg,#1e1b40,#2e1b5e);color:#c4b5fd;}
 body.dark .memo-textarea{background:#2a1f00;color:#fde68a;}
-body.dark .cmp-col-body,.dark .fp-body{background:#141417;}
-body.dark .card,.dark .spanel,.dark .fullpanel,.dark .cmp-panel,.dark .ai-modal{background:#1e1e24;border-color:#2e2e38;}
+body.dark .cmp-col-body,.dark .fp-body{background:#0f1117;}
+body.dark .fullpanel,.dark .cmp-panel,.dark .ai-modal{background:#1c1f27;}
+body.dark .chip{background:rgba(49,130,246,.15);color:#7fb3fb;}
+body.dark .chip:hover{background:var(--g);color:#fff;}
+body.dark .tab{border-color:#2e3340;}
+body.dark .abtn{background:#252932;color:#8b95a1;}
+body.dark .abtn:hover{background:#2e3340;color:#e2e4e9;}
+body.dark .fbar select{background:#1c1f27;color:#e2e4e9;}
 .dark-btn{padding:5px 9px;border:1px solid var(--bd);border-radius:var(--rs);font-size:13px;cursor:pointer;background:transparent;color:var(--mu);transition:.15s;line-height:1;}
 .dark-btn:hover{background:var(--bg);}
 /* ── 조문 북마크 ── */
@@ -566,10 +577,10 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 
 /* ── 카드 액션 행 개선 ── */
 .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px;}
-.abtn.primary{background:var(--g);color:#fff;border-color:var(--g);}
+.abtn.primary{background:var(--g);color:#fff;}
 .abtn.primary:hover{background:var(--gd);}
-.abtn:hover{background:var(--bg);border-color:var(--g);color:var(--g);}
-.abtn.danger:hover{border-color:var(--red);color:var(--red);}
+.abtn:hover{background:#e5e8ef;color:var(--tx);}
+.abtn.danger:hover{background:#fff0f1;color:var(--red);}
 
 /* ── mgrid: 카드 메타 그리드 개선 ── */
 .mlbl{font-size:10px;font-weight:600;color:var(--ht);letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px;}
@@ -581,12 +592,12 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 .result-label{font-size:13px;color:var(--mu);}
 .result-sort{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mu);}
 
-/* ── 검색 모드 탭 개선 ── */
-.tab.active{background:var(--tx);color:#fff;border-color:var(--tx);}
-.tab:hover:not(.active){background:var(--bg);}
+/* ── 검색 모드 탭: Toss blue active ── */
+.tab.active{background:var(--g);color:#fff;border-color:var(--g);}
+.tab:hover:not(.active){background:var(--gl);}
 
-/* ── 자주찾는 법령 칩 hover ── */
-.chip:hover{background:var(--gl);color:var(--gd);border-color:var(--g);}
+/* ── 자주찾는 법령 칩 hover (already handled above) ── */
+.chip:hover{background:var(--g);color:#fff;}
 
 /* ── fp-art (조문 전문 패널) 개선 ── */
 .fp-art{border-bottom:1px solid var(--bd);transition:box-shadow .15s;}
@@ -609,9 +620,9 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 ::-webkit-scrollbar-thumb:hover{background:#9ca3af;}
 
 /* ── 페이지네이션 버튼 개선 ── */
-.page-btn{min-width:36px;height:36px;border-radius:8px;border:1px solid var(--bd);background:var(--sf);font-size:14px;cursor:pointer;font-weight:500;color:var(--mu);transition:.15s;}
-.page-btn:hover:not(.active){background:var(--bg);}
-.page-btn.active{background:var(--g);color:#fff;border-color:var(--g);font-weight:700;}
+.page-btn{min-width:36px;height:36px;border-radius:10px;border:none;background:var(--sf);font-size:14px;cursor:pointer;font-weight:500;color:var(--mu);transition:.15s;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.page-btn:hover:not(.active){background:var(--gl);color:var(--g);}
+.page-btn.active{background:var(--g);color:#fff;font-weight:700;box-shadow:0 2px 8px rgba(49,130,246,.3);}
 </style>
 </head>
 <body>
@@ -951,7 +962,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
     <!-- 검색창 -->
     <div class="srow">
-      <input id="q" class="sinput" style="padding-left:40px;" placeholder="🔍  법령명 또는 키워드 입력" onkeydown="if(event.key==='Enter')doSearch()">
+      <input id="q" class="sinput" style="padding-left:40px;" placeholder="🔍  법령명 또는 키워드 입력" onkeydown="if(event.key==='Enter')doSearch()" oninput="debouncedSearch()">
       <button id="sbtn" class="sbtn" onclick="doSearch()">검색</button>
     </div>
     <!-- 자주 찾는 법령 -->
@@ -1024,6 +1035,30 @@ function saveKeywords(obj){
 const KEYWORDS = new Proxy({}, {
   get(_, k){ return getKeywords()[k]; }
 });
+
+// ── 검색 결과 인메모리 캐시 ──
+const _searchCache = new Map(); // key: "mode:query" → {data, ts}
+const _CACHE_TTL = 5 * 60 * 1000; // 5분
+
+function _cacheGet(key) {
+  const c = _searchCache.get(key);
+  if (!c) return null;
+  if (Date.now() - c.ts > _CACHE_TTL) { _searchCache.delete(key); return null; }
+  return c.data;
+}
+function _cacheSet(key, data) {
+  if (_searchCache.size > 50) _searchCache.clear(); // 메모리 누수 방지
+  _searchCache.set(key, { data, ts: Date.now() });
+}
+
+// ── 디바운스 인스턴트 검색 ──
+let _debTimer;
+function debouncedSearch() {
+  clearTimeout(_debTimer);
+  const q = document.getElementById('q').value.trim();
+  if (q.length < 2) return;
+  _debTimer = setTimeout(doSearch, 350);
+}
 
 let agency='all', mode='law', allLaws=[], filtered=[], page=1, fpArts=[];
 const PS=10;
@@ -1118,7 +1153,21 @@ async function doSearch(){
       return;
     }
 
-    // 법령명 검색 (기본)
+    // 법령명 검색 (기본) — 캐시 우선
+    const cacheKey = `law:${q}`;
+    const cached = _cacheGet(cacheKey);
+    if (cached) {
+      allLaws = cached;
+      buildTypeFilter(); applyFilter();
+      setStatus(`캐시됨 · ${allLaws.length}건`);
+      document.getElementById('fbar').style.display = 'flex';
+      addRecent(q);
+      return;
+    }
+
+    // 스켈레톤 표시
+    document.getElementById('results').innerHTML = [1,2,3].map(()=>'<div class="skeleton"></div>').join('');
+
     setStatus('법제처 조회 중...', true);
     const r = await fetch(`/api/search?query=${encodeURIComponent(q)}&display=20`);
     const d = await r.json();
@@ -1136,6 +1185,7 @@ async function doSearch(){
 
     addRecent(q);
     allLaws = d.laws;
+    _cacheSet(cacheKey, d.laws); // 캐시 저장
     buildTypeFilter();
     applyFilter();
     setStatus(`법제처 실시간 · ${allLaws.length}건`);
