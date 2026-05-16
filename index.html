@@ -1214,7 +1214,10 @@ async function doSearchArticle(q){
       renderEmpty(`"${q}"을(를) 포함한 조문이 있는 법령을 찾지 못했습니다`);
       return;
     }
-    setStatus(`조문 키워드 검색 · ${d.laws.length}건 · 클릭하면 관련 조문이 표시됩니다`);
+    const truncNote = d.truncated
+      ? ` <span style="color:#e67e22;font-size:0.85em">⚠ 일부 법령만 탐색됨 (시간 초과)</span>`
+      : '';
+    setStatus(`조문 키워드 검색 · ${d.laws.length}건 · 클릭하면 관련 조문이 표시됩니다${truncNote}`);
     renderArticleLawList(d.laws, q);  // 검색어 전달
   }catch(e){setStatus('서버 연결 실패');renderEmpty('서버에 연결할 수 없습니다');}
 }

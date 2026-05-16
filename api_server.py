@@ -126,6 +126,18 @@ def _law_get_xml(endpoint: str, params: dict, timeout=None) -> ET.Element:
             continue
     raise last_err
 
+
+def _is_valid_law_xml(root: ET.Element) -> bool:
+    """법제처 XML 응답이 유효한 법령 데이터인지 확인."""
+    for tag in ("message", "Message", "error", "Error"):
+        el = root.find(f".//{tag}")
+        if el is not None and el.text:
+            txt = el.text.strip()
+            if any(w in txt for w in ("없습니다", "없음", "오류", "error", "invalid")):
+                return False
+    return len({el.tag for el in root.iter()}) > 3
+
+
 # 번호 태그 목록 (이 태그의 텍스트는 내용에서 제외)
 _NO_TAGS = {"항번호","호번호","목번호","조번호","조문번호","항수","호수","목수",
             "조수","장번호","절번호","관번호","편번호"}
@@ -529,6 +541,8 @@ def search_laws():
     display = request.args.get("display", "20")
     if not query:
         return jsonify({"error": "검색어를 입력하세요"}), 400
+    if len(query) < 2:
+        return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
     try:
         add_recent(query)
         data = _law_get_json({"target": "law", "query": query, "display": display})
@@ -569,6 +583,8 @@ def search_by_article_keyword():
     query = request.args.get("query", "").strip()
     if not query:
         return jsonify({"error": "검색어를 입력하세요"}), 400
+    if len(query) < 2:
+        return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
 
     # 검색 대상 법령 목록 (농업·지식재산 분야 핵심 법령)
     CANDIDATE_LAWS = [
@@ -597,11 +613,8 @@ def search_by_article_keyword():
                     r = _law_get_xml("lawService.do",
                                      {"target": "law", param: mst},
                                      timeout=(5, 18))
-                    tags = {el.tag for el in r.iter()}
-                    if len(tags) > 3:
-                        txt = " ".join(el.text or "" for el in r.iter())
-                        if "없습니다" not in txt:
-                            root = r; break
+                    if _is_valid_law_xml(r):
+                        root = r; break
                 except Exception:
                     continue
             if root is None:
@@ -610,7 +623,7 @@ def search_by_article_keyword():
             lname, law_date, articles = _parse_articles(root)
             matched = [a for a in articles
                        if a.get("type") == "article" and
-                       kw in (a.get("조문내용","") + a.get("조문제목","")).lower()]
+                       kw in " ".join([a.get("조문내용",""), a.get("조문제목","")]).lower()]
             if matched:
                 try:
                     meta_data = _law_get_json({"target": "law", "query": law_name, "display": "1"})
@@ -633,6 +646,7 @@ def search_by_article_keyword():
 
     # Vercel 60초 제한: 워커 3개, 전체 타임아웃 40초
     results = []
+    truncated = False
     try:
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
             futures = {ex.submit(fetch_and_filter, name): name for name in CANDIDATE_LAWS}
@@ -644,7 +658,9 @@ def search_by_article_keyword():
                 except Exception as e:
                     print(f"[article-search] future 오류: {e}")
     except concurrent.futures.TimeoutError:
-        print(f"[article-search] 전체 타임아웃 (40s), 현재 {len(results)}건 반환")
+        truncated = True
+        searched = len(results)
+        print(f"[article-search] 전체 타임아웃 (40s), {searched}/{len(CANDIDATE_LAWS)}건 탐색 후 반환")
 
     # 매칭 조문 수 기준 정렬
     results.sort(key=lambda x: x.get("_matched_count", 0), reverse=True)
@@ -652,7 +668,13 @@ def search_by_article_keyword():
         r.pop("_matched_count", None)
 
     print(f"[article-search] '{query}' → {len(results)}건 매칭")
-    return jsonify({"success": True, "count": len(results), "laws": results})
+    return jsonify({
+        "success": True,
+        "count": len(results),
+        "laws": results,
+        "truncated": truncated,
+        "searched_total": len(CANDIDATE_LAWS),
+    })
 
 
 @app.route("/api/law/articles")
@@ -915,11 +937,8 @@ def get_law_amendments():
             if not mst: break
             try:
                 r = _law_get_xml("lawService.do", {"target": "law", param: mst})
-                tags = {el.tag for el in r.iter()}
-                if len(tags) > 3:
-                    txt = "".join(el.text or "" for el in r.iter())
-                    if "없습니다" not in txt:
-                        root = r; break
+                if _is_valid_law_xml(r):
+                    root = r; break
             except Exception:
                 continue
 
@@ -978,11 +997,8 @@ def get_law_amendments():
                 for param in ("ID", "MST"):
                     try:
                         pr = _law_get_xml("lawService.do", {"target": "law", param: prev_no})
-                        tags2 = {el.tag for el in pr.iter()}
-                        if len(tags2) > 3:
-                            txt2 = "".join(el.text or "" for el in pr.iter())
-                            if "없습니다" not in txt2:
-                                prev_root = pr; break
+                        if _is_valid_law_xml(pr):
+                            prev_root = pr; break
                     except Exception:
                         continue
 
@@ -1126,11 +1142,8 @@ def get_art_history():
             for param in ("ID","MST"):
                 try:
                     r = _law_get_xml("lawService.do", {"target":"law", param: lsi})
-                    tags = {el.tag for el in r.iter()}
-                    if len(tags) > 3:
-                        txt = "".join(el.text or "" for el in r.iter())
-                        if "없습니다" not in txt:
-                            root = r; break
+                    if _is_valid_law_xml(r):
+                        root = r; break
                 except Exception:
                     continue
             if not root: continue
