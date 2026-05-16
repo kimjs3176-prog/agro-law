@@ -246,22 +246,23 @@ def _render_jo(u: ET.Element) -> str:
 
 
 # ── 법령MST 취득 (XML 검색 → 태그 추출) ──────────────────────────────────────
-def _get_mst(law_name: str) -> str:
+def _get_mst(law_name: str, target: str = "law") -> str:
     try:
-        root = _law_get_xml("lawSearch.do", {"target": "law", "query": law_name, "display": "1"})
-        for tag in ("법령MST", "법령Mst", "lawMst", "MST", "mst"):
+        root = _law_get_xml("lawSearch.do", {"target": target, "query": law_name, "display": "1"})
+        for tag in ("법령MST", "법령Mst", "행정규칙MST", "행정규칙Mst", "lawMst", "MST", "mst"):
             el = root.find(f".//{tag}")
             if el is not None and el.text and el.text.strip():
-                print(f"[MST] '{law_name}' → {el.text.strip()} (태그:{tag})")
+                print(f"[MST] '{law_name}'({target}) → {el.text.strip()} (태그:{tag})")
                 return el.text.strip()
         # 발견된 태그 목록 디버그
         tags = {e.tag for e in root.iter()}
-        print(f"[MST] '{law_name}' XML 태그 목록: {sorted(tags)}")
-        # 법령일련번호를 fallback으로
-        seq_el = root.find(".//법령일련번호")
-        if seq_el is not None and seq_el.text:
-            print(f"[MST] fallback 법령일련번호={seq_el.text.strip()}")
-            return seq_el.text.strip()
+        print(f"[MST] '{law_name}'({target}) XML 태그 목록: {sorted(tags)}")
+        # 일련번호 fallback
+        for seq_tag in ("법령일련번호", "행정규칙일련번호"):
+            seq_el = root.find(f".//{seq_tag}")
+            if seq_el is not None and seq_el.text:
+                print(f"[MST] fallback {seq_tag}={seq_el.text.strip()}")
+                return seq_el.text.strip()
     except Exception as e:
         print(f"[MST] 오류: {e}")
     return ""
@@ -396,7 +397,7 @@ def _clean_article_title(title: str, art_no: str) -> str:
 def _parse_articles(root: ET.Element):
     all_tags = {el.tag for el in root.iter()}
     law_name = ""
-    for tag in ("법령명한글", "법령명_한글", "법령명"):
+    for tag in ("법령명한글", "법령명_한글", "법령명", "행정규칙명"):
         el = root.find(f".//{tag}")
         if el is not None and el.text and el.text.strip():
             law_name = el.text.strip(); break
@@ -642,17 +643,18 @@ CANDIDATE_LAWS = [
 ]
 
 # 키워드로 해당 법령 전체 조문을 불러와 매칭 조문 반환하는 공통 헬퍼
-def _fetch_matching_articles(law_name: str, kw: str):
-    # 캐시 확인
-    lname, articles = _cache_get(law_name)
+def _fetch_matching_articles(law_name: str, kw: str, doc_type: str = "law"):
+    cache_key = f"{doc_type}:{law_name}"
+    lname, articles = _cache_get(cache_key)
     if articles is None:
-        mst = _get_mst(law_name)
+        mst = _get_mst(law_name, target=doc_type)
         if not mst:
             return None
+        endpoint = "admRulService.do" if doc_type == "admrul" else "lawService.do"
         root = None
         for param in ("MST", "ID"):
             try:
-                r = _law_get_xml("lawService.do", {"target": "law", param: mst}, timeout=(5, 18))
+                r = _law_get_xml(endpoint, {"target": doc_type, param: mst}, timeout=(5, 18))
                 if _is_valid_law_xml(r):
                     root = r; break
             except Exception:
@@ -660,7 +662,7 @@ def _fetch_matching_articles(law_name: str, kw: str):
         if root is None:
             return None
         lname, _, articles = _parse_articles(root)
-        _cache_set(law_name, lname or law_name, articles)
+        _cache_set(cache_key, lname or law_name, articles)
     kwL = kw.lower()
     matched = [a for a in articles
                if a.get("type") == "article" and
@@ -686,7 +688,8 @@ def search_by_article_keyword():
     import concurrent.futures
 
     # ── Stage 1: 법령명 검색으로 후보 법령 + 메타데이터 한 번에 확보 ──────────
-    stage1_meta: dict = {}   # law_name → meta dict (구분명, 소관부처 등)
+    # law_name → {"meta": dict, "doc_type": "law"|"admrul"}
+    stage1_meta: dict = {}
     try:
         d1 = _law_get_json({"target": "law", "query": query, "display": "10"})
         s1 = d1.get("LawSearch", {}).get("law", []) or []
@@ -694,11 +697,21 @@ def search_by_article_keyword():
         for l in s1:
             nm = l.get("법령명한글", "").strip()
             if nm:
-                stage1_meta[nm] = l
+                stage1_meta[nm] = {"meta": l, "doc_type": "law"}
     except Exception as e:
-        print(f"[article-search] Stage1 오류: {e}")
+        print(f"[article-search] Stage1(law) 오류: {e}")
+    try:
+        d2 = _law_get_json({"target": "admrul", "query": query, "display": "10"})
+        s2 = d2.get("LawSearch", {}).get("law", []) or []
+        if isinstance(s2, dict): s2 = [s2]
+        for l in s2:
+            nm = (l.get("행정규칙명") or l.get("법령명한글") or "").strip()
+            if nm and nm not in stage1_meta:
+                stage1_meta[nm] = {"meta": l, "doc_type": "admrul"}
+    except Exception as e:
+        print(f"[article-search] Stage1(admrul) 오류: {e}")
 
-    # 도메인 매핑 보완
+    # 도메인 매핑 보완 (law 타입 법령만)
     domain_names: set = set()
     for domain_kw, laws in DOMAIN_LAW_MAP.items():
         if domain_kw in query:
@@ -710,24 +723,28 @@ def search_by_article_keyword():
     if not target_laws:
         target_laws = CANDIDATE_LAWS   # 미매핑 폴백
     all_target = target_laws + extra_laws
-    print(f"[article-search] '{query}' 대상 {len(all_target)}개 법령")
+    print(f"[article-search] '{query}' 대상 {len(all_target)}개 법령/행정규칙")
 
     kw = query.lower()
 
     def fetch_and_filter(law_name: str):
         try:
-            res = _fetch_matching_articles(law_name, kw)
+            entry = stage1_meta.get(law_name) or {}
+            doc_type = entry.get("doc_type", "law")
+            meta = entry.get("meta", {})
+            res = _fetch_matching_articles(law_name, kw, doc_type=doc_type)
             if not res:
                 return None
             lname = res["law_name"]
-            # Stage 1에서 이미 받은 메타 재사용 (추가 API 호출 없음)
-            meta = stage1_meta.get(law_name) or stage1_meta.get(lname) or {}
+            # admrul은 meta에 행정규칙명 필드가 있을 수 있음
+            if not meta:
+                meta = stage1_meta.get(lname, {}).get("meta", {})
             return {
                 "법령명한글":   lname,
-                "법령구분명":   meta.get("법령구분명", "법률"),
+                "법령구분명":   meta.get("법령구분명") or meta.get("행정규칙종류명") or ("행정규칙" if doc_type == "admrul" else "법률"),
                 "소관부처명":   meta.get("소관부처명", ""),
-                "공포일자":     meta.get("공포일자", ""),
-                "법령일련번호": meta.get("법령일련번호", ""),
+                "공포일자":     meta.get("공포일자") or meta.get("발령일자", ""),
+                "법령일련번호": meta.get("법령일련번호") or meta.get("행정규칙일련번호", ""),
                 "_matched_count": len(res["articles"]),
             }
         except Exception as e:
@@ -776,14 +793,31 @@ def search_legal_basis():
         return jsonify({"error": "업무 상황을 4자 이상 입력하세요"}), 400
 
     # ── Stage 1: 법제처 법령명 검색 → 후보 법령 확보 ─────────────────────────
+    # name → doc_type ("law" | "admrul")
+    stage1_doc_types: dict = {}
     stage1_names: set = set()
     try:
         d1 = _law_get_json({"target": "law", "query": scenario, "display": "10"})
         s1 = d1.get("LawSearch", {}).get("law", []) or []
         if isinstance(s1, dict): s1 = [s1]
-        stage1_names = {l.get("법령명한글", "").strip() for l in s1 if l.get("법령명한글")}
+        for l in s1:
+            nm = l.get("법령명한글", "").strip()
+            if nm:
+                stage1_names.add(nm)
+                stage1_doc_types[nm] = "law"
     except Exception as e:
-        print(f"[basis] Stage1 오류: {e}")
+        print(f"[basis] Stage1(law) 오류: {e}")
+    try:
+        d2 = _law_get_json({"target": "admrul", "query": scenario, "display": "10"})
+        s2 = d2.get("LawSearch", {}).get("law", []) or []
+        if isinstance(s2, dict): s2 = [s2]
+        for l in s2:
+            nm = (l.get("행정규칙명") or l.get("법령명한글") or "").strip()
+            if nm and nm not in stage1_doc_types:
+                stage1_names.add(nm)
+                stage1_doc_types[nm] = "admrul"
+    except Exception as e:
+        print(f"[basis] Stage1(admrul) 오류: {e}")
 
     # 도메인 매핑으로 보완 (Stage 1이 놓친 법령 커버)
     domain_names: set = set()
@@ -794,7 +828,7 @@ def search_legal_basis():
     combined = stage1_names | domain_names
     # CANDIDATE_LAWS 순서 유지
     target_laws = [l for l in CANDIDATE_LAWS if l in combined]
-    # Stage 1 결과 중 CANDIDATE_LAWS 외 법령도 탐색
+    # Stage 1 결과 중 CANDIDATE_LAWS 외 법령/행정규칙도 탐색
     extra_laws  = [l for l in stage1_names if l not in set(CANDIDATE_LAWS)]
     if not target_laws:
         target_laws = CANDIDATE_LAWS  # 완전 미매핑 시 전체 폴백
@@ -832,22 +866,25 @@ def search_legal_basis():
 
     def fetch_law(law_name: str):
         try:
-            lname, articles = _cache_get(law_name)
+            doc_type = stage1_doc_types.get(law_name, "law")
+            cache_key = f"{doc_type}:{law_name}"
+            lname, articles = _cache_get(cache_key)
             if articles is None:
-                mst = _get_mst(law_name)
+                mst = _get_mst(law_name, target=doc_type)
                 if not mst: return None
+                endpoint = "admRulService.do" if doc_type == "admrul" else "lawService.do"
                 root = None
                 for param in ("MST", "ID"):
                     try:
-                        r = _law_get_xml("lawService.do",
-                                         {"target": "law", param: mst}, timeout=(5, 18))
+                        r = _law_get_xml(endpoint,
+                                         {"target": doc_type, param: mst}, timeout=(5, 18))
                         if _is_valid_law_xml(r):
                             root = r; break
                     except Exception:
                         continue
                 if root is None: return None
                 lname, _, articles = _parse_articles(root)
-                _cache_set(law_name, lname or law_name, articles)
+                _cache_set(cache_key, lname or law_name, articles)
 
             kwL = [kw.lower() for kw in keywords]
             matched = [
