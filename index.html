@@ -973,7 +973,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
     <!-- 검색창 -->
     <div class="srow">
-      <input id="q" class="sinput" style="padding-left:40px;" placeholder="🔍  법령명 또는 키워드 입력" onkeydown="if(event.key==='Enter')doSearch()" oninput="debouncedSearch()">
+      <input id="q" class="sinput" style="padding-left:40px;" placeholder="🔍  법령명 또는 키워드 입력" onkeydown="if(event.key==='Enter')doSearch()">
       <button id="sbtn" class="sbtn" onclick="doSearch()">검색</button>
     </div>
     <!-- 자주 찾는 법령 -->
@@ -1062,14 +1062,6 @@ function _cacheSet(key, data) {
   _searchCache.set(key, { data, ts: Date.now() });
 }
 
-// ── 디바운스 인스턴트 검색 ──
-let _debTimer;
-function debouncedSearch() {
-  clearTimeout(_debTimer);
-  const q = document.getElementById('q').value.trim();
-  if (q.length < 2) return;
-  _debTimer = setTimeout(doSearch, 350);
-}
 
 let agency='all', mode='law', allLaws=[], filtered=[], page=1, fpArts=[];
 const PS=10;
