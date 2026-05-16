@@ -683,42 +683,61 @@ def search_by_article_keyword():
     if len(query) < 2:
         return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
 
-    kw = query.lower()
-
     import concurrent.futures
+
+    # ── Stage 1: 법령명 검색으로 후보 법령 + 메타데이터 한 번에 확보 ──────────
+    stage1_meta: dict = {}   # law_name → meta dict (구분명, 소관부처 등)
+    try:
+        d1 = _law_get_json({"target": "law", "query": query, "display": "10"})
+        s1 = d1.get("LawSearch", {}).get("law", []) or []
+        if isinstance(s1, dict): s1 = [s1]
+        for l in s1:
+            nm = l.get("법령명한글", "").strip()
+            if nm:
+                stage1_meta[nm] = l
+    except Exception as e:
+        print(f"[article-search] Stage1 오류: {e}")
+
+    # 도메인 매핑 보완
+    domain_names: set = set()
+    for domain_kw, laws in DOMAIN_LAW_MAP.items():
+        if domain_kw in query:
+            domain_names.update(laws)
+
+    combined = set(stage1_meta) | domain_names
+    target_laws = [l for l in CANDIDATE_LAWS if l in combined]
+    extra_laws  = [l for l in stage1_meta if l not in set(CANDIDATE_LAWS)]
+    if not target_laws:
+        target_laws = CANDIDATE_LAWS   # 미매핑 폴백
+    all_target = target_laws + extra_laws
+    print(f"[article-search] '{query}' 대상 {len(all_target)}개 법령")
+
+    kw = query.lower()
 
     def fetch_and_filter(law_name: str):
         try:
             res = _fetch_matching_articles(law_name, kw)
             if not res:
                 return None
-            matched = res["articles"]
             lname = res["law_name"]
-            try:
-                meta_data = _law_get_json({"target": "law", "query": law_name, "display": "1"})
-                meta_laws = meta_data.get("LawSearch", {}).get("law", []) or []
-                if isinstance(meta_laws, dict): meta_laws = [meta_laws]
-                meta = meta_laws[0] if meta_laws else {}
-            except Exception:
-                meta = {}
+            # Stage 1에서 이미 받은 메타 재사용 (추가 API 호출 없음)
+            meta = stage1_meta.get(law_name) or stage1_meta.get(lname) or {}
             return {
-                "법령명한글":  lname,
-                "법령구분명":  meta.get("법령구분명", "법률"),
-                "소관부처명":  meta.get("소관부처명", ""),
-                "공포일자":    meta.get("공포일자", ""),
+                "법령명한글":   lname,
+                "법령구분명":   meta.get("법령구분명", "법률"),
+                "소관부처명":   meta.get("소관부처명", ""),
+                "공포일자":     meta.get("공포일자", ""),
                 "법령일련번호": meta.get("법령일련번호", ""),
-                "_matched_count": len(matched),
+                "_matched_count": len(res["articles"]),
             }
         except Exception as e:
             print(f"[article-search] {law_name} 오류: {e}")
         return None
 
-    # Vercel 60초 제한: 워커 3개, 전체 타임아웃 40초
-    results = []
-    truncated = False
+    results, truncated = [], False
     try:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
-            futures = {ex.submit(fetch_and_filter, name): name for name in CANDIDATE_LAWS}
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as ex:
+            futures = {ex.submit(fetch_and_filter, name): name for name in all_target}
             for future in concurrent.futures.as_completed(futures, timeout=40):
                 try:
                     res = future.result()
@@ -728,10 +747,8 @@ def search_by_article_keyword():
                     print(f"[article-search] future 오류: {e}")
     except concurrent.futures.TimeoutError:
         truncated = True
-        searched = len(results)
-        print(f"[article-search] 전체 타임아웃 (40s), {searched}/{len(CANDIDATE_LAWS)}건 탐색 후 반환")
+        print(f"[article-search] 타임아웃, {len(results)}/{len(all_target)}건 탐색")
 
-    # 매칭 조문 수 기준 정렬
     results.sort(key=lambda x: x.get("_matched_count", 0), reverse=True)
     for r in results:
         r.pop("_matched_count", None)
@@ -742,7 +759,7 @@ def search_by_article_keyword():
         "count": len(results),
         "laws": results,
         "truncated": truncated,
-        "searched_total": len(CANDIDATE_LAWS),
+        "searched_total": len(all_target),
     })
 
 
