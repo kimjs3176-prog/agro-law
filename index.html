@@ -959,6 +959,17 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     <div class="mtoggle">
       <button class="mbtn active" id="mlawbtn" onclick="setMode('law')">법령명 검색</button>
       <button class="mbtn" id="martbtn" onclick="setMode('article')">조문 내 키워드 검색</button>
+      <button class="mbtn" id="mbasisbtn" onclick="setMode('basis')" style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:#065f46;border-color:#6ee7b7;">📋 업무 근거 찾기</button>
+    </div>
+    <!-- 업무 시나리오 빠른 선택 (basis 모드 전용) -->
+    <div id="scenarioChips" style="display:none;margin:6px 0 2px;flex-wrap:wrap;gap:6px;display:none;">
+      <span style="font-size:11px;color:var(--mu);align-self:center;">시나리오:</span>
+      <button class="rec-chip" onclick="setBasisScenario('농약 판매업 등록 요건')">농약 판매업 등록</button>
+      <button class="rec-chip" onclick="setBasisScenario('농지 전용 허가 절차')">농지 전용 허가</button>
+      <button class="rec-chip" onclick="setBasisScenario('품종보호 출원 요건')">품종보호 출원</button>
+      <button class="rec-chip" onclick="setBasisScenario('농업인 보조금 지원 조건')">농업인 지원금</button>
+      <button class="rec-chip" onclick="setBasisScenario('특허 침해 손해배상')">특허 침해 대응</button>
+      <button class="rec-chip" onclick="setBasisScenario('유기농 인증 기준')">유기농 인증</button>
     </div>
     <!-- 검색창 -->
     <div class="srow">
@@ -1100,10 +1111,18 @@ function setMode(m){
   mode=m;
   document.getElementById('mlawbtn').classList.toggle('active',m==='law');
   document.getElementById('martbtn').classList.toggle('active',m==='article');
-  document.getElementById('q').placeholder = m==='law'
-    ? '법령명 또는 키워드 입력 (예: 농지, 종자, 농약)'
-    : '조문 내 키워드 입력 (예: 전용실시, 손해배상, 등록취소)';
+  document.getElementById('mbasisbtn').classList.toggle('active',m==='basis');
+  const sc=document.getElementById('scenarioChips');
+  if(sc) sc.style.display = m==='basis' ? 'flex' : 'none';
+  document.getElementById('q').placeholder =
+    m==='law'     ? '법령명 또는 키워드 입력 (예: 농지, 종자, 농약)' :
+    m==='article' ? '조문 내 키워드 입력 (예: 전용실시, 손해배상, 등록취소)' :
+                    '업무 상황 입력 (예: 농약 판매업 등록을 하려면?)';
   clearResults();
+}
+function setBasisScenario(text){
+  document.getElementById('q').value=text;
+  doSearch();
 }
 function clearResults(){
   const fbar=document.getElementById('fbar'); if(fbar) fbar.style.display='none';
@@ -1141,6 +1160,12 @@ async function doSearch(){
   recordStat('search', q);
 
   try{
+    // 업무 근거 찾기 모드
+    if(mode === 'basis'){
+      await doSearchBasis(q);
+      return;
+    }
+
     // 조문 키워드 모드
     if(mode === 'article'){
       await doSearchArticle(q);
@@ -1220,6 +1245,97 @@ async function doSearchArticle(q){
     setStatus(`조문 키워드 검색 · ${d.laws.length}건 · 클릭하면 관련 조문이 표시됩니다${truncNote}`);
     renderArticleLawList(d.laws, q);  // 검색어 전달
   }catch(e){setStatus('서버 연결 실패');renderEmpty('서버에 연결할 수 없습니다');}
+}
+
+// ── 업무 근거 찾기 ──
+async function doSearchBasis(q){
+  setStatus(`"${q}" 근거법령 탐색 중...`, true);
+  addRecent(q);
+  try{
+    const r = await fetch(`/api/search/basis?scenario=${encodeURIComponent(q)}`);
+    const d = await r.json();
+    if(d.error){ setStatus(`오류: ${d.error}`); renderEmpty(d.error); return; }
+    if(!d.success || !d.laws?.length){
+      setStatus(`"${q}"에 해당하는 근거 조문을 찾지 못했습니다`);
+      renderEmpty(`근거 법령을 찾지 못했습니다.<br><small>업무 내용을 더 구체적으로 입력해보세요.</small>`);
+      return;
+    }
+    const truncNote = d.truncated
+      ? ` <span style="color:#e67e22;font-size:0.85em">⚠ 일부 법령만 탐색됨</span>` : '';
+    const kwTags = (d.extracted_keywords||[]).map(k=>`<span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:1px 6px;font-size:11px;">${escHtml(k)}</span>`).join(' ');
+    setStatus(`근거법령 ${d.laws.length}건 · <b>${escHtml(d.basis_type)}</b> · 추출 키워드: ${kwTags}${truncNote}`);
+    renderBasisResults(d.laws, d.basis_type, d.extracted_keywords||[]);
+  }catch(e){ setStatus('서버 연결 실패'); renderEmpty('서버에 연결할 수 없습니다'); }
+}
+
+const BASIS_TYPE_COLOR = {
+  '허가·등록·신고': '#1d4ed8',
+  '금지·제한':      '#b91c1c',
+  '의무·기준':      '#92400e',
+  '지원·권리':      '#065f46',
+  '일반':           '#374151',
+};
+
+function renderBasisResults(laws, basisType, keywords){
+  const color = BASIS_TYPE_COLOR[basisType] || '#374151';
+  const kwL = keywords.map(k=>k.toLowerCase());
+
+  function highlightKws(txt){
+    let h = escHtml(txt);
+    kwL.forEach(k=>{
+      h = h.replace(new RegExp(escRegex(escHtml(k)),'gi'),
+        m=>`<mark style="background:#fef08a;border-radius:2px;padding:0 1px;">${m}</mark>`);
+    });
+    return h;
+  }
+
+  document.getElementById('results').innerHTML = laws.map((law, i)=>{
+    const name = law['법령명한글'] || '';
+    const arts = law['matched_articles'] || [];
+    const matchedKws = (law['matched_keywords']||[]).map(k=>`<span style="background:#f0fdf4;color:#166534;border-radius:4px;padding:1px 5px;font-size:11px;">${escHtml(k)}</span>`).join(' ');
+    const lawUrl = `https://www.law.go.kr/법령/${encodeURIComponent(name)}`;
+
+    const artHtml = arts.map(a=>{
+      const no = a['조문번호'] ? `제${a['조문번호']}조` : '';
+      const title = a['조문제목'] || '';
+      const content = a['조문내용'] || '';
+      return `<div class="art-item" style="margin-bottom:4px;">
+        <div class="art-head" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block';this.querySelector('.arrow').style.transform=this.nextElementSibling.style.display==='block'?'rotate(180deg)':''">
+          ${no?`<span class="art-no">${escHtml(no)}</span>`:''}
+          <span class="art-title">${highlightKws(title||no||'조문')}</span>
+          <span class="arrow" style="margin-left:auto;font-size:11px;color:var(--ht);transition:transform .2s;flex-shrink:0;">▼</span>
+        </div>
+        ${content?`<div class="art-body" style="display:none;">${applyXref(highlightKws(content), name)}</div>`:''}
+      </div>`;
+    }).join('');
+
+    return `<div class="card" id="brc${i}">
+      <div class="card-head" onclick="this.nextElementSibling.classList.toggle('open2')">
+        <span class="ltype" style="background:${color}20;color:${color};border-color:${color}40;">${escHtml(basisType)}</span>
+        <span class="lname">${escHtml(name)}</span>
+        <span style="margin-left:auto;display:flex;gap:4px;align-items:center;flex-wrap:wrap;">${matchedKws}</span>
+        <span style="font-size:11px;color:var(--ht);margin-left:6px;flex-shrink:0;">${arts.length}개 조문 ▼</span>
+      </div>
+      <div class="card-body" style="display:none;" id="brb${i}">
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <button class="abtn primary" onclick="openFullPanel('${name.replace(/'/g,"\\'")}','${lawUrl}')">📄 전문 보기</button>
+          <a class="abtn" href="${lawUrl}" target="_blank">↗ 법제처</a>
+        </div>
+        <div class="art-wrap">${artHtml}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // 카드 헤더 토글 재연결 (card-body display 토글)
+  document.querySelectorAll('[id^="brc"] .card-head').forEach((h,i)=>{
+    h.onclick = ()=>{
+      const body = document.getElementById('brb'+i);
+      if(!body) return;
+      const open = body.style.display === 'block';
+      body.style.display = open ? 'none' : 'block';
+      h.querySelector('.lname') && (h.style.borderBottom = open ? 'none' : '1px solid var(--bd)');
+    };
+  });
 }
 
 // ── 최근 검색어 ──
@@ -1440,7 +1556,7 @@ function renderInlineArticles(arts, lawName, lawUrl, kw=''){
           <span class="art-title">${highlight(title||no||'조문')}</span>
           <span class="arrow" style="font-size:11px;color:var(--ht);transition:transform .2s;flex-shrink:0;">▼</span>
         </div>
-        ${content?`<div class="art-body" style="${isMatch?'display:block;':''}">${highlight(content)}</div>`:''}
+        ${content?`<div class="art-body" style="${isMatch?'display:block;':''}">${applyXref(highlight(content), lawName)}</div>`:''}
       </div>`;
     }).join('')+
     `</div></div>`;

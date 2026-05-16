@@ -573,12 +573,50 @@ def validate_keyword():
         return jsonify({"valid": False})
 
 
+# 농업·지식재산 분야 핵심 법령 (조문 검색 대상)
+CANDIDATE_LAWS = [
+    "특허법", "실용신안법", "디자인보호법", "상표법", "발명진흥법",
+    "농촌진흥법", "종자산업법", "농약관리법", "비료관리법", "농지법",
+    "식물신품종 보호법", "농업기술실용화 촉진법",
+    "기술의 이전 및 사업화 촉진에 관한 법률",
+    "부정경쟁방지 및 영업비밀보호에 관한 법률",
+    "저작권법", "반도체집적회로의 배치설계에 관한 법률",
+    "축산법", "식품안전기본법", "농어업재해보험법",
+    "농수산물 유통 및 가격안정에 관한 법률",
+]
+
+# 키워드로 해당 법령 전체 조문을 불러와 매칭 조문 반환하는 공통 헬퍼
+def _fetch_matching_articles(law_name: str, kw: str):
+    import concurrent.futures as _cf
+    mst = _get_mst(law_name)
+    if not mst:
+        return None
+    root = None
+    for param in ("MST", "ID"):
+        try:
+            r = _law_get_xml("lawService.do", {"target": "law", param: mst}, timeout=(5, 18))
+            if _is_valid_law_xml(r):
+                root = r; break
+        except Exception:
+            continue
+    if root is None:
+        return None
+    lname, _, articles = _parse_articles(root)
+    kwL = kw.lower()
+    matched = [a for a in articles
+               if a.get("type") == "article" and
+               kwL in " ".join([a.get("조문내용",""), a.get("조문제목","")]).lower()]
+    if matched:
+        return {"law_name": lname or law_name, "keyword": kw, "articles": matched}
+    return None
+
+
 @app.route("/api/search/article")
 def search_by_article_keyword():
     """
     조문 내용 키워드 검색.
     법제처 API는 조문 내용 검색을 직접 지원하지 않으므로,
-    농업·지식재산 관련 핵심 법령 목록에서 조문을 불러와 서버 측 필터링한다.
+    핵심 법령 목록에서 조문을 불러와 서버 측 필터링한다.
     """
     query = request.args.get("query", "").strip()
     if not query:
@@ -586,60 +624,32 @@ def search_by_article_keyword():
     if len(query) < 2:
         return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
 
-    # 검색 대상 법령 목록 (농업·지식재산 분야 핵심 법령)
-    CANDIDATE_LAWS = [
-        "특허법", "실용신안법", "디자인보호법", "상표법", "발명진흥법",
-        "농촌진흥법", "종자산업법", "농약관리법", "비료관리법", "농지법",
-        "식물신품종 보호법", "농업기술실용화 촉진법",
-        "기술의 이전 및 사업화 촉진에 관한 법률",
-        "부정경쟁방지 및 영업비밀보호에 관한 법률",
-        "저작권법", "반도체집적회로의 배치설계에 관한 법률",
-        "축산법", "식품안전기본법", "농어업재해보험법",
-        "농수산물 유통 및 가격안정에 관한 법률",
-    ]
-
     kw = query.lower()
 
     import concurrent.futures
 
     def fetch_and_filter(law_name: str):
         try:
-            mst = _get_mst(law_name)
-            if not mst:
+            res = _fetch_matching_articles(law_name, kw)
+            if not res:
                 return None
-            root = None
-            for param in ("MST", "ID"):
-                try:
-                    r = _law_get_xml("lawService.do",
-                                     {"target": "law", param: mst},
-                                     timeout=(5, 18))
-                    if _is_valid_law_xml(r):
-                        root = r; break
-                except Exception:
-                    continue
-            if root is None:
-                return None
-
-            lname, law_date, articles = _parse_articles(root)
-            matched = [a for a in articles
-                       if a.get("type") == "article" and
-                       kw in " ".join([a.get("조문내용",""), a.get("조문제목","")]).lower()]
-            if matched:
-                try:
-                    meta_data = _law_get_json({"target": "law", "query": law_name, "display": "1"})
-                    meta_laws = meta_data.get("LawSearch", {}).get("law", []) or []
-                    if isinstance(meta_laws, dict): meta_laws = [meta_laws]
-                    meta = meta_laws[0] if meta_laws else {}
-                except Exception:
-                    meta = {}
-                return {
-                    "법령명한글":  lname or law_name,
-                    "법령구분명":  meta.get("법령구분명", "법률"),
-                    "소관부처명":  meta.get("소관부처명", ""),
-                    "공포일자":    meta.get("공포일자", ""),
-                    "법령일련번호": meta.get("법령일련번호", ""),
-                    "_matched_count": len(matched),
-                }
+            matched = res["articles"]
+            lname = res["law_name"]
+            try:
+                meta_data = _law_get_json({"target": "law", "query": law_name, "display": "1"})
+                meta_laws = meta_data.get("LawSearch", {}).get("law", []) or []
+                if isinstance(meta_laws, dict): meta_laws = [meta_laws]
+                meta = meta_laws[0] if meta_laws else {}
+            except Exception:
+                meta = {}
+            return {
+                "법령명한글":  lname,
+                "법령구분명":  meta.get("법령구분명", "법률"),
+                "소관부처명":  meta.get("소관부처명", ""),
+                "공포일자":    meta.get("공포일자", ""),
+                "법령일련번호": meta.get("법령일련번호", ""),
+                "_matched_count": len(matched),
+            }
         except Exception as e:
             print(f"[article-search] {law_name} 오류: {e}")
         return None
@@ -671,6 +681,102 @@ def search_by_article_keyword():
     return jsonify({
         "success": True,
         "count": len(results),
+        "laws": results,
+        "truncated": truncated,
+        "searched_total": len(CANDIDATE_LAWS),
+    })
+
+
+@app.route("/api/search/basis")
+def search_legal_basis():
+    """업무 상황 설명 → 근거 법령·조문 검색"""
+    scenario = request.args.get("scenario", "").strip()
+    if not scenario:
+        return jsonify({"error": "업무 상황을 입력하세요"}), 400
+    if len(scenario) < 4:
+        return jsonify({"error": "업무 상황을 4자 이상 입력하세요"}), 400
+
+    STOPWORDS = {
+        "이란", "하려면", "할때", "할때는", "경우", "무엇", "어떻게", "어떤",
+        "필요한", "근거", "법령", "확인", "관련", "대한", "이에", "있나요",
+        "있는지", "하는지", "으려면", "에서", "에게", "에는", "으로", "위한",
+        "받으려면", "하기위해", "하기위한", "처럼", "같은",
+    }
+    tokens = re.findall(r'[가-힣]{2,}', scenario)
+    keywords = [t for t in tokens if t not in STOPWORDS][:5]
+    if not keywords:
+        return jsonify({"error": "유효한 키워드를 추출할 수 없습니다. 더 구체적인 업무 내용을 입력해주세요."}), 400
+
+    # 업무 유형 분류
+    basis_type = "일반"
+    if any(w in scenario for w in ("허가", "등록", "신고", "승인", "인가", "면허", "인증", "출원", "자격")):
+        basis_type = "허가·등록·신고"
+    elif any(w in scenario for w in ("금지", "제한", "제재", "처벌", "위반", "과태료", "벌칙", "위법")):
+        basis_type = "금지·제한"
+    elif any(w in scenario for w in ("의무", "기준", "요건", "절차", "방법", "조건")):
+        basis_type = "의무·기준"
+    elif any(w in scenario for w in ("지원", "보조금", "보상", "혜택", "권리", "보호")):
+        basis_type = "지원·권리"
+
+    import concurrent.futures
+
+    def search_one(args):
+        law_name, kw = args
+        try:
+            res = _fetch_matching_articles(law_name, kw)
+            if res:
+                return res
+        except Exception as e:
+            print(f"[basis] {law_name}/{kw} 오류: {e}")
+        return None
+
+    search_kws = keywords[:3]
+    tasks = [(law, kw) for law in CANDIDATE_LAWS for kw in search_kws]
+
+    law_results = {}
+    truncated = False
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as ex:
+            futures = {ex.submit(search_one, t): t for t in tasks}
+            for future in concurrent.futures.as_completed(futures, timeout=45):
+                try:
+                    res = future.result()
+                    if not res:
+                        continue
+                    lname = res["law_name"]
+                    kw = res["keyword"]
+                    if lname not in law_results:
+                        law_results[lname] = {"articles": [], "keywords": set()}
+                    seen = {a["조문번호"] for a in law_results[lname]["articles"]}
+                    for art in res["articles"]:
+                        if art["조문번호"] not in seen:
+                            law_results[lname]["articles"].append({
+                                "조문번호": art["조문번호"],
+                                "조문제목": art["조문제목"],
+                                "조문내용": art["조문내용"][:400] + ("..." if len(art["조문내용"]) > 400 else ""),
+                            })
+                            seen.add(art["조문번호"])
+                    law_results[lname]["keywords"].add(kw)
+                except Exception as e:
+                    print(f"[basis] future 오류: {e}")
+    except concurrent.futures.TimeoutError:
+        truncated = True
+        print(f"[basis] 타임아웃, {len(law_results)}개 법령 탐색 완료")
+
+    results = sorted(
+        [{"법령명한글": lname,
+          "matched_articles": info["articles"],
+          "matched_keywords": list(info["keywords"]),
+          "relevance": len(info["articles"])}
+         for lname, info in law_results.items()],
+        key=lambda x: x["relevance"], reverse=True,
+    )
+
+    return jsonify({
+        "success": True,
+        "scenario": scenario,
+        "extracted_keywords": keywords,
+        "basis_type": basis_type,
         "laws": results,
         "truncated": truncated,
         "searched_total": len(CANDIDATE_LAWS),
