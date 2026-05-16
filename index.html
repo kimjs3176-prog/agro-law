@@ -1263,7 +1263,8 @@ async function doSearchBasis(q){
     const truncNote = d.truncated
       ? ` <span style="color:#e67e22;font-size:0.85em">⚠ 일부 법령만 탐색됨</span>` : '';
     const kwTags = (d.extracted_keywords||[]).map(k=>`<span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:1px 6px;font-size:11px;">${escHtml(k)}</span>`).join(' ');
-    setStatus(`근거법령 ${d.laws.length}건 · <b>${escHtml(d.basis_type)}</b> · 추출 키워드: ${kwTags}${truncNote}`);
+    const scopeNote = `<span style="color:var(--mu);font-size:0.85em">(${d.searched_total||'?'}개 법령 탐색)</span>`;
+    setStatus(`근거법령 ${d.laws.length}건 · <b>${escHtml(d.basis_type)}</b> · 키워드: ${kwTags} ${scopeNote}${truncNote}`);
     renderBasisResults(d.laws, d.basis_type, d.extracted_keywords||[]);
   }catch(e){ setStatus('서버 연결 실패'); renderEmpty('서버에 연결할 수 없습니다'); }
 }

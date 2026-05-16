@@ -4,7 +4,7 @@
 로컬: python run_local.py
 """
 
-import os, json, re, threading, webbrowser
+import os, json, re, time, threading, webbrowser
 import xml.etree.ElementTree as ET
 import urllib3
 from flask import Flask, request, jsonify, Response
@@ -573,6 +573,62 @@ def validate_keyword():
         return jsonify({"valid": False})
 
 
+# ── 법령 조문 인메모리 캐시 (TTL 30분) ──────────────────────────────────────
+_LAW_ARTICLE_CACHE: dict = {}   # law_name → {"lname": str, "articles": list, "ts": float}
+_CACHE_LOCK = threading.Lock()
+_CACHE_TTL  = 1800              # 30분
+
+def _cache_get(law_name: str):
+    with _CACHE_LOCK:
+        entry = _LAW_ARTICLE_CACHE.get(law_name)
+        if entry and time.time() - entry["ts"] < _CACHE_TTL:
+            return entry["lname"], entry["articles"]
+    return None, None
+
+def _cache_set(law_name: str, lname: str, articles: list):
+    with _CACHE_LOCK:
+        _LAW_ARTICLE_CACHE[law_name] = {"lname": lname, "articles": articles, "ts": time.time()}
+
+
+# ── 도메인 키워드 → 관련 법령 매핑 ────────────────────────────────────────────
+# 시나리오 텍스트에서 도메인 키워드가 감지되면 해당 법령만 탐색
+DOMAIN_LAW_MAP = {
+    "농약":    ["농약관리법", "농촌진흥법"],
+    "농지":    ["농지법"],
+    "전용":    ["농지법"],
+    "임대":    ["농지법"],
+    "종자":    ["종자산업법", "식물신품종 보호법"],
+    "품종":    ["식물신품종 보호법", "종자산업법"],
+    "육종":    ["식물신품종 보호법"],
+    "특허":    ["특허법", "발명진흥법"],
+    "발명":    ["특허법", "발명진흥법"],
+    "실용신안": ["실용신안법"],
+    "상표":    ["상표법", "부정경쟁방지 및 영업비밀보호에 관한 법률"],
+    "디자인":  ["디자인보호법"],
+    "저작권":  ["저작권법"],
+    "저작물":  ["저작권법"],
+    "영업비밀": ["부정경쟁방지 및 영업비밀보호에 관한 법률"],
+    "부정경쟁": ["부정경쟁방지 및 영업비밀보호에 관한 법률"],
+    "비료":    ["비료관리법", "농촌진흥법"],
+    "축산":    ["축산법"],
+    "가축":    ["축산법"],
+    "식품":    ["식품안전기본법"],
+    "기술이전": ["기술의 이전 및 사업화 촉진에 관한 법률", "농업기술실용화 촉진법"],
+    "사업화":  ["농업기술실용화 촉진법", "기술의 이전 및 사업화 촉진에 관한 법률"],
+    "실용화":  ["농업기술실용화 촉진법"],
+    "재해보험": ["농어업재해보험법"],
+    "재해":    ["농어업재해보험법"],
+    "유통":    ["농수산물 유통 및 가격안정에 관한 법률"],
+    "수산물":  ["농수산물 유통 및 가격안정에 관한 법률"],
+    "반도체":  ["반도체집적회로의 배치설계에 관한 법률"],
+    "배치설계": ["반도체집적회로의 배치설계에 관한 법률"],
+    "농촌진흥": ["농촌진흥법"],
+    "보조금":  ["농촌진흥법", "농어업재해보험법"],
+    "인증":    ["농촌진흥법", "식품안전기본법"],
+    "유기농":  ["농촌진흥법", "식품안전기본법"],
+}
+
+
 # 농업·지식재산 분야 핵심 법령 (조문 검색 대상)
 CANDIDATE_LAWS = [
     "특허법", "실용신안법", "디자인보호법", "상표법", "발명진흥법",
@@ -587,21 +643,24 @@ CANDIDATE_LAWS = [
 
 # 키워드로 해당 법령 전체 조문을 불러와 매칭 조문 반환하는 공통 헬퍼
 def _fetch_matching_articles(law_name: str, kw: str):
-    import concurrent.futures as _cf
-    mst = _get_mst(law_name)
-    if not mst:
-        return None
-    root = None
-    for param in ("MST", "ID"):
-        try:
-            r = _law_get_xml("lawService.do", {"target": "law", param: mst}, timeout=(5, 18))
-            if _is_valid_law_xml(r):
-                root = r; break
-        except Exception:
-            continue
-    if root is None:
-        return None
-    lname, _, articles = _parse_articles(root)
+    # 캐시 확인
+    lname, articles = _cache_get(law_name)
+    if articles is None:
+        mst = _get_mst(law_name)
+        if not mst:
+            return None
+        root = None
+        for param in ("MST", "ID"):
+            try:
+                r = _law_get_xml("lawService.do", {"target": "law", param: mst}, timeout=(5, 18))
+                if _is_valid_law_xml(r):
+                    root = r; break
+            except Exception:
+                continue
+        if root is None:
+            return None
+        lname, _, articles = _parse_articles(root)
+        _cache_set(law_name, lname or law_name, articles)
     kwL = kw.lower()
     matched = [a for a in articles
                if a.get("type") == "article" and
@@ -696,18 +755,40 @@ def search_legal_basis():
     if len(scenario) < 4:
         return jsonify({"error": "업무 상황을 4자 이상 입력하세요"}), 400
 
+    # ── 1. 도메인 키워드로 대상 법령 좁히기 ──────────────────────────────────
+    target_laws_set: set = set()
+    for domain_kw, laws in DOMAIN_LAW_MAP.items():
+        if domain_kw in scenario:
+            target_laws_set.update(laws)
+    # CANDIDATE_LAWS 순서 유지, 미매핑 시 전체 대상
+    target_laws = [l for l in CANDIDATE_LAWS if l in target_laws_set] or CANDIDATE_LAWS
+    print(f"[basis] 대상 법령 {len(target_laws)}/{len(CANDIDATE_LAWS)}개: {target_laws}")
+
+    # ── 2. 검색 키워드 추출 ────────────────────────────────────────────────────
+    # 범용 행위어(등록/허가 등)는 법령을 이미 도메인 매핑으로 좁혔으므로 제외
     STOPWORDS = {
         "이란", "하려면", "할때", "할때는", "경우", "무엇", "어떻게", "어떤",
-        "필요한", "근거", "법령", "확인", "관련", "대한", "이에", "있나요",
-        "있는지", "하는지", "으려면", "에서", "에게", "에는", "으로", "위한",
-        "받으려면", "하기위해", "하기위한", "처럼", "같은",
+        "필요한", "근거", "법령", "확인", "관련", "대한", "있나요", "있는지",
+        "하는지", "에서", "에게", "에는", "으로", "위한", "받으려면",
+        # 법령 좁히기에 이미 쓰인 범용 행위어 → 조문 검색어로 재사용 않음
+        "허가", "등록", "신고", "승인", "인가", "면허", "출원",
+        "금지", "제한", "처벌", "위반", "과태료", "벌칙",
+        "의무", "절차", "방법", "조건", "요건", "기준",
+        "지원", "보조금", "보상", "혜택", "권리", "보호",
     }
     tokens = re.findall(r'[가-힣]{2,}', scenario)
     keywords = [t for t in tokens if t not in STOPWORDS][:5]
+
+    # 도메인 키워드 자체도 검색어에 포함 (조문 내 명확한 단어)
+    for domain_kw in DOMAIN_LAW_MAP:
+        if domain_kw in scenario and domain_kw not in keywords:
+            keywords.insert(0, domain_kw)
+    keywords = keywords[:3]
+
     if not keywords:
         return jsonify({"error": "유효한 키워드를 추출할 수 없습니다. 더 구체적인 업무 내용을 입력해주세요."}), 400
 
-    # 업무 유형 분류
+    # ── 3. 업무 유형 분류 ───────────────────────────────────────────────────────
     basis_type = "일반"
     if any(w in scenario for w in ("허가", "등록", "신고", "승인", "인가", "면허", "인증", "출원", "자격")):
         basis_type = "허가·등록·신고"
@@ -730,8 +811,7 @@ def search_legal_basis():
             print(f"[basis] {law_name}/{kw} 오류: {e}")
         return None
 
-    search_kws = keywords[:3]
-    tasks = [(law, kw) for law in CANDIDATE_LAWS for kw in search_kws]
+    tasks = [(law, kw) for law in target_laws for kw in keywords]
 
     law_results = {}
     truncated = False
@@ -779,7 +859,8 @@ def search_legal_basis():
         "basis_type": basis_type,
         "laws": results,
         "truncated": truncated,
-        "searched_total": len(CANDIDATE_LAWS),
+        "searched_total": len(target_laws),
+        "target_laws": target_laws,
     })
 
 
