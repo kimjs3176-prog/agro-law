@@ -728,19 +728,14 @@ def search_by_article_keyword():
     print(f"[article-search] Stage1 law={sum(1 for v in stage1_meta.values() if v['doc_type']=='law')} "
           f"admrul={sum(1 for v in stage1_meta.values() if v['doc_type']=='admrul')}")
 
-    # 도메인 매핑 보완 (law 타입 법령만)
-    domain_names: set = set()
-    for domain_kw, laws in DOMAIN_LAW_MAP.items():
-        if domain_kw in query:
-            domain_names.update(laws)
-
-    combined = set(stage1_meta) | domain_names
-    target_laws = [l for l in CANDIDATE_LAWS if l in combined]
-    extra_laws  = [l for l in stage1_meta if l not in set(CANDIDATE_LAWS)]
-    if not target_laws:
-        target_laws = CANDIDATE_LAWS   # 미매핑 폴백
-    all_target = target_laws + extra_laws
-    print(f"[article-search] '{query}' 대상 {len(all_target)}개 법령/행정규칙")
+    # CANDIDATE_LAWS 전체 항상 탐색 + Stage 1에서 발견된 추가 법령/행정규칙
+    # ※ 도메인 키워드 부분 일치로 CANDIDATE_LAWS를 제한하면 '전용실시'→'전용'→농지법만
+    #   탐색되는 문제가 발생하므로 항상 전체 후보를 탐색한다.
+    _cand_set = set(CANDIDATE_LAWS)
+    extra_laws = [l for l in stage1_meta if l not in _cand_set]
+    all_target = list(CANDIDATE_LAWS) + extra_laws
+    print(f"[article-search] '{query}' 대상 {len(all_target)}개 법령/행정규칙 "
+          f"(후보:{len(CANDIDATE_LAWS)} + 추가:{len(extra_laws)})")
 
     kw = query.lower()
 
@@ -848,21 +843,10 @@ def search_legal_basis():
                 stage1_names.add(nm); stage1_doc_types[nm] = doc_type
     print(f"[basis] Stage1 law+admrul={len(stage1_names)}")
 
-    # 도메인 매핑으로 보완 (Stage 1이 놓친 법령 커버)
-    domain_names: set = set()
-    for domain_kw, laws in DOMAIN_LAW_MAP.items():
-        if domain_kw in scenario:
-            domain_names.update(laws)
-
-    combined = stage1_names | domain_names
-    # CANDIDATE_LAWS 순서 유지
-    target_laws = [l for l in CANDIDATE_LAWS if l in combined]
-    # Stage 1 결과 중 CANDIDATE_LAWS 외 법령/행정규칙도 탐색
-    extra_laws  = [l for l in stage1_names if l not in set(CANDIDATE_LAWS)]
-    if not target_laws:
-        target_laws = CANDIDATE_LAWS  # 완전 미매핑 시 전체 폴백
-    print(f"[basis] Stage1={len(stage1_names)} domain={len(domain_names)} "
-          f"target={len(target_laws)} extra={len(extra_laws)}")
+    # CANDIDATE_LAWS 전체 항상 탐색 + Stage 1 추가 법령/행정규칙
+    _cand_set = set(CANDIDATE_LAWS)
+    extra_laws = [l for l in stage1_names if l not in _cand_set]
+    print(f"[basis] Stage1={len(stage1_names)} extra={len(extra_laws)}")
 
     # ── 업무 유형 분류 ────────────────────────────────────────────────────────
     basis_type = "일반"
@@ -941,7 +925,7 @@ def search_legal_basis():
             print(f"[basis] {law_name} 오류: {e}")
         return None
 
-    all_target = target_laws + extra_laws
+    all_target = list(CANDIDATE_LAWS) + extra_laws
     results, truncated = [], False
     try:
         with _cf.ThreadPoolExecutor(max_workers=4) as ex:
@@ -958,7 +942,7 @@ def search_legal_basis():
                         })
                 except Exception as e:
                     print(f"[basis] future 오류: {e}")
-    except concurrent.futures.TimeoutError:
+    except _cf.TimeoutError:
         truncated = True
         print(f"[basis] 타임아웃, {len(results)}건 반환")
 
@@ -972,7 +956,6 @@ def search_legal_basis():
         "laws":              results,
         "truncated":         truncated,
         "searched_total":    len(all_target),
-        "target_laws":       target_laws,
     })
 
 
