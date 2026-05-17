@@ -697,6 +697,20 @@ CANDIDATE_LAWS = [
     "농수산물 유통 및 가격안정에 관한 법률",
 ]
 
+# 항상 탐색할 핵심 행정규칙(운영규정·훈령·예규) 목록
+# ※ 법령명 검색(Stage 1)에 걸리지 않는 운영규정도 내용 탐색 가능하도록 고정 포함
+CANDIDATE_ADMRUL = [
+    # 농촌진흥청 직무발명·기술이전 관련 훈령
+    "농촌진흥청 직무발명의 관리에 관한 규정",
+    "농촌진흥청 연구개발사업 운영규정",
+    "농촌진흥청 연구성과 기술이전 및 사업화에 관한 규정",
+    # 국가연구개발 지식재산 관련
+    "국가연구개발사업의 관리 등에 관한 규정",
+    # 발명진흥·기술이전 관련
+    "공공연구기관 기술이전·사업화 촉진 운영규정",
+    "직무발명 보상에 관한 규정",
+]
+
 # 키워드로 해당 법령 전체 조문을 불러와 매칭 조문 반환하는 공통 헬퍼
 def _fetch_matching_articles(law_name: str, kw: str, doc_type: str = "law"):
     cache_key = f"{doc_type}:{law_name}"
@@ -757,23 +771,30 @@ def search_by_article_keyword():
             print(f"[article-search] Stage1(law) 오류: {e}")
         return []
 
-    def _stage1_admrul():
-        try:
-            d = _law_get_json({"target": "admrul", "query": query, "display": "10"}, timeout=(5, 10))
-            ls = d.get("LawSearch", {})
-            # 응답 키가 "admrul" 또는 "law" 중 하나
-            items = ls.get("admrul") or ls.get("law") or []
-            if isinstance(items, dict): items = [items]
-            return [{"meta": l, "doc_type": "admrul",
-                     "name": (l.get("행정규칙명") or l.get("법령명한글") or "").strip()}
-                    for l in items]
-        except Exception as e:
-            print(f"[article-search] Stage1(admrul) 오류: {e}")
-        return []
+    def _stage1_admrul_multi():
+        """행정규칙 이름 검색 — 전체 쿼리 + 2글자 이상 개별 토큰으로 다중 쿼리"""
+        results = []
+        seen = set()
+        # 검색할 쿼리 목록: 전체 쿼리 + 개별 토큰
+        queries = [query] + [t for t in re.findall(r'[가-힣]{2,}', query) if t != query]
+        for q in queries[:4]:   # 최대 4개 쿼리
+            try:
+                d = _law_get_json({"target": "admrul", "query": q, "display": "10"}, timeout=(5, 10))
+                ls = d.get("LawSearch", {})
+                items = ls.get("admrul") or ls.get("law") or []
+                if isinstance(items, dict): items = [items]
+                for l in items:
+                    nm = (l.get("행정규칙명") or l.get("법령명한글") or "").strip()
+                    if nm and nm not in seen:
+                        seen.add(nm)
+                        results.append({"meta": l, "doc_type": "admrul", "name": nm})
+            except Exception as e:
+                print(f"[article-search] Stage1(admrul q={q!r}) 오류: {e}")
+        return results
 
     with _cf.ThreadPoolExecutor(max_workers=2) as _ex:
         _f_law    = _ex.submit(_stage1_law)
-        _f_admrul = _ex.submit(_stage1_admrul)
+        _f_admrul = _ex.submit(_stage1_admrul_multi)
         for entry in _f_law.result():
             if entry["name"]:
                 stage1_meta[entry["name"]] = entry
@@ -783,14 +804,16 @@ def search_by_article_keyword():
     print(f"[article-search] Stage1 law={sum(1 for v in stage1_meta.values() if v['doc_type']=='law')} "
           f"admrul={sum(1 for v in stage1_meta.values() if v['doc_type']=='admrul')}")
 
-    # CANDIDATE_LAWS 전체 항상 탐색 + Stage 1에서 발견된 추가 법령/행정규칙
-    # ※ 도메인 키워드 부분 일치로 CANDIDATE_LAWS를 제한하면 '전용실시'→'전용'→농지법만
-    #   탐색되는 문제가 발생하므로 항상 전체 후보를 탐색한다.
-    _cand_set = set(CANDIDATE_LAWS)
-    extra_laws = [l for l in stage1_meta if l not in _cand_set]
-    all_target = list(CANDIDATE_LAWS) + extra_laws
-    print(f"[article-search] '{query}' 대상 {len(all_target)}개 법령/행정규칙 "
-          f"(후보:{len(CANDIDATE_LAWS)} + 추가:{len(extra_laws)})")
+    # CANDIDATE_LAWS + CANDIDATE_ADMRUL 전체 항상 탐색 + Stage 1 추가 발견 법령/행정규칙
+    _known = set(CANDIDATE_LAWS) | set(CANDIDATE_ADMRUL)
+    extra_laws = [l for l in stage1_meta if l not in _known]
+    # CANDIDATE_ADMRUL doc_type 등록 (stage1_meta에 없는 항목은 admrul 기본값)
+    for nm in CANDIDATE_ADMRUL:
+        if nm not in stage1_meta:
+            stage1_meta[nm] = {"meta": {}, "doc_type": "admrul", "name": nm}
+    all_target = list(CANDIDATE_LAWS) + list(CANDIDATE_ADMRUL) + extra_laws
+    print(f"[article-search] '{query}' 대상 {len(all_target)}개 "
+          f"(법령:{len(CANDIDATE_LAWS)} + 행정규칙:{len(CANDIDATE_ADMRUL)} + 추가:{len(extra_laws)})")
 
     kw = query.lower()
 
@@ -875,16 +898,21 @@ def search_legal_basis():
         return []
 
     def _b_stage1_admrul():
-        try:
-            d = _law_get_json({"target": "admrul", "query": scenario, "display": "10"}, timeout=(5, 10))
-            ls = d.get("LawSearch", {})
-            items = ls.get("admrul") or ls.get("law") or []
-            if isinstance(items, dict): items = [items]
-            return [("admrul", (l.get("행정규칙명") or l.get("법령명한글") or "").strip())
-                    for l in items]
-        except Exception as e:
-            print(f"[basis] Stage1(admrul) 오류: {e}")
-        return []
+        results = []; seen = set()
+        queries = [scenario] + [t for t in re.findall(r'[가-힣]{2,}', scenario) if t != scenario]
+        for q in queries[:4]:
+            try:
+                d = _law_get_json({"target": "admrul", "query": q, "display": "10"}, timeout=(5, 10))
+                ls = d.get("LawSearch", {})
+                items = ls.get("admrul") or ls.get("law") or []
+                if isinstance(items, dict): items = [items]
+                for l in items:
+                    nm = (l.get("행정규칙명") or l.get("법령명한글") or "").strip()
+                    if nm and nm not in seen:
+                        seen.add(nm); results.append(("admrul", nm))
+            except Exception as e:
+                print(f"[basis] Stage1(admrul q={q!r}) 오류: {e}")
+        return results
 
     import concurrent.futures as _cf
     with _cf.ThreadPoolExecutor(max_workers=2) as _ex:
@@ -898,9 +926,13 @@ def search_legal_basis():
                 stage1_names.add(nm); stage1_doc_types[nm] = doc_type
     print(f"[basis] Stage1 law+admrul={len(stage1_names)}")
 
-    # CANDIDATE_LAWS 전체 항상 탐색 + Stage 1 추가 법령/행정규칙
-    _cand_set = set(CANDIDATE_LAWS)
-    extra_laws = [l for l in stage1_names if l not in _cand_set]
+    # CANDIDATE_LAWS + CANDIDATE_ADMRUL 전체 항상 탐색 + Stage 1 추가 법령/행정규칙
+    _known = set(CANDIDATE_LAWS) | set(CANDIDATE_ADMRUL)
+    extra_laws = [l for l in stage1_names if l not in _known]
+    # CANDIDATE_ADMRUL doc_type 등록 (stage1_doc_types에 없는 항목은 admrul 기본값)
+    for nm in CANDIDATE_ADMRUL:
+        if nm not in stage1_doc_types:
+            stage1_doc_types[nm] = "admrul"
     print(f"[basis] Stage1={len(stage1_names)} extra={len(extra_laws)}")
 
     # ── 업무 유형 분류 ────────────────────────────────────────────────────────
@@ -980,7 +1012,9 @@ def search_legal_basis():
             print(f"[basis] {law_name} 오류: {e}")
         return None
 
-    all_target = list(CANDIDATE_LAWS) + extra_laws
+    all_target = list(CANDIDATE_LAWS) + list(CANDIDATE_ADMRUL) + extra_laws
+    print(f"[basis] '{scenario[:20]}' 대상 {len(all_target)}개 "
+          f"(법령:{len(CANDIDATE_LAWS)} + 행정규칙:{len(CANDIDATE_ADMRUL)} + 추가:{len(extra_laws)})")
     results, truncated = [], False
     try:
         with _cf.ThreadPoolExecutor(max_workers=4) as ex:
