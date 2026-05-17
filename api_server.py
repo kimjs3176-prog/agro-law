@@ -536,6 +536,29 @@ def index():
         return Response("<h1>index.html not found</h1>", status=404)
 
 
+def _normalize_admrul(item: dict) -> dict:
+    """행정규칙 메타데이터를 법령 메타데이터 형식으로 정규화"""
+    out = dict(item)
+    # 법령명한글 통일
+    if not out.get("법령명한글"):
+        out["법령명한글"] = out.get("행정규칙명", "")
+    # 법령구분명 통일 (훈령/고시/예규/지침/규정 등)
+    if not out.get("법령구분명"):
+        out["법령구분명"] = out.get("행정규칙종류명", "행정규칙")
+    # 공포일자 통일 (행정규칙은 발령일자)
+    if not out.get("공포일자"):
+        out["공포일자"] = out.get("발령일자", "")
+    # 법령일련번호 통일
+    if not out.get("법령일련번호"):
+        out["법령일련번호"] = out.get("행정규칙일련번호", "")
+    # 법령URL 통일
+    if not out.get("법령URL"):
+        out["법령URL"] = out.get("행정규칙URL", "")
+    # 내부 구분 플래그 (프론트엔드에서 URL 구성 등에 활용)
+    out["_doc_type"] = "admrul"
+    return out
+
+
 @app.route("/api/search")
 def search_laws():
     query   = request.args.get("query", "").strip()
@@ -546,15 +569,47 @@ def search_laws():
         return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
     try:
         add_recent(query)
-        data = _law_get_json({"target": "law", "query": query, "display": display})
-        err  = data.get("LawSearch", {}).get("message", "")
+        import concurrent.futures as _cf
+
+        def _do_law():
+            d = _law_get_json({"target": "law", "query": query, "display": display})
+            err = d.get("LawSearch", {}).get("message", "")
+            items = d.get("LawSearch", {}).get("law", []) or []
+            if isinstance(items, dict): items = [items]
+            return items, err
+
+        def _do_admrul():
+            try:
+                d = _law_get_json({"target": "admrul", "query": query, "display": "10"},
+                                  timeout=(5, 10))
+                ls = d.get("LawSearch", {})
+                items = ls.get("admrul") or ls.get("law") or []
+                if isinstance(items, dict): items = [items]
+                return [_normalize_admrul(i) for i in items]
+            except Exception as e:
+                print(f"[search] admrul 오류: {e}")
+                return []
+
+        with _cf.ThreadPoolExecutor(max_workers=2) as ex:
+            f_law    = ex.submit(_do_law)
+            f_admrul = ex.submit(_do_admrul)
+            laws, err = f_law.result()
+            admrul_items = f_admrul.result()
+
         if err:
             return jsonify({"error": f"법제처 오류: {err}"}), 502
-        laws = data.get("LawSearch", {}).get("law", []) or []
-        if isinstance(laws, dict):
-            laws = [laws]
+
+        # 중복 없이 행정규칙 병합 (법령 우선)
+        law_names = {l.get("법령명한글", "") for l in laws}
+        for item in admrul_items:
+            nm = item.get("법령명한글", "")
+            if nm and nm not in law_names:
+                laws.append(item)
+                law_names.add(nm)
+
         if laws:
-            print(f"[DEBUG] 검색결과 필드: {list(laws[0].keys())}")
+            print(f"[search] '{query}' law={len(laws)-len(admrul_items)} "
+                  f"admrul={len(admrul_items)} 총={len(laws)}")
         return jsonify({"success": True, "count": len(laws), "laws": laws})
     except Exception as e:
         import traceback; traceback.print_exc()
@@ -1026,6 +1081,27 @@ def get_law_articles():
                 pass
             except Exception as e3:
                 print(f"[articles] Step3 오류: {e3}")
+
+        # Step 4: 행정규칙(admrul) fallback — lawService.do 모두 실패한 경우
+        if root is None:
+            try:
+                mst_admrul = _get_mst(law_name, target="admrul")
+                if mst_admrul:
+                    for param_name in ("MST", "ID"):
+                        try:
+                            r_adm = _law_get_xml("admRulService.do",
+                                                 {"target": "admrul", param_name: mst_admrul},
+                                                 timeout=(5, 20))
+                            if _is_valid_law_xml(r_adm):
+                                root = r_adm
+                                tried.append(f"admrul:{param_name}={mst_admrul}(성공)")
+                                break
+                        except Exception as e_adm:
+                            tried.append(f"admrul:{param_name}={mst_admrul}({e_adm})")
+                else:
+                    tried.append("admrul:MST 없음")
+            except Exception as e4:
+                print(f"[articles] Step4(admrul) 오류: {e4}")
 
         print(f"[articles] '{law_name}' 시도 내역: {tried}")
 

@@ -1436,7 +1436,10 @@ function renderPage(){
     const endate = (law['시행일자']||'').replace(/(\d{4})(\d{2})(\d{2})/,'$1.$2.$3');
     const no     = law['법령일련번호']||'';
     const org    = law['소관부처명']||guessOrg(name);
-    const lawUrl = `https://www.law.go.kr/법령/${encodeURIComponent(name)}`;
+    const isAdmrul = law['_doc_type']==='admrul';
+    const lawUrl = law['법령URL'] || (isAdmrul
+      ? `https://www.law.go.kr/행정규칙/${encodeURIComponent(name)}`
+      : `https://www.law.go.kr/법령/${encodeURIComponent(name)}`);
 
     // 시행일 기준 상태 배지
     const pdRaw = (law['공포일자']||'').replace(/\D/g,'');
