@@ -2319,8 +2319,8 @@ document.addEventListener('DOMContentLoaded',()=>{
       const artNo  = parseInt(xref.dataset.artno);
       const hangNo = xref.dataset.hang || '';
       const hoNo   = xref.dataset.ho   || '';
-      // 우측 패널에 동시 표시 여부: 항/호가 있을 때만 자동 표시
-      jumpToArtWithContext(artNo, hangNo, hoNo, !!(hangNo || hoNo));
+      // 항상 우측 패널에서 열기 (같은 법령 전체 조문 → 해당 조문으로 스크롤)
+      openSameLawInRightPanel(artNo, hangNo, hoNo);
       return;
     }
     const lawRef = e.target.closest('.law-ref[data-reflaw]');
@@ -2721,12 +2721,16 @@ async function openRefLaw(refName, sourceArtNos=[]){
 function renderRefTabs(){
   const tabBar = document.getElementById('refTabs');
   if(!tabBar) return;
-  const tabs = _refTabs.map((t,i) => `
-    <div class="ref-tab ${i===_refActive?'active':''}" onclick="activateRefTab(${i})" title="${escHtml(t.name)}">
-      <span class="ref-tab-name">${escHtml(t.name.length>12?t.name.slice(0,11)+'…':t.name)}</span>
+  const tabs = _refTabs.map((t,i) => {
+    const label = t._sameLaw ? '📌 ' + (t.name.length>10?t.name.slice(0,9)+'…':t.name)
+                             : (t.name.length>12?t.name.slice(0,11)+'…':t.name);
+    return `
+    <div class="ref-tab ${i===_refActive?'active':''}" onclick="activateRefTab(${i})" title="${escHtml(t.name)}${t._sameLaw?' (같은 법령 내 조문)':''}">
+      <span class="ref-tab-name">${escHtml(label)}</span>
       ${t.loading?'<span style="font-size:10px;color:var(--ht);">⏳</span>':''}
       <button class="ref-tab-close" onclick="event.stopPropagation();closeRefTab(${i})" title="닫기">×</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   tabBar.innerHTML = tabs + `<button class="ref-tab-add" onclick="openRefLaw()" title="다른 준용 법령 열기">＋</button>`;
 }
 
@@ -2781,7 +2785,10 @@ function renderActiveRefTab(){
 
   // 일반 준용 법령 뷰
   let badge = '';
-  if(t.sourceArtNos?.length){
+  if(t._sameLaw && t.sourceArtNos?.length){
+    const labels = t.sourceArtNos.map(n=>`<span style="font-weight:600;">제${n}조</span>`).join(', ');
+    badge = `<div class="ref-source-badge" style="background:#f0fdf4;border-color:#86efac;color:#166534;">📌 ${labels}의 준용규정 — 같은 법령 내 참조</div>`;
+  } else if(t.sourceArtNos?.length){
     const labels = t.sourceArtNos.map(n=>`<span style="font-weight:600;">제${n}조</span>`).join(', ');
     badge = `<div class="ref-source-badge">📎 ${labels}에서 참조</div>`;
   }
@@ -2875,7 +2882,7 @@ function renderRefArts(arts, kw){
       : escHtml(content);
     const autoOpen = kw && (content.toLowerCase().includes(kwL) || title.toLowerCase().includes(kwL));
 
-    return `<div class="ref-art" id="refa${i}">
+    return `<div class="ref-art" id="refa${i}" data-artno="${escHtml(String(a['조문번호']||''))}">
       <div class="ref-art-head" onclick="toggleRefArt(${i})">
         ${no?`<span class="ref-art-no">${escHtml(no)}</span>`:''}
         <span class="ref-art-title">${escHtml(title||no||'조문')}</span>
@@ -2909,6 +2916,60 @@ function closeRefPanel(){
   document.getElementById('fullpanel').style.width = '';
   document.querySelectorAll('.law-ref.active').forEach(el=>el.classList.remove('active'));
   refArts = [];
+}
+
+// ── 같은 법령 내 준용조문을 우측 패널에서 열기 ──────────────────────────────
+function openSameLawInRightPanel(artNo, hangNo='', hoNo=''){
+  const lawName = document.getElementById('fpTitle').textContent;
+  const right   = document.getElementById('fpRight');
+
+  // 이미 같은 법령 탭이 있으면 활성화 후 스크롤
+  const existIdx = _refTabs.findIndex(t => t._sameLaw && t.name === lawName);
+  if(existIdx >= 0){
+    activateRefTab(existIdx);
+    setTimeout(() => _scrollToRefArt(artNo, hangNo, hoNo), 200);
+    return;
+  }
+
+  // 새 탭: fpArts (이미 로드된 조문) 재사용, API 재호출 없음
+  const tabIdx = _refTabs.length;
+  _refTabs.push({
+    name:        lawName,
+    arts:        fpArts,
+    loading:     false,
+    sourceArtNos:[artNo],
+    _sameLaw:    true,
+  });
+  right.classList.add('open');
+  document.getElementById('fullpanel').style.width = 'min(1200px,100vw)';
+  renderRefTabs();
+  activateRefTab(tabIdx);
+  setTimeout(() => _scrollToRefArt(artNo, hangNo, hoNo), 350);
+}
+
+// 우측 패널에서 특정 조문으로 스크롤 + 펼치기 + 하이라이트
+function _scrollToRefArt(artNo, hangNo='', hoNo=''){
+  const body = document.getElementById('fpRightBody');
+  if(!body) return;
+  const target = body.querySelector(`.ref-art[data-artno="${artNo}"]`);
+  if(!target) return;
+
+  // 조문 펼치기
+  const refBody = target.querySelector('[id^="refbody"]');
+  const arr     = target.querySelector('[id^="refarr"]');
+  if(refBody && refBody.style.display !== 'block'){
+    refBody.style.display = 'block';
+    if(arr) arr.style.transform = 'rotate(180deg)';
+  }
+
+  // 스크롤 & 배경 플래시
+  target.scrollIntoView({behavior:'smooth', block:'center'});
+  target.style.transition = 'background .25s';
+  target.style.background = 'var(--gl)';
+  setTimeout(() => { target.style.background = ''; }, 2500);
+
+  // 항 하이라이트
+  if(hangNo && refBody) highlightHangInEl(refBody, hangNo, hoNo);
 }
 
 function jumpToArt(artNo, hangNo='', hoNo=''){
