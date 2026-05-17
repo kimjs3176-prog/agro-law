@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>농업 법령 검색</title>
+<title>간편법령검색 · Easy Law Search</title>
 <style>:root{
   /* Toss 팔레트 */
   --g:#3182f6;--gd:#1a6fe8;--gl:#eef3fe;--gp:#0f4fa8;
@@ -627,23 +627,38 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 </head>
 <body>
 <!-- 자주 찾는 법령 편집 모달 -->
+<!-- 기관·법령 편집 모달 -->
 <div class="kw-modal-bg" id="kwModalBg" onclick="if(event.target===this)closeKwEditor()">
-  <div class="kw-modal">
+  <div class="kw-modal" style="width:min(680px,97vw);">
     <div class="kw-hd">
-      <span style="font-size:15px;font-weight:600;flex:1;">✏ 자주 찾는 법령 편집</span>
+      <span style="font-size:15px;font-weight:700;flex:1;">⚙ 기관 및 법령 편집</span>
       <button class="fp-close" onclick="closeKwEditor()">✕</button>
     </div>
-    <div class="kw-body">
-      <div class="kw-agency-tabs" id="kwAgencyTabs">
-        <button class="kw-tab active" onclick="switchKwAgency('all')">전체</button>
-        <button class="kw-tab" onclick="switchKwAgency('mafra')">농림축산식품부</button>
-        <button class="kw-tab" onclick="switchKwAgency('rda')">농촌진흥청</button>
-        <button class="kw-tab" onclick="switchKwAgency('koat')">한국농업기술진흥원</button>
+    <div class="kw-body" style="display:grid;grid-template-columns:220px 1fr;gap:0;min-height:360px;padding:0;">
+      <!-- 왼쪽: 기관 목록 -->
+      <div style="border-right:1px solid var(--bd);display:flex;flex-direction:column;">
+        <div style="padding:12px 14px;font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--bd);">기관 목록</div>
+        <div id="agencyList" style="flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:4px;"></div>
+        <div style="padding:8px;border-top:1px solid var(--bd);">
+          <div style="display:flex;gap:6px;">
+            <input id="agencyAddInput" class="kw-add-input" style="font-size:12px;padding:6px 8px;" placeholder="기관명 입력">
+            <button class="kw-add-btn" style="font-size:12px;padding:6px 10px;white-space:nowrap;" onclick="addAgency()">+ 추가</button>
+          </div>
+        </div>
       </div>
-      <div class="kw-list" id="kwList"></div>
-      <div class="kw-add-row">
-        <input class="kw-add-input" id="kwAddInput" placeholder="법령명 입력 후 추가" onkeydown="if(event.key==='Enter')addKwItem()">
-        <button class="kw-add-btn" onclick="addKwItem()">+ 추가</button>
+      <!-- 오른쪽: 선택된 기관의 법령 목록 -->
+      <div style="display:flex;flex-direction:column;">
+        <div style="padding:12px 14px;font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:8px;">
+          <span id="lawListLabel">법령 목록</span>
+          <span id="selectedAgencyBadge" style="display:none;font-size:11px;font-weight:600;padding:2px 10px;border-radius:20px;background:var(--gl);color:var(--gd);"></span>
+        </div>
+        <div id="kwList" style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:5px;"></div>
+        <div id="lawAddSection" style="padding:8px 10px;border-top:1px solid var(--bd);display:none;">
+          <div style="display:flex;gap:6px;">
+            <input class="kw-add-input" id="kwAddInput" style="font-size:12px;padding:6px 8px;" placeholder="법령명 입력 후 추가" onkeydown="if(event.key==='Enter')addKwItem()">
+            <button class="kw-add-btn" style="font-size:12px;padding:6px 10px;white-space:nowrap;" onclick="addKwItem()">+ 추가</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="kw-ft">
@@ -923,9 +938,12 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 
 <!-- 상단바 -->
 <div class="topbar">
-  <div class="logo">農</div>
-  <span class="brand">농업 법령 검색</span>
-  <span class="brand-sub">법제처 국가법령정보 연동</span>
+  <div class="logo" style="font-size:13px;font-weight:900;letter-spacing:-.5px;">ELS</div>
+  <div>
+    <span class="brand">간편법령검색</span>
+    <span style="font-size:10px;color:#9ca3af;margin-left:6px;font-weight:500;letter-spacing:.5px;">easy law search</span><br>
+    <span class="brand-sub">법제처 국가법령정보 연동</span>
+  </div>
   <span class="apibadge" id="badge">● 확인 중</span>
   <button class="dark-btn" id="darkBtn" onclick="toggleDark()" title="다크모드">🌙</button>
   <button class="settings-btn" onclick="openStatPanel()">📊 통계</button>
@@ -947,12 +965,8 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 
 <div class="main">
   <div class="spanel">
-    <!-- 기관 탭 -->
-    <div class="tabs">
-      <button class="tab active" onclick="setAgency('all')">전체</button>
-      <button class="tab" onclick="setAgency('mafra')">농림축산식품부</button>
-      <button class="tab" onclick="setAgency('rda')">농촌진흥청</button>
-      <button class="tab" onclick="setAgency('koat')">한국농업기술진흥원</button>
+    <!-- 기관 탭 (동적 렌더링) -->
+    <div class="tabs" id="agencyTabs">
       <button class="fav-tab-btn" id="favTabBtn" onclick="toggleFavTab()">☆ 즐겨찾기 <span id="favCount"></span></button>
     </div>
     <!-- 검색 모드 -->
@@ -1023,12 +1037,50 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 
   <script>
 // ── 상수 ──
+// ── 기본 기관 목록 ──
+const DEFAULT_AGENCIES = [
+  { id: 'all',   name: '전체' },
+  { id: 'mafra', name: '농림축산식품부' },
+  { id: 'rda',   name: '농촌진흥청' },
+  { id: 'koat',  name: '한국농업기술진흥원' },
+];
+
 const DEFAULT_KEYWORDS = {
   all:   ['농지법','종자산업법','농촌진흥법','농약관리법','비료관리법','축산법','식물방역법','발명진흥법','특허법'],
   mafra: ['농지법','축산법','식물방역법','농수산물 유통 및 가격안정에 관한 법률','식품안전기본법','농어업재해보험법'],
   rda:   ['농촌진흥법','종자산업법','농약관리법','비료관리법','농업생명자원의 보존·관리 및 이용에 관한 법률'],
   koat:  ['농업기술실용화 촉진법','기술의 이전 및 사업화 촉진에 관한 법률','발명진흥법','특허법','실용신안법','디자인보호법','상표법','식물신품종 보호법','부정경쟁방지 및 영업비밀보호에 관한 법률']
 };
+
+// ── 기관 목록 가져오기/저장 ──
+function getAgencies(){
+  try{
+    const saved = JSON.parse(localStorage.getItem('customAgencies')||'null');
+    if(saved && Array.isArray(saved) && saved.length) return saved;
+  }catch{}
+  return [...DEFAULT_AGENCIES];
+}
+function saveAgencies(arr){
+  localStorage.setItem('customAgencies', JSON.stringify(arr));
+}
+
+// ── 기관 탭 렌더링 (동적) ──
+function renderAgencyTabs(){
+  const agencies = getAgencies();
+  const tabsEl = document.getElementById('agencyTabs');
+  if(!tabsEl) return;
+  // 즐겨찾기 버튼 보존
+  const favBtn = document.getElementById('favTabBtn');
+  tabsEl.innerHTML = '';
+  agencies.forEach(ag => {
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (agency === ag.id ? ' active' : '');
+    btn.textContent = ag.name;
+    btn.onclick = () => setAgency(ag.id);
+    tabsEl.appendChild(btn);
+  });
+  if(favBtn) tabsEl.appendChild(favBtn);
+}
 
 function getKeywords(){
   try{
@@ -1094,7 +1146,7 @@ function renderChips(){
 function setAgency(ag){
   agency=ag; favMode=false;
   document.getElementById('favTabBtn').classList.remove('active');
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['all','mafra','rda','koat'][i]===ag));
+  renderAgencyTabs(); // 동적 탭 재렌더링 (active 반영)
   renderChips();
 }
 
@@ -3102,85 +3154,136 @@ async function checkAmendBadgeAsync(lawName){
 
 
 
-// ── 자주 찾는 법령 편집 ─────────────────────────────────────────────────────
-let kwEditAgency = 'all';
-let kwEditData   = {};  // 현재 편집 중인 임시 데이터
+// ── 기관·법령 편집기 ──
+let _kwEditAgency = null;  // 현재 선택된 기관 id
+let _kwEditData = {};      // {agencyId: [법령명...]}
+let _kwEditAgencies = [];  // [{id, name}]
 
 function openKwEditor(){
-  kwEditData = JSON.parse(JSON.stringify(getKeywords())); // 깊은 복사
-  kwEditAgency = agency; // 현재 탭 기준으로 열기
-  renderKwEditorTabs();
-  renderKwList();
+  _kwEditAgencies = getAgencies().map(a=>({...a}));
+  const kws = getKeywords();
+  _kwEditData = {};
+  _kwEditAgencies.forEach(ag => {
+    _kwEditData[ag.id] = [...(kws[ag.id] || [])];
+  });
+  _kwEditAgency = _kwEditAgencies[0]?.id || null;
+  _renderAgencyList();
+  _selectAgency(_kwEditAgency);
   document.getElementById('kwModalBg').classList.add('show');
-  document.getElementById('kwAddInput').value = '';
 }
 
 function closeKwEditor(){
   document.getElementById('kwModalBg').classList.remove('show');
 }
 
-function renderKwEditorTabs(){
-  const tabs = document.getElementById('kwAgencyTabs').querySelectorAll('.kw-tab');
-  const order = ['all','mafra','rda','koat'];
-  tabs.forEach((t,i) => t.classList.toggle('active', order[i]===kwEditAgency));
+function _renderAgencyList(){
+  const el = document.getElementById('agencyList');
+  if(!el) return;
+  el.innerHTML = _kwEditAgencies.map(ag => `
+    <div style="display:flex;align-items:center;gap:4px;">
+      <button class="kw-tab" style="flex:1;text-align:left;border-radius:8px;padding:7px 10px;font-size:13px;${_kwEditAgency===ag.id?'background:var(--g);border-color:var(--g);color:#fff;':''}"
+        onclick="_selectAgency('${ag.id}')">${escHtml(ag.name)}</button>
+      ${ag.id==='all'?'':`<button style="width:22px;height:22px;border:none;background:transparent;color:var(--ht);cursor:pointer;font-size:14px;border-radius:4px;flex-shrink:0;" title="기관 삭제"
+        onmouseenter="this.style.background='#fee2e2';this.style.color='#dc2626'"
+        onmouseleave="this.style.background='transparent';this.style.color='var(--ht)'"
+        onclick="_delAgency('${ag.id}')">×</button>`}
+    </div>
+  `).join('');
 }
 
-function switchKwAgency(ag){
-  kwEditAgency = ag;
-  renderKwEditorTabs();
-  renderKwList();
+function _selectAgency(agId){
+  _kwEditAgency = agId;
+  _renderAgencyList();
+  const ag = _kwEditAgencies.find(a=>a.id===agId);
+  const badge = document.getElementById('selectedAgencyBadge');
+  if(badge){ badge.textContent = ag?.name||''; badge.style.display='inline-block'; }
+  const lawAddSec = document.getElementById('lawAddSection');
+  if(lawAddSec) lawAddSec.style.display = 'block';
+  _renderKwList();
 }
 
-function renderKwList(){
-  const list = document.getElementById('kwList');
-  const kws  = kwEditData[kwEditAgency] || [];
-  if(!kws.length){
-    list.innerHTML = '<div style="font-size:12px;color:var(--ht);padding:4px 0;">등록된 법령이 없습니다.</div>';
+function _renderKwList(){
+  const el = document.getElementById('kwList');
+  if(!el || !_kwEditAgency) return;
+  const laws = _kwEditData[_kwEditAgency] || [];
+  if(!laws.length){
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--ht);font-size:13px;">법령이 없습니다. 아래에서 추가하세요.</div>';
     return;
   }
-  list.innerHTML = kws.map((k,i) => `
-    <div class="kw-item" id="kwitem_${i}">
-      <span class="kw-item-name">${escHtml(k)}</span>
-      <button class="kw-item-del" onclick="removeKwItem(${i})" title="삭제">×</button>
-    </div>`).join('');
+  el.innerHTML = laws.map((law,i)=>`
+    <div class="kw-item">
+      <span class="kw-item-name">${escHtml(law)}</span>
+      <button class="kw-item-del" title="삭제" onclick="_delKw(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function _delAgency(agId){
+  if(!confirm(`"${_kwEditAgencies.find(a=>a.id===agId)?.name}" 기관을 삭제하시겠습니까?`)) return;
+  _kwEditAgencies = _kwEditAgencies.filter(a=>a.id!==agId);
+  delete _kwEditData[agId];
+  _kwEditAgency = _kwEditAgencies[0]?.id || null;
+  _renderAgencyList();
+  if(_kwEditAgency) _selectAgency(_kwEditAgency);
+  else {
+    document.getElementById('kwList').innerHTML='';
+    document.getElementById('lawAddSection').style.display='none';
+    const badge=document.getElementById('selectedAgencyBadge'); if(badge) badge.style.display='none';
+  }
+}
+
+function _delKw(idx){
+  if(!_kwEditAgency) return;
+  _kwEditData[_kwEditAgency].splice(idx,1);
+  _renderKwList();
+}
+
+function addAgency(){
+  const inp = document.getElementById('agencyAddInput');
+  const name = inp.value.trim();
+  if(!name) return;
+  // id: 영문 소문자 + 타임스탬프
+  const id = 'ag_' + Date.now();
+  _kwEditAgencies.push({id, name});
+  _kwEditData[id] = [];
+  inp.value = '';
+  _renderAgencyList();
+  _selectAgency(id);
 }
 
 function addKwItem(){
-  const input = document.getElementById('kwAddInput');
-  const val   = input.value.trim();
-  if(!val) return;
-  if(!kwEditData[kwEditAgency]) kwEditData[kwEditAgency] = [];
-  if(kwEditData[kwEditAgency].includes(val)){
-    input.style.borderColor='#ef4444';
-    setTimeout(()=>input.style.borderColor='',1500);
-    return;
-  }
-  kwEditData[kwEditAgency].push(val);
-  input.value = '';
-  input.focus();
-  renderKwList();
-}
-
-function removeKwItem(i){
-  kwEditData[kwEditAgency].splice(i, 1);
-  renderKwList();
-}
-
-function saveKwEditor(){
-  // DEFAULT_KEYWORDS와 동일하면 저장 불필요
-  saveKeywords(kwEditData);
-  window._validKws = null; // 검증 캐시 초기화
-  closeKwEditor();
-  validateKeywords(); // 저장 후 재검증
+  const inp = document.getElementById('kwAddInput');
+  const val = inp.value.trim();
+  if(!val || !_kwEditAgency) return;
+  if(!_kwEditData[_kwEditAgency]) _kwEditData[_kwEditAgency] = [];
+  if(_kwEditData[_kwEditAgency].includes(val)){inp.value='';return;}
+  _kwEditData[_kwEditAgency].push(val);
+  inp.value = '';
+  _renderKwList();
 }
 
 function resetKeywords(){
-  if(!confirm('자주 찾는 법령을 기본값으로 초기화할까요?')) return;
+  if(!confirm('기본값으로 초기화하면 모든 기관·법령 편집 내용이 사라집니다. 계속하시겠습니까?')) return;
   localStorage.removeItem('customKeywords');
-  kwEditData = JSON.parse(JSON.stringify(DEFAULT_KEYWORDS));
-  renderKwList();
-  window._validKws = null;
-  validateKeywords();
+  localStorage.removeItem('customAgencies');
+  _kwEditAgencies = DEFAULT_AGENCIES.map(a=>({...a}));
+  _kwEditData = {};
+  DEFAULT_AGENCIES.forEach(ag => { _kwEditData[ag.id] = [...(DEFAULT_KEYWORDS[ag.id]||[])]; });
+  _kwEditAgency = _kwEditAgencies[0]?.id || null;
+  _renderAgencyList();
+  _selectAgency(_kwEditAgency);
+}
+
+function saveKwEditor(){
+  // 기관 저장
+  saveAgencies(_kwEditAgencies);
+  // 법령 저장
+  const toSave = {};
+  _kwEditAgencies.forEach(ag => { toSave[ag.id] = _kwEditData[ag.id] || []; });
+  saveKeywords(toSave);
+  closeKwEditor();
+  renderAgencyTabs();
+  renderChips();
 }
 
 
@@ -3495,6 +3598,7 @@ initDark();
 checkStatus();
 loadRecent();
 loadFavs();
+renderAgencyTabs();
 validateKeywords();
 try{ updateAiStatusUI(getAiSettings()); }catch{}
 
