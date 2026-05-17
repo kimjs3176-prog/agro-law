@@ -685,31 +685,48 @@ def search_by_article_keyword():
     if len(query) < 2:
         return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
 
-    import concurrent.futures
+    import concurrent.futures as _cf  # noqa: F811
 
-    # ── Stage 1: 법령명 검색으로 후보 법령 + 메타데이터 한 번에 확보 ──────────
+    # ── Stage 1: law + admrul 병렬 검색 ────────────────────────────────────────
     # law_name → {"meta": dict, "doc_type": "law"|"admrul"}
     stage1_meta: dict = {}
-    try:
-        d1 = _law_get_json({"target": "law", "query": query, "display": "10"})
-        s1 = d1.get("LawSearch", {}).get("law", []) or []
-        if isinstance(s1, dict): s1 = [s1]
-        for l in s1:
-            nm = l.get("법령명한글", "").strip()
-            if nm:
-                stage1_meta[nm] = {"meta": l, "doc_type": "law"}
-    except Exception as e:
-        print(f"[article-search] Stage1(law) 오류: {e}")
-    try:
-        d2 = _law_get_json({"target": "admrul", "query": query, "display": "10"})
-        s2 = d2.get("LawSearch", {}).get("law", []) or []
-        if isinstance(s2, dict): s2 = [s2]
-        for l in s2:
-            nm = (l.get("행정규칙명") or l.get("법령명한글") or "").strip()
-            if nm and nm not in stage1_meta:
-                stage1_meta[nm] = {"meta": l, "doc_type": "admrul"}
-    except Exception as e:
-        print(f"[article-search] Stage1(admrul) 오류: {e}")
+
+    def _stage1_law():
+        try:
+            d = _law_get_json({"target": "law", "query": query, "display": "10"}, timeout=(5, 10))
+            items = d.get("LawSearch", {}).get("law", []) or []
+            if isinstance(items, dict): items = [items]
+            return [{"meta": l, "doc_type": "law",
+                     "name": l.get("법령명한글", "").strip()} for l in items]
+        except Exception as e:
+            print(f"[article-search] Stage1(law) 오류: {e}")
+        return []
+
+    def _stage1_admrul():
+        try:
+            d = _law_get_json({"target": "admrul", "query": query, "display": "10"}, timeout=(5, 10))
+            ls = d.get("LawSearch", {})
+            # 응답 키가 "admrul" 또는 "law" 중 하나
+            items = ls.get("admrul") or ls.get("law") or []
+            if isinstance(items, dict): items = [items]
+            return [{"meta": l, "doc_type": "admrul",
+                     "name": (l.get("행정규칙명") or l.get("법령명한글") or "").strip()}
+                    for l in items]
+        except Exception as e:
+            print(f"[article-search] Stage1(admrul) 오류: {e}")
+        return []
+
+    with _cf.ThreadPoolExecutor(max_workers=2) as _ex:
+        _f_law    = _ex.submit(_stage1_law)
+        _f_admrul = _ex.submit(_stage1_admrul)
+        for entry in _f_law.result():
+            if entry["name"]:
+                stage1_meta[entry["name"]] = entry
+        for entry in _f_admrul.result():
+            if entry["name"] and entry["name"] not in stage1_meta:
+                stage1_meta[entry["name"]] = entry
+    print(f"[article-search] Stage1 law={sum(1 for v in stage1_meta.values() if v['doc_type']=='law')} "
+          f"admrul={sum(1 for v in stage1_meta.values() if v['doc_type']=='admrul')}")
 
     # 도메인 매핑 보완 (law 타입 법령만)
     domain_names: set = set()
@@ -753,9 +770,9 @@ def search_by_article_keyword():
 
     results, truncated = [], False
     try:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as ex:
+        with _cf.ThreadPoolExecutor(max_workers=6) as ex:
             futures = {ex.submit(fetch_and_filter, name): name for name in all_target}
-            for future in concurrent.futures.as_completed(futures, timeout=40):
+            for future in _cf.as_completed(futures, timeout=40):
                 try:
                     res = future.result()
                     if res:
@@ -792,32 +809,44 @@ def search_legal_basis():
     if len(scenario) < 4:
         return jsonify({"error": "업무 상황을 4자 이상 입력하세요"}), 400
 
-    # ── Stage 1: 법제처 법령명 검색 → 후보 법령 확보 ─────────────────────────
+    # ── Stage 1: law + admrul 병렬 검색 ────────────────────────────────────────
     # name → doc_type ("law" | "admrul")
     stage1_doc_types: dict = {}
     stage1_names: set = set()
-    try:
-        d1 = _law_get_json({"target": "law", "query": scenario, "display": "10"})
-        s1 = d1.get("LawSearch", {}).get("law", []) or []
-        if isinstance(s1, dict): s1 = [s1]
-        for l in s1:
-            nm = l.get("법령명한글", "").strip()
+
+    def _b_stage1_law():
+        try:
+            d = _law_get_json({"target": "law", "query": scenario, "display": "10"}, timeout=(5, 10))
+            items = d.get("LawSearch", {}).get("law", []) or []
+            if isinstance(items, dict): items = [items]
+            return [("law", l.get("법령명한글", "").strip()) for l in items]
+        except Exception as e:
+            print(f"[basis] Stage1(law) 오류: {e}")
+        return []
+
+    def _b_stage1_admrul():
+        try:
+            d = _law_get_json({"target": "admrul", "query": scenario, "display": "10"}, timeout=(5, 10))
+            ls = d.get("LawSearch", {})
+            items = ls.get("admrul") or ls.get("law") or []
+            if isinstance(items, dict): items = [items]
+            return [("admrul", (l.get("행정규칙명") or l.get("법령명한글") or "").strip())
+                    for l in items]
+        except Exception as e:
+            print(f"[basis] Stage1(admrul) 오류: {e}")
+        return []
+
+    import concurrent.futures as _cf
+    with _cf.ThreadPoolExecutor(max_workers=2) as _ex:
+        _f_law    = _ex.submit(_b_stage1_law)
+        _f_admrul = _ex.submit(_b_stage1_admrul)
+        for doc_type, nm in _f_law.result():
             if nm:
-                stage1_names.add(nm)
-                stage1_doc_types[nm] = "law"
-    except Exception as e:
-        print(f"[basis] Stage1(law) 오류: {e}")
-    try:
-        d2 = _law_get_json({"target": "admrul", "query": scenario, "display": "10"})
-        s2 = d2.get("LawSearch", {}).get("law", []) or []
-        if isinstance(s2, dict): s2 = [s2]
-        for l in s2:
-            nm = (l.get("행정규칙명") or l.get("법령명한글") or "").strip()
+                stage1_names.add(nm); stage1_doc_types[nm] = doc_type
+        for doc_type, nm in _f_admrul.result():
             if nm and nm not in stage1_doc_types:
-                stage1_names.add(nm)
-                stage1_doc_types[nm] = "admrul"
-    except Exception as e:
-        print(f"[basis] Stage1(admrul) 오류: {e}")
+                stage1_names.add(nm); stage1_doc_types[nm] = doc_type
+    print(f"[basis] Stage1 law+admrul={len(stage1_names)}")
 
     # 도메인 매핑으로 보완 (Stage 1이 놓친 법령 커버)
     domain_names: set = set()
@@ -862,8 +891,6 @@ def search_legal_basis():
         return jsonify({"error": "유효한 키워드를 추출할 수 없습니다. 더 구체적인 업무 내용을 입력해주세요."}), 400
 
     # ── Stage 2: 법령별 조문 병렬 탐색 (OR 매칭) ─────────────────────────────
-    import concurrent.futures
-
     def fetch_law(law_name: str):
         try:
             doc_type = stage1_doc_types.get(law_name, "law")
@@ -917,9 +944,9 @@ def search_legal_basis():
     all_target = target_laws + extra_laws
     results, truncated = [], False
     try:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
+        with _cf.ThreadPoolExecutor(max_workers=4) as ex:
             futures = {ex.submit(fetch_law, name): name for name in all_target}
-            for future in concurrent.futures.as_completed(futures, timeout=45):
+            for future in _cf.as_completed(futures, timeout=45):
                 try:
                     res = future.result()
                     if res:
