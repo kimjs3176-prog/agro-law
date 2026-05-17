@@ -1682,20 +1682,30 @@ function fpFilterArts(){
 
     const bodyEl=document.getElementById('fpbody'+i);
     if(!bodyEl) return;
-    if(!kw){ bodyEl.innerHTML=escHtml(art['조문내용']||''); return; }
     const raw=art['조문내용']||'';
-    bodyEl.innerHTML=escHtml(raw).replace(
-      new RegExp(escRegex(escHtml(kw)),'gi'),
-      m=>`<mark>${m}</mark>`
-    );
-    bodyEl.style.display='block';
-    const arr=document.getElementById('fparr'+i);
-    if(arr) arr.style.transform='rotate(180deg)';
+    const lawNameFP=document.getElementById('fpTitle').textContent;
+    // applyXref 를 항상 적용하여 art-xref/law-ref 스팬이 사라지지 않도록 함
+    const rendered=applyXref(applyTermTooltip(escHtml(raw)), lawNameFP);
+    bodyEl.innerHTML = highlightTextOnly(rendered, kw);
+    if(kw){
+      bodyEl.style.display='block';
+      const arr=document.getElementById('fparr'+i);
+      if(arr) arr.style.transform='rotate(180deg)';
+    }
   });
   document.getElementById('fpCnt').textContent=kw?`${shown}/${total}개`:`${total}개 조문`;
 }
 
 function escRegex(s){return s.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&');}
+
+// 텍스트 노드에만 키워드 하이라이트 적용 (span/mark 태그 속성 보호)
+function highlightTextOnly(html, kw){
+  if(!kw) return html;
+  const esc = escRegex(escHtml(kw));
+  return html.split(/(<[^>]*>)/g).map((p,i)=>
+    i%2===1 ? p : p.replace(new RegExp(esc,'gi'), m=>`<mark>${m}</mark>`)
+  ).join('');
+}
 
 function closePanel(){
   document.getElementById('fullpanel').classList.remove('open');
@@ -2686,8 +2696,8 @@ function applyXref(html, lawName){
         _spanDepth--;
         if(_spanDepth <= 0){ insideLawRef = false; _spanDepth = 0; }
         // lastRefLaw는 유지 (다음 텍스트에 적용)
-      } else if(!/^<\/?span/i.test(part.trim())){
-        // span이 아닌 다른 태그 → 참조 컨텍스트 초기화
+      } else if(insideLawRef && !/^<\/?span/i.test(part.trim())){
+        // law-ref span 내부에서 span이 아닌 다른 태그를 만나면 컨텍스트 초기화
         lastRefLaw = ''; insideLawRef = false; _spanDepth = 0;
       }
       return part;
@@ -2719,7 +2729,19 @@ function applyXref(html, lawName){
     if(part.trim().length > 0) lastRefLaw = '';
     return processed;
   });
-  return result.join('');
+
+  // 안전 패스: law-ref 스팬 바로 뒤에 오는 art-xref 스팬에 data-reflaw가 없으면 보완
+  // (mark 태그 등 중간 태그로 컨텍스트가 끊겼을 때를 대비)
+  let finalHtml = result.join('');
+  finalHtml = finalHtml.replace(
+    /(<span class="law-ref" data-reflaw="([^"]*)"[^>]*>[^<]*<\/span>)([ \t\n\r]*)(<span class="art-xref"(?![^>]*data-reflaw)[^>]*>)/g,
+    (m, lawRefFull, refLaw, spaces, artXrefTag) => {
+      const safe = refLaw.replace(/"/g,'&quot;');
+      return lawRefFull + spaces +
+        artXrefTag.replace('<span class="art-xref"', `<span class="art-xref" data-reflaw="${safe}"`);
+    }
+  );
+  return finalHtml;
 }
 
 // ── 멀티탭 상태 ────────────────────────────────────────────────
