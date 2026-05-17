@@ -2172,6 +2172,11 @@ async function openFullPanel(lawName, lawUrl, org, type){
   document.getElementById('fpBody').innerHTML=
     '<div class="fp-loading"><div class="spinner" style="margin:0 auto 10px;"></div>조문을 불러오는 중...</div>';
   fpArts=[];
+  // 새 법령을 열 때 우측 패널 초기화 (이전 법령의 탭이 남아 오작동 방지)
+  _refTabs=[]; _refActive=-1;
+  renderRefTabs();
+  document.getElementById('fpRight').classList.remove('open');
+  document.getElementById('fullpanel').style.width='';
   updateFavBtn(lawName);
 
   const doLoad = async () => {
@@ -2323,9 +2328,19 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(reflaw){
         // 타법 참조 → 해당 법령을 우측 패널에서 열고 해당 조문으로 스크롤
         openRefLaw(reflaw, [artNo], {artNo: String(artNo), hangNo, hoNo});
-      } else {
-        // 같은 법령 내 조문 참조 → 우측 패널에서 현재 법령 해당 조문으로 이동
+      } else if(xref.closest('#fpBody')){
+        // 전문 패널 내부 클릭 → fpArts(이미 로드된 조문) 사용
         openSameLawInRightPanel(artNo, hangNo, hoNo);
+      } else {
+        // 인라인 검색 결과 카드 내부 클릭 → 카드의 법령명으로 openRefLaw 호출
+        const card = xref.closest('.card');
+        const lawNameFromCard = card?.querySelector('.lname')?.textContent?.trim() || '';
+        if(lawNameFromCard){
+          openRefLaw(lawNameFromCard, [artNo], {artNo: String(artNo), hangNo, hoNo});
+        } else {
+          // 카드 법령명 추출 실패 시 기존 방식으로 폴백
+          openSameLawInRightPanel(artNo, hangNo, hoNo);
+        }
       }
       return;
     }
