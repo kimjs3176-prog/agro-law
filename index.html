@@ -2319,8 +2319,14 @@ document.addEventListener('DOMContentLoaded',()=>{
       const artNo  = parseInt(xref.dataset.artno);
       const hangNo = xref.dataset.hang || '';
       const hoNo   = xref.dataset.ho   || '';
-      // 항상 우측 패널에서 열기 (같은 법령 전체 조문 → 해당 조문으로 스크롤)
-      openSameLawInRightPanel(artNo, hangNo, hoNo);
+      const reflaw = xref.dataset.reflaw || '';
+      if(reflaw){
+        // 타법 참조 → 해당 법령을 우측 패널에서 열고 해당 조문으로 스크롤
+        openRefLaw(reflaw, [artNo], {artNo: String(artNo), hangNo, hoNo});
+      } else {
+        // 같은 법령 내 조문 참조 → 우측 패널에서 현재 법령 해당 조문으로 이동
+        openSameLawInRightPanel(artNo, hangNo, hoNo);
+      }
       return;
     }
     const lawRef = e.target.closest('.law-ref[data-reflaw]');
@@ -2620,7 +2626,7 @@ function renderStatPanel(){
 let refArts = [];   // 우측 준용 패널 조문 데이터
 
 function applyXref(html, lawName){
-  // 1) 「법령명」 → 준용 법령 링크
+  // 1) 「법령명」 → 준용 법령 링크 (괄호 있는 경우)
   html = html.replace(
     /[「｢]([^」｣\n]{2,40}(?:법|령|규칙|조례|훈령))[」｣]/g,
     (match, name) => {
@@ -2630,30 +2636,70 @@ function applyXref(html, lawName){
     }
   );
 
-  // 2) 조문+항+호 전체 패턴 링크화
+  // 1b) 괄호 없는 법령명 + 제N조 패턴 (예: 농어촌정비법 제12조)
+  //     3글자 이상 한글 법령명이 제N조 바로 앞에 오는 경우
+  html = html.replace(
+    /(?<![가-힣])([가-힣]{3,15}(?:법|령|규칙|조례|훈령))( +)(?=제\d+조)/g,
+    (match, refLaw, spaces) => {
+      if(refLaw === lawName) return match;
+      // 이미 law-ref 처리된 텍스트 안이면 건너뜀 (attr 내부 방지)
+      const safe = refLaw.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<span class="law-ref" data-reflaw="${safe}" title="「${safe}」 조문 보기">${refLaw}</span>${spaces}`;
+    }
+  );
+
+  // 2) 조문+항+호 전체 패턴 링크화 — 타법 참조인 경우 data-reflaw 추가
   //    예: 제15조제1항, 제15조의2제3항제2호, 제100조제5항 본문
   //    HTML 태그 보존하면서 텍스트만 치환
   const TAG_RE = /(<[^>]+>)/g;
   const parts  = html.split(TAG_RE);
+  let lastRefLaw   = '';   // 바로 앞 law-ref의 법령명
+  let insideLawRef = false; // 현재 law-ref span 내부인지
+  let _spanDepth   = 0;     // law-ref 내부 span 중첩 깊이
   const result = parts.map((part, i) => {
-    if(i % 2 === 1) return part; // 태그는 건너뜀
-    return part.replace(
+    if(i % 2 === 1){
+      // 태그 파트
+      if(/<span[^>]+class="law-ref"/.test(part)){
+        const m = part.match(/data-reflaw="([^"]+)"/);
+        if(m){ lastRefLaw = m[1]; insideLawRef = true; _spanDepth = 1; }
+      } else if(/^<span/i.test(part.trim()) && insideLawRef){
+        _spanDepth++; // law-ref 내부 중첩 span
+      } else if(/^<\/span/i.test(part.trim()) && insideLawRef){
+        _spanDepth--;
+        if(_spanDepth <= 0){ insideLawRef = false; _spanDepth = 0; }
+        // lastRefLaw는 유지 (다음 텍스트에 적용)
+      } else if(!/^<\/?span/i.test(part.trim())){
+        // span이 아닌 다른 태그 → 참조 컨텍스트 초기화
+        lastRefLaw = ''; insideLawRef = false; _spanDepth = 0;
+      }
+      return part;
+    }
+    // 텍스트 파트
+    if(insideLawRef){
+      // law-ref span 내부 텍스트 — 건드리지 않음
+      return part;
+    }
+    const refl = lastRefLaw; // 현재 텍스트에 적용할 타법 참조
+    const processed = part.replace(
       /제(\d+)조(의\d+)?((?:제\d+항)?(?:제\d+호)?(?:제\d+목)?)/g,
       (match, num, suf, extra) => {
         const artNo  = num;
-        // 항 번호 추출
         const hangM  = extra.match(/제(\d+)항/);
         const hoM    = extra.match(/제(\d+)호/);
         const hangNo = hangM ? hangM[1] : '';
         const hoNo   = hoM   ? hoM[1]   : '';
         const label  = `제${num}조${suf||''}${extra}`;
+        const reflAttr = refl ? ` data-reflaw="${refl.replace(/"/g,'&quot;')}"` : '';
         return `<span class="art-xref"
           data-artno="${artNo}"
           data-hang="${hangNo}"
-          data-ho="${hoNo}"
+          data-ho="${hoNo}"${reflAttr}
           title="${label} 보기">${label}</span>`;
       }
     );
+    // 텍스트 노드를 처리한 후 컨텍스트 초기화 (비어있지 않은 경우)
+    if(part.trim().length > 0) lastRefLaw = '';
+    return processed;
   });
   return result.join('');
 }
@@ -2664,7 +2710,7 @@ let _refActive = -1;  // 현재 활성 탭 인덱스
 let _refSync  = false; // 동기화 모드
 let _popoverTimer = null;
 
-async function openRefLaw(refName, sourceArtNos=[]){
+async function openRefLaw(refName, sourceArtNos=[], scrollTo=null){
   // 인수 없이 호출 → 탭 추가 안내
   if(!refName){
     const name = prompt('열 준용 법령명을 입력하세요:');
@@ -2676,16 +2722,17 @@ async function openRefLaw(refName, sourceArtNos=[]){
   right.classList.add('open');
   document.getElementById('fullpanel').style.width = 'min(1200px,100vw)';
 
-  // 이미 탭에 있으면 해당 탭 활성화
-  const existIdx = _refTabs.findIndex(t => t.name === refName);
+  // 이미 탭에 있으면 해당 탭 활성화 + 스크롤
+  const existIdx = _refTabs.findIndex(t => t.name === refName && !t._sameLaw);
   if(existIdx >= 0){
     activateRefTab(existIdx);
+    if(scrollTo) setTimeout(()=>_scrollToRefArt(scrollTo.artNo, scrollTo.hangNo, scrollTo.hoNo), 250);
     return;
   }
 
   // 새 탭 추가
   const tabIdx = _refTabs.length;
-  _refTabs.push({name: refName, arts: null, sourceArtNos, loading: true});
+  _refTabs.push({name: refName, arts: null, sourceArtNos, loading: true, scrollTo});
   renderRefTabs();
   activateRefTab(tabIdx);
 
@@ -2708,8 +2755,12 @@ async function openRefLaw(refName, sourceArtNos=[]){
     _refTabs[tabIdx].loading = false;
     renderRefTabs();
 
-    // 현재 탭이 아직 이 탭이면 렌더
-    if(_refActive === tabIdx) renderActiveRefTab();
+    // 현재 탭이 아직 이 탭이면 렌더 후 스크롤
+    if(_refActive === tabIdx){
+      renderActiveRefTab();
+      const st = _refTabs[tabIdx].scrollTo;
+      if(st) setTimeout(()=>_scrollToRefArt(st.artNo, st.hangNo, st.hoNo), 400);
+    }
   }catch(e){
     _refTabs[tabIdx].arts = [];
     _refTabs[tabIdx].loading = false;
