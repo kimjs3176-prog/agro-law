@@ -2315,26 +2315,53 @@ document.addEventListener('DOMContentLoaded',()=>{
       const hangNo = xref.dataset.hang || '';
       const hoNo   = xref.dataset.ho   || '';
       const reflaw = xref.dataset.reflaw || '';
-      if(reflaw){
-        // 타법 참조 → 해당 법령을 우측 패널에서 열고 해당 조문으로 스크롤
-        openRefLaw(reflaw, [artNo], {artNo: String(artNo), hangNo, hoNo});
-      } else if(xref.closest('#fpBody')){
-        // 전문 패널 내부 클릭 → fpArts(이미 로드된 조문) 사용
-        openSameLawInRightPanel(artNo, hangNo, hoNo);
-      } else {
-        // 인라인 검색 결과 카드 내부 클릭
-        // → 해당 법령의 전문 패널을 열고 그 조문으로 이동
+
+      // 클릭 발생 위치 판별
+      const inFpLeft  = !!xref.closest('#fpBody');
+      const inFpRight = !!xref.closest('#fpRightBody');
+      const inCard    = !inFpLeft && !inFpRight; // 인라인 검색결과 카드
+
+      // 카드 법령명 추출 헬퍼 (inline card에서만 사용)
+      const getCardLaw = () => {
         const card = xref.closest('.card');
-        const lawNameFromCard = card?.querySelector('.lname')?.textContent?.trim() || '';
-        if(lawNameFromCard){
-          const lawUrl = `https://www.law.go.kr/법령/${encodeURIComponent(lawNameFromCard)}`;
-          openFullPanel(lawNameFromCard, lawUrl).then(() => {
+        const name = card?.querySelector('.lname')?.textContent?.trim() || '';
+        const url  = name ? `https://www.law.go.kr/법령/${encodeURIComponent(name)}` : '';
+        return {name, url};
+      };
+
+      if(reflaw){
+        // ── 타법 참조 ──────────────────────────────────────────────
+        // 전문 패널이 열려있으면 바로 우측 패널에 타법 표시
+        // 전문 패널이 닫혀있으면(인라인 카드) 카드 법령을 먼저 열고 그다음 타법 표시
+        const panel = document.getElementById('fullpanel');
+        if(inCard && !panel.classList.contains('open')){
+          const {name, url} = getCardLaw();
+          if(name){
+            openFullPanel(name, url).then(() => {
+              openRefLaw(reflaw, [artNo], {artNo: String(artNo), hangNo, hoNo});
+            });
+          } else {
+            openRefLaw(reflaw, [artNo], {artNo: String(artNo), hangNo, hoNo});
+          }
+        } else {
+          openRefLaw(reflaw, [artNo], {artNo: String(artNo), hangNo, hoNo});
+        }
+      } else if(inFpLeft){
+        // ── 전문 패널 좌측 내부 — 동일 법령 조문 이동 ──────────────
+        openSameLawInRightPanel(artNo, hangNo, hoNo);
+      } else if(inCard){
+        // ── 인라인 카드 — 카드 법령 전문 패널 열고 해당 조문으로 이동 ──
+        const {name, url} = getCardLaw();
+        if(name){
+          openFullPanel(name, url).then(() => {
             jumpToArt(artNo, hangNo, hoNo);
           });
         } else {
-          // 카드 법령명 추출 실패 시 기존 방식으로 폴백
           openSameLawInRightPanel(artNo, hangNo, hoNo);
         }
+      } else {
+        // fp-right 내부 또는 기타 위치
+        openSameLawInRightPanel(artNo, hangNo, hoNo);
       }
       return;
     }
@@ -2756,6 +2783,13 @@ async function openRefLaw(refName, sourceArtNos=[], scrollTo=null){
     refName = name.trim();
   }
 
+  // fullpanel이 닫혀있으면 먼저 열기 (직접 호출 경로 대비 안전장치)
+  const panel = document.getElementById('fullpanel');
+  if(!panel.classList.contains('open')){
+    panel.classList.add('open');
+    document.getElementById('overlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
   const right = document.getElementById('fpRight');
   right.classList.add('open');
   document.getElementById('fullpanel').style.width = 'min(1200px,100vw)';
