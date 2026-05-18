@@ -857,8 +857,8 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
         <div class="ai-field">
           <div class="ai-label">모델 선택</div>
           <select class="ai-select" id="model-gemini">
-            <option value="gemini-2.5-flash-preview-05-20">Gemini 2.5 Flash (권장)</option>
-            <option value="gemini-2.5-pro-preview-05-06">Gemini 2.5 Pro (고성능)</option>
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash (권장)</option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro (고성능)</option>
             <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
             <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite (최경량)</option>
           </select>
@@ -1991,8 +1991,8 @@ function setProv(prov){
 // 구형 모델 ID → 현행 모델 ID 마이그레이션 맵
 const _MODEL_MIGRATE = {
   // Gemini 구형
-  'gemini-1.5-pro':            'gemini-2.5-pro-preview-05-06',
-  'gemini-1.5-flash':          'gemini-2.5-flash-preview-05-20',
+  'gemini-1.5-pro':            'gemini-2.5-pro',
+  'gemini-1.5-flash':          'gemini-2.5-flash',
   'gemini-2.0-flash-exp':      'gemini-2.0-flash',
   // GPT 구형
   'gpt-4-turbo':               'gpt-4.1',
