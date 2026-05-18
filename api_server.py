@@ -1212,15 +1212,25 @@ def ai_interpret():
     if provider != "ollama" and not api_key:
         return jsonify({"error": f"API 키가 없습니다. 상단 [✦ AI 설정]에서 {provider} 키를 입력하세요."}), 400
 
-    system_prompt = f"""당신은 대한민국 법률 전문 해석 AI입니다.
-「{law_name}」 {art_no} {art_title} 조문을 아래 형식으로 해석하세요.
+    system_prompt = f"""당신은 대한민국 농업·지식재산 분야 법률 전문 해석 AI입니다.
+아래 조문을 **마크다운 형식**으로 구조화하여 해석하세요.
 
-1. 핵심 요약 (1~2문장): 이 조문이 말하는 것을 가장 간결하게
-2. 쉬운 해설 (3~5문장): 법률 비전문가가 이해하도록 쉬운 언어로
-3. 실무 포인트 (1~3개): 농업인·기업이 알아야 할 실질적인 사항
+## 핵심 요약
+이 조문이 말하는 핵심을 1~2문장으로.
 
-한국어로 300자 이내로 간결하게 작성하세요.
-※ 이 해석은 참고용이며 법적 효력이 없습니다."""
+## 쉬운 해설
+법률 비전문가(농업인·중소기업 담당자)가 이해할 수 있도록 3~5문장으로 풀어서 설명하세요.
+
+## 실무 포인트
+농업인·기업 담당자가 주의해야 할 실질적 사항을 항목으로 정리하세요 (2~4개).
+
+## 위반 시 제재 (해당하는 경우)
+이 조문을 위반하면 어떤 불이익이 있는지 간략히.
+
+---
+대상 법령: 「{law_name}」 {art_no} {art_title}
+답변은 한국어로, 각 섹션을 빠짐없이 작성하되 간결하게 유지하세요.
+마크다운 **굵게**, ## 헤더, - 목록을 적극 활용하세요."""
 
     user_msg = f"조문 내용:\n{art_content}"
 
@@ -1230,7 +1240,7 @@ def ai_interpret():
             mdl = model or "claude-sonnet-4-5"
             resp = req_lib.post(
                 "https://api.anthropic.com/v1/messages",
-                json={"model": mdl, "max_tokens": 800,
+                json={"model": mdl, "max_tokens": 1500,
                       "system": system_prompt,
                       "messages": [{"role": "user", "content": user_msg}]},
                 headers={"Content-Type": "application/json",
@@ -1248,7 +1258,7 @@ def ai_interpret():
             mdl = model or "gpt-4o"
             resp = req_lib.post(
                 "https://api.openai.com/v1/chat/completions",
-                json={"model": mdl, "max_tokens": 800,
+                json={"model": mdl, "max_tokens": 1500,
                       "messages": [{"role": "system", "content": system_prompt},
                                    {"role": "user",   "content": user_msg}]},
                 headers={"Content-Type": "application/json",
@@ -1262,12 +1272,12 @@ def ai_interpret():
 
         # ── Google Gemini ──────────────────────────────────────────────────────
         elif provider == "gemini":
-            mdl = model or "gemini-2.0-flash"
+            mdl = model or "gemini-2.5-flash"
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{mdl}:generateContent?key={api_key}"
             resp = req_lib.post(
                 url,
                 json={"contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_msg}"}]}],
-                      "generationConfig": {"maxOutputTokens": 800}},
+                      "generationConfig": {"maxOutputTokens": 1500}},
                 headers={"Content-Type": "application/json"},
                 timeout=30,
             )

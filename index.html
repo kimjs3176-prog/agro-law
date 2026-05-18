@@ -236,8 +236,20 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .ai-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:1px solid #a78bfa;font-size:11px;cursor:pointer;color:#7c3aed;background:#f5f3ff;transition:.15s;flex-shrink:0;}
 .ai-btn:hover{background:#ede9fe;}
 .ai-btn:disabled{opacity:.5;cursor:not-allowed;}
-.ai-box{margin-top:8px;padding:10px 12px;background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-left:3px solid #7c3aed;border-radius:0 var(--rs) var(--rs) 0;font-size:13px;line-height:1.85;color:#3b0764;}
+.ai-box{margin-top:8px;padding:12px 14px;background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-left:3px solid #7c3aed;border-radius:0 var(--rs) var(--rs) 0;font-size:13px;line-height:1.85;color:#3b0764;}
 .ai-box-loading{color:#7c3aed;font-style:italic;}
+.ai-box strong{font-weight:700;color:#5b21b6;}
+.ai-box h3{font-size:13px;font-weight:700;color:#5b21b6;margin:10px 0 4px;padding:0;}
+.ai-box ul,.ai-box ol{margin:4px 0 8px 18px;padding:0;}
+.ai-box li{margin:2px 0;}
+.ai-box p{margin:0 0 6px;}
+.ai-box p:last-child{margin-bottom:0;}
+.ai-box hr{border:none;border-top:1px solid #c4b5fd;margin:8px 0;}
+.ai-box blockquote{border-left:2px solid #a78bfa;margin:4px 0;padding:2px 8px;color:#6d28d9;font-style:italic;}
+.ai-box-foot{display:flex;gap:6px;margin-top:10px;padding-top:8px;border-top:1px solid #c4b5fd;}
+.ai-copy-btn,.ai-retry-btn{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:12px;font-size:11px;cursor:pointer;border:1px solid #a78bfa;background:#f5f3ff;color:#7c3aed;transition:.15s;}
+.ai-copy-btn:hover,.ai-retry-btn:hover{background:#ede9fe;}
+.ai-disclaimer{font-size:10px;color:#9ca3af;margin-left:auto;align-self:center;}
 /* 즐겨찾기 버튼 */
 .fav-btn{width:28px;height:28px;border:1px solid var(--bd);border-radius:6px;cursor:pointer;background:transparent;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;color:var(--ht);}
 .fav-btn:hover{border-color:#f59e0b;color:#f59e0b;}
@@ -344,6 +356,12 @@ body.dark .sinput{background:#161920;color:#e2e4e9;border-color:transparent;}
 body.dark .sinput:focus{background:#1c1f27;border-color:var(--g);}
 body.dark .ai-input,body.dark .cmp-search,body.dark .fp-finput,body.dark .art-finput{background:#161920;color:#e2e4e9;}
 body.dark .ai-box{background:linear-gradient(135deg,#1e1b40,#2e1b5e);color:#c4b5fd;}
+body.dark .ai-box strong{color:#a78bfa;}
+body.dark .ai-box h3{color:#a78bfa;}
+body.dark .ai-box-foot{border-top-color:#4c1d95;}
+body.dark .ai-box hr{border-top-color:#4c1d95;}
+body.dark .ai-copy-btn,body.dark .ai-retry-btn{background:#2e1b5e;border-color:#6d28d9;color:#c4b5fd;}
+body.dark .ai-copy-btn:hover,body.dark .ai-retry-btn:hover{background:#3b0764;}
 body.dark .memo-textarea{background:#2a1f00;color:#fde68a;}
 body.dark .cmp-col-body,.dark .fp-body{background:#0f1117;}
 body.dark .fullpanel,.dark .cmp-panel,.dark .ai-modal{background:#1c1f27;}
@@ -2086,8 +2104,83 @@ async function testAiConn(){
   btn.textContent='연결 테스트'; btn.disabled=false;
 }
 
+// ── 마크다운 → HTML 변환 (AI 결과 렌더링용) ─────────────────────────────────
+function renderAiMarkdown(text){
+  if(!text) return '';
+  // 줄별로 처리
+  const lines = text.split('\n');
+  let html = '';
+  let inUl = false, inOl = false;
+
+  const flushList = () => {
+    if(inUl){ html += '</ul>'; inUl=false; }
+    if(inOl){ html += '</ol>'; inOl=false; }
+  };
+
+  const inlineFormat = s =>
+    s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+     .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+     .replace(/\*(.+?)\*/g,'<em>$1</em>')
+     .replace(/`(.+?)`/g,'<code style="background:#e9d5ff;padding:0 3px;border-radius:3px;font-size:12px;">$1</code>');
+
+  for(let i=0;i<lines.length;i++){
+    const raw = lines[i];
+    const line = raw.trimEnd();
+
+    // 빈 줄
+    if(!line.trim()){ flushList(); html += '<br>'; continue; }
+
+    // 구분선
+    if(/^---+$/.test(line.trim())){ flushList(); html += '<hr>'; continue; }
+
+    // 헤더
+    const h2 = line.match(/^#{1,2} (.+)/);
+    const h3 = line.match(/^#{3,} (.+)/);
+    if(h2){ flushList(); html += `<h3>${inlineFormat(h2[1])}</h3>`; continue; }
+    if(h3){ flushList(); html += `<h3>${inlineFormat(h3[1])}</h3>`; continue; }
+
+    // 숫자 목록: "1. " 또는 "1) "
+    const olM = line.match(/^(\d+)[.)]\s+(.+)/);
+    if(olM){
+      if(inUl){ html += '</ul>'; inUl=false; }
+      if(!inOl){ html += '<ol>'; inOl=true; }
+      html += `<li>${inlineFormat(olM[2])}</li>`;
+      continue;
+    }
+
+    // 불릿 목록: "- " 또는 "• " 또는 "* "
+    const ulM = line.match(/^[-•*]\s+(.+)/);
+    if(ulM){
+      if(inOl){ html += '</ol>'; inOl=false; }
+      if(!inUl){ html += '<ul>'; inUl=true; }
+      html += `<li>${inlineFormat(ulM[1])}</li>`;
+      continue;
+    }
+
+    // 들여쓰기 목록 (공백 2+ 뒤 -)
+    const indentM = line.match(/^ {2,}[-•]\s+(.+)/);
+    if(indentM){
+      if(inOl){ html += '</ol>'; inOl=false; }
+      if(!inUl){ html += '<ul>'; inUl=true; }
+      html += `<li style="margin-left:12px;">${inlineFormat(indentM[1])}</li>`;
+      continue;
+    }
+
+    // 인용문
+    const bqM = line.match(/^>\s*(.*)/);
+    if(bqM){ flushList(); html += `<blockquote>${inlineFormat(bqM[1])}</blockquote>`; continue; }
+
+    // 일반 문단
+    flushList();
+    html += `<p>${inlineFormat(line)}</p>`;
+  }
+  flushList();
+  // 연속 <br> 정리
+  return html.replace(/(<br>){3,}/g,'<br><br>');
+}
+
 // ── AI 해석 (멀티 프로바이더) ─────────────────────────────────────────────────
-async function aiInterpretByIdx(btnEl){
+async function aiInterpretByIdx(btnEl, isRetry=false){
   const idx=parseInt(btnEl.dataset.idx);
   const art=fpArts[idx];
   if(!art) return;
@@ -2105,13 +2198,17 @@ async function aiInterpretByIdx(btnEl){
 
   if(!apiKey && prov!=='ollama'){
     box.style.display='block'; box.className='ai-box';
-    box.textContent='⚠ API 키가 설정되지 않았습니다. 상단 [✦ AI 설정] 버튼을 눌러 설정하세요.';
+    box.innerHTML='<p>⚠ API 키가 설정되지 않았습니다. 상단 [✦ AI 설정] 버튼을 눌러 설정하세요.</p>';
     return;
   }
 
-  btnEl.disabled=true; btnEl.textContent='해석 중...';
+  // 버튼 상태
+  const origBtn = isRetry ? null : btnEl;
+  if(!isRetry){ btnEl.disabled=true; btnEl.textContent='해석 중...'; }
+
   box.style.display='block'; box.className='ai-box ai-box-loading';
-  box.textContent=`${PROV_NAMES[prov]||prov}가 조문을 분석하고 있습니다...`;
+  box.innerHTML=`<p style="color:#7c3aed;font-style:italic;">✦ ${PROV_NAMES[prov]||prov}가 조문을 분석하고 있습니다...</p>`;
+
   try{
     const r=await fetch('/api/ai/interpret',{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -2120,11 +2217,46 @@ async function aiInterpretByIdx(btnEl){
     });
     const d=await r.json();
     box.className='ai-box';
-    box.textContent=d.result||d.error||'해석을 가져오지 못했습니다.';
-  }catch{
-    box.className='ai-box'; box.textContent='AI 연결 오류가 발생했습니다.';
+    if(d.error){
+      box.innerHTML=`<p style="color:#991b1b;">⚠ ${escHtml(d.error)}</p>`;
+    } else {
+      const mdHtml = renderAiMarkdown(d.result||'해석을 가져오지 못했습니다.');
+      const rawText = d.result||'';
+      box.innerHTML = `
+        <div class="ai-result-body">${mdHtml}</div>
+        <div class="ai-box-foot">
+          <button class="ai-copy-btn" onclick="copyAiResult(this)" data-text="${encodeURIComponent(rawText)}">📋 복사</button>
+          <button class="ai-retry-btn" data-idx="${idx}" onclick="retryAiInterpret(this)">↺ 재해석</button>
+          <span class="ai-disclaimer">※ 참고용 해석, 법적 효력 없음</span>
+        </div>`;
+    }
+  }catch(e){
+    box.className='ai-box';
+    box.innerHTML=`<p style="color:#991b1b;">⚠ AI 연결 오류가 발생했습니다.</p>`;
   }
-  btnEl.disabled=false; btnEl.textContent='✦ AI 해석';
+  if(origBtn){ origBtn.disabled=false; origBtn.textContent='✦ AI 해석'; }
+}
+
+function retryAiInterpret(retryBtn){
+  const idx = parseInt(retryBtn.dataset.idx);
+  // 같은 조문의 원래 AI 해석 버튼을 찾아 재호출
+  const origBtn = document.querySelector(`.fp-art#fpa${idx} .ai-btn`);
+  if(origBtn) aiInterpretByIdx(origBtn, true);
+  else {
+    // fallback: 직접 처리
+    retryBtn.textContent='해석 중...'; retryBtn.disabled=true;
+    aiInterpretByIdx({dataset:{idx}, disabled:false, textContent:''}, true)
+      .finally(()=>{ retryBtn.textContent='↺ 재해석'; retryBtn.disabled=false; });
+  }
+}
+
+function copyAiResult(btn){
+  const text = decodeURIComponent(btn.dataset.text||'');
+  if(!text) return;
+  navigator.clipboard.writeText(text).then(()=>{
+    const orig=btn.textContent; btn.textContent='✓ 복사됨';
+    setTimeout(()=>btn.textContent=orig, 1500);
+  });
 }
 
 // data-idx 기반 복사
