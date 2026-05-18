@@ -972,22 +972,11 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     <!-- 검색 모드 -->
     <div class="mtoggle">
       <button class="mbtn active" id="mlawbtn" onclick="setMode('law')">법령명 검색</button>
-      <button class="mbtn" id="martbtn" onclick="setMode('article')">조문 내 키워드 검색</button>
-      <button class="mbtn" id="mbasisbtn" onclick="setMode('basis')" style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:#065f46;border-color:#6ee7b7;">📋 업무 근거 찾기</button>
-    </div>
-    <!-- 업무 시나리오 빠른 선택 (basis 모드 전용) -->
-    <div id="scenarioChips" style="display:none;margin:6px 0 2px;flex-wrap:wrap;gap:6px;display:none;">
-      <span style="font-size:11px;color:var(--mu);align-self:center;">시나리오:</span>
-      <button class="rec-chip" onclick="setBasisScenario('농약 판매업 등록 요건')">농약 판매업 등록</button>
-      <button class="rec-chip" onclick="setBasisScenario('농지 전용 허가 절차')">농지 전용 허가</button>
-      <button class="rec-chip" onclick="setBasisScenario('품종보호 출원 요건')">품종보호 출원</button>
-      <button class="rec-chip" onclick="setBasisScenario('농업인 보조금 지원 조건')">농업인 지원금</button>
-      <button class="rec-chip" onclick="setBasisScenario('특허 침해 손해배상')">특허 침해 대응</button>
-      <button class="rec-chip" onclick="setBasisScenario('유기농 인증 기준')">유기농 인증</button>
+      <button class="mbtn" id="martbtn" onclick="setMode('article')">조문 키워드 검색</button>
     </div>
     <!-- 검색창 -->
     <div class="srow">
-      <input id="q" class="sinput" style="padding-left:40px;" placeholder="🔍  법령명 또는 키워드 입력" onkeydown="if(event.key==='Enter')doSearch()">
+      <input id="q" class="sinput" style="padding-left:40px;" placeholder="🔍  법령명 입력 (예: 농지법, 종자산업법, 특허법)" onkeydown="if(event.key==='Enter')doSearch()">
       <button id="sbtn" class="sbtn" onclick="doSearch()">검색</button>
     </div>
     <!-- 자주 찾는 법령 -->
@@ -1019,11 +1008,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     <button class="export-btn" onclick="exportCSV()" title="검색 결과를 CSV로 저장">⬇ CSV 저장</button>
     <button class="export-btn" onclick="openCmpPanel()" title="두 법령 나란히 비교">⚖ 법령 비교</button>
   </div>
-  <!-- 자연어 검색 힌트 배너 (자연어 모드 활성 시) -->
-  <div id="nlBanner" style="display:none;margin-bottom:10px;padding:8px 12px;background:#f0fdf4;border:1px solid #6ee7b7;border-radius:var(--rs);font-size:12px;color:#065f46;align-items:center;gap:8px;">
-    <span class="nl-badge">✨ 자연어</span>
-    <span>질문 형태로 검색하면 관련 조문을 찾아드립니다. <b>예:</b> 농업인이 받을 수 있는 보조금 조건은?</span>
-  </div>
+
 
   <!-- 검색 상태 메시지 -->
   <div id="status" style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mu);margin-bottom:8px;min-height:20px;"></div>
@@ -1155,24 +1140,15 @@ function setMode(m){
   mode=m;
   document.getElementById('mlawbtn').classList.toggle('active',m==='law');
   document.getElementById('martbtn').classList.toggle('active',m==='article');
-  document.getElementById('mbasisbtn').classList.toggle('active',m==='basis');
-  const sc=document.getElementById('scenarioChips');
-  if(sc) sc.style.display = m==='basis' ? 'flex' : 'none';
   document.getElementById('q').placeholder =
-    m==='law'     ? '법령명 또는 키워드 입력 (예: 농지, 종자, 농약)' :
-    m==='article' ? '조문 내 키워드 입력 (예: 전용실시, 손해배상, 등록취소)' :
-                    '업무 상황 입력 (예: 농약 판매업 등록을 하려면?)';
+    m==='law'     ? '법령명 입력 (예: 농지법, 종자산업법, 특허법)' :
+                    '조문 내 키워드 입력 (예: 전용실시, 손해배상, 등록취소)';
   clearResults();
-}
-function setBasisScenario(text){
-  document.getElementById('q').value=text;
-  doSearch();
 }
 function clearResults(){
   const fbar=document.getElementById('fbar'); if(fbar) fbar.style.display='none';
   const pag=document.getElementById('pagination'); if(pag) pag.innerHTML='';
   const res=document.getElementById('results'); if(res) res.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>검색어를 입력하고 검색 버튼을 눌러주세요</p></div>';
-  const nb=document.getElementById('nlBanner'); if(nb) nb.style.display='none';
   setStatus('');
   const rh=document.getElementById('resultHeader'); if(rh) rh.style.display='none';
 }
@@ -1204,25 +1180,13 @@ async function doSearch(){
   recordStat('search', q);
 
   try{
-    // 업무 근거 찾기 모드
-    if(mode === 'basis'){
-      await doSearchBasis(q);
-      return;
-    }
-
     // 조문 키워드 모드
     if(mode === 'article'){
       await doSearchArticle(q);
       return;
     }
 
-    // 자연어 감지
-    if(/[?？]|은\s*무엇|이란|조건|요건|방법|절차|할\s*수\s*있|해야\s*하|받을\s*수|어떻/.test(q)){
-      await doNLSearch(q);
-      return;
-    }
-
-    // 법령명 검색 (기본) — 캐시 우선
+    // 법령명 검색 — 캐시 우선
     const cacheKey = `law:${q}`;
     const cached = _cacheGet(cacheKey);
     if (cached) {
@@ -1350,7 +1314,7 @@ function renderBasisResults(laws, basisType, keywords){
           <span class="art-title">${highlightKws(title||no||'조문')}</span>
           <span class="arrow" style="margin-left:auto;font-size:11px;color:var(--ht);transition:transform .2s;flex-shrink:0;">▼</span>
         </div>
-        ${content?`<div class="art-body" style="display:none;">${applyXref(highlightKws(content), name)}</div>`:''}
+        ${content?`<div class="art-body" style="display:none;">${highlightKwsSafe(applyXref(escHtml(content), name), kwL)}</div>`:''}
       </div>`;
     }).join('');
 
@@ -1604,7 +1568,7 @@ function renderInlineArticles(arts, lawName, lawUrl, kw=''){
           <span class="art-title">${highlight(title||no||'조문')}</span>
           <span class="arrow" style="font-size:11px;color:var(--ht);transition:transform .2s;flex-shrink:0;">▼</span>
         </div>
-        ${content?`<div class="art-body" style="${isMatch?'display:block;':''}">${applyXref(highlight(content), lawName)}</div>`:''}
+        ${content?`<div class="art-body" style="${isMatch?'display:block;':''}">${highlightKwsSafe(applyXref(escHtml(content), lawName), kw?[kw]:[])}</div>`:''}
       </div>`;
     }).join('')+
     `</div></div>`;
@@ -1705,6 +1669,19 @@ function highlightTextOnly(html, kw){
   return html.split(/(<[^>]*>)/g).map((p,i)=>
     i%2===1 ? p : p.replace(new RegExp(esc,'gi'), m=>`<mark>${m}</mark>`)
   ).join('');
+}
+// 복수 키워드 태그 안전 하이라이트 (태그 내부 attribute를 건드리지 않음)
+function highlightKwsSafe(html, kws){
+  if(!kws || !kws.length) return html;
+  return html.split(/(<[^>]*>)/g).map((p, i) => {
+    if(i % 2 === 1) return p; // 태그 파트는 건드리지 않음
+    kws.forEach(k => {
+      const esc = escRegex(escHtml(k));
+      p = p.replace(new RegExp(esc, 'gi'),
+        m => `<mark style="background:#fef08a;border-radius:2px;padding:0 1px;">${m}</mark>`);
+    });
+    return p;
+  }).join('');
 }
 
 function closePanel(){
@@ -2345,11 +2322,15 @@ document.addEventListener('DOMContentLoaded',()=>{
         // 전문 패널 내부 클릭 → fpArts(이미 로드된 조문) 사용
         openSameLawInRightPanel(artNo, hangNo, hoNo);
       } else {
-        // 인라인 검색 결과 카드 내부 클릭 → 카드의 법령명으로 openRefLaw 호출
+        // 인라인 검색 결과 카드 내부 클릭
+        // → 해당 법령의 전문 패널을 열고 그 조문으로 이동
         const card = xref.closest('.card');
         const lawNameFromCard = card?.querySelector('.lname')?.textContent?.trim() || '';
         if(lawNameFromCard){
-          openRefLaw(lawNameFromCard, [artNo], {artNo: String(artNo), hangNo, hoNo});
+          const lawUrl = `https://www.law.go.kr/법령/${encodeURIComponent(lawNameFromCard)}`;
+          openFullPanel(lawNameFromCard, lawUrl).then(() => {
+            jumpToArt(artNo, hangNo, hoNo);
+          });
         } else {
           // 카드 법령명 추출 실패 시 기존 방식으로 폴백
           openSameLawInRightPanel(artNo, hangNo, hoNo);
@@ -2653,10 +2634,15 @@ function renderStatPanel(){
 // ── ⑧ 조문 내 참조 링크 (조번호 이동 + 법령명 준용 패널) ─────────────────────
 let refArts = [];   // 우측 준용 패널 조문 데이터
 
+// ── 법령명 접미사 목록 (긴 것 → 짧은 것 순, 정규식 alternation 순서 보장) ──
+// 괄호 있는 패턴(Step 1)과 추출 함수에서 공통 사용
+const _LAW_SUFFIX = '법률|법|시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준';
+
 function applyXref(html, lawName){
   // 1) 「법령명」 → 준용 법령 링크 (괄호 있는 경우)
+  //    접미사: 법률·법·시행령·시행규칙·고시·예규·세칙·령·규칙·조례·훈령·규정·지침·기준
   html = html.replace(
-    /[「｢]([^」｣\n]{2,40}(?:법|령|규칙|조례|훈령))[」｣]/g,
+    /[「｢]([^」｣\n]{2,50}(?:법률|법|시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준))[」｣]/g,
     (match, name) => {
       if(name === lawName) return match;
       const safe = name.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -2664,13 +2650,23 @@ function applyXref(html, lawName){
     }
   );
 
-  // 1b) 괄호 없는 법령명 + 제N조 패턴 (예: 농어촌정비법 제12조)
-  //     3글자 이상 한글 법령명이 제N조 바로 앞에 오는 경우
+  // 1b-a) 괄호 없는 법/법률 명칭 + 제N조 (예: 농지법 제12조, 특허법 제2조)
+  //       최소 접두어 2음절: 농지(2)+법 = 3자 법령명도 커버
   html = html.replace(
-    /(?<![가-힣])([가-힣]{3,15}(?:법|령|규칙|조례|훈령))( +)(?=제\d+조)/g,
+    /(?<![가-힣])([가-힣]{2,20}(?:법률|법))( +)(?=제\d+조)/g,
     (match, refLaw, spaces) => {
       if(refLaw === lawName) return match;
-      // 이미 law-ref 처리된 텍스트 안이면 건너뜀 (attr 내부 방지)
+      const safe = refLaw.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<span class="law-ref" data-reflaw="${safe}" title="「${safe}」 조문 보기">${refLaw}</span>${spaces}`;
+    }
+  );
+
+  // 1b-b) 괄호 없는 기타 법령종류 명칭 + 제N조 (예: 농지법시행령 제3조)
+  //       최소 접두어 3음절: 단독 '시행령', '규칙' 같은 단어의 오탐 방지
+  html = html.replace(
+    /(?<![가-힣])([가-힣]{3,20}(?:시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준))( +)(?=제\d+조)/g,
+    (match, refLaw, spaces) => {
+      if(refLaw === lawName) return match;
       const safe = refLaw.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       return `<span class="law-ref" data-reflaw="${safe}" title="「${safe}」 조문 보기">${refLaw}</span>${spaces}`;
     }
@@ -2709,14 +2705,16 @@ function applyXref(html, lawName){
     }
     const refl = lastRefLaw; // 현재 텍스트에 적용할 타법 참조
     const processed = part.replace(
-      /제(\d+)조(의\d+)?((?:제\d+항)?(?:제\d+호)?(?:제\d+목)?)/g,
-      (match, num, suf, extra) => {
+      /제(\d+)조(의\d+)?((?:제\d+항)?(?:의\d+)?(?:제\d+호)?(?:제\d+목)?)(?: *(전단|후단|단서|본문))?/g,
+      (match, num, suf, extra, clause) => {
+        // 빈 매칭 방지: 최소한 '제N조' 는 있어야 함
+        if(!num) return match;
         const artNo  = num;
         const hangM  = extra.match(/제(\d+)항/);
         const hoM    = extra.match(/제(\d+)호/);
         const hangNo = hangM ? hangM[1] : '';
         const hoNo   = hoM   ? hoM[1]   : '';
-        const label  = `제${num}조${suf||''}${extra}`;
+        const label  = `제${num}조${suf||''}${extra}${clause?' '+clause:''}`;
         const reflAttr = refl ? ` data-reflaw="${refl.replace(/"/g,'&quot;')}"` : '';
         return `<span class="art-xref"
           data-artno="${artNo}"
@@ -2922,7 +2920,7 @@ function closeRefTab(idx){
 
 // 조문 목록에서 「법령명」 참조 추출
 function extractLawRefs(arts){
-  const lawRefRe = /[「｢]([^」｣\n]{2,40}(?:법|령|규칙|조례|훈령))[」｣]/g;
+  const lawRefRe = new RegExp('[「｢]([^」｣\\n]{2,50}(?:' + _LAW_SUFFIX + '))[」｣]', 'g');
   const counts = {};
   const currentName = document.getElementById('fpTitle').textContent;
   arts.forEach(a=>{
@@ -3462,7 +3460,7 @@ function buildRefList(){
   }
 
   // 법령별로 어느 조문에서 참조하는지 수집
-  const lawRefRe = /[「｢]([^」｣\n]{2,40}(?:법|령|규칙|조례|훈령))[」｣]/g;
+  const lawRefRe = new RegExp('[「｢]([^」｣\\n]{2,50}(?:' + _LAW_SUFFIX + '))[」｣]', 'g');
   const refMap   = {};  // { 법령명: [{artNo, artTitle}] }
 
   fpArts.forEach(a => {
@@ -3946,7 +3944,7 @@ async function buildNetwork(){
   const H = document.getElementById('netCanvas').offsetHeight || 500;
   g.innerHTML = `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#9ca3af" font-size="14">법령 조문 분석 중...</text>`;
 
-  const lawRefRe = /[「｢]([^」｣\n]{2,40}(?:법|령|규칙|조례|훈령))[」｣]/g;
+  const lawRefRe = new RegExp('[「｢]([^」｣\\n]{2,50}(?:' + _LAW_SUFFIX + '))[」｣]', 'g');
 
   // 노드·엣지 수집 (BFS로 depth까지)
   const nodes = [{name:centerName, type:'center', refs:[], artCount:0}];
