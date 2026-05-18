@@ -1106,6 +1106,7 @@ function _cacheSet(key, data) {
 
 
 let agency='all', mode='law', allLaws=[], filtered=[], page=1, fpArts=[];
+let _fpAbbrevMap = {}; // 현재 전문 패널 법령의 약칭 → 정식 법령명 맵
 const PS=10;
 
 // ── 키워드 유효성 검증 ──
@@ -1523,6 +1524,7 @@ function renderInlineArticles(arts, lawName, lawUrl, kw=''){
   if(!arts.length) return `<div style="padding:14px;font-size:13px;color:var(--ht);">조문 정보를 가져오지 못했습니다. <a href="${lawUrl}" target="_blank" style="color:var(--g);">법제처에서 직접 확인 →</a></div>`;
   const id='ia'+Date.now();
   const kwL = kw.toLowerCase();
+  const abbrevMap = extractLawAbbrevs(arts, lawName); // 인라인 카드용 약칭 맵
 
   // 키워드 있으면 관련 조문 필터링
   let displayArts = arts;
@@ -1573,7 +1575,7 @@ function renderInlineArticles(arts, lawName, lawUrl, kw=''){
           <span class="art-title">${highlight(title||no||'조문')}</span>
           <span class="arrow" style="font-size:11px;color:var(--ht);transition:transform .2s;flex-shrink:0;">▼</span>
         </div>
-        ${content?`<div class="art-body" style="${isMatch?'display:block;':''}">${highlightKwsSafe(applyXref(escHtml(content), lawName), kw?[kw]:[])}</div>`:''}
+        ${content?`<div class="art-body" style="${isMatch?'display:block;':''}">${highlightKwsSafe(applyXref(escHtml(content), lawName, abbrevMap), kw?[kw]:[])}</div>`:''}
       </div>`;
     }).join('')+
     `</div></div>`;
@@ -1654,7 +1656,7 @@ function fpFilterArts(){
     const raw=art['조문내용']||'';
     const lawNameFP=document.getElementById('fpTitle').textContent;
     // applyXref 를 항상 적용하여 art-xref/law-ref 스팬이 사라지지 않도록 함
-    const rendered=applyXref(applyTermTooltip(escHtml(raw)), lawNameFP);
+    const rendered=applyXref(applyTermTooltip(escHtml(raw)), lawNameFP, _fpAbbrevMap);
     bodyEl.innerHTML = highlightTextOnly(rendered, kw);
     if(kw){
       bodyEl.style.display='block';
@@ -1912,6 +1914,7 @@ async function fpShowHistory(){
 // ── renderFpArts 재정의 (AI해석·복사·메모·용어툴팁 포함) ──────────────────────
 function renderFpArts(arts){
   const lawName=document.getElementById('fpTitle').textContent;
+  _fpAbbrevMap = extractLawAbbrevs(arts, lawName); // 약칭 맵 전역 업데이트
   document.getElementById('fpCnt').textContent=`${arts.filter(a=>a.type!=='header').length}개 조문`;
   if(!arts.length){
     document.getElementById('fpBody').innerHTML='<div class="fp-empty">조문 정보를 가져오지 못했습니다.</div>'; return;
@@ -1960,7 +1963,7 @@ function renderFpArts(arts){
             <button class="memo-del" onclick="deleteMemo(${i},'${memoKey}')">삭제</button>
           </div>
         </div>
-        ${applyXref(applyTermTooltip(escHtml(content)), lawName)}
+        ${applyXref(applyTermTooltip(escHtml(content)), lawName, _fpAbbrevMap)}
         <div class="ai-box" id="aibox_${i}" style="display:none;"></div>
       </div>`:''}
     </div>`;
@@ -2693,7 +2696,27 @@ let refArts = [];   // 우측 준용 패널 조문 데이터
 // 괄호 있는 패턴(Step 1)과 추출 함수에서 공통 사용
 const _LAW_SUFFIX = '법률|법|시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준';
 
-function applyXref(html, lawName){
+// ── 법령 약칭 맵 추출 ──────────────────────────────────────────────────────────
+// 「법령명」(이하 "약칭"이라 한다) 패턴을 스캔하여 { 약칭 → 정식법령명 } 맵 반환
+function extractLawAbbrevs(arts, currentLawName){
+  const map = {};
+  const allText = arts
+    .filter(a => a['type'] !== 'header')
+    .map(a => (a['조문내용']||'') + ' ' + (a['조문제목']||''))
+    .join('\n');
+  // 「법령명」(이하 "약칭"이라 한다) — 따옴표는 다양한 형태 허용
+  const re = /[「｢]([^」｣\n]{2,50}(?:법률|법|시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준))[」｣][^(\n]{0,30}\(이하\s*["'"＂']([\w가-힣 ]{1,12})["'"＂']\s*이라\s*한다\)/g;
+  let m;
+  while((m = re.exec(allText)) !== null){
+    const refLawName = m[1].trim();
+    const abbrev     = m[2].trim();
+    if(!abbrev || refLawName === currentLawName) continue;
+    if(!map[abbrev]) map[abbrev] = refLawName;
+  }
+  return map;
+}
+
+function applyXref(html, lawName, abbrevMap={}){
   // 1) 「법령명」 → 준용 법령 링크 (괄호 있는 경우)
   //    접미사: 법률·법·시행령·시행규칙·고시·예규·세칙·령·규칙·조례·훈령·규정·지침·기준
   html = html.replace(
@@ -2726,6 +2749,27 @@ function applyXref(html, lawName){
       return `<span class="law-ref" data-reflaw="${safe}" title="「${safe}」 조문 보기">${refLaw}</span>${spaces}`;
     }
   );
+
+  // 1c) 약칭 → 법령 링크 (예: "영 제34조", "법 제35조의2")
+  //     extractLawAbbrevs 가 반환한 맵 기반; 태그 내부 속성 건드리지 않도록 텍스트 파트만 처리
+  if(abbrevMap && Object.keys(abbrevMap).length > 0){
+    const _parts = html.split(/(<[^>]+>)/g);
+    html = _parts.map((_p, _idx) => {
+      if(_idx % 2 === 1) return _p; // 태그 파트 — 건드리지 않음
+      let p = _p;
+      Object.entries(abbrevMap).forEach(([abbrev, refLaw]) => {
+        if(!refLaw || refLaw === lawName) return;
+        const safe     = refLaw.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const abbrevE  = abbrev.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // 앞에 한글이 붙지 않은 약칭 + 공백 + 제N조
+        const re = new RegExp(`(?<![가-힣])(${abbrevE})( +)(?=제\\d+조)`, 'g');
+        p = p.replace(re, (_m, ab, spaces) =>
+          `<span class="law-ref" data-reflaw="${safe}" title="「${safe}」 조문 보기">${ab}</span>${spaces}`
+        );
+      });
+      return p;
+    }).join('');
+  }
 
   // 2) 조문+항+호 전체 패턴 링크화 — 타법 참조인 경우 data-reflaw 추가
   //    예: 제15조제1항, 제15조의2제3항제2호, 제100조제5항 본문
