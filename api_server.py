@@ -1048,6 +1048,167 @@ def search_legal_basis():
     })
 
 
+@app.route("/api/scenario", methods=["POST"])
+def scenario_search():
+    """실무 시나리오 검색: 서버 AI(환경변수 키) → 관련 법령·조문 반환"""
+    body    = request.get_json(force=True) or {}
+    query   = body.get("query", "").strip()
+    if not query or len(query) < 5:
+        return jsonify({"error": "질문을 5자 이상 입력해 주세요."}), 400
+
+    # ── 환경변수에서 AI 설정 읽기 ────────────────────────────────────────────
+    provider = os.environ.get("SCENARIO_AI_PROVIDER", "gemini").lower()
+    api_key  = os.environ.get(f"{provider.upper()}_API_KEY", "").strip()
+    model    = os.environ.get("SCENARIO_AI_MODEL", "").strip()
+    if not api_key:
+        return jsonify({"error":
+            "시나리오 검색 기능이 아직 활성화되지 않았습니다. "
+            "서버 환경변수(GEMINI_API_KEY 등)를 설정하세요."
+        }), 503
+
+    _DEFAULTS = {"gemini": "gemini-2.5-flash", "claude": "claude-haiku-4-5-20251001",
+                 "gpt": "gpt-4.1-mini", "openai": "gpt-4.1-mini"}
+    mdl = model or _DEFAULTS.get(provider, "gemini-2.5-flash")
+
+    # ── AI Step-1: 의도 분석 → JSON ──────────────────────────────────────────
+    AVAILABLE_LAWS = (
+        "농지법, 종자산업법, 농약관리법, 비료관리법, 가축전염병예방법, "
+        "식물방역법, 농업재해보험법, 농촌진흥법, 농어업재해대책법, "
+        "특허법, 실용신안법, 디자인보호법, 상표법, 식물신품종보호법, "
+        "부정경쟁방지 및 영업비밀보호에 관한 법률, "
+        "기술이전 및 사업화 촉진에 관한 법률"
+    )
+    system_prompt = f"""당신은 대한민국 농업·지식재산 법령 전문가 AI입니다.
+사용자의 실무 질문을 분석하여 JSON만 반환하세요 (코드블록·설명 없이 JSON 텍스트만).
+
+분석 대상 법령 목록: {AVAILABLE_LAWS}
+
+반환 형식:
+{{
+  "category": "농업" | "지식재산" | "공통",
+  "basis_type": "허가·등록·신고" | "금지·제한" | "의무·기준" | "지원·권리" | "일반",
+  "guidance": "이 질문에 대한 방향 안내 2~3문장 (마크다운 **굵게** 사용 가능)",
+  "steps": ["단계1", "단계2", "단계3"],
+  "laws": ["관련 법령명1", "관련 법령명2"],
+  "keywords": ["조문 검색 키워드1", "키워드2", "키워드3"],
+  "caution": "주의사항 (없으면 null)"
+}}
+laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
+
+    user_msg = f"질문: {query}"
+
+    try:
+        ai_text = ""
+        if provider == "gemini":
+            url = (f"https://generativelanguage.googleapis.com/v1beta/models"
+                   f"/{mdl}:generateContent?key={api_key}")
+            resp = req_lib.post(url, timeout=25,
+                headers={"Content-Type": "application/json"},
+                json={"contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_msg}"}]}],
+                      "generationConfig": {"maxOutputTokens": 600, "temperature": 0.2}})
+            if resp.status_code != 200:
+                err = resp.json().get("error", {}).get("message", "Gemini 오류")
+                return jsonify({"error": f"AI 오류: {err}"}), 502
+            ai_text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+
+        elif provider in ("claude",):
+            resp = req_lib.post("https://api.anthropic.com/v1/messages", timeout=25,
+                headers={"Content-Type": "application/json",
+                         "x-api-key": api_key, "anthropic-version": "2023-06-01"},
+                json={"model": mdl, "max_tokens": 600,
+                      "system": system_prompt,
+                      "messages": [{"role": "user", "content": user_msg}]})
+            if resp.status_code != 200:
+                err = resp.json().get("error", {}).get("message", "Claude 오류")
+                return jsonify({"error": f"AI 오류: {err}"}), 502
+            ai_text = resp.json()["content"][0]["text"]
+
+        elif provider in ("gpt", "openai"):
+            resp = req_lib.post("https://api.openai.com/v1/chat/completions", timeout=25,
+                headers={"Content-Type": "application/json",
+                         "Authorization": f"Bearer {api_key}"},
+                json={"model": mdl, "max_tokens": 600, "temperature": 0.2,
+                      "messages": [{"role": "system", "content": system_prompt},
+                                   {"role": "user",   "content": user_msg}]})
+            if resp.status_code != 200:
+                err = resp.json().get("error", {}).get("message", "GPT 오류")
+                return jsonify({"error": f"AI 오류: {err}"}), 502
+            ai_text = resp.json()["choices"][0]["message"]["content"]
+        else:
+            return jsonify({"error": f"지원하지 않는 AI 프로바이더: {provider}"}), 400
+
+        # JSON 파싱 (코드블록 제거 후)
+        clean = re.sub(r"```(?:json)?|```", "", ai_text).strip()
+        ai = json.loads(clean)
+
+    except json.JSONDecodeError:
+        # AI가 JSON을 제대로 반환 못한 경우 — 키워드 기반 폴백
+        print(f"[scenario] JSON 파싱 실패: {ai_text[:200]}")
+        tokens = re.findall(r"[가-힣]{2,}", query)
+        ai = {"category": "공통", "basis_type": "일반",
+              "guidance": "관련 조문을 검색합니다.", "steps": [],
+              "laws": [], "keywords": tokens[:5], "caution": None}
+    except Exception as e:
+        return jsonify({"error": f"AI 연결 오류: {str(e)}"}), 502
+
+    laws_to_search  = ai.get("laws", []) or []
+    keywords        = ai.get("keywords", []) or []
+    guidance        = ai.get("guidance", "")
+    steps           = ai.get("steps", []) or []
+    category        = ai.get("category", "공통")
+    basis_type      = ai.get("basis_type", "일반")
+    caution         = ai.get("caution")
+
+    if not keywords:
+        tokens = re.findall(r"[가-힣]{2,}", query)
+        keywords = tokens[:5]
+
+    # laws가 비어있으면 CANDIDATE_LAWS 전체 대상
+    if not laws_to_search:
+        laws_to_search = list(CANDIDATE_LAWS)[:6]
+
+    # ── Step-2: 법령별 관련 조문 조회 ─────────────────────────────────────────
+    def _fetch_for_law(law_name):
+        for kw in keywords:
+            arts = _fetch_matching_articles(law_name, kw)
+            if arts:
+                return law_name, arts
+        return law_name, []
+
+    results = []
+    try:
+        with _cf.ThreadPoolExecutor(max_workers=4) as ex:
+            futs = {ex.submit(_fetch_for_law, ln): ln for ln in laws_to_search}
+            for fut in _cf.as_completed(futs, timeout=20):
+                ln, arts = fut.result()
+                if arts:
+                    matched_kws = [kw for kw in keywords
+                                   if any(kw in (a.get("조문내용","") + a.get("조문제목",""))
+                                          for a in arts)]
+                    results.append({
+                        "법령명한글": ln,
+                        "matched_articles": arts[:8],
+                        "matched_keywords": matched_kws,
+                        "relevance": len(matched_kws) * 10 + len(arts),
+                    })
+    except Exception:
+        pass
+
+    results.sort(key=lambda x: x["relevance"], reverse=True)
+
+    return jsonify({
+        "success":    True,
+        "query":      query,
+        "category":   category,
+        "basis_type": basis_type,
+        "guidance":   guidance,
+        "steps":      steps,
+        "caution":    caution,
+        "keywords":   keywords,
+        "laws":       results,
+    })
+
+
 @app.route("/api/law/articles")
 def get_law_articles():
     """법령명으로 조문 전체 조회"""
