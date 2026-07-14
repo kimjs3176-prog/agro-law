@@ -5,6 +5,7 @@
 """
 
 import os, json, re, time, threading, webbrowser
+import concurrent.futures as _cf
 import xml.etree.ElementTree as ET
 import urllib3
 from flask import Flask, request, jsonify, Response
@@ -569,7 +570,6 @@ def search_laws():
         return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
     try:
         add_recent(query)
-        import concurrent.futures as _cf
 
         def _do_law():
             d = _law_get_json({"target": "law", "query": query, "display": display})
@@ -754,8 +754,6 @@ def search_by_article_keyword():
     if len(query) < 2:
         return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
 
-    import concurrent.futures as _cf  # noqa: F811
-
     # ── Stage 1: law + admrul 병렬 검색 ────────────────────────────────────────
     # law_name → {"meta": dict, "doc_type": "law"|"admrul"}
     stage1_meta: dict = {}
@@ -852,7 +850,7 @@ def search_by_article_keyword():
                         results.append(res)
                 except Exception as e:
                     print(f"[article-search] future 오류: {e}")
-    except concurrent.futures.TimeoutError:
+    except _cf.TimeoutError:
         truncated = True
         print(f"[article-search] 타임아웃, {len(results)}/{len(all_target)}건 탐색")
 
@@ -914,7 +912,6 @@ def search_legal_basis():
                 print(f"[basis] Stage1(admrul q={q!r}) 오류: {e}")
         return results
 
-    import concurrent.futures as _cf
     with _cf.ThreadPoolExecutor(max_workers=2) as _ex:
         _f_law    = _ex.submit(_b_stage1_law)
         _f_admrul = _ex.submit(_b_stage1_admrul)
@@ -1169,11 +1166,26 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
 
     # ── Step-2: 법령별 관련 조문 조회 ─────────────────────────────────────────
     def _fetch_for_law(law_name):
-        for kw in keywords:
-            arts = _fetch_matching_articles(law_name, kw)
-            if arts:
-                return law_name, arts
-        return law_name, []
+        """법령에서 keywords에 매칭되는 조문을 수집해 (표시명, 조문리스트) 반환.
+        _fetch_matching_articles 는 {'law_name','keyword','articles'} dict 를
+        돌려주므로 여기서 조문 리스트로 평탄화하고, 여러 키워드 결과를
+        조문번호·제목 기준으로 중복 제거하여 합친다."""
+        resolved = law_name
+        seen, arts = set(), []
+        try:
+            for kw in keywords:
+                res = _fetch_matching_articles(law_name, kw)
+                if not res:
+                    continue
+                resolved = res.get("law_name") or resolved
+                for a in res.get("articles", []):
+                    key = (a.get("조문번호", ""), a.get("조문제목", ""))
+                    if key not in seen:
+                        seen.add(key)
+                        arts.append(a)
+        except Exception as e:
+            print(f"[scenario] {law_name} 조문 조회 오류: {e}")
+        return resolved, arts
 
     results = []
     try:
@@ -1183,7 +1195,7 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
                 ln, arts = fut.result()
                 if arts:
                     matched_kws = [kw for kw in keywords
-                                   if any(kw in (a.get("조문내용","") + a.get("조문제목",""))
+                                   if any(kw in (a.get("조문내용", "") + a.get("조문제목", ""))
                                           for a in arts)]
                     results.append({
                         "법령명한글": ln,
@@ -1191,8 +1203,8 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
                         "matched_keywords": matched_kws,
                         "relevance": len(matched_kws) * 10 + len(arts),
                     })
-    except Exception:
-        pass
+    except _cf.TimeoutError:
+        print(f"[scenario] Step-2 타임아웃, {len(results)}건 반환")
 
     results.sort(key=lambda x: x["relevance"], reverse=True)
 
