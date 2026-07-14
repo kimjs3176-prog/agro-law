@@ -175,16 +175,26 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 
 /* ── 모바일 반응형 ── */
 @media(max-width:640px){
-  .topbar{padding:0 14px;gap:6px;height:52px;}
-  .brand-sub{display:none;}
-  .settings-btn span{display:none;}
-  .main{padding:12px 12px 72px;}
+  html,body{overflow-x:hidden;}
+  .topbar{padding:0 12px;gap:4px;height:52px;}
+  .brand-sub,.brand-en{display:none;}
+  .brand{font-size:16px;}
+  /* 하단 네비게이션과 중복되는 상단 버튼 숨김 */
+  .hide-mobile{display:none!important;}
+  /* 남은 설정 버튼(관계도·AI설정)은 아이콘만 표시 */
+  .sb-label{display:none;}
+  .settings-btn{padding:7px 9px;font-size:15px;margin-left:2px;}
+  .apibadge{font-size:10px;padding:3px 9px;}
+  .main{padding:12px 12px 76px;}
   .spanel{padding:16px 16px 14px;border-radius:16px;}
   .tabs{gap:5px;flex-wrap:wrap;}
   .tab,.fav-tab-btn{font-size:12px;padding:6px 12px;}
+  /* 모드 토글: 화면 폭에 맞춰 3등분(가로 넘침 방지) */
+  .mtoggle{width:100%;padding:3px;}
+  .mbtn{flex:1;padding:9px 4px;font-size:12px;text-align:center;letter-spacing:-.3px;}
   .srow{gap:8px;}
-  .sinput{font-size:15px;padding:12px 14px;}
-  .sbtn{padding:11px 18px;font-size:14px;}
+  .sinput{font-size:16px;padding:12px 14px;}  /* 16px: iOS 포커스 시 자동 확대 방지 */
+  .sbtn{padding:11px 16px;font-size:14px;flex-shrink:0;}
   .card-head{flex-wrap:wrap;gap:4px;padding:14px 16px;}
   .ldate{display:none;}
   .lorg{font-size:10px;}
@@ -783,8 +793,9 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <div class="net-legend-row"><div class="net-legend-dot" style="background:#f59e0b;"></div>시행령·시행규칙</div>
     </div>
   </div>
+</div>
 
-<!-- 모바일 하단 네비게이션 -->
+<!-- 모바일 하단 네비게이션 (body 직속 — 관계도 패널 밖에 위치해야 표시됨) -->
 <nav class="mobile-nav" id="mobileNav">
   <button class="mnav-btn" onclick="document.getElementById('q').focus();window.scrollTo(0,0)">
     <span class="mnav-icon">🔍</span>검색
@@ -803,7 +814,6 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   </button>
 </nav>
 
-</div>
 <div class="net-tooltip" id="netTooltip"></div>
 
 <!-- 법령 비교 패널 -->
@@ -988,15 +998,15 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   <div class="logo" style="font-size:13px;font-weight:900;letter-spacing:-.5px;">ELS</div>
   <div>
     <span class="brand">간편법령검색</span>
-    <span style="font-size:10px;color:#9ca3af;margin-left:6px;font-weight:500;letter-spacing:.5px;">easy law search</span><br>
+    <span class="brand-en" style="font-size:10px;color:#9ca3af;margin-left:6px;font-weight:500;letter-spacing:.5px;">easy law search</span><br>
     <span class="brand-sub">법제처 국가법령정보 연동</span>
   </div>
   <span class="apibadge" id="badge">● 확인 중</span>
-  <button class="dark-btn" id="darkBtn" onclick="toggleDark()" title="다크모드">🌙</button>
-  <button class="settings-btn" onclick="openStatPanel()">📊 통계</button>
-  <button class="settings-btn" onclick="openCollModal()">📁 컬렉션</button>
-  <button class="settings-btn" onclick="openNetPanel()">🕸 관계도</button>
-  <button class="settings-btn" onclick="openAiModal()">✦ AI 설정 <span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
+  <button class="dark-btn hide-mobile" id="darkBtn" onclick="toggleDark()" title="다크모드">🌙</button>
+  <button class="settings-btn hide-mobile" onclick="openStatPanel()"><span class="sb-icon">📊</span><span class="sb-label"> 통계</span></button>
+  <button class="settings-btn hide-mobile" onclick="openCollModal()"><span class="sb-icon">📁</span><span class="sb-label"> 컬렉션</span></button>
+  <button class="settings-btn" onclick="openNetPanel()"><span class="sb-icon">🕸</span><span class="sb-label"> 관계도</span></button>
+  <button class="settings-btn" onclick="openAiModal()"><span class="sb-icon">✦</span><span class="sb-label"> AI 설정</span> <span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
 </div>
 
 <!-- 통계 패널 -->
