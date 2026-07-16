@@ -173,6 +173,24 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .art-body mark,.fp-art-body mark,.ref-art-body mark{background:#fef08a;color:inherit;border-radius:2px;padding:0 1px;font-weight:600;}
 .art-match-count{font-size:10px;color:var(--g);background:var(--gl);padding:1px 6px;border-radius:10px;margin-left:6px;}
 
+/* ── 관련 판례·자치법규(조례) 연계 ── */
+.rel-notice{font-size:13px;color:var(--tx);padding:10px 12px;background:var(--gl);border-radius:var(--rs);margin-bottom:14px;line-height:1.5;}
+.rel-section{margin-bottom:18px;}
+.rel-section-hd{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--tx);margin-bottom:8px;}
+.rel-cnt{font-size:11px;font-weight:600;color:var(--mu);background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:1px 8px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.rel-list{display:flex;flex-direction:column;gap:7px;}
+.rel-item{display:block;text-decoration:none;background:var(--sf);border-radius:var(--rs);padding:10px 12px;box-shadow:0 1px 4px rgba(0,0,0,.06);transition:all .15s cubic-bezier(.34,1.56,.64,1);border:1px solid transparent;}
+.rel-item:hover{box-shadow:var(--shadow-md);transform:translateY(-1px);border-color:var(--gl);}
+.rel-item-main{display:flex;align-items:center;gap:7px;}
+.rel-title{font-size:13px;font-weight:600;color:var(--tx);flex:1;min-width:0;line-height:1.4;}
+.rel-ext{font-size:11px;color:var(--ht);flex-shrink:0;}
+.rel-meta{font-size:11px;color:var(--mu);margin-top:4px;padding-left:2px;}
+.rel-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0;letter-spacing:.2px;}
+.rel-badge.prec{background:#eef2ff;color:#4338ca;}
+.rel-badge.ordin{background:#ecfdf5;color:#047857;}
+.rel-empty{font-size:12px;color:var(--ht);padding:12px;text-align:center;background:var(--bg);border-radius:var(--rs);}
+.rel-foot{font-size:11px;color:var(--ht);line-height:1.6;padding:10px 2px 0;border-top:1px solid var(--bd);margin-top:6px;}
+
 /* ── 모바일 반응형 ── */
 @media(max-width:640px){
   html,body{overflow-x:hidden;}
@@ -949,6 +967,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <button class="fp-tbtn" onclick="openCmpFromPanel()">⚖ 비교</button>
       <button class="fp-tbtn" id="fpAmendBtn" onclick="fpShowAmendments()">🔴 최근 개정</button>
       <button class="fp-tbtn" onclick="fpShowHistory()">📅 개정이력</button>
+      <button class="fp-tbtn" id="fpRelatedBtn" onclick="fpShowRelated()" title="관련 판례·자치법규(조례) 연계 제안">🔗 관련 조례·판례</button>
       <button class="fp-tbtn" onclick="fpPrint()">🖨 인쇄</button>
       <button class="fp-close" onclick="closePanel()">✕</button>
     </div>
@@ -3743,6 +3762,71 @@ async function checkAmendBadgeAsync(lawName){
     const d=await r.json();
     if(d.success) updateAmendBadge((d.amended_articles||[]).length);
   }catch{}
+}
+
+// ── 관련 판례·자치법규(조례) 연계 제안 ─────────────────────────────────────────
+async function fpShowRelated(){
+  const name=document.getElementById('fpTitle').textContent;
+  const lawUrl=document.getElementById('fpExtLink').href;
+  if(!name||name==='법령 전문') return;
+
+  const btn=document.getElementById('fpRelatedBtn');
+  const btnLabel=btn?btn.textContent:'';
+  if(btn){ btn.textContent='조회 중...'; btn.disabled=true; }
+
+  const body=document.getElementById('fpBody');
+  const backBtn=`<button class="fp-tbtn" style="margin-bottom:12px;" onclick="openFullPanel(decodeURIComponent('${encodeURIComponent(name)}'),decodeURIComponent('${encodeURIComponent(lawUrl)}'))">← 조문 전문으로 돌아가기</button>`;
+  body.innerHTML=`<div class="fp-loading"><div class="spinner" style="margin:0 auto 10px;"></div>관련 판례·자치법규(조례)를 검색하는 중...</div>`;
+
+  const renderList = (items, kind) => {
+    if(!items.length) return `<div class="rel-empty">관련 ${kind==='prec'?'판례':'자치법규(조례)'}를 찾지 못했습니다.</div>`;
+    return items.map(it=>{
+      const isPrec = kind==='prec';
+      const title  = isPrec ? (it.title||'(제목 없음)') : (it.name||'');
+      const meta   = isPrec
+        ? [it.court, it.case_no, it.date].filter(Boolean).join(' · ')
+        : [it.org, it.kind, it.date].filter(Boolean).join(' · ');
+      const href   = it.url || '#';
+      return `<a class="rel-item" href="${escHtml(href)}" target="_blank" rel="noopener noreferrer">
+        <div class="rel-item-main">
+          <span class="rel-badge ${isPrec?'prec':'ordin'}">${isPrec?'판례':'조례'}</span>
+          <span class="rel-title">${escHtml(title)}</span>
+          <span class="rel-ext">↗</span>
+        </div>
+        ${meta?`<div class="rel-meta">${escHtml(meta)}</div>`:''}
+      </a>`;
+    }).join('');
+  };
+
+  try{
+    const r=await fetch(`/api/law/related?name=${encodeURIComponent(name)}`);
+    const d=await r.json();
+    if(d.error){
+      body.innerHTML=`<div style="padding:16px;">${backBtn}<div class="fp-empty">${escHtml(d.error)}</div></div>`;
+      return;
+    }
+    const precs=d.precedents||[];
+    const ords =d.ordinances||[];
+    body.innerHTML=`<div style="padding:4px 0 16px;">${backBtn}
+      <div class="rel-notice">
+        <b>${escHtml(name)}</b> 관련 정보 연계 제안
+        <span style="color:var(--ht);font-weight:400;">· 판례 ${precs.length} · 자치법규 ${ords.length}</span>
+      </div>
+      <div class="rel-section">
+        <div class="rel-section-hd"><span class="rel-badge prec">판례</span> 관련 판례 <span class="rel-cnt">${precs.length}</span></div>
+        <div class="rel-list">${renderList(precs,'prec')}</div>
+      </div>
+      <div class="rel-section">
+        <div class="rel-section-hd"><span class="rel-badge ordin">자치법규</span> 관련 자치법규(조례) <span class="rel-cnt">${ords.length}</span></div>
+        <div class="rel-list">${renderList(ords,'ordin')}</div>
+      </div>
+      <div class="rel-foot">※ 법제처 국가법령정보센터 검색 결과입니다. 항목을 클릭하면 원문으로 이동합니다. 실제 적용 시 최신 여부를 반드시 확인하세요.</div>
+    </div>`;
+  }catch(e){
+    body.innerHTML=`<div style="padding:16px;">${backBtn}<div class="fp-empty">조회 중 오류가 발생했습니다: ${escHtml(e.message||String(e))}</div></div>`;
+  }finally{
+    if(btn){ btn.textContent=btnLabel||'🔗 관련 조례·판례'; btn.disabled=false; }
+  }
 }
 
 

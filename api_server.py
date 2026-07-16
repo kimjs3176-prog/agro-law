@@ -1763,9 +1763,117 @@ def get_art_history():
         return jsonify({"error": str(e)}), 500
 
 
+# ── 관련 판례·자치법규(조례) 연계 ────────────────────────────────────────────
+def _fmt_law_date(s: str) -> str:
+    """YYYYMMDD → YYYY.MM.DD (그 외 형식은 그대로 반환)"""
+    d = re.sub(r"\D", "", s or "")
+    return re.sub(r"(\d{4})(\d{2})(\d{2})", r"\1.\2.\3", d) if len(d) == 8 else (s or "").strip()
 
-   
-    
+
+def _abs_law_url(link: str) -> str:
+    """법제처 상세링크(상대경로 가능)를 절대 URL로 변환"""
+    link = (link or "").strip()
+    if not link:
+        return ""
+    if link.startswith("http"):
+        return link
+    if link.startswith("/"):
+        return "https://www.law.go.kr" + link
+    return "https://www.law.go.kr/" + link
+
+
+def _search_root_items(data: dict, item_keys) -> list:
+    """법제처 검색 JSON에서 결과 리스트 추출.
+    루트 키(PrecSearch/OrdinSearch/LawSearch 등)와 항목 키가 타깃마다 달라
+    최상위 dict 값들을 훑으며 item_keys 중 첫 매칭 리스트를 돌려준다."""
+    if not isinstance(data, dict):
+        return []
+    for root_val in data.values():
+        if isinstance(root_val, dict):
+            for k in item_keys:
+                v = root_val.get(k)
+                if v:
+                    return v if isinstance(v, list) else [v]
+    return []
+
+
+@app.route("/api/law/related")
+def get_law_related():
+    """법령명 기준 관련 판례·자치법규(조례) 연계 제안.
+    법제처 통합검색 API의 판례(target=prec)·자치법규(target=ordin)를 병렬 조회한다."""
+    law_name = request.args.get("name", "").strip()
+    if not law_name:
+        return jsonify({"error": "name 파라미터가 필요합니다"}), 400
+    display = request.args.get("display", "12")
+
+    def _do_prec():
+        try:
+            d = _law_get_json({"target": "prec", "query": law_name, "display": display},
+                              timeout=(5, 12))
+            out = []
+            for it in _search_root_items(d, ("prec", "law")):
+                if not isinstance(it, dict):
+                    continue
+                seq = (it.get("판례일련번호") or "").strip()
+                out.append({
+                    "title":     (it.get("사건명") or "").strip(),
+                    "case_no":   (it.get("사건번호") or "").strip(),
+                    "court":     (it.get("법원명") or "").strip(),
+                    "date":      _fmt_law_date(it.get("선고일자")),
+                    "case_type": (it.get("사건종류명") or "").strip(),
+                    "id":        seq,
+                    "url":       (f"https://www.law.go.kr/precInfoP.do?precSeq={seq}" if seq
+                                  else _abs_law_url(it.get("판례상세링크"))),
+                })
+            return [o for o in out if o["title"]]
+        except Exception as e:
+            print(f"[related] prec 오류: {e}")
+            return []
+
+    def _do_ordin():
+        try:
+            d = _law_get_json({"target": "ordin", "query": law_name, "display": display},
+                              timeout=(5, 12))
+            out = []
+            for it in _search_root_items(d, ("ordin", "law")):
+                if not isinstance(it, dict):
+                    continue
+                nm = (it.get("자치법규명") or it.get("법령명한글") or "").strip()
+                seq = (it.get("자치법규일련번호") or "").strip()
+                out.append({
+                    "name": nm,
+                    "org":  (it.get("지자체기관명") or it.get("소관부처명") or "").strip(),
+                    "kind": (it.get("자치법규종류") or "").strip(),
+                    "date": _fmt_law_date(it.get("공포일자") or it.get("발령일자")),
+                    "id":   seq,
+                    "url":  (f"https://www.law.go.kr/ordinInfoP.do?ordinSeq={seq}" if seq
+                             else _abs_law_url(it.get("자치법규상세링크"))),
+                })
+            return [o for o in out if o["name"]]
+        except Exception as e:
+            print(f"[related] ordin 오류: {e}")
+            return []
+
+    try:
+        with _cf.ThreadPoolExecutor(max_workers=2) as ex:
+            f_prec = ex.submit(_do_prec)
+            f_ord  = ex.submit(_do_ordin)
+            precedents = f_prec.result()
+            ordinances = f_ord.result()
+        print(f"[related] '{law_name}' 판례={len(precedents)} 자치법규={len(ordinances)}")
+        return jsonify({
+            "success":     True,
+            "law_name":    law_name,
+            "precedents":  precedents,
+            "ordinances":  ordinances,
+            "prec_count":  len(precedents),
+            "ordin_count": len(ordinances),
+        })
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/recent")
 def get_recent():
     return jsonify({"recent": recent_searches})
