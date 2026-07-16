@@ -191,6 +191,24 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .rel-empty{font-size:12px;color:var(--ht);padding:12px;text-align:center;background:var(--bg);border-radius:var(--rs);}
 .rel-foot{font-size:11px;color:var(--ht);line-height:1.6;padding:10px 2px 0;border-top:1px solid var(--bd);margin-top:6px;}
 
+/* ── 기관 특화 정보 카드 ── */
+.agency-info{margin-top:14px;padding:16px;border-radius:14px;background:linear-gradient(135deg,var(--gl),#f7fbff);border:1px solid #e3ecfb;}
+.agc-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;}
+.agc-name{font-size:14px;font-weight:800;color:var(--gp);letter-spacing:-.3px;}
+.agc-home{margin-left:auto;font-size:12px;font-weight:600;color:var(--g);text-decoration:none;background:var(--sf);padding:4px 10px;border-radius:999px;box-shadow:0 1px 4px rgba(0,0,0,.06);white-space:nowrap;transition:.15s;}
+.agc-home:hover{background:var(--g);color:#fff;}
+.agc-desc{font-size:12.5px;color:var(--mu);line-height:1.6;margin-bottom:12px;}
+.agc-block{margin-top:10px;}
+.agc-blabel{font-size:11px;font-weight:700;color:var(--ht);letter-spacing:.4px;text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;gap:6px;}
+.agc-hint{font-size:10px;font-weight:500;color:var(--g);background:var(--sf);padding:1px 7px;border-radius:999px;text-transform:none;letter-spacing:0;}
+.agc-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.agc-chip{padding:7px 13px;border-radius:999px;border:1px solid transparent;font-size:12px;font-weight:600;cursor:pointer;background:var(--sf);color:var(--tx);transition:all .18s cubic-bezier(.34,1.56,.64,1);box-shadow:0 1px 4px rgba(0,0,0,.06);text-align:left;line-height:1.35;}
+.agc-chip:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);}
+.agc-chip.reg{color:var(--gp);}
+.agc-chip.reg:hover{background:var(--g);color:#fff;}
+.agc-chip.sc{color:#065f46;border-color:#a7f3d0;}
+.agc-chip.sc:hover{background:#059669;color:#fff;border-color:#059669;}
+
 /* ── 모바일 반응형 ── */
 @media(max-width:640px){
   html,body{overflow-x:hidden;}
@@ -1076,6 +1094,8 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <span class="rec-label">최근 검색</span>
       <div id="recentChips"></div>
     </div>
+    <!-- 기관 특화 정보 카드 (특정 기관 탭 선택 시 표시) -->
+    <div class="agency-info" id="agencyInfo" style="display:none;"></div>
   </div>
 
   <!-- 결과 헤더 -->
@@ -1121,9 +1141,50 @@ const DEFAULT_AGENCIES = [
 
 const DEFAULT_KEYWORDS = {
   all:   ['농지법','종자산업법','농촌진흥법','농약관리법','비료관리법','축산법','식물방역법','발명진흥법','특허법'],
-  mafra: ['농지법','축산법','식물방역법','농수산물 유통 및 가격안정에 관한 법률','식품안전기본법','농어업재해보험법'],
-  rda:   ['농촌진흥법','종자산업법','농약관리법','비료관리법','농업생명자원의 보존·관리 및 이용에 관한 법률'],
+  mafra: ['농지법','농업·농촌 및 식품산업 기본법','축산법','가축전염병 예방법','식물방역법','농수산물 유통 및 가격안정에 관한 법률','친환경농어업 육성 및 유기식품 등의 관리·지원에 관한 법률','농어업재해보험법'],
+  rda:   ['농촌진흥법','종자산업법','농약관리법','비료관리법','식물신품종 보호법','농업생명자원의 보존·관리 및 이용에 관한 법률'],
   koat:  ['농업기술실용화 촉진법','기술의 이전 및 사업화 촉진에 관한 법률','발명진흥법','특허법','실용신안법','디자인보호법','상표법','식물신품종 보호법','부정경쟁방지 및 영업비밀보호에 관한 법률']
+};
+
+// ── 기관 특화 프로필 (소관 주요 법령·핵심 규정·대표 실무 시나리오·소관 링크) ──
+const AGENCY_PROFILES = {
+  mafra: {
+    name: '농림축산식품부',
+    desc: '농업·농촌·식품산업 정책과 농지·축산·식품안전을 총괄하는 중앙행정기관입니다.',
+    regs: [],
+    scenarios: [
+      '농지를 전용하여 시설을 지으려면 어떤 허가 절차가 필요한가요?',
+      '가축전염병이 발생했을 때 축산농가의 신고·방역 의무는 무엇인가요?',
+      '친환경농산물 인증을 받으려면 어떤 요건과 절차가 필요한가요?',
+      '농수산물 유통 이력관리 대상과 의무사항은 무엇인가요?'
+    ],
+    home: 'https://www.mafra.go.kr', homeLabel: '농림축산식품부'
+  },
+  rda: {
+    name: '농촌진흥청',
+    desc: '농업과학기술 연구개발과 종자·농약·비료 등 영농기술 개발·보급을 담당하는 기관입니다.',
+    regs: ['농촌진흥청 직무발명의 관리에 관한 규정','농촌진흥청 연구개발사업 운영규정'],
+    scenarios: [
+      '신품종을 개발했는데 품종보호 출원 절차와 요건은 무엇인가요?',
+      '농약을 등록하려면 어떤 시험성적서와 자료가 필요한가요?',
+      '국가연구개발사업 성과물의 지식재산권은 누구에게 귀속되나요?',
+      '연구개발 과정에서 나온 직무발명의 보상은 어떻게 받나요?'
+    ],
+    home: 'https://www.rda.go.kr', homeLabel: '농촌진흥청'
+  },
+  koat: {
+    name: '한국농업기술진흥원',
+    desc: '농업기술의 실용화·사업화와 지식재산 이전, 농산업 성장 지원을 수행하는 기관입니다.',
+    regs: ['직무발명 보상에 관한 규정','공공연구기관 기술이전·사업화 촉진 운영규정'],
+    scenarios: [
+      '농업기술(특허)을 기업에 이전하려면 어떤 절차가 필요한가요?',
+      '직무발명 보상금은 어떤 기준으로 산정·지급되나요?',
+      '기술사업화 지원을 받으려면 어떤 요건을 갖춰야 하나요?',
+      '특허권을 침해당했을 때 취할 수 있는 법적 조치는 무엇인가요?',
+      '영업비밀을 보호하기 위해 무엇을 준비해야 하나요?'
+    ],
+    home: 'https://www.koat.or.kr', homeLabel: '한국농업기술진흥원'
+  }
 };
 
 // ── 기관 목록 가져오기/저장 ──
@@ -1217,12 +1278,50 @@ function renderChips(){
     : editBtn;
 }
 
+// ── 기관 특화 정보 카드 ──
+function renderAgencyInfo(){
+  const el = document.getElementById('agencyInfo');
+  if(!el) return;
+  const prof = AGENCY_PROFILES[agency];
+  // 전체/즐겨찾기/시나리오 모드에서는 숨김
+  if(!prof || favMode || mode==='scenario'){ el.style.display='none'; el.innerHTML=''; return; }
+  const q = s => s.replace(/'/g,"\\'");
+  const regChips = (prof.regs||[]).length
+    ? `<div class="agc-block">
+         <div class="agc-blabel">핵심 규정·행정규칙</div>
+         <div class="agc-chips">${prof.regs.map(r=>
+            `<button class="agc-chip reg" onclick="quick('${q(r)}')" title="${escHtml(r)} 검색">📘 ${escHtml(r)}</button>`).join('')}</div>
+       </div>` : '';
+  const scChips = (prof.scenarios||[]).map(s=>
+      `<button class="agc-chip sc" onclick="agencyScenario('${q(s)}')">✦ ${escHtml(s)}</button>`).join('');
+  el.innerHTML = `
+    <div class="agc-head">
+      <span class="agc-name">${escHtml(prof.name)} 특화</span>
+      <a class="agc-home" href="${escHtml(prof.home)}" target="_blank" rel="noopener noreferrer">↗ ${escHtml(prof.homeLabel||'홈페이지')}</a>
+    </div>
+    <div class="agc-desc">${escHtml(prof.desc)}</div>
+    ${regChips}
+    <div class="agc-block">
+      <div class="agc-blabel">대표 실무 시나리오 <span class="agc-hint">클릭 시 AI 근거 검색</span></div>
+      <div class="agc-chips">${scChips}</div>
+    </div>`;
+  el.style.display='';
+}
+
+// 기관 시나리오 칩 → 시나리오 모드로 전환 후 검색
+function agencyScenario(qtext){
+  setMode('scenario');
+  document.getElementById('q').value = qtext;
+  doSearch();
+}
+
 // ── 기관 탭 ──
 function setAgency(ag){
   agency=ag; favMode=false;
   document.getElementById('favTabBtn').classList.remove('active');
   renderAgencyTabs(); // 동적 탭 재렌더링 (active 반영)
   renderChips();
+  renderAgencyInfo();
 }
 
 // ── 검색 모드 ──
@@ -1250,6 +1349,7 @@ function setMode(m){
     m==='law'      ? '법령명 입력 (예: 농지법, 종자산업법, 특허법)' :
     m==='scenario' ? '실무 질문을 입력하세요 (예: 농약을 수입·판매하려면 어떤 절차가 필요한가요?)' :
                      '조문 내 키워드 입력 (예: 전용실시, 손해배상, 등록취소)';
+  renderAgencyInfo(); // 시나리오 모드 전환 시 숨김/복원
   clearResults();
 }
 function scenarioQuick(q){ document.getElementById('q').value=q; doSearch(); }
@@ -2056,6 +2156,7 @@ async function toggleFavTab(){
   favMode = !favMode;
   const btn = document.getElementById('favTabBtn');
   btn.classList.toggle('active', favMode);
+  renderAgencyInfo(); // 즐겨찾기 모드에서는 숨김, 해제 시 복원
   if(favMode){
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
     renderFavList();
