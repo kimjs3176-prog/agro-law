@@ -1378,6 +1378,40 @@ def remove_favorite():
     return jsonify({"ok": True})
 
 
+def _ai_post_retry(do_post, tries=3):
+    """AI 프로바이더 호출 — 과부하/일시오류(429/500/502/503/504)는 백오프 재시도."""
+    import time as _t
+    resp = None
+    for i in range(tries):
+        resp = do_post()
+        if resp.status_code not in (429, 500, 502, 503, 504):
+            return resp
+        if i < tries - 1:
+            _t.sleep(0.8 * (i + 1))
+    return resp
+
+
+def _ai_error(resp):
+    """AI 응답 에러를 (사용자 메시지, 분류) 로 정규화."""
+    try:
+        msg = resp.json().get("error", {})
+        msg = msg.get("message", "") if isinstance(msg, dict) else str(msg)
+    except Exception:
+        msg = (resp.text or "")[:200]
+    low = (msg or "").lower()
+    code = resp.status_code
+    if code in (429, 503) or "overload" in low or "high demand" in low or "unavailable" in low or "quota" in low or "rate" in low:
+        kind = "overload"
+        user = f"AI 모델이 일시적으로 과부하 상태입니다 (재시도 후에도 실패). 잠시 뒤 다시 시도하거나 다른 모델을 선택하세요. (원문: {msg})"
+    elif code in (401, 403) or "api key" in low or "permission" in low or "invalid" in low or "unauthenticated" in low:
+        kind = "auth"
+        user = f"API 키가 올바르지 않거나 권한이 없습니다. 키를 확인하세요. (원문: {msg})"
+    else:
+        kind = "error"
+        user = msg or f"AI API 오류 ({code})"
+    return user, kind
+
+
 @app.route("/api/ai/interpret", methods=["POST"])
 def ai_interpret():
     """멀티 프로바이더 조문 해석 (Claude / GPT / Gemini / Ollama)"""
@@ -1421,7 +1455,7 @@ def ai_interpret():
         # ── Claude ─────────────────────────────────────────────────────────────
         if provider == "claude":
             mdl = model or "claude-sonnet-4-5"
-            resp = req_lib.post(
+            resp = _ai_post_retry(lambda: req_lib.post(
                 "https://api.anthropic.com/v1/messages",
                 json={"model": mdl, "max_tokens": 1500,
                       "system": system_prompt,
@@ -1430,16 +1464,16 @@ def ai_interpret():
                          "x-api-key": api_key,
                          "anthropic-version": "2023-06-01"},
                 timeout=30,
-            )
-            d = resp.json()
+            ))
             if resp.status_code != 200:
-                return jsonify({"error": d.get("error", {}).get("message", "Claude API 오류")}), resp.status_code
-            return jsonify({"result": d["content"][0]["text"]})
+                user, kind = _ai_error(resp)
+                return jsonify({"error": user, "kind": kind}), resp.status_code
+            return jsonify({"result": resp.json()["content"][0]["text"]})
 
         # ── OpenAI GPT ─────────────────────────────────────────────────────────
         elif provider == "gpt":
             mdl = model or "gpt-4o"
-            resp = req_lib.post(
+            resp = _ai_post_retry(lambda: req_lib.post(
                 "https://api.openai.com/v1/chat/completions",
                 json={"model": mdl, "max_tokens": 1500,
                       "messages": [{"role": "system", "content": system_prompt},
@@ -1447,28 +1481,27 @@ def ai_interpret():
                 headers={"Content-Type": "application/json",
                          "Authorization": f"Bearer {api_key}"},
                 timeout=30,
-            )
-            d = resp.json()
+            ))
             if resp.status_code != 200:
-                return jsonify({"error": d.get("error", {}).get("message", "GPT API 오류")}), resp.status_code
-            return jsonify({"result": d["choices"][0]["message"]["content"]})
+                user, kind = _ai_error(resp)
+                return jsonify({"error": user, "kind": kind}), resp.status_code
+            return jsonify({"result": resp.json()["choices"][0]["message"]["content"]})
 
         # ── Google Gemini ──────────────────────────────────────────────────────
         elif provider == "gemini":
             mdl = model or "gemini-2.5-flash"
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{mdl}:generateContent?key={api_key}"
-            resp = req_lib.post(
+            resp = _ai_post_retry(lambda: req_lib.post(
                 url,
                 json={"contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_msg}"}]}],
                       "generationConfig": {"maxOutputTokens": 1500}},
                 headers={"Content-Type": "application/json"},
                 timeout=30,
-            )
-            d = resp.json()
+            ))
             if resp.status_code != 200:
-                err = d.get("error", {}).get("message", "Gemini API 오류")
-                return jsonify({"error": err}), resp.status_code
-            text = d["candidates"][0]["content"]["parts"][0]["text"]
+                user, kind = _ai_error(resp)
+                return jsonify({"error": user, "kind": kind}), resp.status_code
+            text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
             return jsonify({"result": text})
 
         # ── Ollama (로컬) ──────────────────────────────────────────────────────
@@ -1890,6 +1923,8 @@ def get_law_related():
 SAGYU_MCP_URL = os.environ.get(
     "SAGYU_MCP_URL", "https://tech-transfer-platform-zt79.vercel.app/mcp"
 ).strip()
+# MCP 도구 목록 캐시 (URL → {tools, ts}) — 워밍된 프로세스에서 tools/list 왕복 절약
+_MCP_TOOLS_CACHE: dict = {}
 # 내규 검색 키워드 후보(도구/인자 자동 선택용)
 _MCP_SEARCH_HINTS = ("search", "검색", "find", "query", "lookup", "조회", "retrieve")
 _MCP_RULE_HINTS   = ("rule", "규정", "사규", "내규", "regulation", "정관",
@@ -1963,8 +1998,14 @@ class _McpClient:
 
     def list_tools(self):
         if self._tools is None:
-            res = self._post("tools/list", {}) or {}
-            self._tools = res.get("tools", []) or []
+            ent = _MCP_TOOLS_CACHE.get(self.url)
+            if ent and (time.time() - ent["ts"] < 300):   # 5분 캐시 (워밍된 프로세스에서 왕복 절약)
+                self._tools = ent["tools"]
+            else:
+                res = self._post("tools/list", {}) or {}
+                self._tools = res.get("tools", []) or []
+                if self._tools:
+                    _MCP_TOOLS_CACHE[self.url] = {"tools": self._tools, "ts": time.time()}
         return self._tools
 
     def call_tool(self, name: str, args: dict):
