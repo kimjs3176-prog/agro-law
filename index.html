@@ -1310,19 +1310,11 @@ function saveAgencies(arr){
 
 // ── 기관 탭 렌더링 (동적) ──
 function renderAgencyTabs(){
-  const agencies = getAgencies();
+  // 기관 선택 버튼은 제거됨 — 즐겨찾기 버튼만 유지(agency는 'all' 고정)
   const tabsEl = document.getElementById('agencyTabs');
   if(!tabsEl) return;
-  // 즐겨찾기 버튼 보존
   const favBtn = document.getElementById('favTabBtn');
   tabsEl.innerHTML = '';
-  agencies.forEach(ag => {
-    const btn = document.createElement('button');
-    btn.className = 'tab' + (agency === ag.id ? ' active' : '');
-    btn.textContent = ag.name;
-    btn.onclick = () => setAgency(ag.id);
-    tabsEl.appendChild(btn);
-  });
   if(favBtn) tabsEl.appendChild(favBtn);
 }
 
@@ -1486,39 +1478,18 @@ function clearResults(){
   const rh=document.getElementById('resultHeader'); if(rh) rh.style.display='none';
 }
 
-// ── 온보딩(빈 상태) 안내 패널 ──
+// ── 온보딩(빈 상태) 안내 — 간결한 한 줄 힌트 ──
 function renderWelcome(){
   const res=document.getElementById('results');
   if(!res) return;
-  const modes=[
-    {m:'internal', ic:'📋', t:'내규 검색',    d:'사내 규정을 규정 단위로 찾고 매칭 조문·관련 법령을 연계'},
-    {m:'law',      ic:'📖', t:'법령 검색',    d:'키워드로 관련 법령을 규정 단위로 찾고 관련 내규를 연계'},
-    {m:'scenario', ic:'✦',  t:'실무 시나리오', d:'업무 상황을 질문하면 AI가 근거 법령·조문을 제안'},
-  ];
-  const feats=[
-    {ic:'⚖', t:'내규↔법령 교차',  d:'내규↔법령을 서로 연계해 함께 확인'},
-    {ic:'📄', t:'규정 전문 패널',  d:'전문 버튼으로 오른쪽 패널에서 전문 열람'},
-    {ic:'🔗', t:'조례·판례 연계',  d:'법령 전문에서 관련 자치법규·판례를 함께 제안'},
-    {ic:'💡', t:'AI 조문 해석',    d:'어려운 조문을 쉬운 해설·실무 포인트로 풀이'},
-  ];
-  const modeCards=modes.map(x=>`
-    <button class="wc-mode${mode===x.m?' active':''}" onclick="setMode('${x.m}');document.getElementById('q').focus();window.scrollTo({top:0,behavior:'smooth'})">
-      <span class="wc-mode-ic">${x.ic}</span>
-      <span class="wc-mode-t">${x.t}</span>
-      <span class="wc-mode-d">${x.d}</span>
-    </button>`).join('');
-  const featTiles=feats.map(x=>`
-    <div class="wc-feat"><span class="wc-feat-ic">${x.ic}</span>
-      <div><div class="wc-feat-t">${x.t}</div><div class="wc-feat-d">${x.d}</div></div>
-    </div>`).join('');
+  const hint = mode==='internal' ? '내규 키워드를 검색하면 규정 단위 결과와 관련 법령을 함께 보여드립니다'
+            : mode==='law'      ? '법령 키워드를 검색하면 규정 단위 결과와 관련 내규를 함께 보여드립니다'
+            : mode==='scenario' ? '업무 상황을 질문하면 AI가 근거 법령·조문을 제안합니다'
+            :                     '검색어를 입력해 주세요';
   res.innerHTML=`
-    <div class="welcome">
-      <div class="wc-hero">
-        <div class="wc-hero-t">사내 내규와 국가법령을 <b>한 곳에서</b> 검색하세요</div>
-        <div class="wc-hero-s">내규↔법령을 서로 연계 · 규정 단위 결과 + 키워드 매칭 조문 + 전문 패널</div>
-      </div>
-      <div class="wc-modes">${modeCards}</div>
-      <div class="wc-feats">${featTiles}</div>
+    <div class="empty" style="padding:44px 20px;">
+      <div class="empty-icon">🔍</div>
+      <p>${hint}</p>
     </div>`;
 }
 
