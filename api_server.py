@@ -47,8 +47,8 @@ def _make_session() -> req_lib.Session:
     )
     adapter = HTTPAdapter(
         max_retries=retry,
-        pool_connections=4,
-        pool_maxsize=10,
+        pool_connections=8,
+        pool_maxsize=24,
     )
     s = req_lib.Session()
     s.mount("https://", adapter)
@@ -851,7 +851,7 @@ def search_by_article_keyword():
 
     results, truncated = [], False
     try:
-        with _cf.ThreadPoolExecutor(max_workers=6) as ex:
+        with _cf.ThreadPoolExecutor(max_workers=12) as ex:
             futures = {ex.submit(fetch_and_filter, name): name for name in all_target}
             for future in _cf.as_completed(futures, timeout=40):
                 try:
@@ -1024,7 +1024,7 @@ def search_legal_basis():
           f"(법령:{len(CANDIDATE_LAWS)} + 행정규칙:{len(CANDIDATE_ADMRUL)} + 추가:{len(extra_laws)})")
     results, truncated = [], False
     try:
-        with _cf.ThreadPoolExecutor(max_workers=4) as ex:
+        with _cf.ThreadPoolExecutor(max_workers=10) as ex:
             futures = {ex.submit(fetch_law, name): name for name in all_target}
             for future in _cf.as_completed(futures, timeout=45):
                 try:
@@ -1057,20 +1057,21 @@ def search_legal_basis():
 
 @app.route("/api/scenario", methods=["POST"])
 def scenario_search():
-    """실무 시나리오 검색: 서버 AI(환경변수 키) → 관련 법령·조문 반환"""
+    """실무 시나리오 검색: AI(사용자 제공 키 우선, 없으면 서버 환경변수) → 관련 법령·조문"""
     body    = request.get_json(force=True) or {}
     query   = body.get("query", "").strip()
     if not query or len(query) < 5:
         return jsonify({"error": "질문을 5자 이상 입력해 주세요."}), 400
 
-    # ── 환경변수에서 AI 설정 읽기 ────────────────────────────────────────────
-    provider = os.environ.get("SCENARIO_AI_PROVIDER", "gemini").lower()
-    api_key  = os.environ.get(f"{provider.upper()}_API_KEY", "").strip()
-    model    = os.environ.get("SCENARIO_AI_MODEL", "").strip()
-    if not api_key:
+    # ── AI 설정: 요청 본문(사용자 AI 설정) 우선 → 서버 환경변수 폴백 ──────────
+    provider = (body.get("provider") or os.environ.get("SCENARIO_AI_PROVIDER", "gemini")).lower()
+    api_key  = (body.get("api_key")  or os.environ.get(f"{provider.upper()}_API_KEY", "")).strip()
+    model    = (body.get("model")    or os.environ.get("SCENARIO_AI_MODEL", "")).strip()
+    # ollama는 로컬 URL을 키 대신 사용하므로 키 없이도 허용
+    if not api_key and provider != "ollama":
         return jsonify({"error":
-            "시나리오 검색 기능이 아직 활성화되지 않았습니다. "
-            "서버 환경변수(GEMINI_API_KEY 등)를 설정하세요."
+            "시나리오 검색을 사용하려면 AI 키가 필요합니다. "
+            "상단 [✦ AI 설정]에서 Gemini/Claude/GPT 키를 입력하세요."
         }), 503
 
     _DEFAULTS = {"gemini": "gemini-2.5-flash", "claude": "claude-haiku-4-5-20251001",
@@ -1109,36 +1110,36 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
         if provider == "gemini":
             url = (f"https://generativelanguage.googleapis.com/v1beta/models"
                    f"/{mdl}:generateContent?key={api_key}")
-            resp = req_lib.post(url, timeout=25,
+            resp = _ai_post_retry(lambda: req_lib.post(url, timeout=25,
                 headers={"Content-Type": "application/json"},
                 json={"contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_msg}"}]}],
-                      "generationConfig": {"maxOutputTokens": 600, "temperature": 0.2}})
+                      "generationConfig": {"maxOutputTokens": 600, "temperature": 0.2}}))
             if resp.status_code != 200:
-                err = resp.json().get("error", {}).get("message", "Gemini 오류")
+                err, _k = _ai_error(resp)
                 return jsonify({"error": f"AI 오류: {err}"}), 502
             ai_text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
 
         elif provider in ("claude",):
-            resp = req_lib.post("https://api.anthropic.com/v1/messages", timeout=25,
+            resp = _ai_post_retry(lambda: req_lib.post("https://api.anthropic.com/v1/messages", timeout=25,
                 headers={"Content-Type": "application/json",
                          "x-api-key": api_key, "anthropic-version": "2023-06-01"},
                 json={"model": mdl, "max_tokens": 600,
                       "system": system_prompt,
-                      "messages": [{"role": "user", "content": user_msg}]})
+                      "messages": [{"role": "user", "content": user_msg}]}))
             if resp.status_code != 200:
-                err = resp.json().get("error", {}).get("message", "Claude 오류")
+                err, _k = _ai_error(resp)
                 return jsonify({"error": f"AI 오류: {err}"}), 502
             ai_text = resp.json()["content"][0]["text"]
 
         elif provider in ("gpt", "openai"):
-            resp = req_lib.post("https://api.openai.com/v1/chat/completions", timeout=25,
+            resp = _ai_post_retry(lambda: req_lib.post("https://api.openai.com/v1/chat/completions", timeout=25,
                 headers={"Content-Type": "application/json",
                          "Authorization": f"Bearer {api_key}"},
                 json={"model": mdl, "max_tokens": 600, "temperature": 0.2,
                       "messages": [{"role": "system", "content": system_prompt},
-                                   {"role": "user",   "content": user_msg}]})
+                                   {"role": "user",   "content": user_msg}]}))
             if resp.status_code != 200:
-                err = resp.json().get("error", {}).get("message", "GPT 오류")
+                err, _k = _ai_error(resp)
                 return jsonify({"error": f"AI 오류: {err}"}), 502
             ai_text = resp.json()["choices"][0]["message"]["content"]
         else:
@@ -1199,7 +1200,7 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
 
     results = []
     try:
-        with _cf.ThreadPoolExecutor(max_workers=4) as ex:
+        with _cf.ThreadPoolExecutor(max_workers=8) as ex:
             futs = {ex.submit(_fetch_for_law, ln): ln for ln in laws_to_search}
             for fut in _cf.as_completed(futs, timeout=20):
                 ln, arts = fut.result()
