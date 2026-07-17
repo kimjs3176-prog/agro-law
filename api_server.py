@@ -2202,6 +2202,94 @@ def internal_doc():
         return jsonify({"error": f"내규 전문 조회 오류: {e}"}), 500
 
 
+# ── 내규 전체 목록 (사이드바 트리용) ──────────────────────────────────────
+_MCP_LIST_HINTS = ("list", "목록", "all", "전체", "index", "catalog", "browse", "리스트")
+
+def _mcp_pick_list_tool(tools: list):
+    """전체 목록 조회 도구 우선 선택(list/목록/index 등). 없으면 None."""
+    def score(t):
+        blob = (str(t.get("name", "")) + " " + str(t.get("description", ""))).lower()
+        s = 0
+        if any(k in blob for k in _MCP_LIST_HINTS): s += 4
+        if any(k in blob for k in _MCP_RULE_HINTS): s += 2
+        if "search" in blob or "검색" in blob or "get" in blob: s -= 1
+        return s
+    if not tools:
+        return None
+    ranked = sorted(tools, key=score, reverse=True)
+    return ranked[0] if score(ranked[0]) > 0 else None
+
+
+# 규정명으로 볼 수 있는 접미어 (목록 추출용)
+_RULE_NAME_SUFFIX = ("정관", "규정", "규칙", "예규", "지침", "세칙", "기준",
+                     "요령", "매뉴얼", "메뉴얼", "지시", "훈령", "방침", "계획")
+
+def _extract_rule_names(text: str, structured) -> list:
+    """MCP 응답(구조화/텍스트)에서 서로 다른 규정명 목록을 추출."""
+    names = []
+    seen = set()
+    def add(nm):
+        nm = (nm or "").strip().strip("《》「」『』[]()").strip()
+        if nm and nm not in seen and 2 <= len(nm) <= 60:
+            seen.add(nm); names.append(nm)
+    if isinstance(structured, list):
+        for it in structured:
+            if isinstance(it, dict):
+                add(it.get("title") or it.get("name") or it.get("규정명") or it.get("제목"))
+            elif isinstance(it, str):
+                add(it)
+    if text:
+        # 1) 《규정명》 / 「규정명」 마커
+        for m in re.findall(r"[《「『]\s*([^》」』\n]{2,60})\s*[》」』]", text):
+            add(m)
+        # 2) 접미어로 끝나는 라인 (목록 텍스트)
+        for line in text.splitlines():
+            t = re.sub(r"^\s*(?:\[\d+\]|\d+[.)]|[-*○·•])\s*", "", line).strip()
+            if 2 <= len(t) <= 60 and t.endswith(_RULE_NAME_SUFFIX):
+                add(t)
+    return names
+
+
+@app.route("/api/internal/list")
+def internal_list():
+    """내규 전체 목록 조회 — 사이드바 트리 구성용. list 도구 우선, 없으면 검색 폴백."""
+    if not SAGYU_MCP_URL:
+        return jsonify({"error": "사규 MCP 서버가 설정되지 않았습니다(SAGYU_MCP_URL)."}), 503
+    try:
+        cli = _McpClient(SAGYU_MCP_URL)
+        cli.initialize()
+        tools = cli.list_tools()
+        list_tool = _mcp_pick_list_tool(tools)
+        names = []
+        if list_tool:
+            schema = list_tool.get("inputSchema") or {}
+            args = {} if not (schema.get("required") or []) else _mcp_build_args(list_tool, "규정")
+            result = cli.call_tool(list_tool.get("name"), args)
+            names = _extract_rule_names(_mcp_extract_text(result),
+                                        result.get("structuredContent") if isinstance(result, dict) else None)
+        # list 도구가 없거나 결과가 빈약하면 검색 도구로 광역 조회 보강
+        if len(names) < 3:
+            stool = _mcp_pick_search_tool(tools)
+            if stool:
+                merged = set(names)
+                for q in ("규정", "규칙", "지침", "예규"):
+                    try:
+                        res = cli.call_tool(stool.get("name"), _mcp_build_args(stool, q))
+                        for nm in _extract_rule_names(_mcp_extract_text(res),
+                                                      res.get("structuredContent") if isinstance(res, dict) else None):
+                            if nm not in merged:
+                                merged.add(nm); names.append(nm)
+                    except Exception as e:
+                        print(f"[internal-list] 보강 검색 오류(q={q}): {e}")
+        return jsonify({"success": True, "count": len(names), "names": names,
+                        "tool": (list_tool or {}).get("name")})
+    except req_lib.exceptions.Timeout:
+        return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": f"내규 목록 조회 오류: {e}"}), 500
+
+
 @app.route("/api/recent")
 def get_recent():
     return jsonify({"recent": recent_searches})
