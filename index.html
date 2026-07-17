@@ -1874,6 +1874,24 @@ function extractLawNamesFromText(text){
 
 const _intDocCache = {};   // 규정명 → 전문 텍스트 (전문 패널 재조회 방지)
 
+// 조문 배열에서 조번호 기준 중복 제거 (같은 조번호는 더 긴 내용 유지)
+function _dedupeArts(arts){
+  const map=new Map(); const out=[];
+  arts.forEach(a=>{
+    const key = a.조문번호 ? ('조'+a.조문번호)
+              : ('_'+(a.조문내용||'').replace(/\s+/g,'').slice(0,40));
+    const ex=map.get(key);
+    if(ex){
+      if((a.조문내용||'').length > (ex.조문내용||'').length){
+        ex.조문내용=a.조문내용; if(a.조문제목) ex.조문제목=a.조문제목;
+      }
+      return;
+    }
+    map.set(key,a); out.push(a);
+  });
+  return out;
+}
+
 // 내규 본문을 조문 단위로 분해해 키워드 매칭 조문 추출
 function extractRuleArticles(text, kw){
   if(!text) return [];
@@ -1888,7 +1906,52 @@ function extractRuleArticles(text, kw){
     }
   });
   if(!arts.length && text.trim()) arts.push({조문번호:'',조문제목:'',조문내용:text.trim().slice(0,400)});
-  return arts.slice(0,6);
+  return _dedupeArts(arts).slice(0,8);
+}
+
+// MCP 텍스트를 「[N] 《규정명》」 블록 기준으로 규정별 그룹화 + 조문 중복 제거
+function parseInternalGrouped(text, kw){
+  if(!text) return [];
+  // 결과 블록 마커: "[N] 《규정명》" 또는 "《규정명》"
+  const markerRe=/(?:\[\d+\]\s*)?《\s*([^》]+?)\s*》/g;
+  const markers=[]; let m;
+  while((m=markerRe.exec(text))){
+    markers.push({name:m[1].trim(), start:m.index, bodyStart:markerRe.lastIndex});
+  }
+  if(!markers.length){
+    // 규정명 마커가 없으면 전체를 한 규정으로 처리
+    return [{name:`"${kw}" 검색 결과`, org:'사내 규정',
+             matched_articles:extractRuleArticles(text,kw),
+             matched_count:0}].map(it=>(it.matched_count=it.matched_articles.length,it));
+  }
+  const rules=new Map(); // 규정명 → {name, arts:[], seen:Map}
+  markers.forEach((mk,i)=>{
+    const bodyEnd = (i+1<markers.length) ? markers[i+1].start : text.length;
+    let body = text.slice(mk.bodyStart, bodyEnd).replace(/^[\s]*-{2,}[\s]*$/gm,'').trim();
+    if(!body) return;
+    if(!rules.has(mk.name)) rules.set(mk.name,{name:mk.name, arts:[], seen:new Map()});
+    const R=rules.get(mk.name);
+    // 블록 본문을 조문 단위로 분해
+    let parts = body.split(/(?=제\s*\d+\s*조)/).map(s=>s.trim()).filter(Boolean);
+    if(!parts.length) parts=[body];
+    parts.forEach(p=>{
+      const am=p.match(/^제\s*(\d+)\s*조(?:의\d+)?\s*(?:\(([^)]*)\))?/);
+      const no=am?am[1]:'';
+      const title=am&&am[2]?am[2]:'';
+      const key= no?('조'+no):('_'+p.replace(/\s+/g,'').slice(0,40));
+      const ex=R.seen.get(key);
+      if(ex){ // 같은 조문 → 더 완전한(긴) 내용 유지
+        if(p.length>(ex.조문내용||'').length){ ex.조문내용=p; if(title) ex.조문제목=title; }
+        return;
+      }
+      const art={조문번호:no, 조문제목:title, 조문내용:p};
+      R.seen.set(key,art); R.arts.push(art);
+    });
+  });
+  return [...rules.values()].map(R=>({
+    name:R.name, org:'사내 규정',
+    matched_articles:R.arts.slice(0,12), matched_count:R.arts.length,
+  }));
 }
 
 async function doSearchInternal(q){
@@ -1926,25 +1989,25 @@ function renderInternalError(msg){
 
 function renderInternalResults(d, q){
   const raw=(d.text||'').trim();
-  const items=[];
+  let items=[];
   if(Array.isArray(d.structured) && d.structured.length){
-    d.structured.forEach(it=>{
+    // 구조화 응답: 각 항목이 곧 규정 단위
+    items = d.structured.map(it=>{
       const name=String(it.title||it.name||it['제목']||it['규정명']||'사내 규정');
       const content=String(it.content||it.text||it['내용']||it['본문']||(typeof it==='string'?it:JSON.stringify(it,null,2)));
       _intDocCache[name]=content;
       const arts=extractRuleArticles(content,q);
-      items.push({name, org:String(it.org||it['소관']||'사내 규정'), matched_articles:arts, matched_count:arts.length});
+      return {name, org:String(it.org||it['소관']||'사내 규정'), matched_articles:arts, matched_count:arts.length};
     });
   } else if(raw){
-    const name=`"${q}" 검색 결과`;
-    _intDocCache[name]=raw;
-    const arts=extractRuleArticles(raw,q);
-    items.push({name, org:'사내 규정', matched_articles:arts, matched_count:arts.length});
+    // 텍스트 응답: 《규정명》 블록 기준으로 규정별 그룹화(+조문 중복 제거)
+    items = parseInternalGrouped(raw, q);
   }
   renderRegCards(items, q, 'internal');
   // 교차: 관련 법령 chips
   renderRelatedLaws(raw + ' ' + JSON.stringify(d.structured||''), q);
-  setStatus(`내규 ${items.length}건 · "${escHtml(q)}" 매칭 조문 표시 · 관련 법령 교차 제공`);
+  const totalArts = items.reduce((s,it)=>s+(it.matched_count||0),0);
+  setStatus(`내규 ${items.length}개 규정 · 매칭 조문 ${totalArts}건 · "${escHtml(q)}" · 관련 법령 교차 제공`);
 }
 
 // 교차 패널: 내규 모드 → 관련 법령 칩
