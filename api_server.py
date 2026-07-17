@@ -1,10 +1,11 @@
 """
-농업 법령 검색 서비스
+KOAT 내규&국가법령 종합 검색 서비스
 배포: Vercel / Render / Railway
 로컬: python run_local.py
 """
 
 import os, json, re, time, threading, webbrowser
+import concurrent.futures as _cf
 import xml.etree.ElementTree as ET
 import urllib3
 from flask import Flask, request, jsonify, Response
@@ -569,7 +570,6 @@ def search_laws():
         return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
     try:
         add_recent(query)
-        import concurrent.futures as _cf
 
         def _do_law():
             d = _law_get_json({"target": "law", "query": query, "display": display})
@@ -754,8 +754,6 @@ def search_by_article_keyword():
     if len(query) < 2:
         return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
 
-    import concurrent.futures as _cf  # noqa: F811
-
     # ── Stage 1: law + admrul 병렬 검색 ────────────────────────────────────────
     # law_name → {"meta": dict, "doc_type": "law"|"admrul"}
     stage1_meta: dict = {}
@@ -852,7 +850,7 @@ def search_by_article_keyword():
                         results.append(res)
                 except Exception as e:
                     print(f"[article-search] future 오류: {e}")
-    except concurrent.futures.TimeoutError:
+    except _cf.TimeoutError:
         truncated = True
         print(f"[article-search] 타임아웃, {len(results)}/{len(all_target)}건 탐색")
 
@@ -914,7 +912,6 @@ def search_legal_basis():
                 print(f"[basis] Stage1(admrul q={q!r}) 오류: {e}")
         return results
 
-    import concurrent.futures as _cf
     with _cf.ThreadPoolExecutor(max_workers=2) as _ex:
         _f_law    = _ex.submit(_b_stage1_law)
         _f_admrul = _ex.submit(_b_stage1_admrul)
@@ -1169,11 +1166,26 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
 
     # ── Step-2: 법령별 관련 조문 조회 ─────────────────────────────────────────
     def _fetch_for_law(law_name):
-        for kw in keywords:
-            arts = _fetch_matching_articles(law_name, kw)
-            if arts:
-                return law_name, arts
-        return law_name, []
+        """법령에서 keywords에 매칭되는 조문을 수집해 (표시명, 조문리스트) 반환.
+        _fetch_matching_articles 는 {'law_name','keyword','articles'} dict 를
+        돌려주므로 여기서 조문 리스트로 평탄화하고, 여러 키워드 결과를
+        조문번호·제목 기준으로 중복 제거하여 합친다."""
+        resolved = law_name
+        seen, arts = set(), []
+        try:
+            for kw in keywords:
+                res = _fetch_matching_articles(law_name, kw)
+                if not res:
+                    continue
+                resolved = res.get("law_name") or resolved
+                for a in res.get("articles", []):
+                    key = (a.get("조문번호", ""), a.get("조문제목", ""))
+                    if key not in seen:
+                        seen.add(key)
+                        arts.append(a)
+        except Exception as e:
+            print(f"[scenario] {law_name} 조문 조회 오류: {e}")
+        return resolved, arts
 
     results = []
     try:
@@ -1183,7 +1195,7 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
                 ln, arts = fut.result()
                 if arts:
                     matched_kws = [kw for kw in keywords
-                                   if any(kw in (a.get("조문내용","") + a.get("조문제목",""))
+                                   if any(kw in (a.get("조문내용", "") + a.get("조문제목", ""))
                                           for a in arts)]
                     results.append({
                         "법령명한글": ln,
@@ -1191,8 +1203,8 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
                         "matched_keywords": matched_kws,
                         "relevance": len(matched_kws) * 10 + len(arts),
                     })
-    except Exception:
-        pass
+    except _cf.TimeoutError:
+        print(f"[scenario] Step-2 타임아웃, {len(results)}건 반환")
 
     results.sort(key=lambda x: x["relevance"], reverse=True)
 
@@ -1751,9 +1763,322 @@ def get_art_history():
         return jsonify({"error": str(e)}), 500
 
 
+# ── 관련 판례·자치법규(조례) 연계 ────────────────────────────────────────────
+def _fmt_law_date(s: str) -> str:
+    """YYYYMMDD → YYYY.MM.DD (그 외 형식은 그대로 반환)"""
+    d = re.sub(r"\D", "", s or "")
+    return re.sub(r"(\d{4})(\d{2})(\d{2})", r"\1.\2.\3", d) if len(d) == 8 else (s or "").strip()
 
-   
-    
+
+def _abs_law_url(link: str) -> str:
+    """법제처 상세링크(상대경로 가능)를 절대 URL로 변환"""
+    link = (link or "").strip()
+    if not link:
+        return ""
+    if link.startswith("http"):
+        return link
+    if link.startswith("/"):
+        return "https://www.law.go.kr" + link
+    return "https://www.law.go.kr/" + link
+
+
+def _search_root_items(data: dict, item_keys) -> list:
+    """법제처 검색 JSON에서 결과 리스트 추출.
+    루트 키(PrecSearch/OrdinSearch/LawSearch 등)와 항목 키가 타깃마다 달라
+    최상위 dict 값들을 훑으며 item_keys 중 첫 매칭 리스트를 돌려준다."""
+    if not isinstance(data, dict):
+        return []
+    for root_val in data.values():
+        if isinstance(root_val, dict):
+            for k in item_keys:
+                v = root_val.get(k)
+                if v:
+                    return v if isinstance(v, list) else [v]
+    return []
+
+
+@app.route("/api/law/related")
+def get_law_related():
+    """법령명 기준 관련 판례·자치법규(조례) 연계 제안.
+    법제처 통합검색 API의 판례(target=prec)·자치법규(target=ordin)를 병렬 조회한다."""
+    law_name = request.args.get("name", "").strip()
+    if not law_name:
+        return jsonify({"error": "name 파라미터가 필요합니다"}), 400
+    display = request.args.get("display", "12")
+
+    def _do_prec():
+        try:
+            d = _law_get_json({"target": "prec", "query": law_name, "display": display},
+                              timeout=(5, 12))
+            out = []
+            for it in _search_root_items(d, ("prec", "law")):
+                if not isinstance(it, dict):
+                    continue
+                seq = (it.get("판례일련번호") or "").strip()
+                out.append({
+                    "title":     (it.get("사건명") or "").strip(),
+                    "case_no":   (it.get("사건번호") or "").strip(),
+                    "court":     (it.get("법원명") or "").strip(),
+                    "date":      _fmt_law_date(it.get("선고일자")),
+                    "case_type": (it.get("사건종류명") or "").strip(),
+                    "id":        seq,
+                    "url":       (f"https://www.law.go.kr/precInfoP.do?precSeq={seq}" if seq
+                                  else _abs_law_url(it.get("판례상세링크"))),
+                })
+            return [o for o in out if o["title"]]
+        except Exception as e:
+            print(f"[related] prec 오류: {e}")
+            return []
+
+    def _do_ordin():
+        try:
+            d = _law_get_json({"target": "ordin", "query": law_name, "display": display},
+                              timeout=(5, 12))
+            out = []
+            for it in _search_root_items(d, ("ordin", "law")):
+                if not isinstance(it, dict):
+                    continue
+                nm = (it.get("자치법규명") or it.get("법령명한글") or "").strip()
+                seq = (it.get("자치법규일련번호") or "").strip()
+                out.append({
+                    "name": nm,
+                    "org":  (it.get("지자체기관명") or it.get("소관부처명") or "").strip(),
+                    "kind": (it.get("자치법규종류") or "").strip(),
+                    "date": _fmt_law_date(it.get("공포일자") or it.get("발령일자")),
+                    "id":   seq,
+                    "url":  (f"https://www.law.go.kr/ordinInfoP.do?ordinSeq={seq}" if seq
+                             else _abs_law_url(it.get("자치법규상세링크"))),
+                })
+            return [o for o in out if o["name"]]
+        except Exception as e:
+            print(f"[related] ordin 오류: {e}")
+            return []
+
+    try:
+        with _cf.ThreadPoolExecutor(max_workers=2) as ex:
+            f_prec = ex.submit(_do_prec)
+            f_ord  = ex.submit(_do_ordin)
+            precedents = f_prec.result()
+            ordinances = f_ord.result()
+        print(f"[related] '{law_name}' 판례={len(precedents)} 자치법규={len(ordinances)}")
+        return jsonify({
+            "success":     True,
+            "law_name":    law_name,
+            "precedents":  precedents,
+            "ordinances":  ordinances,
+            "prec_count":  len(precedents),
+            "ordin_count": len(ordinances),
+        })
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+# ── 사규(내규) MCP 연동 ────────────────────────────────────────────────────────
+# 외부 사규 MCP 서버(Streamable HTTP)를 호출하여 내규를 검색하고,
+# 내규 본문 속 법령 참조는 프론트엔드에서 법령 조문 조회와 연계한다.
+SAGYU_MCP_URL = os.environ.get(
+    "SAGYU_MCP_URL", "https://tech-transfer-platform-zt79.vercel.app/mcp"
+).strip()
+# 내규 검색 키워드 후보(도구/인자 자동 선택용)
+_MCP_SEARCH_HINTS = ("search", "검색", "find", "query", "lookup", "조회", "retrieve")
+_MCP_RULE_HINTS   = ("rule", "규정", "사규", "내규", "regulation", "정관",
+                     "지침", "policy", "bylaw", "문서", "document")
+
+
+def _mcp_parse_response(resp) -> dict:
+    """MCP 응답을 파싱. application/json 또는 text/event-stream(SSE) 모두 지원."""
+    ct = (resp.headers.get("Content-Type") or "").lower()
+    text = _decode(resp.content).strip()
+    if "text/event-stream" in ct or text.startswith("event:") or "\ndata:" in text:
+        # SSE: 'data:' 라인들에서 마지막으로 파싱 가능한 JSON을 사용
+        for line in reversed(text.splitlines()):
+            line = line.strip()
+            if line.startswith("data:"):
+                chunk = line[5:].strip()
+                if not chunk or chunk == "[DONE]":
+                    continue
+                try:
+                    return json.loads(chunk)
+                except Exception:
+                    continue
+        raise ValueError("SSE 응답 파싱 실패")
+    return json.loads(text)
+
+
+class _McpClient:
+    """최소 기능 MCP Streamable HTTP 클라이언트 (initialize → tools/list → tools/call)."""
+    def __init__(self, url: str):
+        self.url = url
+        self.sid = None
+        self._id = 0
+        self._tools = None
+
+    def _post(self, method: str, params=None, notify: bool = False, timeout=(5, 25)):
+        self._id += 1
+        payload = {"jsonrpc": "2.0", "method": method}
+        if not notify:
+            payload["id"] = self._id
+        if params is not None:
+            payload["params"] = params
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+        }
+        if self.sid:
+            headers["Mcp-Session-Id"] = self.sid
+        r = req_lib.post(self.url, json=payload, headers=headers, timeout=timeout)
+        sid = r.headers.get("Mcp-Session-Id") or r.headers.get("mcp-session-id")
+        if sid:
+            self.sid = sid
+        r.raise_for_status()
+        if notify or not (r.content or b"").strip():
+            return None
+        data = _mcp_parse_response(r)
+        if isinstance(data, dict) and data.get("error"):
+            raise RuntimeError(data["error"].get("message", "MCP 오류"))
+        return data.get("result") if isinstance(data, dict) else data
+
+    def initialize(self):
+        res = self._post("initialize", {
+            "protocolVersion": "2025-06-18",
+            "capabilities": {},
+            "clientInfo": {"name": "agro-law", "version": "1.0"},
+        })
+        try:
+            self._post("notifications/initialized", notify=True)
+        except Exception:
+            pass
+        return res
+
+    def list_tools(self):
+        if self._tools is None:
+            res = self._post("tools/list", {}) or {}
+            self._tools = res.get("tools", []) or []
+        return self._tools
+
+    def call_tool(self, name: str, args: dict):
+        return self._post("tools/call", {"name": name, "arguments": args})
+
+
+def _mcp_pick_search_tool(tools: list):
+    """검색 성격의 도구를 휴리스틱으로 선택."""
+    def score(t):
+        blob = (str(t.get("name", "")) + " " + str(t.get("description", ""))).lower()
+        s = 0
+        if any(k in blob for k in _MCP_SEARCH_HINTS): s += 3
+        if any(k in blob for k in _MCP_RULE_HINTS):   s += 2
+        if any(k in blob for k in ("list", "목록")):   s += 1
+        return s
+    if not tools:
+        return None
+    ranked = sorted(tools, key=score, reverse=True)
+    return ranked[0] if score(ranked[0]) > 0 else tools[0]
+
+
+def _mcp_build_args(tool: dict, query: str) -> dict:
+    """도구 inputSchema에서 질의 문자열을 담을 속성을 선택해 인자 구성."""
+    schema = tool.get("inputSchema") or tool.get("input_schema") or {}
+    props = schema.get("properties") or {}
+    required = schema.get("required") or []
+    if not props:
+        return {"query": query}
+    def is_str(p):
+        t = p.get("type")
+        return t == "string" or (isinstance(t, list) and "string" in t)
+    order = list(required) + [k for k in props if k not in required]
+    chosen = None
+    for k in order:
+        p = props.get(k, {})
+        if is_str(p):
+            chosen = chosen or k
+            if any(x in k.lower() for x in
+                   ("query", "keyword", "term", "search", "text", "q", "name", "title", "검색")):
+                chosen = k
+                break
+    args = {chosen or "query": query}
+    return args
+
+
+def _mcp_extract_text(result) -> str:
+    """tools/call 결과의 content 배열에서 텍스트 추출."""
+    if isinstance(result, str):
+        return result
+    if not isinstance(result, dict):
+        return ""
+    parts = []
+    for c in result.get("content", []) or []:
+        if not isinstance(c, dict):
+            continue
+        if c.get("type") == "text" and c.get("text"):
+            parts.append(c["text"])
+        elif isinstance(c.get("resource"), dict) and c["resource"].get("text"):
+            parts.append(c["resource"]["text"])
+    return "\n\n".join(parts).strip()
+
+
+@app.route("/api/internal/status")
+def internal_status():
+    """사규 MCP 연결 상태 및 사용 가능한 도구 목록 확인."""
+    if not SAGYU_MCP_URL:
+        return jsonify({"connected": False, "message": "SAGYU_MCP_URL 미설정"})
+    try:
+        cli = _McpClient(SAGYU_MCP_URL)
+        info = cli.initialize()
+        tools = cli.list_tools()
+        picked = _mcp_pick_search_tool(tools)
+        return jsonify({
+            "connected": True,
+            "server": (info or {}).get("serverInfo", {}),
+            "tools": [{"name": t.get("name"), "description": t.get("description", "")} for t in tools],
+            "search_tool": picked.get("name") if picked else None,
+        })
+    except Exception as e:
+        return jsonify({"connected": False, "message": str(e)})
+
+
+@app.route("/api/internal/search")
+def internal_search():
+    """사규 MCP로 내규 검색. 결과 텍스트/구조화 데이터를 반환하며,
+    본문 속 법령 참조는 프론트엔드에서 법령 조문 조회와 연계한다."""
+    query = request.args.get("query", "").strip()
+    if not query:
+        return jsonify({"error": "검색어를 입력하세요"}), 400
+    if len(query) < 2:
+        return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
+    if not SAGYU_MCP_URL:
+        return jsonify({"error": "사규 MCP 서버가 설정되지 않았습니다(SAGYU_MCP_URL)."}), 503
+    try:
+        cli = _McpClient(SAGYU_MCP_URL)
+        cli.initialize()
+        tools = cli.list_tools()
+        tool = _mcp_pick_search_tool(tools)
+        if not tool:
+            return jsonify({"error": "사규 MCP에서 사용 가능한 도구가 없습니다."}), 502
+        args = _mcp_build_args(tool, query)
+        result = cli.call_tool(tool.get("name"), args)
+        text = _mcp_extract_text(result)
+        structured = result.get("structuredContent") if isinstance(result, dict) else None
+        is_error = bool(result.get("isError")) if isinstance(result, dict) else False
+        if is_error:
+            return jsonify({"error": text or "내규 검색 중 오류가 발생했습니다."}), 502
+        return jsonify({
+            "success": True,
+            "query": query,
+            "tool": tool.get("name"),
+            "arguments": args,
+            "text": text,
+            "structured": structured,
+        })
+    except req_lib.exceptions.Timeout:
+        return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
+    except req_lib.exceptions.ConnectionError as e:
+        return jsonify({"error": f"사규 MCP 서버에 연결할 수 없습니다: {e}"}), 502
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": f"내규 검색 오류: {e}"}), 500
+
+
 @app.route("/api/recent")
 def get_recent():
     return jsonify({"recent": recent_searches})
@@ -1828,7 +2153,7 @@ PORT = int(os.environ.get("PORT", 5100))
 if __name__ == "__main__":
     url = f"http://localhost:{PORT}"
     print("=" * 50)
-    print("  🌾  농업 법령 검색 서비스 v3.0")
+    print("  🌾  KOAT 내규&국가법령 종합 검색 서비스")
     print(f"  🔗  {url}")
     print("  종료: Ctrl+C")
     print("=" * 50)
