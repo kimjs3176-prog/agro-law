@@ -2242,47 +2242,121 @@ def _extract_rule_names(text: str, structured) -> list:
         # 1) 《규정명》 / 「규정명」 마커
         for m in re.findall(r"[《「『]\s*([^》」』\n]{2,60})\s*[》」』]", text):
             add(m)
-        # 2) 접미어로 끝나는 라인 (목록 텍스트)
+        # 2) 접미어로 끝나는 짧은 라인 (목록 텍스트) — 본문 문장 오탐 방지
         for line in text.splitlines():
             t = re.sub(r"^\s*(?:\[\d+\]|\d+[.)]|[-*○·•])\s*", "", line).strip()
-            if 2 <= len(t) <= 60 and t.endswith(_RULE_NAME_SUFFIX):
-                add(t)
+            if not (2 <= len(t) <= 40):            # 규정명은 짧다
+                continue
+            if not t.endswith(_RULE_NAME_SUFFIX):
+                continue
+            # 문장(마침표/조사 종결 등) 배제 — 제목만 수용
+            if re.search(r"[.。]|(?:이다|한다|된다|따른다|말한다)$", t):
+                continue
+            add(t)
+    return names
+
+
+# 내규 목록 캐시 (전체 수집 비용이 크므로 10분 캐시)
+_INTERNAL_LIST_CACHE: dict = {"names": None, "ts": 0.0}
+# 광역 검색 시드 (규정 접미어 + 행정 도메인 키워드)
+_LIST_SEED_TERMS = _RULE_NAME_SUFFIX + (
+    "인사", "보수", "복무", "여비", "회계", "재무", "예산", "자금", "계약", "감사",
+    "보안", "정보", "개인정보", "연구", "기술", "사업", "조직", "위임전결", "이사회",
+    "교육", "출장", "자산", "물품", "복리후생", "윤리", "성과", "용역", "공사", "안전",
+    "채용", "급여", "휴가", "징계", "위원회", "직제", "문서", "정관", "특허", "발명",
+)
+
+def _mcp_fill_limits(tool, args, big=1000):
+    """도구 스키마의 limit/size/count/display류 숫자 인자를 크게 채운다."""
+    props = (tool.get("inputSchema") or tool.get("input_schema") or {}).get("properties") or {}
+    for k, p in props.items():
+        kl = k.lower()
+        ty = p.get("type")
+        isnum = ty in ("integer", "number") or (isinstance(ty, list) and ("integer" in ty or "number" in ty))
+        if isnum and any(x in kl for x in ("limit", "size", "count", "max", "per", "display", "top", "num", "rows")):
+            args.setdefault(k, big)
+    return args
+
+def _mcp_page_key(tool):
+    props = (tool.get("inputSchema") or {}).get("properties") or {}
+    for k in props:
+        kl = k.lower()
+        if any(x in kl for x in ("page", "offset", "cursor", "start", "skip")):
+            return k
+    return None
+
+def _harvest_internal_names(cli, tools):
+    """가능한 많은 규정명을 수집 — 목록도구(페이지네이션) + 광역 검색."""
+    names, seen = [], set()
+    def add(nm_list):
+        for nm in nm_list:
+            if nm not in seen:
+                seen.add(nm); names.append(nm)
+    def call_names(tool, extra):
+        args = _mcp_fill_limits(tool, dict(extra))
+        res = cli.call_tool(tool.get("name"), args)
+        return _extract_rule_names(_mcp_extract_text(res),
+                                   res.get("structuredContent") if isinstance(res, dict) else None)
+
+    calls = 0
+    MAX_CALLS = 45
+    # 1) 목록 도구 (있으면) — 페이지네이션
+    list_tool = _mcp_pick_list_tool(tools)
+    if list_tool:
+        props = (list_tool.get("inputSchema") or {}).get("properties") or {}
+        required = (list_tool.get("inputSchema") or {}).get("required") or []
+        base = {}
+        for k in required:
+            if props.get(k, {}).get("type") == "string":
+                base[k] = "규정"   # 필수 질의가 있으면 광역어
+        pk = _mcp_page_key(list_tool)
+        for pg in range(0, 20):
+            if calls >= MAX_CALLS: break
+            extra = dict(base)
+            if pk is not None:
+                extra[pk] = (pg + 1) if "page" in pk.lower() else pg * 100
+            before = len(seen)
+            try:
+                add(call_names(list_tool, extra)); calls += 1
+            except Exception as e:
+                print(f"[list] 목록도구 오류(p={pg}): {e}"); break
+            if pk is None or len(seen) == before:
+                break   # 페이지 파라미터 없음 또는 더 이상 증가 없음
+
+    # 2) 검색 도구로 광역 수집(부족하거나 목록도구 없을 때)
+    stool = _mcp_pick_search_tool(tools)
+    if stool and len(names) < 140:
+        dry = 0
+        for q in _LIST_SEED_TERMS:
+            if calls >= MAX_CALLS: break
+            before = len(seen)
+            try:
+                add(call_names(stool, _mcp_build_args(stool, q))); calls += 1
+            except Exception:
+                pass
+            dry = dry + 1 if len(seen) == before else 0
+    print(f"[internal-list] 수집 {len(names)}건 (calls={calls})")
     return names
 
 
 @app.route("/api/internal/list")
 def internal_list():
-    """내규 전체 목록 조회 — 사이드바 트리 구성용. list 도구 우선, 없으면 검색 폴백."""
+    """내규 전체 목록 조회 — 사이드바 트리 구성용. 목록도구(페이지네이션)+광역 검색으로 최대 수집."""
     if not SAGYU_MCP_URL:
         return jsonify({"error": "사규 MCP 서버가 설정되지 않았습니다(SAGYU_MCP_URL)."}), 503
+    force = request.args.get("t", "")  # 캐시 무시용 파라미터
+    if not force and _INTERNAL_LIST_CACHE["names"] and (time.time() - _INTERNAL_LIST_CACHE["ts"] < 600):
+        nm = _INTERNAL_LIST_CACHE["names"]
+        return jsonify({"success": True, "count": len(nm), "names": nm, "cached": True})
     try:
         cli = _McpClient(SAGYU_MCP_URL)
         cli.initialize()
         tools = cli.list_tools()
-        list_tool = _mcp_pick_list_tool(tools)
-        names = []
-        if list_tool:
-            schema = list_tool.get("inputSchema") or {}
-            args = {} if not (schema.get("required") or []) else _mcp_build_args(list_tool, "규정")
-            result = cli.call_tool(list_tool.get("name"), args)
-            names = _extract_rule_names(_mcp_extract_text(result),
-                                        result.get("structuredContent") if isinstance(result, dict) else None)
-        # list 도구가 없거나 결과가 빈약하면 검색 도구로 광역 조회 보강
-        if len(names) < 3:
-            stool = _mcp_pick_search_tool(tools)
-            if stool:
-                merged = set(names)
-                for q in ("규정", "규칙", "지침", "예규"):
-                    try:
-                        res = cli.call_tool(stool.get("name"), _mcp_build_args(stool, q))
-                        for nm in _extract_rule_names(_mcp_extract_text(res),
-                                                      res.get("structuredContent") if isinstance(res, dict) else None):
-                            if nm not in merged:
-                                merged.add(nm); names.append(nm)
-                    except Exception as e:
-                        print(f"[internal-list] 보강 검색 오류(q={q}): {e}")
-        return jsonify({"success": True, "count": len(names), "names": names,
-                        "tool": (list_tool or {}).get("name")})
+        names = _harvest_internal_names(cli, tools)
+        if names:
+            _INTERNAL_LIST_CACHE["names"] = names
+            _INTERNAL_LIST_CACHE["ts"] = time.time()
+        return jsonify({"success": True, "count": len(names), "names": names})
     except req_lib.exceptions.Timeout:
         return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
     except Exception as e:
