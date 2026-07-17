@@ -215,7 +215,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .wc-hero-t{font-size:19px;font-weight:800;color:var(--tx);letter-spacing:-.4px;line-height:1.4;}
 .wc-hero-t b{color:var(--g);}
 .wc-hero-s{font-size:13px;color:var(--mu);margin-top:7px;}
-.wc-modes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;}
+.wc-modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px;}
 .wc-mode{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;padding:16px;border-radius:16px;border:1.5px solid transparent;background:var(--sf);box-shadow:var(--shadow);cursor:pointer;transition:all .18s cubic-bezier(.34,1.56,.64,1);font-family:var(--font);}
 .wc-mode:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:#c7dcfb;}
 .wc-mode.active{border-color:var(--g);background:var(--gl);}
@@ -228,6 +228,25 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .wc-feat-t{font-size:13px;font-weight:700;color:var(--tx);}
 .wc-feat-d{font-size:11.5px;color:var(--mu);line-height:1.5;margin-top:2px;}
 
+/* ── 모드 토글 반응형 라벨 ── */
+.mb-short{display:none;}
+
+/* ── 내규(사규) 검색 결과 ── */
+.int-wrap{display:flex;flex-direction:column;gap:12px;}
+.int-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.int-badge{font-size:12px;font-weight:700;color:#7c3aed;background:#f3e8ff;padding:4px 11px;border-radius:999px;}
+.int-q{font-size:15px;font-weight:700;color:var(--tx);}
+.int-src{margin-left:auto;font-size:11px;color:var(--ht);background:var(--sf);border-radius:999px;padding:3px 10px;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.int-laws{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:12px 14px;border-radius:14px;background:var(--gl);border:1px solid #dbeafe;}
+.int-laws-lbl{font-size:12px;font-weight:800;color:var(--gp);}
+.int-laws-none{color:var(--mu);font-size:12px;font-weight:500;background:var(--bg);border-color:transparent;}
+.int-law-chip{font-size:12px;font-weight:700;color:var(--g);background:var(--sf);border:none;border-radius:999px;padding:5px 12px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);transition:all .15s cubic-bezier(.34,1.56,.64,1);}
+.int-law-chip:hover{background:var(--g);color:#fff;transform:translateY(-1px);}
+.int-item{background:var(--sf);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);}
+.int-item-t{font-size:14px;font-weight:700;color:var(--tx);margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--bd);}
+.int-item-b{font-size:13.5px;line-height:1.95;color:var(--tx);white-space:pre-wrap;word-break:break-word;}
+.int-foot{font-size:11px;color:var(--ht);line-height:1.6;padding:2px 4px;}
+
 /* ── 다크모드: 신규 컴포넌트 대비 보정 ── */
 body.dark .agency-info{background:linear-gradient(135deg,#13233d,#0f1830);border-color:#22344f;}
 body.dark .agc-name{color:#93c5fd;}
@@ -238,6 +257,11 @@ body.dark .rel-notice{color:var(--tx);background:#12233d;}
 body.dark .rel-badge.prec{background:#1e2440;color:#a5b4fc;}
 body.dark .rel-badge.ordin{background:#0c3226;color:#6ee7b7;}
 body.dark .wc-mode.active{background:rgba(49,130,246,.16);}
+body.dark .int-badge{background:#2e1065;color:#c4b5fd;}
+body.dark .int-laws{background:#12233d;border-color:#22344f;}
+body.dark .int-laws-lbl{color:#93c5fd;}
+body.dark .int-laws-none{background:#161920;color:var(--mu);}
+body.dark .int-law-chip{background:#161920;color:#93c5fd;}
 
 /* ── 모바일 반응형 ── */
 @media(max-width:640px){
@@ -255,9 +279,11 @@ body.dark .wc-mode.active{background:rgba(49,130,246,.16);}
   .spanel{padding:16px 16px 14px;border-radius:16px;}
   .tabs{gap:5px;flex-wrap:wrap;}
   .tab,.fav-tab-btn{font-size:12px;padding:6px 12px;}
-  /* 모드 토글: 화면 폭에 맞춰 3등분(가로 넘침 방지) */
+  /* 모드 토글: 화면 폭에 맞춰 4등분(가로 넘침 방지) + 축약 라벨 */
   .mtoggle{width:100%;padding:3px;}
-  .mbtn{flex:1;padding:9px 4px;font-size:12px;text-align:center;letter-spacing:-.3px;}
+  .mbtn{flex:1;padding:8px 2px;font-size:11px;text-align:center;letter-spacing:-.4px;}
+  .mtoggle .mb-full{display:none;}
+  .mtoggle .mb-short{display:inline;}
   /* 온보딩 패널: 세로 1열 */
   .wc-modes{grid-template-columns:1fr;gap:10px;}
   .wc-feats{grid-template-columns:1fr;}
@@ -1102,9 +1128,10 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
     <!-- 검색 모드 -->
     <div class="mtoggle">
-      <button class="mbtn active" id="mlawbtn" onclick="setMode('law')">법령명 검색</button>
-      <button class="mbtn" id="martbtn" onclick="setMode('article')">조문 키워드 검색</button>
-      <button class="mbtn" id="mscenbtn" onclick="setMode('scenario')">✦ 실무 시나리오</button>
+      <button class="mbtn active" id="mlawbtn" onclick="setMode('law')"><span class="mb-full">법령명 검색</span><span class="mb-short">법령명</span></button>
+      <button class="mbtn" id="martbtn" onclick="setMode('article')"><span class="mb-full">조문 키워드 검색</span><span class="mb-short">조문검색</span></button>
+      <button class="mbtn" id="mscenbtn" onclick="setMode('scenario')"><span class="mb-full">✦ 실무 시나리오</span><span class="mb-short">✦ 시나리오</span></button>
+      <button class="mbtn" id="mintbtn" onclick="setMode('internal')"><span class="mb-full">📋 내규 검색</span><span class="mb-short">📋 내규</span></button>
     </div>
     <!-- 검색창 -->
     <div class="srow">
@@ -1320,8 +1347,8 @@ function renderAgencyInfo(){
   const el = document.getElementById('agencyInfo');
   if(!el) return;
   const prof = AGENCY_PROFILES[agency];
-  // 전체/즐겨찾기/시나리오 모드에서는 숨김
-  if(!prof || favMode || mode==='scenario'){ el.style.display='none'; el.innerHTML=''; return; }
+  // 전체/즐겨찾기/시나리오/내규 모드에서는 숨김
+  if(!prof || favMode || mode==='scenario' || mode==='internal'){ el.style.display='none'; el.innerHTML=''; return; }
   const q = s => s.replace(/'/g,"\\'");
   const regChips = (prof.regs||[]).length
     ? `<div class="agc-block">
@@ -1366,6 +1393,8 @@ function setMode(m){
   mode=m;
   document.getElementById('mlawbtn').classList.toggle('active', m==='law');
   document.getElementById('martbtn').classList.toggle('active', m==='article');
+  const intBtn = document.getElementById('mintbtn');
+  if(intBtn) intBtn.classList.toggle('active', m==='internal');
   const scBtn = document.getElementById('mscenbtn');
   scBtn.classList.remove('active');
   scBtn.classList.toggle('scenario-active', m==='scenario');
@@ -1373,8 +1402,13 @@ function setMode(m){
   const examples   = document.getElementById('scenarioExamples');
   const qlabel     = document.getElementById('qlabelDefault');
   const chipsWrap  = document.getElementById('chips');
+  // 시나리오·내규 모드에서는 '자주 찾는 법령' 칩 숨김
   if(m === 'scenario'){
     examples.style.display  = '';
+    qlabel.style.display    = 'none';
+    chipsWrap.style.display = 'none';
+  } else if(m === 'internal'){
+    examples.style.display  = 'none';
     qlabel.style.display    = 'none';
     chipsWrap.style.display = 'none';
   } else {
@@ -1385,8 +1419,9 @@ function setMode(m){
   document.getElementById('q').placeholder =
     m==='law'      ? '법령명 입력 (예: 농지법, 종자산업법, 특허법)' :
     m==='scenario' ? '실무 질문을 입력하세요 (예: 농약을 수입·판매하려면 어떤 절차가 필요한가요?)' :
+    m==='internal' ? '내규·사규 검색 (예: 직무발명, 기술이전, 여비, 복무)' :
                      '조문 내 키워드 입력 (예: 전용실시, 손해배상, 등록취소)';
-  renderAgencyInfo(); // 시나리오 모드 전환 시 숨김/복원
+  renderAgencyInfo(); // 시나리오·내규 모드 전환 시 숨김/복원
   clearResults();
 }
 function scenarioQuick(q){ document.getElementById('q').value=q; doSearch(); }
@@ -1406,12 +1441,13 @@ function renderWelcome(){
     {m:'law',      ic:'📖', t:'법령명 검색',      d:'법령·시행령·행정규칙을 이름으로 찾고 조문 전문 확인'},
     {m:'article',  ic:'🔎', t:'조문 키워드 검색', d:'조문 내용 속 키워드로 관련 조문을 가진 법령 탐색'},
     {m:'scenario', ic:'✦',  t:'실무 시나리오',    d:'업무 상황을 질문하면 AI가 근거 법령·조문을 제안'},
+    {m:'internal', ic:'📋', t:'내규 검색',        d:'사내 규정·사규를 검색하고 관련 법령을 함께 연계'},
   ];
   const feats=[
     {ic:'🏛', t:'기관 특화',       d:'농식품부·농진청·농기원 맞춤 법령·규정·시나리오'},
+    {ic:'⚖', t:'내규↔법령 연계',  d:'내규 본문의 법령 참조를 클릭·호버로 조문 확인'},
     {ic:'🔗', t:'조례·판례 연계',  d:'법령 전문에서 관련 자치법규·판례를 함께 제안'},
     {ic:'💡', t:'AI 조문 해석',    d:'어려운 조문을 쉬운 해설·실무 포인트로 풀이'},
-    {ic:'📅', t:'개정 이력 추적',  d:'최근 개정·신설 조문과 버전별 변경사항 비교'},
   ];
   const modeCards=modes.map(x=>`
     <button class="wc-mode${mode===x.m?' active':''}" onclick="setMode('${x.m}');document.getElementById('q').focus();window.scrollTo({top:0,behavior:'smooth'})">
@@ -1469,6 +1505,11 @@ async function doSearch(){
     // 조문 키워드 모드
     if(mode === 'article'){
       await doSearchArticle(q);
+      return;
+    }
+    // 내규(사규) 모드
+    if(mode === 'internal'){
+      await doSearchInternal(q);
       return;
     }
 
@@ -1674,6 +1715,90 @@ async function doSearchArticle(q){
     setStatus(`조문 키워드 검색 · ${d.laws.length}건 · 클릭하면 관련 조문이 표시됩니다${truncNote}`);
     renderArticleLawList(d.laws, q);  // 검색어 전달
   }catch(e){setStatus('서버 연결 실패');renderEmpty('서버에 연결할 수 없습니다');}
+}
+
+// ── 내규(사규) 검색 ── 사규 MCP 연동 + 법령 참조 연계 ──
+// 내규 본문의 「법령명」·"○○법 제N조"에 마우스를 올리면 조문 미리보기,
+// 클릭하면 해당 법령 전문이 열린다(법령해석 연계).
+function extractLawNamesFromText(text){
+  const names=new Set();
+  const re1=/[「｢]([^」｣\n]{2,50}(?:법률|법|시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준))[」｣]/g;
+  const re2=/(?<![가-힣])([가-힣]{2,20}(?:법률|법))(?= *제\d+조)/g;
+  let m;
+  while((m=re1.exec(text))) names.add(m[1].trim());
+  while((m=re2.exec(text))) names.add(m[1].trim());
+  // 너무 일반적인 단어 제거
+  return [...names].filter(n=>n.length>=2 && !['법','규정','규칙','기준','지침'].includes(n));
+}
+
+async function doSearchInternal(q){
+  setStatus(`"${q}" 내규(사규) 검색 중...`,true);
+  addRecent(q);
+  document.getElementById('results').innerHTML=[1,2].map(()=>'<div class="skeleton"></div>').join('');
+  try{
+    const r=await fetch(`/api/internal/search?query=${encodeURIComponent(q)}`);
+    const d=await r.json();
+    if(d.error){ setStatus(`오류: ${escHtml(d.error)}`); renderInternalError(d.error); return; }
+    const hasText=d.text && d.text.trim();
+    const hasStruct=Array.isArray(d.structured)&&d.structured.length;
+    if(!d.success || (!hasText && !hasStruct)){
+      setStatus(`"${q}" 내규 검색 결과가 없습니다`);
+      renderEmpty(`"${escHtml(q)}"에 해당하는 내규를 찾지 못했습니다`);
+      return;
+    }
+    renderInternalResults(d, q);
+  }catch(e){ setStatus('서버 연결 실패'); renderInternalError('서버에 연결할 수 없습니다.'); }
+}
+
+function renderInternalError(msg){
+  document.getElementById('results').innerHTML=`
+    <div class="int-wrap">
+      <div class="empty" style="padding:36px 20px;">
+        <div class="empty-icon">📋</div>
+        <p style="margin-bottom:6px;">${escHtml(msg)}</p>
+        <p style="font-size:12px;color:var(--ht);">사규 MCP 서버 연결을 확인해 주세요. (관리자: 환경변수 <code>SAGYU_MCP_URL</code>)</p>
+      </div>
+    </div>`;
+}
+
+function renderInternalResults(d, q){
+  const raw = (d.text||'').trim();
+  const lawNames = extractLawNamesFromText(raw + ' ' + JSON.stringify(d.structured||''));
+  const lawChips = lawNames.length
+    ? `<div class="int-laws">
+         <span class="int-laws-lbl">⚖ 관련 법령</span>
+         ${lawNames.map(n=>`<button class="int-law-chip" title="「${escHtml(n)}」 조문 전문 보기"
+             onclick="openFullPanel(decodeURIComponent('${encodeURIComponent(n)}'),'https://www.law.go.kr/%EB%B2%95%EB%A0%B9/${encodeURIComponent(n)}')">「${escHtml(n)}」</button>`).join('')}
+       </div>`
+    : `<div class="int-laws int-laws-none">이 내규에서 직접 참조된 법령을 찾지 못했습니다.</div>`;
+
+  let bodyHtml='';
+  if(Array.isArray(d.structured) && d.structured.length){
+    bodyHtml = d.structured.map(it=>{
+      const title = it.title||it.name||it['제목']||it['규정명']||'';
+      const content = it.content||it.text||it['내용']||it['본문']||
+                      (typeof it==='string'?it:JSON.stringify(it,null,2));
+      return `<div class="int-item">
+        ${title?`<div class="int-item-t">${escHtml(String(title))}</div>`:''}
+        <div class="int-item-b">${applyXref(applyTermTooltip(escHtml(String(content))),'',{})}</div>
+      </div>`;
+    }).join('');
+  } else {
+    bodyHtml = `<div class="int-item"><div class="int-item-b">${applyXref(applyTermTooltip(escHtml(raw)),'',{})}</div></div>`;
+  }
+
+  setStatus(`내규 검색 완료 · 관련 법령 ${lawNames.length}건 · 법령 참조를 클릭하면 조문 전문이 열립니다`);
+  document.getElementById('results').innerHTML=`
+    <div class="int-wrap">
+      <div class="int-head">
+        <span class="int-badge">📋 내규</span>
+        <span class="int-q">"${escHtml(q)}" 검색 결과</span>
+        <span class="int-src">사규 MCP 연동</span>
+      </div>
+      ${lawChips}
+      ${bodyHtml}
+      <div class="int-foot">※ 내규 본문의 「법령명」 또는 "○○법 제N조"에 마우스를 올리면 법령 조문을 미리 볼 수 있고, 클릭하면 전문이 열립니다.</div>
+    </div>`;
 }
 
 // ── 업무 근거 찾기 ──

@@ -1874,6 +1874,211 @@ def get_law_related():
         return jsonify({"error": str(e)}), 500
 
 
+# ── 사규(내규) MCP 연동 ────────────────────────────────────────────────────────
+# 외부 사규 MCP 서버(Streamable HTTP)를 호출하여 내규를 검색하고,
+# 내규 본문 속 법령 참조는 프론트엔드에서 법령 조문 조회와 연계한다.
+SAGYU_MCP_URL = os.environ.get(
+    "SAGYU_MCP_URL", "https://tech-transfer-platform-zt79.vercel.app/mcp"
+).strip()
+# 내규 검색 키워드 후보(도구/인자 자동 선택용)
+_MCP_SEARCH_HINTS = ("search", "검색", "find", "query", "lookup", "조회", "retrieve")
+_MCP_RULE_HINTS   = ("rule", "규정", "사규", "내규", "regulation", "정관",
+                     "지침", "policy", "bylaw", "문서", "document")
+
+
+def _mcp_parse_response(resp) -> dict:
+    """MCP 응답을 파싱. application/json 또는 text/event-stream(SSE) 모두 지원."""
+    ct = (resp.headers.get("Content-Type") or "").lower()
+    text = _decode(resp.content).strip()
+    if "text/event-stream" in ct or text.startswith("event:") or "\ndata:" in text:
+        # SSE: 'data:' 라인들에서 마지막으로 파싱 가능한 JSON을 사용
+        for line in reversed(text.splitlines()):
+            line = line.strip()
+            if line.startswith("data:"):
+                chunk = line[5:].strip()
+                if not chunk or chunk == "[DONE]":
+                    continue
+                try:
+                    return json.loads(chunk)
+                except Exception:
+                    continue
+        raise ValueError("SSE 응답 파싱 실패")
+    return json.loads(text)
+
+
+class _McpClient:
+    """최소 기능 MCP Streamable HTTP 클라이언트 (initialize → tools/list → tools/call)."""
+    def __init__(self, url: str):
+        self.url = url
+        self.sid = None
+        self._id = 0
+        self._tools = None
+
+    def _post(self, method: str, params=None, notify: bool = False, timeout=(5, 25)):
+        self._id += 1
+        payload = {"jsonrpc": "2.0", "method": method}
+        if not notify:
+            payload["id"] = self._id
+        if params is not None:
+            payload["params"] = params
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+        }
+        if self.sid:
+            headers["Mcp-Session-Id"] = self.sid
+        r = req_lib.post(self.url, json=payload, headers=headers, timeout=timeout)
+        sid = r.headers.get("Mcp-Session-Id") or r.headers.get("mcp-session-id")
+        if sid:
+            self.sid = sid
+        r.raise_for_status()
+        if notify or not (r.content or b"").strip():
+            return None
+        data = _mcp_parse_response(r)
+        if isinstance(data, dict) and data.get("error"):
+            raise RuntimeError(data["error"].get("message", "MCP 오류"))
+        return data.get("result") if isinstance(data, dict) else data
+
+    def initialize(self):
+        res = self._post("initialize", {
+            "protocolVersion": "2025-06-18",
+            "capabilities": {},
+            "clientInfo": {"name": "agro-law", "version": "1.0"},
+        })
+        try:
+            self._post("notifications/initialized", notify=True)
+        except Exception:
+            pass
+        return res
+
+    def list_tools(self):
+        if self._tools is None:
+            res = self._post("tools/list", {}) or {}
+            self._tools = res.get("tools", []) or []
+        return self._tools
+
+    def call_tool(self, name: str, args: dict):
+        return self._post("tools/call", {"name": name, "arguments": args})
+
+
+def _mcp_pick_search_tool(tools: list):
+    """검색 성격의 도구를 휴리스틱으로 선택."""
+    def score(t):
+        blob = (str(t.get("name", "")) + " " + str(t.get("description", ""))).lower()
+        s = 0
+        if any(k in blob for k in _MCP_SEARCH_HINTS): s += 3
+        if any(k in blob for k in _MCP_RULE_HINTS):   s += 2
+        if any(k in blob for k in ("list", "목록")):   s += 1
+        return s
+    if not tools:
+        return None
+    ranked = sorted(tools, key=score, reverse=True)
+    return ranked[0] if score(ranked[0]) > 0 else tools[0]
+
+
+def _mcp_build_args(tool: dict, query: str) -> dict:
+    """도구 inputSchema에서 질의 문자열을 담을 속성을 선택해 인자 구성."""
+    schema = tool.get("inputSchema") or tool.get("input_schema") or {}
+    props = schema.get("properties") or {}
+    required = schema.get("required") or []
+    if not props:
+        return {"query": query}
+    def is_str(p):
+        t = p.get("type")
+        return t == "string" or (isinstance(t, list) and "string" in t)
+    order = list(required) + [k for k in props if k not in required]
+    chosen = None
+    for k in order:
+        p = props.get(k, {})
+        if is_str(p):
+            chosen = chosen or k
+            if any(x in k.lower() for x in
+                   ("query", "keyword", "term", "search", "text", "q", "name", "title", "검색")):
+                chosen = k
+                break
+    args = {chosen or "query": query}
+    return args
+
+
+def _mcp_extract_text(result) -> str:
+    """tools/call 결과의 content 배열에서 텍스트 추출."""
+    if isinstance(result, str):
+        return result
+    if not isinstance(result, dict):
+        return ""
+    parts = []
+    for c in result.get("content", []) or []:
+        if not isinstance(c, dict):
+            continue
+        if c.get("type") == "text" and c.get("text"):
+            parts.append(c["text"])
+        elif isinstance(c.get("resource"), dict) and c["resource"].get("text"):
+            parts.append(c["resource"]["text"])
+    return "\n\n".join(parts).strip()
+
+
+@app.route("/api/internal/status")
+def internal_status():
+    """사규 MCP 연결 상태 및 사용 가능한 도구 목록 확인."""
+    if not SAGYU_MCP_URL:
+        return jsonify({"connected": False, "message": "SAGYU_MCP_URL 미설정"})
+    try:
+        cli = _McpClient(SAGYU_MCP_URL)
+        info = cli.initialize()
+        tools = cli.list_tools()
+        picked = _mcp_pick_search_tool(tools)
+        return jsonify({
+            "connected": True,
+            "server": (info or {}).get("serverInfo", {}),
+            "tools": [{"name": t.get("name"), "description": t.get("description", "")} for t in tools],
+            "search_tool": picked.get("name") if picked else None,
+        })
+    except Exception as e:
+        return jsonify({"connected": False, "message": str(e)})
+
+
+@app.route("/api/internal/search")
+def internal_search():
+    """사규 MCP로 내규 검색. 결과 텍스트/구조화 데이터를 반환하며,
+    본문 속 법령 참조는 프론트엔드에서 법령 조문 조회와 연계한다."""
+    query = request.args.get("query", "").strip()
+    if not query:
+        return jsonify({"error": "검색어를 입력하세요"}), 400
+    if len(query) < 2:
+        return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
+    if not SAGYU_MCP_URL:
+        return jsonify({"error": "사규 MCP 서버가 설정되지 않았습니다(SAGYU_MCP_URL)."}), 503
+    try:
+        cli = _McpClient(SAGYU_MCP_URL)
+        cli.initialize()
+        tools = cli.list_tools()
+        tool = _mcp_pick_search_tool(tools)
+        if not tool:
+            return jsonify({"error": "사규 MCP에서 사용 가능한 도구가 없습니다."}), 502
+        args = _mcp_build_args(tool, query)
+        result = cli.call_tool(tool.get("name"), args)
+        text = _mcp_extract_text(result)
+        structured = result.get("structuredContent") if isinstance(result, dict) else None
+        is_error = bool(result.get("isError")) if isinstance(result, dict) else False
+        if is_error:
+            return jsonify({"error": text or "내규 검색 중 오류가 발생했습니다."}), 502
+        return jsonify({
+            "success": True,
+            "query": query,
+            "tool": tool.get("name"),
+            "arguments": args,
+            "text": text,
+            "structured": structured,
+        })
+    except req_lib.exceptions.Timeout:
+        return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
+    except req_lib.exceptions.ConnectionError as e:
+        return jsonify({"error": f"사규 MCP 서버에 연결할 수 없습니다: {e}"}), 502
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": f"내규 검색 오류: {e}"}), 500
+
+
 @app.route("/api/recent")
 def get_recent():
     return jsonify({"recent": recent_searches})
