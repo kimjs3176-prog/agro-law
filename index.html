@@ -1628,13 +1628,21 @@ async function doSearch(){
 // ── 법령 모드: 키워드 → 규정(법령) 단위 카드 + 매칭 조문 + 관련 내규 교차 ──
 async function doSearchLaw(q){
   setStatus(`"${q}" 법령 검색 중...`, true);
-  document.getElementById('results').innerHTML = [1,2,3].map(()=>'<div class="skeleton"></div>').join('');
   addRecent(q);
   // 교차: 관련 내규 병렬 조회
   const crossEl = document.getElementById('internalResults');
   crossEl.innerHTML = crossLoadingHtml('📋 관련 내규', '관련 사내 규정 검색 중...');
   const crossPromise = fetch(`/api/internal/search?query=${encodeURIComponent(q)}`)
     .then(r=>r.json()).catch(()=>null);
+  // 클라이언트 캐시(5분) — 동일 검색 즉시 응답
+  const cached = _cacheGet(`article:${q}`);
+  if(cached){
+    setStatus(`법령 ${cached.length}건(캐시) · "${escHtml(q)}" 매칭 조문`);
+    renderRegCards(cached, q, 'law');
+    renderCrossPanel(await crossPromise, q, 'law');
+    return;
+  }
+  document.getElementById('results').innerHTML = [1,2,3].map(()=>'<div class="skeleton"></div>').join('');
   try{
     const r = await fetch(`/api/search/article?query=${encodeURIComponent(q)}&display=20`);
     const d = await r.json();
@@ -1643,6 +1651,7 @@ async function doSearchLaw(q){
       setStatus(`"${q}" 법령 검색 결과가 없습니다`);
       renderEmpty(`"${escHtml(q)}"을(를) 포함한 조문이 있는 법령을 찾지 못했습니다`);
     } else {
+      if(!d.truncated) _cacheSet(`article:${q}`, d.laws);  // 완전한 결과만 캐시
       const tnote = d.truncated ? ' · ⚠ 일부 법령만 탐색' : '';
       setStatus(`법령 ${d.laws.length}건 · "${escHtml(q)}" 매칭 조문 표시${tnote}`);
       renderRegCards(d.laws, q, 'law');
@@ -1954,15 +1963,25 @@ async function doSearchScenario(q){
        <p style="color:var(--mu);font-size:13px;">AI가 질문을 분석하고 관련 조문을 찾고 있습니다...</p>
      </div>`;
   addRecent(q);
+  // AI 설정(사용자 키)을 함께 전송 → 서버 환경변수 없이도 시나리오 검색 활성화
+  const s = getAiSettings();
+  const prov = s.provider || '';
+  const aiPayload = prov ? {
+    provider: prov,
+    api_key: s['key_'+prov] || '',
+    model:   s['model_'+prov] || ''
+  } : {};
   try{
     const r = await fetch('/api/scenario', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({query: q})
+      body: JSON.stringify({query: q, ...aiPayload})
     });
     const d = await r.json();
     if(d.error){
       setStatus(`오류: ${d.error}`);
-      renderEmpty(`<span style="color:#991b1b;">⚠ ${escHtml(d.error)}</span>`);
+      const needKey = /활성화되지 않았|API ?키|api_key|키가 (없|필요)|키를 입력|AI ?키/i.test(d.error||'');
+      renderEmpty(`<span style="color:#991b1b;">⚠ ${escHtml(d.error)}</span>`+
+        (needKey?`<br><button class="abtn primary" style="margin-top:10px;" onclick="openAiModal()">✦ AI 설정에서 키 입력</button>`:''));
       return;
     }
     if(!d.success){
