@@ -247,6 +247,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .int-item-t{font-size:14px;font-weight:700;color:var(--tx);margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--bd);}
 .int-item-b{font-size:13.5px;line-height:1.95;color:var(--tx);white-space:pre-wrap;word-break:break-word;}
 .int-foot{font-size:11px;color:var(--ht);line-height:1.6;padding:2px 4px;}
+/* 통합 모드: 내규 요약 패널 */
+.int-uni{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--sf);border-radius:16px;padding:13px 16px;box-shadow:var(--shadow);margin-bottom:12px;border-left:3px solid #a78bfa;}
+.int-uni-card{display:block;cursor:pointer;transition:box-shadow .18s;}
+.int-uni-card:hover{box-shadow:var(--shadow-md);}
+.int-uni-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.int-uni-lawlbl{font-size:11px;font-weight:800;color:var(--gp);margin-left:4px;}
+.int-uni-err{border-left-color:#fca5a5;}
+/* 내규 카테고리 칩 */
+.chip.int-cat{background:#f3e8ff;color:#7c3aed;}
+.chip.int-cat:hover{background:#7c3aed;color:#fff;box-shadow:0 2px 8px rgba(124,58,237,.3);}
+body.dark .chip.int-cat{background:#2e1065;color:#c4b5fd;}
+body.dark .int-uni{border-left-color:#7c3aed;}
 
 /* ── 다크모드: 신규 컴포넌트 대비 보정 ── */
 body.dark .agency-info{background:linear-gradient(135deg,#13233d,#0f1830);border-color:#22344f;}
@@ -1131,15 +1143,21 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
     <!-- 검색 모드 -->
     <div class="mtoggle">
-      <button class="mbtn active" id="mlawbtn" onclick="setMode('law')"><span class="mb-full">법령명 검색</span><span class="mb-short">법령명</span></button>
-      <button class="mbtn" id="martbtn" onclick="setMode('article')"><span class="mb-full">조문 키워드 검색</span><span class="mb-short">조문검색</span></button>
-      <button class="mbtn" id="mscenbtn" onclick="setMode('scenario')"><span class="mb-full">✦ 실무 시나리오</span><span class="mb-short">✦ 시나리오</span></button>
+      <button class="mbtn active" id="munibtn" onclick="setMode('unified')"><span class="mb-full">⚡ 통합 검색</span><span class="mb-short">⚡ 통합</span></button>
+      <button class="mbtn" id="mlawbtn" onclick="setMode('law')"><span class="mb-full">법령명 검색</span><span class="mb-short">법령명</span></button>
+      <button class="mbtn" id="martbtn" onclick="setMode('article')"><span class="mb-full">조문 키워드</span><span class="mb-short">조문</span></button>
+      <button class="mbtn" id="mscenbtn" onclick="setMode('scenario')"><span class="mb-full">✦ 실무 시나리오</span><span class="mb-short">✦ AI</span></button>
       <button class="mbtn" id="mintbtn" onclick="setMode('internal')"><span class="mb-full">📋 내규 검색</span><span class="mb-short">📋 내규</span></button>
     </div>
     <!-- 검색창 -->
     <div class="srow">
-      <input id="q" class="sinput" style="padding-left:40px;" placeholder="🔍  법령명 입력 (예: 농지법, 종자산업법, 특허법)" onkeydown="if(event.key==='Enter')doSearch()">
+      <input id="q" class="sinput" style="padding-left:40px;" placeholder="🔍  법령+내규 통합 검색 (예: 직무발명, 농지전용, 기술이전)" onkeydown="if(event.key==='Enter')doSearch()">
       <button id="sbtn" class="sbtn" onclick="doSearch()">검색</button>
+    </div>
+    <!-- 내규 카테고리 바로가기 (내규·통합 모드일 때 표시) -->
+    <div id="internalExamples" style="display:none;">
+      <div class="qlabel">내규 카테고리 바로가기</div>
+      <div class="chips" id="internalChips"></div>
     </div>
     <!-- 시나리오 예시 칩 (시나리오 모드일 때만 표시) -->
     <div id="scenarioExamples" style="display:none;">
@@ -1189,6 +1207,8 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   <!-- 검색 상태 메시지 -->
   <div id="status" style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mu);margin-bottom:8px;min-height:20px;"></div>
 
+  <!-- 통합 검색: 내규 결과 (법령 결과와 분리 렌더 — 페이지네이션 영향 없음) -->
+  <div id="internalResults"></div>
   <!-- 검색 결과 컨테이너 -->
   <div id="results" class="results">
     <div class="empty"><div class="empty-icon">📋</div><p>검색어를 입력하고 검색 버튼을 눌러주세요</p></div>
@@ -1317,7 +1337,7 @@ function _cacheSet(key, data) {
 }
 
 
-let agency='all', mode='law', allLaws=[], filtered=[], page=1, fpArts=[];
+let agency='all', mode='unified', allLaws=[], filtered=[], page=1, fpArts=[];
 let _fpAbbrevMap = {}; // 현재 전문 패널 법령의 약칭 → 정식 법령명 맵
 const PS=10;
 
@@ -1394,6 +1414,8 @@ function setAgency(ag){
 // ── 검색 모드 ──
 function setMode(m){
   mode=m;
+  const uniBtn = document.getElementById('munibtn');
+  if(uniBtn) uniBtn.classList.toggle('active', m==='unified');
   document.getElementById('mlawbtn').classList.toggle('active', m==='law');
   document.getElementById('martbtn').classList.toggle('active', m==='article');
   const intBtn = document.getElementById('mintbtn');
@@ -1402,24 +1424,21 @@ function setMode(m){
   scBtn.classList.remove('active');
   scBtn.classList.toggle('scenario-active', m==='scenario');
 
-  const examples   = document.getElementById('scenarioExamples');
-  const qlabel     = document.getElementById('qlabelDefault');
-  const chipsWrap  = document.getElementById('chips');
-  // 시나리오·내규 모드에서는 '자주 찾는 법령' 칩 숨김
-  if(m === 'scenario'){
-    examples.style.display  = '';
-    qlabel.style.display    = 'none';
-    chipsWrap.style.display = 'none';
-  } else if(m === 'internal'){
-    examples.style.display  = 'none';
-    qlabel.style.display    = 'none';
-    chipsWrap.style.display = 'none';
-  } else {
-    examples.style.display  = 'none';
-    qlabel.style.display    = '';
-    chipsWrap.style.display = '';
+  const examples    = document.getElementById('scenarioExamples');
+  const intExamples = document.getElementById('internalExamples');
+  const qlabel      = document.getElementById('qlabelDefault');
+  const chipsWrap   = document.getElementById('chips');
+  // 모드별 보조 UI: 시나리오→예시 질문, 내규→카테고리, 통합→카테고리+법령 칩
+  examples.style.display    = (m==='scenario') ? '' : 'none';
+  if(intExamples){
+    intExamples.style.display = (m==='internal' || m==='unified') ? '' : 'none';
+    if(m==='internal' || m==='unified') renderInternalChips();
   }
+  const showLawChips = (m==='law' || m==='article' || m==='unified');
+  qlabel.style.display    = showLawChips ? '' : 'none';
+  chipsWrap.style.display = showLawChips ? '' : 'none';
   document.getElementById('q').placeholder =
+    m==='unified'  ? '법령+내규 통합 검색 (예: 직무발명, 농지전용, 기술이전)' :
     m==='law'      ? '법령명 입력 (예: 농지법, 종자산업법, 특허법)' :
     m==='scenario' ? '실무 질문을 입력하세요 (예: 농약을 수입·판매하려면 어떤 절차가 필요한가요?)' :
     m==='internal' ? '내규·사규 검색 (예: 직무발명, 기술이전, 여비, 복무)' :
@@ -1427,10 +1446,26 @@ function setMode(m){
   renderAgencyInfo(); // 시나리오·내규 모드 전환 시 숨김/복원
   clearResults();
 }
+
+// ── 내규 카테고리 바로가기 칩 ──
+const INTERNAL_CATEGORIES = [
+  {k:'직무발명',   ic:'💡'}, {k:'기술이전',   ic:'🤝'}, {k:'지식재산',  ic:'⚖'},
+  {k:'연구개발',   ic:'🔬'}, {k:'복무',       ic:'🕘'}, {k:'보수',      ic:'💰'},
+  {k:'여비',       ic:'✈'},  {k:'계약',       ic:'📝'}, {k:'감사',      ic:'🔍'},
+  {k:'보안',       ic:'🔒'},
+];
+function renderInternalChips(){
+  const el=document.getElementById('internalChips');
+  if(!el || el.dataset.ready) return;
+  el.innerHTML = INTERNAL_CATEGORIES.map(c=>
+    `<button class="chip int-cat" onclick="quick('${c.k}')">${c.ic} ${c.k}</button>`).join('');
+  el.dataset.ready='1';
+}
 function scenarioQuick(q){ document.getElementById('q').value=q; doSearch(); }
 function clearResults(){
   const fbar=document.getElementById('fbar'); if(fbar) fbar.style.display='none';
   const pag=document.getElementById('pagination'); if(pag) pag.innerHTML='';
+  const ir=document.getElementById('internalResults'); if(ir) ir.innerHTML='';
   renderWelcome();
   setStatus('');
   const rh=document.getElementById('resultHeader'); if(rh) rh.style.display='none';
@@ -1441,14 +1476,15 @@ function renderWelcome(){
   const res=document.getElementById('results');
   if(!res) return;
   const modes=[
+    {m:'unified',  ic:'⚡', t:'통합 검색',        d:'법령(법제처)과 사내 내규를 한 번에 검색·연계'},
     {m:'law',      ic:'📖', t:'법령명 검색',      d:'법령·시행령·행정규칙을 이름으로 찾고 조문 전문 확인'},
     {m:'article',  ic:'🔎', t:'조문 키워드 검색', d:'조문 내용 속 키워드로 관련 조문을 가진 법령 탐색'},
     {m:'scenario', ic:'✦',  t:'실무 시나리오',    d:'업무 상황을 질문하면 AI가 근거 법령·조문을 제안'},
     {m:'internal', ic:'📋', t:'내규 검색',        d:'사내 규정·사규를 검색하고 관련 법령을 함께 연계'},
   ];
   const feats=[
-    {ic:'🏛', t:'기관 특화',       d:'농식품부·농진청·농기원 맞춤 법령·규정·시나리오'},
     {ic:'⚖', t:'내규↔법령 연계',  d:'내규 본문의 법령 참조를 클릭·호버로 조문 확인'},
+    {ic:'🏛', t:'기관 특화',       d:'농식품부·농진청·농기원 맞춤 법령·규정·시나리오'},
     {ic:'🔗', t:'조례·판례 연계',  d:'법령 전문에서 관련 자치법규·판례를 함께 제안'},
     {ic:'💡', t:'AI 조문 해석',    d:'어려운 조문을 쉬운 해설·실무 포인트로 풀이'},
   ];
@@ -1465,8 +1501,8 @@ function renderWelcome(){
   res.innerHTML=`
     <div class="welcome">
       <div class="wc-hero">
-        <div class="wc-hero-t">농업·지식재산 법령을 <b>쉽고 빠르게</b> 찾아보세요</div>
-        <div class="wc-hero-s">검색 방식을 선택하거나 상단에서 바로 검색해 보세요</div>
+        <div class="wc-hero-t">사내 내규와 국가법령을 <b>한 곳에서</b> 검색하세요</div>
+        <div class="wc-hero-s">⚡ 통합 검색은 내규와 법령을 동시에 찾아 서로 연계해 보여줍니다</div>
       </div>
       <div class="wc-modes">${modeCards}</div>
       <div class="wc-feats">${featTiles}</div>
@@ -1515,44 +1551,13 @@ async function doSearch(){
       await doSearchInternal(q);
       return;
     }
-
-    // 법령명 검색 — 캐시 우선
-    const cacheKey = `law:${q}`;
-    const cached = _cacheGet(cacheKey);
-    if (cached) {
-      allLaws = cached;
-      buildTypeFilter(); applyFilter();
-      setStatus(`캐시됨 · ${allLaws.length}건`);
-      document.getElementById('fbar').style.display = 'flex';
-      addRecent(q);
+    // ⚡ 통합 모드: 법령 + 내규 동시 검색
+    if(mode === 'unified'){
+      await doSearchUnified(q);
       return;
     }
 
-    // 스켈레톤 표시
-    document.getElementById('results').innerHTML = [1,2,3].map(()=>'<div class="skeleton"></div>').join('');
-
-    setStatus('법제처 조회 중...', true);
-    const r = await fetch(`/api/search?query=${encodeURIComponent(q)}&display=20`);
-    const d = await r.json();
-
-    if(d.error){
-      setStatus(`오류: ${d.error}`);
-      renderEmpty(d.error);
-      return;
-    }
-    if(!d.success || !d.laws?.length){
-      setStatus(`"${q}" 검색 결과가 없습니다`);
-      renderEmpty(`"${q}"에 해당하는 법령을 찾지 못했습니다`);
-      return;
-    }
-
-    addRecent(q);
-    allLaws = d.laws;
-    _cacheSet(cacheKey, d.laws); // 캐시 저장
-    buildTypeFilter();
-    applyFilter();
-    setStatus(`법제처 실시간 · ${allLaws.length}건`);
-    document.getElementById('fbar').style.display = 'flex';
+    await doSearchLaw(q);
 
   }catch(e){
     setStatus('서버 연결 실패');
@@ -1562,6 +1567,133 @@ async function doSearch(){
     // 어떤 경로로 종료돼도 반드시 버튼 재활성화
     document.getElementById('sbtn').disabled = false;
   }
+}
+
+// ── 법령명 검색 (단독·통합 모드 공용) ──
+async function doSearchLaw(q, opts={}){
+  // 캐시 우선
+  const cacheKey = `law:${q}`;
+  const cached = _cacheGet(cacheKey);
+  if (cached) {
+    allLaws = cached;
+    buildTypeFilter(); applyFilter();
+    if(!opts.quietStatus) setStatus(`캐시됨 · ${allLaws.length}건`);
+    document.getElementById('fbar').style.display = 'flex';
+    addRecent(q);
+    return allLaws.length;
+  }
+
+  // 스켈레톤 표시
+  document.getElementById('results').innerHTML = [1,2,3].map(()=>'<div class="skeleton"></div>').join('');
+
+  if(!opts.quietStatus) setStatus('법제처 조회 중...', true);
+  const r = await fetch(`/api/search?query=${encodeURIComponent(q)}&display=20`);
+  const d = await r.json();
+
+  if(d.error){
+    if(!opts.quietStatus) setStatus(`오류: ${d.error}`);
+    renderEmpty(d.error);
+    return 0;
+  }
+  if(!d.success || !d.laws?.length){
+    if(!opts.quietStatus) setStatus(`"${q}" 검색 결과가 없습니다`);
+    renderEmpty(opts.emptyMsg || `"${q}"에 해당하는 법령을 찾지 못했습니다`);
+    return 0;
+  }
+
+  addRecent(q);
+  allLaws = d.laws;
+  _cacheSet(cacheKey, d.laws); // 캐시 저장
+  buildTypeFilter();
+  applyFilter();
+  if(!opts.quietStatus) setStatus(`법제처 실시간 · ${allLaws.length}건`);
+  document.getElementById('fbar').style.display = 'flex';
+  return allLaws.length;
+}
+
+// ── ⚡ 통합 검색: 법령(법제처) + 내규(사규 MCP) 동시 검색 ──
+async function doSearchUnified(q){
+  const irEl = document.getElementById('internalResults');
+  // 내규 검색은 병렬 시작 — 법령 결과가 먼저 그려지고 내규 패널은 도착 시 채워짐
+  irEl.innerHTML = `
+    <div class="int-uni int-uni-loading">
+      <span class="int-badge">📋 내규</span>
+      <span style="font-size:12.5px;color:var(--mu);">사내 규정 검색 중...</span>
+      <div class="spinner" style="width:12px;height:12px;border-width:2px;"></div>
+    </div>`;
+  const intPromise = fetch(`/api/internal/search?query=${encodeURIComponent(q)}`)
+    .then(r=>r.json()).catch(()=>null);
+
+  setStatus('⚡ 법령·내규 통합 검색 중...', true);
+  let lawCnt = 0;
+  try{
+    lawCnt = await doSearchLaw(q, {quietStatus:true,
+      emptyMsg:`"${escHtml(q)}"에 해당하는 법령을 찾지 못했습니다 (아래 내규 결과 확인)`});
+  }catch(e){
+    renderEmpty(`법령 검색 실패: ${escHtml(e.message||'')}`);
+  }
+
+  const d = await intPromise;
+  renderUnifiedInternal(d, q);
+  const intOk = d && d.success && ((d.text||'').trim() || (Array.isArray(d.structured)&&d.structured.length));
+  setStatus(`⚡ 통합 검색 · 법령 ${lawCnt}건 · 내규 ${intOk?'결과 있음':'결과 없음'}`);
+}
+
+// 통합 모드: 내규 결과 요약 패널 (#internalResults, 접이식)
+function renderUnifiedInternal(d, q){
+  const el = document.getElementById('internalResults');
+  if(!el) return;
+  if(!d || d.error || !d.success){
+    const msg = d && d.error ? d.error : '사규 MCP 서버에 연결할 수 없습니다.';
+    el.innerHTML = `
+      <div class="int-uni int-uni-err">
+        <span class="int-badge">📋 내규</span>
+        <span style="font-size:12px;color:var(--mu);">${escHtml(msg)}</span>
+      </div>`;
+    return;
+  }
+  const raw = (d.text||'').trim();
+  const hasStruct = Array.isArray(d.structured)&&d.structured.length;
+  if(!raw && !hasStruct){
+    el.innerHTML = `
+      <div class="int-uni">
+        <span class="int-badge">📋 내규</span>
+        <span style="font-size:12.5px;color:var(--mu);">"${escHtml(q)}" 관련 내규를 찾지 못했습니다.</span>
+      </div>`;
+    return;
+  }
+  const lawNames = extractLawNamesFromText(raw + ' ' + JSON.stringify(d.structured||''));
+  const lawChips = lawNames.map(n=>
+    `<button class="int-law-chip" title="「${escHtml(n)}」 조문 전문 보기"
+        onclick="event.stopPropagation();openFullPanel(decodeURIComponent('${encodeURIComponent(n)}'),'https://www.law.go.kr/%EB%B2%95%EB%A0%B9/${encodeURIComponent(n)}')">「${escHtml(n)}」</button>`).join('');
+  let bodyHtml='';
+  if(hasStruct){
+    bodyHtml = d.structured.map(it=>{
+      const title = it.title||it.name||it['제목']||it['규정명']||'';
+      const content = it.content||it.text||it['내용']||it['본문']||
+                      (typeof it==='string'?it:JSON.stringify(it,null,2));
+      return `<div class="int-item" style="box-shadow:none;background:var(--bg);margin-top:8px;">
+        ${title?`<div class="int-item-t">${escHtml(String(title))}</div>`:''}
+        <div class="int-item-b">${applyXref(applyTermTooltip(escHtml(String(content))),'',{})}</div>
+      </div>`;
+    }).join('');
+  } else {
+    bodyHtml = `<div class="int-item" style="box-shadow:none;background:var(--bg);margin-top:8px;">
+      <div class="int-item-b">${applyXref(applyTermTooltip(escHtml(raw)),'',{})}</div></div>`;
+  }
+  el.innerHTML = `
+    <div class="int-uni int-uni-card" onclick="const b=document.getElementById('intUniBody');const o=b.style.display==='block';b.style.display=o?'none':'block';document.getElementById('intUniArrow').style.transform=o?'':'rotate(180deg)';">
+      <div class="int-uni-head">
+        <span class="int-badge">📋 내규</span>
+        <span style="font-size:13.5px;font-weight:700;color:var(--tx);">"${escHtml(q)}" 사내 규정 결과</span>
+        ${lawNames.length?`<span class="int-uni-lawlbl">⚖ 관련 법령</span>${lawChips}`:''}
+        <span id="intUniArrow" class="arrow" style="margin-left:auto;">▼</span>
+      </div>
+      <div id="intUniBody" style="display:none;cursor:auto;" onclick="event.stopPropagation();">
+        ${bodyHtml}
+        <div class="int-foot" style="margin-top:6px;">※ 「법령명」·"○○법 제N조"를 클릭하면 조문 전문이 열립니다.</div>
+      </div>
+    </div>`;
 }
 
 // ── 실무 시나리오 검색 ──
@@ -4579,7 +4711,7 @@ loadRecent();
 loadFavs();
 renderAgencyTabs();
 validateKeywords();
-renderWelcome();  // 초기 온보딩 안내 패널
+setMode('unified');  // 기본: 통합 검색 (온보딩 패널 포함 초기화)
 try{ updateAiStatusUI(getAiSettings()); }catch{}
 
 // ══════════════════════════════════════════════════════════════════════════════
