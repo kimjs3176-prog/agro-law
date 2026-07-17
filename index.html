@@ -270,8 +270,14 @@ body.dark .int-badge-law{background:#12233d!important;color:#93c5fd!important;}
 body.dark .ltype-int{color:#c4b5fd;background:#2e1065;}
 .reg-badge{font-size:11px;font-weight:700;color:var(--g);background:var(--gl);padding:3px 9px;border-radius:999px;white-space:nowrap;}
 body.dark .reg-badge{background:#12233d;color:#93c5fd;}
-.reg-full-btn{margin-left:auto;padding:7px 13px!important;font-size:12px!important;white-space:nowrap;flex-shrink:0;}
+.reg-head .lname{flex:1 1 40%;min-width:150px;word-break:keep-all;overflow-wrap:anywhere;}
+.reg-head-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;}
+.reg-full-btn{padding:7px 13px!important;font-size:12px!important;white-space:nowrap;flex-shrink:0;}
 .reg-split-btn{padding:7px 11px!important;font-size:12px!important;white-space:nowrap;flex-shrink:0;}
+@media(max-width:640px){
+  .reg-head .lname{flex-basis:100%;min-width:0;font-size:14px;line-height:1.4;}
+  .reg-head-actions{flex-basis:100%;margin-left:0;}
+}
 /* 개정이력·최신 개정일 메타 */
 .reg-rev{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:0 18px 10px;}
 .reg-rev-item{font-size:11.5px;color:var(--mu);}
@@ -287,6 +293,51 @@ body.dark .reg-hist-chip{background:#161920;}
 .reg-art-t{font-size:13px;font-weight:600;color:var(--tx);}
 .reg-art-b{font-size:12.5px;line-height:1.85;color:var(--tx);white-space:pre-wrap;word-break:break-word;}
 .reg-none{font-size:12px;color:var(--ht);padding:6px 2px;}
+
+/* ── 좌측 내규 목록 사이드바 ── */
+.tree-toggle{width:34px;height:34px;border:none;border-radius:10px;background:var(--gl);color:var(--gd);font-size:17px;cursor:pointer;flex-shrink:0;margin-right:2px;transition:.15s;}
+.tree-toggle:hover{background:var(--g);color:#fff;}
+.sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:590;display:none;}
+.sidebar-overlay.show{display:block;}
+.internal-tree{position:fixed;top:0;left:0;width:min(320px,86vw);height:100vh;background:var(--sf);z-index:600;display:flex;flex-direction:column;transform:translateX(-102%);transition:transform .28s cubic-bezier(.4,0,.2,1);box-shadow:4px 0 24px rgba(0,0,0,.14);}
+.internal-tree.open{transform:translateX(0);}
+.it-head{display:flex;align-items:center;gap:8px;padding:16px 16px 12px;border-bottom:1px solid var(--bd);flex-shrink:0;}
+.it-title{font-size:15px;font-weight:800;color:var(--tx);flex:1;}
+.it-search{display:flex;gap:6px;padding:10px 14px;border-bottom:1px solid var(--bd);flex-shrink:0;}
+.it-search input{flex:1;min-width:0;padding:8px 12px;border:none;border-radius:10px;background:var(--bg);color:var(--tx);font-size:13px;outline:none;font-family:var(--font);}
+.it-search input:focus{box-shadow:var(--shadow-focus);}
+.it-reload{border:none;background:var(--bg);color:var(--mu);border-radius:10px;width:36px;cursor:pointer;font-size:15px;flex-shrink:0;}
+.it-reload:hover{color:var(--g);}
+.it-body{flex:1;overflow-y:auto;padding:8px 8px 16px;}
+.it-foot{font-size:11px;color:var(--ht);padding:8px 14px;border-top:1px solid var(--bd);flex-shrink:0;}
+.it-empty{font-size:12.5px;color:var(--ht);padding:24px 14px;text-align:center;line-height:1.7;}
+.it-group{margin-bottom:2px;}
+.it-group-h{display:flex;align-items:center;gap:7px;padding:9px 10px;font-size:13px;font-weight:700;color:var(--tx);cursor:pointer;border-radius:8px;user-select:none;}
+.it-group-h:hover{background:var(--bg);}
+.it-arrow{font-size:10px;color:var(--ht);transition:transform .2s;}
+.it-group.collapsed .it-arrow{transform:rotate(-90deg);}
+.it-group.collapsed .it-items{display:none;}
+.it-cnt{margin-left:auto;font-size:11px;font-weight:600;color:var(--mu);background:var(--bg);border-radius:999px;padding:1px 8px;}
+.it-items{display:flex;flex-direction:column;gap:1px;padding:2px 0 6px 8px;}
+.it-item{text-align:left;border:none;background:transparent;color:var(--tx);font-size:12.5px;padding:7px 10px 7px 22px;border-radius:8px;cursor:pointer;line-height:1.45;position:relative;font-family:var(--font);white-space:normal;word-break:keep-all;overflow-wrap:anywhere;}
+.it-item::before{content:'·';position:absolute;left:10px;color:var(--ht);}
+.it-item:hover{background:var(--gl);color:var(--gd);}
+
+/* ── 규정 전문 서식화(formatRuleText) ── */
+.rulefmt{font-size:13.5px;color:var(--tx);}
+.rulefmt>div{line-height:1.85;}
+.rf-h1{font-size:15px;font-weight:800;margin:16px 0 6px;padding-bottom:5px;border-bottom:1px solid var(--bd);}
+.rf-h2{font-size:14px;font-weight:700;margin:12px 0 4px;color:var(--tx);}
+.rf-art{font-size:14px;font-weight:700;color:var(--gd);margin:14px 0 4px;}
+.rf-label{font-weight:700;color:var(--mu);margin:12px 0 4px;}
+.rf-p{margin:3px 0;}
+.rf-bul{padding-left:14px;margin:3px 0;}
+.rf-hang{padding-left:14px;margin:4px 0;font-weight:500;}
+.rf-num{padding-left:16px;margin:3px 0;}
+.rf-ho{padding-left:30px;margin:2px 0;}
+.rf-dash{padding-left:30px;margin:2px 0;color:var(--mu);}
+.rf-note{padding-left:30px;margin:2px 0;font-size:12.5px;color:var(--mu);}
+.rf-empty{font-size:13px;color:var(--ht);padding:24px;text-align:center;}
 .int-doc-body{font-size:13.5px;line-height:1.95;color:var(--tx);white-space:pre-wrap;word-break:break-word;}
 
 /* 내규 전문 모드: 법령 전용 헤더/도구 버튼 숨김 */
@@ -481,6 +532,7 @@ body.dark .scenario-caution{background:#451a03;border-color:#b45309;color:#fde68
 .ai-status-dot{width:8px;height:8px;border-radius:50%;background:var(--ht);flex-shrink:0;}
 .ai-status-dot.ok{background:#22c55e;}
 .ai-status-dot.err{background:#ef4444;}
+.ai-status-dot.warn{background:#f59e0b;}
 .ai-modal-foot{padding:14px 20px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;}
 .ai-save-btn{padding:8px 20px;border-radius:var(--rs);border:none;background:var(--g);color:#fff;font-size:13px;font-weight:600;cursor:pointer;}
 .ai-save-btn:hover{background:var(--gd);}
@@ -1143,8 +1195,26 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   </div>
 </div>
 
+<!-- 좌측 내규 목록 사이드바 -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeInternalTree()"></div>
+<aside class="internal-tree" id="internalTree">
+  <div class="it-head">
+    <span class="it-title">📚 내규 목록</span>
+    <button class="fp-close" onclick="closeInternalTree()" title="닫기">✕</button>
+  </div>
+  <div class="it-search">
+    <input id="itFilter" placeholder="규정명 필터…" oninput="filterInternalTree()">
+    <button class="it-reload" onclick="loadInternalTree(true)" title="새로고침">↻</button>
+  </div>
+  <div class="it-body" id="internalTreeBody">
+    <div class="it-empty">목록을 불러오려면 여세요.</div>
+  </div>
+  <div class="it-foot">규정 체계별 트리 · 클릭하면 전문이 열립니다</div>
+</aside>
+
 <!-- 상단바 -->
 <div class="topbar">
+  <button class="tree-toggle" onclick="openInternalTree()" title="내규 전체 목록">📚</button>
   <div class="logo" style="font-size:11px;font-weight:900;letter-spacing:-.5px;">KOAT</div>
   <div>
     <span class="brand"><span class="brand-full">KOAT 내규&국가법령 종합 검색</span><span class="brand-short">KOAT 종합검색</span></span>
@@ -1595,9 +1665,20 @@ function renderRegCards(items, kw, kind){
     const arts = it['matched_articles'] || [];
     const abbrevMap = {};
     const artsHtml = arts.length ? arts.map(a=>{
-      const no=a['조문번호']?`제${a['조문번호']}조`:'';
-      const title=a['조문제목']||'';
-      const content=a['조문내용']||'';
+      let no=a['조문번호']?`제${a['조문번호']}조`:'';
+      let title=a['조문제목']||'';
+      let content=_dedupeLines(a['조문내용']||'');   // 인접 중복 줄 제거
+      // 번호·제목이 없는 조각: 첫 줄을 제목으로 승격하고 본문에서 제거(중복 표시 방지)
+      if(!no && !title){
+        const lines=content.split('\n');
+        title=(lines[0]||'조문').trim();
+        content=lines.slice(1).join('\n').trim();
+      } else {
+        // 제목과 본문 첫 줄이 동일하면 그 줄 제거
+        const lines=content.split('\n');
+        if(lines.length && lines[0].trim()===title.trim()) content=lines.slice(1).join('\n').trim();
+      }
+      if(!title && !no && !content) return '';
       return `<div class="reg-art">
         <div class="reg-art-h">${no?`<span class="art-no">${escHtml(no)}</span>`:''}<span class="reg-art-t">${highlightKwsSafe(escHtml(title||no||'조문'),kw?[kw]:[])}</span></div>
         ${content?`<div class="reg-art-b">${highlightKwsSafe(applyXref(escHtml(content),name,abbrevMap),kw?[kw]:[])}</div>`:''}
@@ -1616,9 +1697,11 @@ function renderRegCards(items, kw, kind){
       <div class="card-head reg-head">
         <span class="ltype${kind==='internal'?' ltype-int':''}">${escHtml(type)}</span>
         <span class="lname">${escHtml(name)}</span>
-        <span class="lorg">${escHtml(org)}</span>
-        <span class="reg-badge">${cnt}개 조문 매칭</span>
-        ${fullBtn}${splitBtn}
+        <div class="reg-head-actions">
+          <span class="lorg">${escHtml(org)}</span>
+          <span class="reg-badge">${cnt}개 조문 매칭</span>
+          ${fullBtn}${splitBtn}
+        </div>
       </div>
       ${revMeta}
       <div class="reg-arts">${artsHtml}</div>
@@ -1743,14 +1826,115 @@ async function openInternalPanel(name){
       html=d.structured.map(it=>{
         const t=it.title||it.name||it['제목']||it['규정명']||'';
         const c=it.content||it.text||it['내용']||it['본문']||(typeof it==='string'?it:JSON.stringify(it,null,2));
-        return `${t?`<h3 style="font-size:14px;font-weight:700;margin:14px 0 6px;color:var(--tx);">${escHtml(String(t))}</h3>`:''}<div class="int-doc-body">${applyXref(applyTermTooltip(escHtml(String(c))),'',{})}</div>`;
+        return `${t?`<div class="rf-h1">${escHtml(String(t))}</div>`:''}${formatRuleText(String(c))}`;
       }).join('');
     } else {
-      html=`<div class="int-doc-body">${applyXref(applyTermTooltip(escHtml(raw||'전문을 찾지 못했습니다.')),'',{})}</div>`;
+      html=formatRuleText(raw);
     }
     body.innerHTML=`<div style="padding:6px 2px 24px;">${html}
       <div class="int-foot" style="margin-top:14px;">※ 본문의 「법령명」·"○○법 제N조"를 클릭하면 관련 법령 조문이 오른쪽에 열립니다.</div></div>`;
   }catch(e){ body.innerHTML='<div class="fp-empty">내규 전문 조회 중 오류가 발생했습니다.</div>'; }
+}
+
+// ── 규정 전문 서식화: 계층(장/조/항/호)·목록을 인식해 정돈된 HTML로 ──
+function formatRuleText(raw){
+  if(!raw||!raw.trim()) return '<div class="rf-empty">전문을 찾지 못했습니다.</div>';
+  let lines=_dedupeLines(raw).split('\n');
+  // 홀로 있는 번호 줄("1")은 다음 줄과 합쳐 "1. xxx" 로 (표가 세로로 흩어진 경우 대응)
+  const merged=[];
+  for(let i=0;i<lines.length;i++){
+    const t=lines[i].trim();
+    if(/^\d{1,3}$/.test(t) && i+1<lines.length && lines[i+1].trim() && !/^\d{1,3}$/.test(lines[i+1].trim())){
+      merged.push(t+'. '+lines[i+1].trim()); i++;
+    } else merged.push(lines[i]);
+  }
+  const seg=s=>applyXref(applyTermTooltip(escHtml(s)),'',{});
+  let html='';
+  merged.forEach(l=>{
+    const t=l.trim();
+    if(!t) return;
+    let cls='rf-p';
+    if(/^제\s*\d+\s*조/.test(t)) cls='rf-art';
+    else if(/^(?:[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\s*[.\s]|제\s*\d+\s*[편장])/.test(t)) cls='rf-h1';
+    else if(/^제\s*\d+\s*[절관]/.test(t)) cls='rf-h2';
+    else if(/^\[[^\]]{1,40}\]/.test(t)) cls='rf-label';
+    else if(/^[①-⑳]/.test(t)) cls='rf-hang';
+    else if(/^[㉠-㉭]/.test(t)||/^[가-하]\.\s/.test(t)) cls='rf-ho';
+    else if(/^\d+\s*[.)]\s/.test(t)) cls='rf-num';
+    else if(/^[○◯ㅇ]/.test(t)) cls='rf-bul';
+    else if(/^\*/.test(t)) cls='rf-note';
+    else if(/^[-–]\s/.test(t)) cls='rf-dash';
+    html+=`<div class="${cls}">${seg(t)}</div>`;
+  });
+  return `<div class="rulefmt">${html}</div>`;
+}
+
+// ── 좌측 내규 목록(트리) ──
+const RULE_TREE_ORDER=[
+  {key:'정관',ic:'📕'},{key:'규정',ic:'📗'},{key:'규칙',ic:'📘'},
+  {key:'예규',ic:'📙'},{key:'지침',ic:'📒'},{key:'세칙',ic:'📓'},
+  {key:'기준',ic:'📄'},{key:'요령',ic:'📄'},{key:'매뉴얼',ic:'📖'},{key:'기타',ic:'📁'},
+];
+let _internalNames=null;
+function classifyRule(name){
+  const cats=['정관','규정','규칙','예규','지침','세칙','기준','요령','매뉴얼'];
+  let best='기타', pos=-1;
+  cats.forEach(c=>{ const p=name.lastIndexOf(c); if(p>pos){pos=p;best=c;} });
+  const pm=name.lastIndexOf('메뉴얼'); if(pm>pos){best='매뉴얼';pos=pm;}
+  return pos>=0?best:'기타';
+}
+async function openInternalTree(){
+  document.getElementById('internalTree').classList.add('open');
+  document.getElementById('sidebarOverlay').classList.add('show');
+  if(_internalNames===null) await loadInternalTree();
+}
+function closeInternalTree(){
+  document.getElementById('internalTree').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+}
+async function loadInternalTree(force){
+  const body=document.getElementById('internalTreeBody');
+  body.innerHTML='<div class="fp-loading" style="padding:24px;"><div class="spinner" style="margin:0 auto 8px;"></div>내규 목록 불러오는 중...</div>';
+  try{
+    const r=await fetch('/api/internal/list'+(force?'?t='+Date.now():''));
+    const d=await r.json();
+    if(d.error || !(d.names&&d.names.length)){
+      _internalNames=[];
+      body.innerHTML=`<div class="it-empty">${escHtml(d.error||'내규 목록을 불러오지 못했습니다.')}<br><br>사규 MCP 연결을 확인하세요.</div>`;
+      return;
+    }
+    _internalNames=d.names;
+    renderInternalTree(_internalNames);
+  }catch(e){ _internalNames=[]; body.innerHTML='<div class="it-empty">목록 조회에 실패했습니다.</div>'; }
+}
+function renderInternalTree(names){
+  const body=document.getElementById('internalTreeBody');
+  const groups={}; RULE_TREE_ORDER.forEach(g=>groups[g.key]=[]);
+  names.forEach(n=>{ (groups[classifyRule(n)]||groups['기타']).push(n); });
+  let html='';
+  RULE_TREE_ORDER.forEach(g=>{
+    const items=groups[g.key]; if(!items||!items.length) return;
+    html+=`<div class="it-group">
+      <div class="it-group-h" onclick="this.parentElement.classList.toggle('collapsed')">
+        <span class="it-arrow">▾</span><span class="it-ic">${g.ic}</span>${g.key}<span class="it-cnt">${items.length}</span>
+      </div>
+      <div class="it-items">${items.map(n=>{
+        const e=encodeURIComponent(n);
+        return `<button class="it-item" title="${escHtml(n)}" onclick="openInternalFromTree(decodeURIComponent('${e}'))">${escHtml(n)}</button>`;
+      }).join('')}</div>
+    </div>`;
+  });
+  body.innerHTML=html||'<div class="it-empty">표시할 규정이 없습니다.</div>';
+}
+function filterInternalTree(){
+  if(!_internalNames) return;
+  const q=(document.getElementById('itFilter').value||'').trim().toLowerCase();
+  const filtered=q?_internalNames.filter(n=>n.toLowerCase().includes(q)):_internalNames;
+  renderInternalTree(filtered);
+}
+function openInternalFromTree(name){
+  closeInternalTree();   // 목록에서 선택하면 사이드바를 닫아 전문이 가려지지 않도록
+  openInternalPanel(name);
 }
 
 // ── 실무 시나리오 검색 ──
@@ -1925,6 +2109,18 @@ function extractLawNamesFromText(text){
 
 const _intDocCache = {};   // 규정명 → 전문 텍스트 (전문 패널 재조회 방지)
 
+// 인접(연속) 중복 줄 제거 — MCP가 제목/내용을 같은 줄로 두 번 반환하는 경우 대응
+function _dedupeLines(text){
+  if(!text) return '';
+  const out=[]; let prev=null;
+  text.split('\n').forEach(l=>{
+    const t=l.trim();
+    if(t && t===prev) return;   // 바로 앞 줄과 동일하면 skip
+    out.push(l); prev=t;
+  });
+  return out.join('\n').trim();
+}
+
 // 조문 배열에서 조번호 기준 중복 제거 (같은 조번호는 더 긴 내용 유지)
 function _dedupeArts(arts){
   const map=new Map(); const out=[];
@@ -2010,6 +2206,9 @@ function parseInternalGrouped(text, kw){
 async function doSearchInternal(q){
   setStatus(`"${q}" 내규 검색 중...`,true);
   addRecent(q);
+  // 클라이언트 캐시(5분) — 동일 검색 즉시 응답
+  const cached=_cacheGet(`internal:${q}`);
+  if(cached){ renderInternalResults(cached, q); setStatus(`내규 검색(캐시) · "${escHtml(q)}"`); return; }
   document.getElementById('results').innerHTML=[1,2].map(()=>'<div class="skeleton"></div>').join('');
   // 교차: 관련 법령 (내규 검색과 동시)
   document.getElementById('internalResults').innerHTML =
@@ -2019,6 +2218,7 @@ async function doSearchInternal(q){
     const d=await r.json();
     if(d.error){ setStatus(`오류: ${escHtml(d.error)}`); renderInternalError(d.error);
       document.getElementById('internalResults').innerHTML=''; return; }
+    if(d.success) _cacheSet(`internal:${q}`, d);
     const hasText=d.text && d.text.trim();
     const hasStruct=Array.isArray(d.structured)&&d.structured.length;
     if(!d.success || (!hasText && !hasStruct)){
@@ -2896,6 +3096,13 @@ async function testAiConn(){
     if(d.result){
       dot.className='ai-status-dot ok';
       msg.textContent=`연결 성공 · ${PROV_NAMES[currentProv]||currentProv} 응답 확인됨`;
+    } else if(d.kind==='overload'){
+      // 모델 일시 과부하 — 키 문제가 아님
+      dot.className='ai-status-dot warn';
+      msg.textContent=`⚠ 모델 일시 과부하 (키는 정상일 수 있음). 잠시 후 재시도하거나 다른 모델을 선택하세요.`;
+    } else if(d.kind==='auth'){
+      dot.className='ai-status-dot err';
+      msg.textContent=`🔑 API 키 오류: 키를 다시 확인하세요.`;
     } else {
       dot.className='ai-status-dot err';
       msg.textContent=`연결 실패: ${d.error||'알 수 없는 오류'}`;
@@ -3969,10 +4176,10 @@ function renderActiveRefTab(){
       html=t.structured.map(it=>{
         const tt=it.title||it.name||it['제목']||it['규정명']||'';
         const c=it.content||it.text||it['내용']||it['본문']||(typeof it==='string'?it:JSON.stringify(it,null,2));
-        return `${tt?`<h3 style="font-size:14px;font-weight:700;margin:14px 0 6px;color:var(--tx);">${escHtml(String(tt))}</h3>`:''}<div class="int-doc-body">${applyXref(applyTermTooltip(escHtml(String(c))),'',{})}</div>`;
+        return `${tt?`<div class="rf-h1">${escHtml(String(tt))}</div>`:''}${formatRuleText(String(c))}`;
       }).join('');
     } else {
-      html=`<div class="int-doc-body">${applyXref(applyTermTooltip(escHtml(t.text||'전문을 찾지 못했습니다.')),'',{})}</div>`;
+      html=formatRuleText(t.text||'');
     }
     body.innerHTML=`<div style="padding:4px 2px 20px;">${html}
       <div class="int-foot" style="margin-top:12px;">※ 「법령명」·"○○법 제N조"를 클릭하면 관련 법령이 열립니다.</div></div>`;

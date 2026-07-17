@@ -1378,6 +1378,40 @@ def remove_favorite():
     return jsonify({"ok": True})
 
 
+def _ai_post_retry(do_post, tries=3):
+    """AI 프로바이더 호출 — 과부하/일시오류(429/500/502/503/504)는 백오프 재시도."""
+    import time as _t
+    resp = None
+    for i in range(tries):
+        resp = do_post()
+        if resp.status_code not in (429, 500, 502, 503, 504):
+            return resp
+        if i < tries - 1:
+            _t.sleep(0.8 * (i + 1))
+    return resp
+
+
+def _ai_error(resp):
+    """AI 응답 에러를 (사용자 메시지, 분류) 로 정규화."""
+    try:
+        msg = resp.json().get("error", {})
+        msg = msg.get("message", "") if isinstance(msg, dict) else str(msg)
+    except Exception:
+        msg = (resp.text or "")[:200]
+    low = (msg or "").lower()
+    code = resp.status_code
+    if code in (429, 503) or "overload" in low or "high demand" in low or "unavailable" in low or "quota" in low or "rate" in low:
+        kind = "overload"
+        user = f"AI 모델이 일시적으로 과부하 상태입니다 (재시도 후에도 실패). 잠시 뒤 다시 시도하거나 다른 모델을 선택하세요. (원문: {msg})"
+    elif code in (401, 403) or "api key" in low or "permission" in low or "invalid" in low or "unauthenticated" in low:
+        kind = "auth"
+        user = f"API 키가 올바르지 않거나 권한이 없습니다. 키를 확인하세요. (원문: {msg})"
+    else:
+        kind = "error"
+        user = msg or f"AI API 오류 ({code})"
+    return user, kind
+
+
 @app.route("/api/ai/interpret", methods=["POST"])
 def ai_interpret():
     """멀티 프로바이더 조문 해석 (Claude / GPT / Gemini / Ollama)"""
@@ -1421,7 +1455,7 @@ def ai_interpret():
         # ── Claude ─────────────────────────────────────────────────────────────
         if provider == "claude":
             mdl = model or "claude-sonnet-4-5"
-            resp = req_lib.post(
+            resp = _ai_post_retry(lambda: req_lib.post(
                 "https://api.anthropic.com/v1/messages",
                 json={"model": mdl, "max_tokens": 1500,
                       "system": system_prompt,
@@ -1430,16 +1464,16 @@ def ai_interpret():
                          "x-api-key": api_key,
                          "anthropic-version": "2023-06-01"},
                 timeout=30,
-            )
-            d = resp.json()
+            ))
             if resp.status_code != 200:
-                return jsonify({"error": d.get("error", {}).get("message", "Claude API 오류")}), resp.status_code
-            return jsonify({"result": d["content"][0]["text"]})
+                user, kind = _ai_error(resp)
+                return jsonify({"error": user, "kind": kind}), resp.status_code
+            return jsonify({"result": resp.json()["content"][0]["text"]})
 
         # ── OpenAI GPT ─────────────────────────────────────────────────────────
         elif provider == "gpt":
             mdl = model or "gpt-4o"
-            resp = req_lib.post(
+            resp = _ai_post_retry(lambda: req_lib.post(
                 "https://api.openai.com/v1/chat/completions",
                 json={"model": mdl, "max_tokens": 1500,
                       "messages": [{"role": "system", "content": system_prompt},
@@ -1447,28 +1481,27 @@ def ai_interpret():
                 headers={"Content-Type": "application/json",
                          "Authorization": f"Bearer {api_key}"},
                 timeout=30,
-            )
-            d = resp.json()
+            ))
             if resp.status_code != 200:
-                return jsonify({"error": d.get("error", {}).get("message", "GPT API 오류")}), resp.status_code
-            return jsonify({"result": d["choices"][0]["message"]["content"]})
+                user, kind = _ai_error(resp)
+                return jsonify({"error": user, "kind": kind}), resp.status_code
+            return jsonify({"result": resp.json()["choices"][0]["message"]["content"]})
 
         # ── Google Gemini ──────────────────────────────────────────────────────
         elif provider == "gemini":
             mdl = model or "gemini-2.5-flash"
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{mdl}:generateContent?key={api_key}"
-            resp = req_lib.post(
+            resp = _ai_post_retry(lambda: req_lib.post(
                 url,
                 json={"contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_msg}"}]}],
                       "generationConfig": {"maxOutputTokens": 1500}},
                 headers={"Content-Type": "application/json"},
                 timeout=30,
-            )
-            d = resp.json()
+            ))
             if resp.status_code != 200:
-                err = d.get("error", {}).get("message", "Gemini API 오류")
-                return jsonify({"error": err}), resp.status_code
-            text = d["candidates"][0]["content"]["parts"][0]["text"]
+                user, kind = _ai_error(resp)
+                return jsonify({"error": user, "kind": kind}), resp.status_code
+            text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
             return jsonify({"result": text})
 
         # ── Ollama (로컬) ──────────────────────────────────────────────────────
@@ -1890,6 +1923,8 @@ def get_law_related():
 SAGYU_MCP_URL = os.environ.get(
     "SAGYU_MCP_URL", "https://tech-transfer-platform-zt79.vercel.app/mcp"
 ).strip()
+# MCP 도구 목록 캐시 (URL → {tools, ts}) — 워밍된 프로세스에서 tools/list 왕복 절약
+_MCP_TOOLS_CACHE: dict = {}
 # 내규 검색 키워드 후보(도구/인자 자동 선택용)
 _MCP_SEARCH_HINTS = ("search", "검색", "find", "query", "lookup", "조회", "retrieve")
 _MCP_RULE_HINTS   = ("rule", "규정", "사규", "내규", "regulation", "정관",
@@ -1963,8 +1998,14 @@ class _McpClient:
 
     def list_tools(self):
         if self._tools is None:
-            res = self._post("tools/list", {}) or {}
-            self._tools = res.get("tools", []) or []
+            ent = _MCP_TOOLS_CACHE.get(self.url)
+            if ent and (time.time() - ent["ts"] < 300):   # 5분 캐시 (워밍된 프로세스에서 왕복 절약)
+                self._tools = ent["tools"]
+            else:
+                res = self._post("tools/list", {}) or {}
+                self._tools = res.get("tools", []) or []
+                if self._tools:
+                    _MCP_TOOLS_CACHE[self.url] = {"tools": self._tools, "ts": time.time()}
         return self._tools
 
     def call_tool(self, name: str, args: dict):
@@ -2159,6 +2200,168 @@ def internal_doc():
         return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
     except Exception as e:
         return jsonify({"error": f"내규 전문 조회 오류: {e}"}), 500
+
+
+# ── 내규 전체 목록 (사이드바 트리용) ──────────────────────────────────────
+_MCP_LIST_HINTS = ("list", "목록", "all", "전체", "index", "catalog", "browse", "리스트")
+
+def _mcp_pick_list_tool(tools: list):
+    """전체 목록 조회 도구 우선 선택(list/목록/index 등). 없으면 None."""
+    def score(t):
+        blob = (str(t.get("name", "")) + " " + str(t.get("description", ""))).lower()
+        s = 0
+        if any(k in blob for k in _MCP_LIST_HINTS): s += 4
+        if any(k in blob for k in _MCP_RULE_HINTS): s += 2
+        if "search" in blob or "검색" in blob or "get" in blob: s -= 1
+        return s
+    if not tools:
+        return None
+    ranked = sorted(tools, key=score, reverse=True)
+    return ranked[0] if score(ranked[0]) > 0 else None
+
+
+# 규정명으로 볼 수 있는 접미어 (목록 추출용)
+_RULE_NAME_SUFFIX = ("정관", "규정", "규칙", "예규", "지침", "세칙", "기준",
+                     "요령", "매뉴얼", "메뉴얼", "지시", "훈령", "방침", "계획")
+
+def _extract_rule_names(text: str, structured) -> list:
+    """MCP 응답(구조화/텍스트)에서 서로 다른 규정명 목록을 추출."""
+    names = []
+    seen = set()
+    def add(nm):
+        nm = (nm or "").strip().strip("《》「」『』[]()").strip()
+        if nm and nm not in seen and 2 <= len(nm) <= 60:
+            seen.add(nm); names.append(nm)
+    if isinstance(structured, list):
+        for it in structured:
+            if isinstance(it, dict):
+                add(it.get("title") or it.get("name") or it.get("규정명") or it.get("제목"))
+            elif isinstance(it, str):
+                add(it)
+    if text:
+        # 1) 《규정명》 / 「규정명」 마커
+        for m in re.findall(r"[《「『]\s*([^》」』\n]{2,60})\s*[》」』]", text):
+            add(m)
+        # 2) 접미어로 끝나는 짧은 라인 (목록 텍스트) — 본문 문장 오탐 방지
+        for line in text.splitlines():
+            t = re.sub(r"^\s*(?:\[\d+\]|\d+[.)]|[-*○·•])\s*", "", line).strip()
+            if not (2 <= len(t) <= 40):            # 규정명은 짧다
+                continue
+            if not t.endswith(_RULE_NAME_SUFFIX):
+                continue
+            # 문장(마침표/조사 종결 등) 배제 — 제목만 수용
+            if re.search(r"[.。]|(?:이다|한다|된다|따른다|말한다)$", t):
+                continue
+            add(t)
+    return names
+
+
+# 내규 목록 캐시 (전체 수집 비용이 크므로 10분 캐시)
+_INTERNAL_LIST_CACHE: dict = {"names": None, "ts": 0.0}
+# 광역 검색 시드 (규정 접미어 + 행정 도메인 키워드)
+_LIST_SEED_TERMS = _RULE_NAME_SUFFIX + (
+    "인사", "보수", "복무", "여비", "회계", "재무", "예산", "자금", "계약", "감사",
+    "보안", "정보", "개인정보", "연구", "기술", "사업", "조직", "위임전결", "이사회",
+    "교육", "출장", "자산", "물품", "복리후생", "윤리", "성과", "용역", "공사", "안전",
+    "채용", "급여", "휴가", "징계", "위원회", "직제", "문서", "정관", "특허", "발명",
+)
+
+def _mcp_fill_limits(tool, args, big=1000):
+    """도구 스키마의 limit/size/count/display류 숫자 인자를 크게 채운다."""
+    props = (tool.get("inputSchema") or tool.get("input_schema") or {}).get("properties") or {}
+    for k, p in props.items():
+        kl = k.lower()
+        ty = p.get("type")
+        isnum = ty in ("integer", "number") or (isinstance(ty, list) and ("integer" in ty or "number" in ty))
+        if isnum and any(x in kl for x in ("limit", "size", "count", "max", "per", "display", "top", "num", "rows")):
+            args.setdefault(k, big)
+    return args
+
+def _mcp_page_key(tool):
+    props = (tool.get("inputSchema") or {}).get("properties") or {}
+    for k in props:
+        kl = k.lower()
+        if any(x in kl for x in ("page", "offset", "cursor", "start", "skip")):
+            return k
+    return None
+
+def _harvest_internal_names(cli, tools):
+    """가능한 많은 규정명을 수집 — 목록도구(페이지네이션) + 광역 검색."""
+    names, seen = [], set()
+    def add(nm_list):
+        for nm in nm_list:
+            if nm not in seen:
+                seen.add(nm); names.append(nm)
+    def call_names(tool, extra):
+        args = _mcp_fill_limits(tool, dict(extra))
+        res = cli.call_tool(tool.get("name"), args)
+        return _extract_rule_names(_mcp_extract_text(res),
+                                   res.get("structuredContent") if isinstance(res, dict) else None)
+
+    calls = 0
+    MAX_CALLS = 45
+    # 1) 목록 도구 (있으면) — 페이지네이션
+    list_tool = _mcp_pick_list_tool(tools)
+    if list_tool:
+        props = (list_tool.get("inputSchema") or {}).get("properties") or {}
+        required = (list_tool.get("inputSchema") or {}).get("required") or []
+        base = {}
+        for k in required:
+            if props.get(k, {}).get("type") == "string":
+                base[k] = "규정"   # 필수 질의가 있으면 광역어
+        pk = _mcp_page_key(list_tool)
+        for pg in range(0, 20):
+            if calls >= MAX_CALLS: break
+            extra = dict(base)
+            if pk is not None:
+                extra[pk] = (pg + 1) if "page" in pk.lower() else pg * 100
+            before = len(seen)
+            try:
+                add(call_names(list_tool, extra)); calls += 1
+            except Exception as e:
+                print(f"[list] 목록도구 오류(p={pg}): {e}"); break
+            if pk is None or len(seen) == before:
+                break   # 페이지 파라미터 없음 또는 더 이상 증가 없음
+
+    # 2) 검색 도구로 광역 수집(부족하거나 목록도구 없을 때)
+    stool = _mcp_pick_search_tool(tools)
+    if stool and len(names) < 140:
+        dry = 0
+        for q in _LIST_SEED_TERMS:
+            if calls >= MAX_CALLS: break
+            before = len(seen)
+            try:
+                add(call_names(stool, _mcp_build_args(stool, q))); calls += 1
+            except Exception:
+                pass
+            dry = dry + 1 if len(seen) == before else 0
+    print(f"[internal-list] 수집 {len(names)}건 (calls={calls})")
+    return names
+
+
+@app.route("/api/internal/list")
+def internal_list():
+    """내규 전체 목록 조회 — 사이드바 트리 구성용. 목록도구(페이지네이션)+광역 검색으로 최대 수집."""
+    if not SAGYU_MCP_URL:
+        return jsonify({"error": "사규 MCP 서버가 설정되지 않았습니다(SAGYU_MCP_URL)."}), 503
+    force = request.args.get("t", "")  # 캐시 무시용 파라미터
+    if not force and _INTERNAL_LIST_CACHE["names"] and (time.time() - _INTERNAL_LIST_CACHE["ts"] < 600):
+        nm = _INTERNAL_LIST_CACHE["names"]
+        return jsonify({"success": True, "count": len(nm), "names": nm, "cached": True})
+    try:
+        cli = _McpClient(SAGYU_MCP_URL)
+        cli.initialize()
+        tools = cli.list_tools()
+        names = _harvest_internal_names(cli, tools)
+        if names:
+            _INTERNAL_LIST_CACHE["names"] = names
+            _INTERNAL_LIST_CACHE["ts"] = time.time()
+        return jsonify({"success": True, "count": len(names), "names": names})
+    except req_lib.exceptions.Timeout:
+        return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": f"내규 목록 조회 오류: {e}"}), 500
 
 
 @app.route("/api/recent")
