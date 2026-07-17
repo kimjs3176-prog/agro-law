@@ -2223,15 +2223,49 @@ def _mcp_pick_list_tool(tools: list):
 # 규정명으로 볼 수 있는 접미어 (목록 추출용)
 _RULE_NAME_SUFFIX = ("정관", "규정", "규칙", "예규", "지침", "세칙", "기준",
                      "요령", "매뉴얼", "메뉴얼", "지시", "훈령", "방침", "계획")
+# 규정명에 있으면 문장·설명 조각으로 판단(제외)
+_RULE_NAME_BAD = ("예시", "이하", "한다", "말한다", "된다", "따른다", "이란",
+                  "삭제", "추가", "신설", "경우", "다음", "또는", "관리번호",
+                  "에 따라", "에 따른", "하는 것")
+
+def _norm_rule_name(nm: str) -> str:
+    """규정명 후보 정규화 — 주석 괄호/마커/예시 라벨 제거."""
+    if not nm:
+        return ""
+    nm = nm.strip().strip("《》「」『』[]•·-*").strip()
+    # "… 예시:" / "… 예:" 라벨 앞부분 제거
+    nm = re.sub(r"^.*?(?:예시|보기|예)\s*[:：]\s*", "", nm).strip()
+    # 첫 괄호/따옴표/마커/콜론 이후 잘라 제목 stem 만 취득
+    nm = re.split(r"[(（「『《》」』:：\"'”“]", nm)[0].strip()
+    # 접속/조사 꼬리 정리
+    nm = re.sub(r"\s*(?:및|또는|와|과|의)\s*$", "", nm).strip()
+    return nm
+
+def _is_valid_rule_name(nm: str) -> bool:
+    if not nm or not (3 <= len(nm) <= 40):
+        return False
+    if nm in _RULE_NAME_SUFFIX:            # 맨 접미어(일반명사)
+        return False
+    if not nm.endswith(_RULE_NAME_SUFFIX):
+        return False
+    if any(bad in nm for bad in _RULE_NAME_BAD):
+        return False
+    if re.search(r"[.。]", nm):
+        return False
+    return True
 
 def _extract_rule_names(text: str, structured) -> list:
-    """MCP 응답(구조화/텍스트)에서 서로 다른 규정명 목록을 추출."""
+    """MCP 응답(구조화/텍스트)에서 서로 다른 규정명 목록을 정규화·검증하여 추출."""
     names = []
     seen = set()
-    def add(nm):
-        nm = (nm or "").strip().strip("《》「」『』[]()").strip()
-        if nm and nm not in seen and 2 <= len(nm) <= 60:
-            seen.add(nm); names.append(nm)
+    def add(raw):
+        nm = _norm_rule_name(raw)
+        if not _is_valid_rule_name(nm):
+            return
+        key = nm.replace(" ", "")          # 띄어쓰기 차이 중복 제거
+        if key in seen:
+            return
+        seen.add(key); names.append(nm)
     if isinstance(structured, list):
         for it in structured:
             if isinstance(it, dict):
@@ -2242,17 +2276,11 @@ def _extract_rule_names(text: str, structured) -> list:
         # 1) 《규정명》 / 「규정명」 마커
         for m in re.findall(r"[《「『]\s*([^》」』\n]{2,60})\s*[》」』]", text):
             add(m)
-        # 2) 접미어로 끝나는 짧은 라인 (목록 텍스트) — 본문 문장 오탐 방지
+        # 2) 접미어로 끝나는 짧은 라인 (목록 텍스트)
         for line in text.splitlines():
             t = re.sub(r"^\s*(?:\[\d+\]|\d+[.)]|[-*○·•])\s*", "", line).strip()
-            if not (2 <= len(t) <= 40):            # 규정명은 짧다
-                continue
-            if not t.endswith(_RULE_NAME_SUFFIX):
-                continue
-            # 문장(마침표/조사 종결 등) 배제 — 제목만 수용
-            if re.search(r"[.。]|(?:이다|한다|된다|따른다|말한다)$", t):
-                continue
-            add(t)
+            if 3 <= len(t) <= 40 and t.endswith(_RULE_NAME_SUFFIX):
+                add(t)
     return names
 
 
