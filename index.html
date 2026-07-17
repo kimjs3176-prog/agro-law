@@ -1130,7 +1130,8 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
     <div class="fp-right-header">
       <span class="fp-right-title" id="fpRightTitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;"></span>
-      <button class="fp-sync-btn" id="refSyncBtn" onclick="toggleRefSync()" title="현재 조문과 동기화">⇄ 동기화</button>
+      <button class="fp-tbtn" id="swapPanelBtn" onclick="swapPanels()" title="왼쪽↔오른쪽 문서 바꾸기">⇆ 좌우</button>
+      <button class="fp-sync-btn law-only" id="refSyncBtn" onclick="toggleRefSync()" title="현재 조문과 동기화">⇄ 동기화</button>
       <button class="fp-tbtn" onclick="toggleCompareMode()" id="compareModeBtn" title="비교 모드 (좌우 나란히)">⚖ 비교</button>
       <a id="fpRightExtLink" href="#" target="_blank" class="fp-tbtn" style="flex-shrink:0;">↗</a>
       <input class="fp-finput" id="fpRightFilter" placeholder="조문 검색" oninput="fpRightFilterFn()" style="width:110px;flex-shrink:0;">
@@ -2506,12 +2507,14 @@ function highlightKwsSafe(html, kws){
 }
 
 function closePanel(){
-  document.getElementById('fullpanel').classList.remove('open');
+  const fp=document.getElementById('fullpanel');
+  fp.classList.remove('open','internal-doc');
   document.getElementById('overlay').classList.remove('show');
   document.body.style.overflow='';
   document.getElementById('fpRight').classList.remove('open');
-  document.getElementById('fullpanel').style.width='';
+  fp.style.width='';
   refArts=[];
+  _leftDoc=null; _refTabs=[]; _refActive=-1;  // 분할 상태 초기화
   _refListOpen=false;
   const rlp=document.getElementById('refListPanel'); if(rlp)rlp.classList.remove('open');
   const rlb=document.getElementById('refListBtn'); if(rlb)rlb.style.cssText='';
@@ -3792,6 +3795,19 @@ function openDocSplit(name, docType, url, org, type){
 function openPrimaryDoc(name, docType, url, org, type){
   if(docType==='internal') return openInternalPanel(name);
   return openFullPanel(name, url||('https://www.law.go.kr/법령/'+encodeURIComponent(name)), org, type);
+}
+
+// ── 왼쪽 ↔ 오른쪽 문서 바꾸기 (이종 조합 자유 배치) ──
+async function swapPanels(){
+  const rt = _refTabs[_refActive];
+  if(!rt || !_leftDoc){
+    setStatus('좌우로 바꿀 두 문서가 없습니다. 먼저 나란히 열어주세요.');
+    return;
+  }
+  const newLeft  = {name: rt.name, docType: rt.docType || 'law'};
+  const newRight = {name: _leftDoc.name, docType: _leftDoc.docType};
+  await openPrimaryDoc(newLeft.name, newLeft.docType);   // 오른쪽 문서를 왼쪽(주)으로
+  await openDocRight(newRight.name, newRight.docType);   // 기존 왼쪽 문서를 오른쪽으로
 }
 
 // ── 오른쪽 패널에 문서(내규/법령) 열기 (탭) ──
