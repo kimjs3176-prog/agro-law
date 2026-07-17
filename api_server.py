@@ -1986,6 +1986,42 @@ def _mcp_pick_search_tool(tools: list):
     return ranked[0] if score(ranked[0]) > 0 else tools[0]
 
 
+# 전문(전체 문서) 조회 성격의 도구 힌트 (검색/목록보다 우선)
+_MCP_DOC_HINTS = ("get", "read", "detail", "fetch", "retrieve", "document",
+                  "view", "content", "전문", "원문", "본문", "내용", "조회", "상세")
+
+def _mcp_pick_doc_tool(tools: list):
+    """전문(전체 문서) 조회 도구를 우선 선택. 없으면 None(→ 검색 도구 폴백)."""
+    def score(t):
+        blob = (str(t.get("name", "")) + " " + str(t.get("description", ""))).lower()
+        s = 0
+        if any(k in blob for k in _MCP_DOC_HINTS): s += 4
+        if any(k in blob for k in _MCP_RULE_HINTS): s += 2
+        # 검색/목록 도구는 전문 조회 목적에는 부적합 → 감점
+        if any(k in blob for k in ("search", "검색", "list", "목록")): s -= 3
+        return s
+    if not tools:
+        return None
+    ranked = sorted(tools, key=score, reverse=True)
+    return ranked[0] if score(ranked[0]) > 0 else None
+
+
+def _mcp_build_doc_args(tool: dict, name: str, doc_id: str = "") -> dict:
+    """전문 조회 도구 인자 구성. id 계열 속성이 있고 doc_id가 있으면 id 우선."""
+    schema = tool.get("inputSchema") or tool.get("input_schema") or {}
+    props = schema.get("properties") or {}
+    if props and doc_id:
+        for k in props:
+            if any(x in k.lower() for x in ("id", "seq", "no", "번호", "코드", "code")):
+                return {k: doc_id}
+    if props:
+        # 이름/제목 계열 우선
+        for k in list(schema.get("required") or []) + list(props):
+            if any(x in k.lower() for x in ("name", "title", "규정", "제목", "명")):
+                return {k: name}
+    return _mcp_build_args(tool, name)
+
+
 def _mcp_build_args(tool: dict, query: str) -> dict:
     """도구 inputSchema에서 질의 문자열을 담을 속성을 선택해 인자 구성."""
     schema = tool.get("inputSchema") or tool.get("input_schema") or {}
@@ -2093,6 +2129,7 @@ def internal_search():
 def internal_doc():
     """내규 전문 조회 — 규정명을 질의로 MCP를 호출해 해당 규정의 전문 텍스트 반환."""
     name = request.args.get("name", "").strip()
+    doc_id = request.args.get("id", "").strip()
     if not name:
         return jsonify({"error": "name 파라미터가 필요합니다"}), 400
     if not SAGYU_MCP_URL:
@@ -2101,15 +2138,23 @@ def internal_doc():
         cli = _McpClient(SAGYU_MCP_URL)
         cli.initialize()
         tools = cli.list_tools()
-        tool = _mcp_pick_search_tool(tools)
-        if not tool:
-            return jsonify({"error": "사규 MCP에서 사용 가능한 도구가 없습니다."}), 502
-        result = cli.call_tool(tool.get("name"), _mcp_build_args(tool, name))
+        # 전문 조회 도구 우선 → 없으면 검색 도구 폴백
+        doc_tool = _mcp_pick_doc_tool(tools)
+        if doc_tool:
+            args = _mcp_build_doc_args(doc_tool, name, doc_id)
+            tool = doc_tool
+        else:
+            tool = _mcp_pick_search_tool(tools)
+            if not tool:
+                return jsonify({"error": "사규 MCP에서 사용 가능한 도구가 없습니다."}), 502
+            args = _mcp_build_args(tool, name)
+        result = cli.call_tool(tool.get("name"), args)
         text = _mcp_extract_text(result)
         structured = result.get("structuredContent") if isinstance(result, dict) else None
         if isinstance(result, dict) and result.get("isError"):
             return jsonify({"error": text or "내규 전문 조회 중 오류가 발생했습니다."}), 502
-        return jsonify({"success": True, "name": name, "text": text, "structured": structured})
+        return jsonify({"success": True, "name": name, "tool": tool.get("name"),
+                        "is_full": bool(doc_tool), "text": text, "structured": structured})
     except req_lib.exceptions.Timeout:
         return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
     except Exception as e:
