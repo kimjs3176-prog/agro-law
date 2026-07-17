@@ -1219,6 +1219,35 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
 
     results.sort(key=lambda x: x["relevance"], reverse=True)
 
+    # ── Step-3: 내규(사규 MCP) 동시 검색 — 시나리오는 내규+법령 전체 대상 ──────
+    internal_text, internal_struct, internal_err = "", None, ""
+    if SAGYU_MCP_URL:
+        try:
+            icli = _McpClient(SAGYU_MCP_URL)
+            icli.initialize()
+            itools = icli.list_tools()
+            itool = _mcp_pick_search_tool(itools)
+            if itool:
+                seen_blocks, parts = set(), []
+                # AI 키워드 상위 3개로 내규 검색 후 텍스트 병합
+                for kw in (keywords[:3] or [query]):
+                    try:
+                        ires = icli.call_tool(itool.get("name"), _mcp_build_args(itool, kw))
+                        txt = _mcp_extract_text(ires)
+                        if txt and txt not in seen_blocks:
+                            seen_blocks.add(txt); parts.append(txt)
+                        st = ires.get("structuredContent") if isinstance(ires, dict) else None
+                        if st and internal_struct is None:
+                            internal_struct = st
+                    except Exception as e:
+                        print(f"[scenario] 내규 검색 오류(kw={kw}): {e}")
+                internal_text = "\n\n".join(parts)
+            else:
+                internal_err = "내규 검색 도구 없음"
+        except Exception as e:
+            internal_err = str(e)
+            print(f"[scenario] 내규 MCP 오류: {e}")
+
     return jsonify({
         "success":    True,
         "query":      query,
@@ -1229,6 +1258,9 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
         "caution":    caution,
         "keywords":   keywords,
         "laws":       results,
+        "internal_text":   internal_text,
+        "internal_structured": internal_struct,
+        "internal_error":  internal_err,
     })
 
 

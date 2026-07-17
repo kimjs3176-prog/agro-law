@@ -448,6 +448,8 @@ body.dark .int-law-chip{background:#161920;color:#93c5fd;}
 .scenario-chip:hover{background:#d1fae5;border-color:#6ee7b7;}
 body.dark .scenario-chip{background:#064e3b;border-color:#059669;color:#a7f3d0;}
 .scenario-guide{padding:14px 16px;border-radius:12px;background:linear-gradient(135deg,#ecfdf5,#f0fdfa);border:1.5px solid #6ee7b7;margin-bottom:14px;}
+.scen-sec-h{font-size:13px;font-weight:800;color:var(--tx);margin:16px 2px 8px;display:flex;align-items:center;gap:7px;}
+.scen-sec-cnt{font-size:11px;font-weight:700;color:var(--mu);background:var(--sf);border:1px solid var(--bd);border-radius:999px;padding:1px 9px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
 .scenario-guide-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
 .scenario-badge{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;background:#059669;color:#fff;}
 .scenario-basis{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;}
@@ -2038,11 +2040,43 @@ function renderScenarioResults(d){
     ${kwTagsHtml}
   </div>`;
 
-  if(!laws.length){
+  // ── 내규(사규) 결과 파싱 ──
+  let intItems = [];
+  if(Array.isArray(d.internal_structured) && d.internal_structured.length){
+    intItems = d.internal_structured.map(it=>{
+      const nm=String(it.title||it.name||it['제목']||it['규정명']||'사내 규정');
+      const arts=extractRuleArticles(String(it.content||it.text||it['내용']||it['본문']||''), keywords[0]||'');
+      return {name:nm, matched_articles:arts, matched_count:arts.length};
+    });
+  } else if(d.internal_text && d.internal_text.trim()){
+    intItems = parseInternalGrouped(d.internal_text, keywords[0]||'');
+  }
+
+  if(!laws.length && !intItems.length){
     document.getElementById('results').innerHTML = guideCard +
-      `<div class="empty" style="margin-top:8px;"><div class="empty-icon">🔍</div><p>관련 조문을 찾지 못했습니다. 질문을 더 구체적으로 입력해보세요.</p></div>`;
+      `<div class="empty" style="margin-top:8px;"><div class="empty-icon">🔍</div><p>관련 내규·조문을 찾지 못했습니다. 질문을 더 구체적으로 입력해보세요.</p></div>`;
     return;
   }
+
+  // 내규 카드들
+  const intCardsHtml = intItems.map((it)=>{
+    const nm=it.name; const arts=it.matched_articles||[]; const enc=encodeURIComponent(nm);
+    const artHtml=arts.slice(0,5).map(a=>{
+      const no=a['조문번호']?`제${a['조문번호']}조`:''; let c=_dedupeLines(a['조문내용']||''); let t=a['조문제목']||'';
+      if(!no&&!t){ const ls=c.split('\n'); t=(ls[0]||'').trim(); c=ls.slice(1).join('\n').trim(); }
+      return `<div class="reg-art"><div class="reg-art-h">${no?`<span class="art-no">${escHtml(no)}</span>`:''}<span class="reg-art-t">${highlightKwsSafe(escHtml(t||no||'조문'),kwL)}</span></div>${c?`<div class="reg-art-b">${highlightKwsSafe(applyXref(escHtml(c),'',{}),kwL)}</div>`:''}</div>`;
+    }).join('');
+    return `<div class="card reg-card"><div class="card-head reg-head">
+        <span class="ltype ltype-int">내규</span><span class="lname">${escHtml(nm)}</span>
+        <div class="reg-head-actions">
+          <span class="reg-badge">${arts.length}개 조문</span>
+          <button class="abtn primary reg-full-btn" onclick="openPrimaryDoc(decodeURIComponent('${enc}'),'internal')">📄 전문 →</button>
+          <button class="abtn reg-split-btn" onclick="openDocSplit(decodeURIComponent('${enc}'),'internal')">⊞ 나란히</button>
+        </div>
+      </div>
+      <div class="reg-arts">${artHtml||'<div class="reg-none">키워드 매칭 미리보기가 없습니다. 전문에서 확인하세요.</div>'}</div>
+    </div>`;
+  }).join('');
 
   // 법령 카드들
   const cardsHtml = laws.map((law, i) => {
@@ -2084,9 +2118,14 @@ function renderScenarioResults(d){
     </div>`;
   }).join('');
 
-  document.getElementById('results').innerHTML = guideCard + cardsHtml;
+  const intSec = intItems.length
+    ? `<div class="scen-sec-h">📋 관련 내규 <span class="scen-sec-cnt">${intItems.length}</span></div>${intCardsHtml}` : '';
+  const lawSec = laws.length
+    ? `<div class="scen-sec-h">📖 관련 법령 <span class="scen-sec-cnt">${laws.length}</span></div>${cardsHtml}` : '';
+  document.getElementById('results').innerHTML = guideCard + intSec + lawSec;
+  setStatus(`✦ 시나리오 분석 완료 · 내규 ${intItems.length} · 법령 ${laws.length}건`);
 
-  // 첫 번째 카드 자동 펼침
+  // 첫 번째 법령 카드 자동 펼침
   const firstBody = document.getElementById('scrb0');
   if(firstBody) firstBody.style.display = 'block';
 }
