@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>간편법령검색 · Easy Law Search</title>
+<title>KOAT 내규&국가법령 종합 검색 서비스</title>
 <style>:root{
   /* Toss 팔레트 */
   --g:#3182f6;--gd:#1a6fe8;--gl:#eef3fe;--gp:#0f4fa8;
@@ -230,6 +230,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 
 /* ── 모드 토글 반응형 라벨 ── */
 .mb-short{display:none;}
+.brand-short{display:none;}
 
 /* ── 내규(사규) 검색 결과 ── */
 .int-wrap{display:flex;flex-direction:column;gap:12px;}
@@ -269,6 +270,8 @@ body.dark .int-law-chip{background:#161920;color:#93c5fd;}
   .topbar{padding:0 12px;gap:4px;height:52px;}
   .brand-sub,.brand-en{display:none;}
   .brand{font-size:16px;}
+  .brand-full{display:none;}
+  .brand-short{display:inline;}
   /* 하단 네비게이션과 중복되는 상단 버튼 숨김 */
   .hide-mobile{display:none!important;}
   /* 남은 설정 버튼(관계도·AI설정)은 아이콘만 표시 */
@@ -1095,11 +1098,11 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 
 <!-- 상단바 -->
 <div class="topbar">
-  <div class="logo" style="font-size:13px;font-weight:900;letter-spacing:-.5px;">ELS</div>
+  <div class="logo" style="font-size:11px;font-weight:900;letter-spacing:-.5px;">KOAT</div>
   <div>
-    <span class="brand">간편법령검색</span>
-    <span class="brand-en" style="font-size:10px;color:#9ca3af;margin-left:6px;font-weight:500;letter-spacing:.5px;">easy law search</span><br>
-    <span class="brand-sub">법제처 국가법령정보 연동</span>
+    <span class="brand"><span class="brand-full">KOAT 내규&국가법령 종합 검색</span><span class="brand-short">KOAT 종합검색</span></span>
+    <span class="brand-en" style="font-size:10px;color:#9ca3af;margin-left:6px;font-weight:500;letter-spacing:.5px;">Integrated Legal Search</span><br>
+    <span class="brand-sub">국가법령정보 + 사규(내규) MCP 연동</span>
   </div>
   <span class="apibadge" id="badge">● 확인 중</span>
   <button class="dark-btn hide-mobile" id="darkBtn" onclick="toggleDark()" title="다크모드">🌙</button>
@@ -5106,11 +5109,10 @@ async function scoreAndReorderAsync(laws, keywords){
   <!-- Footer -->
   <footer style="text-align:center;padding:28px 0 20px;color:var(--ht);font-size:12px;border-top:1px solid var(--bd);margin-top:24px;background:var(--sf);">
     <div style="margin-bottom:6px;">
-      <span style="font-weight:700;color:var(--g);font-size:14px;">간편법령검색</span>
-      <span style="font-size:11px;color:var(--ht);margin-left:6px;letter-spacing:.5px;">easy law search</span>
+      <span style="font-weight:700;color:var(--g);font-size:14px;">KOAT 내규&국가법령 종합 검색 서비스</span>
     </div>
     <div style="margin-bottom:4px;">
-      법제처 국가법령정보 OpenAPI 연동 · 농업·지식재산 법령 간편 검색 서비스
+      법제처 국가법령정보 OpenAPI + 사규(내규) MCP 연동 · 내규↔법령 연계 종합 검색
     </div>
     <div>
       © 2025 <strong>kimjs</strong> · Powered by
