@@ -827,12 +827,22 @@ def search_by_article_keyword():
             # admrul은 meta에 행정규칙명 필드가 있을 수 있음
             if not meta:
                 meta = stage1_meta.get(lname, {}).get("meta", {})
+            # 매칭 조문 상위 5개 (내용 240자 절단) — 카드 하단 표시용
+            top_arts = [
+                {"조문번호": a.get("조문번호", ""),
+                 "조문제목": a.get("조문제목", ""),
+                 "조문내용": a.get("조문내용", "")[:240] +
+                             ("..." if len(a.get("조문내용", "")) > 240 else "")}
+                for a in res["articles"][:5]
+            ]
             return {
                 "법령명한글":   lname,
                 "법령구분명":   meta.get("법령구분명") or meta.get("행정규칙종류명") or ("행정규칙" if doc_type == "admrul" else "법률"),
                 "소관부처명":   meta.get("소관부처명", ""),
                 "공포일자":     meta.get("공포일자") or meta.get("발령일자", ""),
                 "법령일련번호": meta.get("법령일련번호") or meta.get("행정규칙일련번호", ""),
+                "matched_count": len(res["articles"]),
+                "matched_articles": top_arts,
                 "_matched_count": len(res["articles"]),
             }
         except Exception as e:
@@ -2077,6 +2087,33 @@ def internal_search():
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify({"error": f"내규 검색 오류: {e}"}), 500
+
+
+@app.route("/api/internal/doc")
+def internal_doc():
+    """내규 전문 조회 — 규정명을 질의로 MCP를 호출해 해당 규정의 전문 텍스트 반환."""
+    name = request.args.get("name", "").strip()
+    if not name:
+        return jsonify({"error": "name 파라미터가 필요합니다"}), 400
+    if not SAGYU_MCP_URL:
+        return jsonify({"error": "사규 MCP 서버가 설정되지 않았습니다(SAGYU_MCP_URL)."}), 503
+    try:
+        cli = _McpClient(SAGYU_MCP_URL)
+        cli.initialize()
+        tools = cli.list_tools()
+        tool = _mcp_pick_search_tool(tools)
+        if not tool:
+            return jsonify({"error": "사규 MCP에서 사용 가능한 도구가 없습니다."}), 502
+        result = cli.call_tool(tool.get("name"), _mcp_build_args(tool, name))
+        text = _mcp_extract_text(result)
+        structured = result.get("structuredContent") if isinstance(result, dict) else None
+        if isinstance(result, dict) and result.get("isError"):
+            return jsonify({"error": text or "내규 전문 조회 중 오류가 발생했습니다."}), 502
+        return jsonify({"success": True, "name": name, "text": text, "structured": structured})
+    except req_lib.exceptions.Timeout:
+        return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
+    except Exception as e:
+        return jsonify({"error": f"내규 전문 조회 오류: {e}"}), 500
 
 
 @app.route("/api/recent")
