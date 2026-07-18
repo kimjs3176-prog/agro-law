@@ -293,6 +293,8 @@ body.dark .reg-hist-chip{background:#161920;}
 .reg-art-t{font-size:13px;font-weight:600;color:var(--tx);}
 .reg-art-b{font-size:12.5px;line-height:1.85;color:var(--tx);white-space:pre-wrap;word-break:break-word;}
 .reg-none{font-size:12px;color:var(--ht);padding:6px 2px;}
+.reg-more{font-size:11.5px;color:var(--mu);padding:6px 4px 0;text-align:center;}
+.reg-more b{color:var(--g);}
 
 /* ── 좌측 내규 목록 사이드바 ── */
 .tree-toggle{width:34px;height:34px;border:none;border-radius:10px;background:var(--gl);color:var(--gd);font-size:17px;cursor:pointer;flex-shrink:0;margin-right:2px;transition:.15s;}
@@ -1695,6 +1697,8 @@ function renderRegCards(items, kw, kind){
         ${content?`<div class="reg-art-b">${highlightKwsSafe(applyXref(escHtml(content),name,abbrevMap),kw?[kw]:[])}</div>`:''}
       </div>`;
     }).join('') : `<div class="reg-none">키워드 매칭 미리보기가 없습니다. 전문에서 확인하세요.</div>`;
+    const moreNote = (cnt > arts.length)
+      ? `<div class="reg-more">총 ${cnt}개 매칭 중 상위 ${arts.length}개 표시 · <b>전문 →</b>에서 전체 확인</div>` : '';
     const enc=encodeURIComponent(name);
     const orgEsc=(org||'').replace(/'/g,"\\'"), typeEsc=(type||'').replace(/'/g,"\\'");
     const dtArgs = kind==='internal'
@@ -1715,7 +1719,7 @@ function renderRegCards(items, kw, kind){
         </div>
       </div>
       ${revMeta}
-      <div class="reg-arts">${artsHtml}</div>
+      <div class="reg-arts">${artsHtml}${moreNote}</div>
     </div>`;
   }).join('');
 }
@@ -2257,7 +2261,7 @@ function parseInternalGrouped(text, kw){
   });
   return [...rules.values()].map(R=>({
     name:R.name, org:'사내 규정',
-    matched_articles:R.arts.slice(0,12), matched_count:R.arts.length,
+    matched_articles:R.arts.slice(0,30), matched_count:R.arts.length,
   }));
 }
 
