@@ -737,6 +737,17 @@ def _fetch_matching_articles(law_name: str, kw: str, doc_type: str = "law"):
                if a.get("type") == "article" and
                kwL in " ".join([a.get("조문내용",""), a.get("조문제목","")]).lower()]
     if matched:
+        # 관련도 정렬: 제목 매칭 최우선 → 본문 내 키워드 빈도 → 조문번호
+        def _rel(a):
+            title = (a.get("조문제목","") or "").lower()
+            content = (a.get("조문내용","") or "").lower()
+            s = 0
+            if kwL in title: s += 1000
+            s += content.count(kwL) * 3
+            return s
+        matched.sort(key=lambda a: (-_rel(a),
+                                    int(re.search(r"\d+", a.get("조문번호","") or "0").group()
+                                        if re.search(r"\d+", a.get("조문번호","") or "0") else 0)))
         return {"law_name": lname or law_name, "keyword": kw, "articles": matched}
     return None
 
@@ -827,13 +838,13 @@ def search_by_article_keyword():
             # admrul은 meta에 행정규칙명 필드가 있을 수 있음
             if not meta:
                 meta = stage1_meta.get(lname, {}).get("meta", {})
-            # 매칭 조문 상위 5개 (내용 240자 절단) — 카드 하단 표시용
+            # 매칭 조문 상위 15개 (내용 600자 절단) — 관련도순
             top_arts = [
                 {"조문번호": a.get("조문번호", ""),
                  "조문제목": a.get("조문제목", ""),
-                 "조문내용": a.get("조문내용", "")[:240] +
-                             ("..." if len(a.get("조문내용", "")) > 240 else "")}
-                for a in res["articles"][:5]
+                 "조문내용": a.get("조문내용", "")[:600] +
+                             ("…" if len(a.get("조문내용", "")) > 600 else "")}
+                for a in res["articles"][:15]
             ]
             return {
                 "법령명한글":   lname,
@@ -2175,7 +2186,8 @@ def internal_search():
         tool = _mcp_pick_search_tool(tools)
         if not tool:
             return jsonify({"error": "사규 MCP에서 사용 가능한 도구가 없습니다."}), 502
-        args = _mcp_build_args(tool, query)
+        # 결과 완성도: limit류 인자를 크게 채워 더 많은 규정을 받아옴
+        args = _mcp_fill_limits(tool, _mcp_build_args(tool, query), big=50)
         result = cli.call_tool(tool.get("name"), args)
         text = _mcp_extract_text(result)
         structured = result.get("structuredContent") if isinstance(result, dict) else None
