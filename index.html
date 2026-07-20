@@ -2002,6 +2002,39 @@ function formatRuleText(raw){
     }
     return `<div class="rf-appendix">${out}<div class="rf-apx-body">${bodyHtml}</div></div>`;
   }
+  // ── 제·개정 연혁 블록(구분/시행일/종류/번호가 셀 단위로 흩어진 경우) ──
+  const _DATE_RE=/^\d{4}\s*[.\-]\s*\d{1,2}\s*[.\-]\s*\d{1,2}\s*\.?$/;
+  const _REV_RE=/^\(?\s*(?:타|전부|일부|자동|최초)?\s*\)?\s*(?:제정|개정|폐지|전면개정|일부개정|전부개정)\s*$/;
+  const _HNUM_RE=/^제\s*\d[\d\-\s]*\s*호$/;
+  const _KIND_RE=/^(?:내규|훈령|예규|규정|지침|고시|지시|공고|규칙|조례)$/;
+  const histType=s=>{ s=(s||'').trim();
+    if(_DATE_RE.test(s)) return 'date';
+    if(_HNUM_RE.test(s)) return 'num';
+    if(_REV_RE.test(s)) return 'gubun';
+    if(_KIND_RE.test(s)) return 'kind';
+    return null; };
+  function renderHistory(cells){
+    const types=cells.map(histType);
+    // 열 수 추정: 첫 셀 유형이 다시 나오는 간격
+    let C=0;
+    for(let k=1;k<cells.length && k<=6;k++){ if(types[k]===types[0]){ C=k; break; } }
+    if(C<2 || C>6 || cells.length%C!==0) return null;
+    const rows=[]; for(let r=0;r<cells.length;r+=C) rows.push(cells.slice(r,r+C));
+    const label={date:'시행일',gubun:'구분',num:'내규번호',kind:'종류'};
+    const heads=[], used={};
+    for(let j=0;j<C;j++){
+      const cnt={}; rows.forEach(rw=>{const ty=histType(rw[j]); if(ty)cnt[ty]=(cnt[ty]||0)+1;});
+      const dom=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0];
+      let lab=label[dom]||'구분'; if(used[lab]) lab=lab+(used[lab]+1); used[label[dom]||'구분']=(used[label[dom]||'구분']||0)+1;
+      heads.push(lab);
+    }
+    let h='<div class="rf-tablewrap"><table class="rf-table"><thead><tr>'+
+          heads.map(c=>`<th>${seg(c)}</th>`).join('')+'</tr></thead><tbody>';
+    rows.forEach(rw=>{ h+='<tr>'+rw.map(c=>`<td>${seg(c)}</td>`).join('')+'</tr>'; });
+    h+='</tbody></table></div>';
+    return `<div class="rf-appendix"><div class="rf-apx-head"><span class="rf-apx-tag">연혁</span>`+
+           `<span class="rf-apx-meta">제·개정 이력</span></div><div class="rf-apx-body">${h}</div></div>`;
+  }
   let html='';
   for(let i=0;i<merged.length;i++){
     const t=merged[i].trim();
@@ -2016,6 +2049,13 @@ function formatRuleText(raw){
       // 실제 표(2행 이상 또는 구분선 포함)일 때만 표로 렌더, 아니면 일반 문단
       if(block.length>=2 || block.some(isSepRow)){ html+=renderTable(block); continue; }
       html+=`<div class="rf-p">${seg(block[0])}</div>`; continue;
+    }
+    // 제·개정 연혁 블록: 구분→시행일 순으로 흩어진 셀을 표로 복원
+    if(histType(t)==='gubun' && i+1<merged.length && histType(merged[i+1].trim())==='date'){
+      const cells=[]; let j=i;
+      while(j<merged.length){ const u=merged[j].trim(); if(!u){ j++; continue; }
+        if(histType(u)===null) break; cells.push(u); j++; }
+      if(cells.length>=8){ const hv=renderHistory(cells); if(hv){ html+=hv; i=j-1; continue; } }
     }
     // 별표·별지 블록: 제목 이후 셀들을 모아 서식 표로 복원
     if(isApxHeader(t)){
