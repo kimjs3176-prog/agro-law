@@ -2408,6 +2408,8 @@ def _harvest_internal_names(cli, tools):
             except Exception:
                 pass
             dry = dry + 1 if len(seen) == before else 0
+    # 파일명(규정명) 기준 정렬 — 한글 사전순
+    names.sort(key=lambda n: (n or "").strip())
     print(f"[internal-list] 수집 {len(names)}건 (calls={calls})")
     return names
 
