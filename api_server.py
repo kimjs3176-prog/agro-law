@@ -2271,13 +2271,31 @@ _RULE_NAME_SUFFIX = ("정관", "규정", "규칙", "예규", "지침", "세칙",
 # 규정명에 있으면 문장·설명 조각으로 판단(제외)
 _RULE_NAME_BAD = ("예시", "이하", "한다", "말한다", "된다", "따른다", "이란",
                   "삭제", "추가", "신설", "경우", "다음", "또는", "관리번호",
-                  "에 따라", "에 따른", "하는 것")
+                  "에 따라", "에 따른", "하는 것",
+                  # 본문·부칙에서 딸려오는 설명형 조각(규정명이 아님)
+                  "관련", "참고", "제반", "별칙", "시행일", "각종", "상기", "해당")
+# 규정명 앞머리에 "수식어 + 공백"으로 오면 조각으로 판단(예: "동 규정", "위 규정").
+# 공백을 요구하므로 '위임전결규정'·'위원회운영규정' 등은 영향받지 않음.
+_RULE_FRAG_PREFIX_RE = re.compile(r"^(?:해당|상기|동|본|위|기타|다음|각|별첨|별표|별지)\s+\S")
+# 선행 불릿/리스트 마커 (반복 제거)
+_RULE_MARKER_RE = re.compile(
+    r"^\s*(?:\[\d+\]|\d+\s*[.)]|[가-힣]\s*[.)]|[①-⑳㉠-㉭]|"
+    r"[-–—*○◯●■□▪▶▷◆◇◦·•※☆★✓❍→▶️])\s*")
+# 정관은 기관당 1개 — 옛 명칭/약칭 등 본문 인용에서 딸려오는 정관명은 제외(KOAT 특화)
+_STALE_ORG_TOKENS = ("농업기술실용화재단", "실용화재단", "농업기술실용화농진원", "농진원")
 
 def _norm_rule_name(nm: str) -> str:
     """규정명 후보 정규화 — 주석 괄호/마커/예시 라벨 제거."""
     if not nm:
         return ""
-    nm = nm.strip().strip("《》「」『』[]•·-*").strip()
+    nm = nm.strip()
+    # 선행 불릿/마커 반복 제거(■ □ ○ 가) 1) ① 등)
+    for _ in range(4):
+        new = _RULE_MARKER_RE.sub("", nm)
+        if new == nm:
+            break
+        nm = new.strip()
+    nm = nm.strip("《》「」『』[]•·-*").strip()
     # "… 예시:" / "… 예:" 라벨 앞부분 제거
     nm = re.sub(r"^.*?(?:예시|보기|예)\s*[:：]\s*", "", nm).strip()
     # 첫 괄호/따옴표/마커/콜론 이후 잘라 제목 stem 만 취득
@@ -2295,7 +2313,13 @@ def _is_valid_rule_name(nm: str) -> bool:
         return False
     if any(bad in nm for bad in _RULE_NAME_BAD):
         return False
+    # 수식어 + 공백으로 시작하는 조각("동 규정", "위 규정" 등) 제외
+    if _RULE_FRAG_PREFIX_RE.match(nm):
+        return False
     if re.search(r"[.。]", nm):
+        return False
+    # 정관: 옛 명칭·약칭 인용은 실제 내규가 아님
+    if nm.endswith("정관") and any(tok in nm for tok in _STALE_ORG_TOKENS):
         return False
     return True
 
