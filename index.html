@@ -348,6 +348,14 @@ body.dark .reg-hist-chip{background:#161920;}
 .rf-table tr:nth-child(even) td{background:var(--bg2,rgba(0,0,0,.015));}
 body.dark .rf-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .rf-form-h{font-weight:700;color:var(--gd);margin:16px 0 4px;font-size:13.5px;}
+/* 별표·별지 서식 카드 */
+.rf-appendix{margin:14px 0;border:1px solid var(--bd);border-radius:10px;overflow:hidden;background:var(--cd);}
+.rf-apx-head{background:var(--gl);padding:8px 12px;border-bottom:1px solid var(--bd);}
+.rf-apx-tag{display:inline-block;font-size:11px;font-weight:800;color:#fff;background:var(--g);border-radius:5px;padding:1px 7px;margin-right:7px;}
+.rf-apx-meta{font-size:11.5px;color:var(--mu);}
+.rf-apx-cap{font-size:13px;font-weight:700;color:var(--tx);padding:9px 12px 3px;}
+.rf-apx-body{padding:6px 10px 10px;}
+.rf-apx-body .rf-tablewrap{margin:6px 0 0;}
 .int-doc-body{font-size:13.5px;line-height:1.95;color:var(--tx);white-space:pre-wrap;word-break:break-word;}
 
 /* 내규 전문 모드: 법령 전용 헤더/도구 버튼 숨김 */
@@ -1918,6 +1926,82 @@ function formatRuleText(raw){
     h+='<tbody>'+bodyRows.filter(r=>r.some(c=>c!=='')).map(r=>'<tr>'+fill(r).map(c=>cell(c,'td')).join('')+'</tr>').join('')+'</tbody>';
     return h+'</table></div>';
   }
+  // ── 별표·별지 판별/렌더 ──
+  const isApxHeader=s=>/^(?:\[?\s*별\s*[표지]|<?\s*별\s*[표지])/.test(s) || /(?:서식|별지|별표)\s*[\]>]?\s*$/.test(s) && s.length<=30;
+  const isDocHeader=s=>/^제\s*\d+\s*(?:조|장|편|절|관)/.test(s) || /^부\s*칙/.test(s);
+  const looksAddr=s=>/(?:특별시|광역시|[가-힣]{2,}도\b|[가-힣]{2,}시\b|[가-힣]{2,}군\b|[가-힣]{2,}구\b)/.test(s)
+      || /(?:로|길)\s?\d|번지|\d+\s*층|타워|빌딩|[가-힣]호\b|\d+호\b/.test(s);
+  function renderApxTitle(title){
+    const m=title.match(/별\s*[표지]\s*[0-9-]*/);
+    const tag=m?m[0].replace(/\s+/g,''):'서식';
+    let rest=m?title.slice(m.index+m[0].length):title;
+    rest=rest.replace(/[\[\]<>]/g,' ').replace(/\s+/g,' ').trim();
+    return `<div class="rf-apx-head"><span class="rf-apx-tag">${escHtml(tag)}</span>`+
+           (rest?`<span class="rf-apx-meta">${seg(rest)}</span>`:'')+`</div>`;
+  }
+  const cellType=s=>{
+    const x=s.replace(/\s/g,'');
+    if(/^[\d,]+(?:\.\d+)?%?원?$/.test(x)) return 'num';
+    if(looksAddr(s)) return 'addr';
+    if(s.length>18) return 'long';
+    return 'text';
+  };
+  // 주소·장문 셀은 실제 표에서 한 열에만 몰려 있음 → 여러 열에 흩어지면 정렬 오류(병합셀)
+  function addrConsistent(rest,C){
+    const pos=[];
+    for(let i=0;i<rest.length;i++){ const ty=cellType(rest[i]); if(ty==='addr'||ty==='long') pos.push(i%C); }
+    if(pos.length<2) return true;
+    const cnt={}; pos.forEach(c=>cnt[c]=(cnt[c]||0)+1);
+    return Math.max(...Object.values(cnt))/pos.length >= 0.7;
+  }
+  // 셀 스트림에서 열 개수 추정: 각 열이 동일 유형(숫자/주소/텍스트)으로 정렬되는 C를 탐색
+  function detectCols(rest){
+    let best=null;
+    for(let C=2;C<=6;C++){
+      if(rest.length%C!==0) continue;
+      const rows=rest.length/C;
+      if(rows<2) continue;
+      if(!addrConsistent(rest,C)) continue;   // 주소가 여러 열로 흩어지면 정렬 오류 → 격자 불가
+      let score=0;
+      for(let col=0;col<C;col++){
+        const cnt={};
+        for(let r=1;r<rows;r++){ const ty=cellType(rest[r*C+col]); cnt[ty]=(cnt[ty]||0)+1; }
+        score += Math.max(...Object.values(cnt))/(rows-1);
+      }
+      score/=C;
+      let hdrText=0; for(let col=0;col<C;col++){ if(cellType(rest[col])==='text') hdrText++; }
+      score += (hdrText/C)*0.15;
+      if(!best || score>best.score+1e-9){ best={C,score,rows}; }
+    }
+    return (best && best.score>=0.75) ? best : null;
+  }
+  function renderAppendix(title, cells){
+    cells=cells.map(c=>c.trim()).filter(Boolean);
+    let out=renderApxTitle(title);
+    // 캡션: 첫 셀이 서술형(공백 포함·주소 아님)이면 표 제목
+    let ci=0, cap='';
+    if(cells.length && /\s/.test(cells[0]) && cells[0].length>=6 && !looksAddr(cells[0])){
+      cap=cells[0]; ci=1;
+    }
+    if(cap) out+=`<div class="rf-apx-cap">${seg(cap)}</div>`;
+    const rest=cells.slice(ci);
+    const grid=detectCols(rest);
+    let bodyHtml;
+    if(grid){
+      const C=grid.C;
+      let h='<div class="rf-tablewrap"><table class="rf-table"><thead><tr>'+
+            rest.slice(0,C).map(c=>`<th>${seg(c)}</th>`).join('')+'</tr></thead><tbody>';
+      for(let r=C;r<rest.length;r+=C){
+        h+='<tr>'+rest.slice(r,r+C).map(c=>`<td>${seg(c)}</td>`).join('')+'</tr>';
+      }
+      bodyHtml=h+'</tbody></table></div>';
+    }else{
+      // 병합셀 등으로 격자 복원이 불가능한 경우: 테두리 있는 행으로 나열해 서식 형태 유지
+      bodyHtml='<div class="rf-tablewrap"><table class="rf-table"><tbody>'+
+        rest.map(c=>`<tr><td>${seg(c)}</td></tr>`).join('')+'</tbody></table></div>';
+    }
+    return `<div class="rf-appendix">${out}<div class="rf-apx-body">${bodyHtml}</div></div>`;
+  }
   let html='';
   for(let i=0;i<merged.length;i++){
     const t=merged[i].trim();
@@ -1932,6 +2016,20 @@ function formatRuleText(raw){
       // 실제 표(2행 이상 또는 구분선 포함)일 때만 표로 렌더, 아니면 일반 문단
       if(block.length>=2 || block.some(isSepRow)){ html+=renderTable(block); continue; }
       html+=`<div class="rf-p">${seg(block[0])}</div>`; continue;
+    }
+    // 별표·별지 블록: 제목 이후 셀들을 모아 서식 표로 복원
+    if(isApxHeader(t)){
+      const cells=[];
+      let j=i+1;
+      while(j<merged.length){
+        const u=merged[j].trim();
+        if(u && (isApxHeader(u)||isDocHeader(u))) break;   // 다음 별표/조문 경계
+        if(u) cells.push(u);
+        j++;
+      }
+      if(cells.length>=3){ html+=renderAppendix(t, cells); i=j-1; continue; }
+      // 셀이 적으면 일반 서식 제목으로
+      html+=`<div class="rf-form-h">${seg(t)}</div>`; continue;
     }
     let cls='rf-p';
     if(/^\[?\s*별지/.test(t)||/^\[?\s*별표/.test(t)||/서식\]?\s*$/.test(t)) cls='rf-form-h';
