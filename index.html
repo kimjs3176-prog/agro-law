@@ -340,6 +340,14 @@ body.dark .reg-hist-chip{background:#161920;}
 .rf-dash{padding-left:30px;margin:2px 0;color:var(--mu);}
 .rf-note{padding-left:30px;margin:2px 0;font-size:12.5px;color:var(--mu);}
 .rf-empty{font-size:13px;color:var(--ht);padding:24px;text-align:center;}
+/* 별지 서식 표 */
+.rf-tablewrap{margin:10px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.rf-table{border-collapse:collapse;width:100%;font-size:12.5px;background:var(--cd);}
+.rf-table th,.rf-table td{border:1px solid var(--bd);padding:6px 9px;text-align:left;vertical-align:top;line-height:1.6;word-break:break-word;}
+.rf-table th{background:var(--gl);font-weight:700;color:var(--tx);white-space:nowrap;}
+.rf-table tr:nth-child(even) td{background:var(--bg2,rgba(0,0,0,.015));}
+body.dark .rf-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
+.rf-form-h{font-weight:700;color:var(--gd);margin:16px 0 4px;font-size:13.5px;}
 .int-doc-body{font-size:13.5px;line-height:1.95;color:var(--tx);white-space:pre-wrap;word-break:break-word;}
 
 /* 내규 전문 모드: 법령 전용 헤더/도구 버튼 숨김 */
@@ -1864,12 +1872,51 @@ function formatRuleText(raw){
     } else merged.push(lines[i]);
   }
   const seg=s=>applyXref(applyTermTooltip(escHtml(s)),'',{});
+  // 마크다운 표 판별 도우미
+  const isTableRow=s=>/\|/.test(s) && s.replace(/[^|]/g,'').length>=1;
+  const isSepRow=s=>{
+    const cells=splitRow(s);
+    return cells.length>0 && cells.every(c=>/^:?-{2,}:?$/.test(c.replace(/\s/g,'')));
+  };
+  function splitRow(s){
+    let r=s.trim();
+    if(r.startsWith('|')) r=r.slice(1);
+    if(r.endsWith('|')) r=r.slice(0,-1);
+    return r.split('|').map(c=>c.trim());
+  }
+  function renderTable(rows){
+    // rows: 표 원본 라인 배열(구분선 포함 가능)
+    const parsed=rows.map(splitRow);
+    let sepIdx=-1;
+    for(let i=0;i<rows.length;i++){ if(isSepRow(rows[i])){sepIdx=i;break;} }
+    const cols=Math.max(...parsed.map(r=>r.length));
+    let head=[], bodyRows=parsed;
+    if(sepIdx>=0){ head=parsed.slice(0,sepIdx); bodyRows=parsed.slice(sepIdx+1); }
+    const cell=(c,tag)=>`<${tag}>${seg(c||'')}</${tag}>`;
+    const fill=r=>{const a=r.slice();while(a.length<cols)a.push('');return a;};
+    let h='<div class="rf-tablewrap"><table class="rf-table">';
+    if(head.length){ h+='<thead>'+head.map(r=>'<tr>'+fill(r).map(c=>cell(c,'th')).join('')+'</tr>').join('')+'</thead>'; }
+    h+='<tbody>'+bodyRows.filter(r=>r.some(c=>c!=='')).map(r=>'<tr>'+fill(r).map(c=>cell(c,'td')).join('')+'</tr>').join('')+'</tbody>';
+    return h+'</table></div>';
+  }
   let html='';
-  merged.forEach(l=>{
-    const t=l.trim();
-    if(!t) return;
+  for(let i=0;i<merged.length;i++){
+    const t=merged[i].trim();
+    if(!t) continue;
+    // 표 블록: 연속된 파이프(|) 라인을 모아 <table>로 렌더 (별지 서식 대응)
+    if(isTableRow(t)){
+      const block=[];
+      while(i<merged.length && merged[i].trim() && isTableRow(merged[i].trim())){
+        block.push(merged[i].trim()); i++;
+      }
+      i--;
+      // 실제 표(2행 이상 또는 구분선 포함)일 때만 표로 렌더, 아니면 일반 문단
+      if(block.length>=2 || block.some(isSepRow)){ html+=renderTable(block); continue; }
+      html+=`<div class="rf-p">${seg(block[0])}</div>`; continue;
+    }
     let cls='rf-p';
-    if(/^제\s*\d+\s*조/.test(t)) cls='rf-art';
+    if(/^\[?\s*별지/.test(t)||/^\[?\s*별표/.test(t)||/서식\]?\s*$/.test(t)) cls='rf-form-h';
+    else if(/^제\s*\d+\s*조/.test(t)) cls='rf-art';
     else if(/^(?:[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\s*[.\s]|제\s*\d+\s*[편장])/.test(t)) cls='rf-h1';
     else if(/^제\s*\d+\s*[절관]/.test(t)) cls='rf-h2';
     else if(/^\[[^\]]{1,40}\]/.test(t)) cls='rf-label';
@@ -1880,7 +1927,7 @@ function formatRuleText(raw){
     else if(/^\*/.test(t)) cls='rf-note';
     else if(/^[-–]\s/.test(t)) cls='rf-dash';
     html+=`<div class="${cls}">${seg(t)}</div>`;
-  });
+  }
   return `<div class="rulefmt">${html}</div>`;
 }
 
@@ -1918,7 +1965,7 @@ async function loadInternalTree(force){
       body.innerHTML=`<div class="it-empty">${escHtml(d.error||'내규 목록을 불러오지 못했습니다.')}<br><br>사규 MCP 연결을 확인하세요.</div>`;
       return;
     }
-    _internalNames=d.names;
+    _internalNames=(d.names||[]).slice().sort((a,b)=>(a||'').localeCompare(b||'','ko'));
     renderInternalTree(_internalNames);
   }catch(e){ _internalNames=[]; body.innerHTML='<div class="it-empty">목록 조회에 실패했습니다.</div>'; }
 }
