@@ -356,6 +356,15 @@ body.dark .rf-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .rf-apx-cap{font-size:13px;font-weight:700;color:var(--tx);padding:9px 12px 3px;}
 .rf-apx-body{padding:6px 10px 10px;}
 .rf-apx-body .rf-tablewrap{margin:6px 0 0;}
+/* 별표·별지 목록(문서 내 인덱스) */
+.apx-idx{margin:0 0 14px;border:1px solid var(--bd);border-radius:10px;background:var(--cd);overflow:hidden;}
+.apx-idx-h{display:flex;align-items:center;gap:7px;background:var(--gl);padding:8px 12px;font-weight:800;font-size:12.5px;color:var(--gd);cursor:pointer;}
+.apx-idx-h .cnt{margin-left:auto;font-weight:700;color:var(--mu);font-size:11.5px;}
+.apx-idx-b{display:flex;flex-wrap:wrap;gap:6px;padding:9px 11px;}
+.apx-chip{border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:6px;padding:3px 9px;font-size:11.5px;cursor:pointer;transition:.13s;}
+.apx-chip:hover{background:var(--gl);border-color:var(--g);color:var(--gd);}
+.rf-appendix.hl{box-shadow:0 0 0 2px var(--g);}
+.apx-ref{color:var(--gd);border-bottom:1px dashed var(--g);cursor:pointer;}
 /* 목차 */
 .rf-toc-wrap{margin:12px 0;border:1px solid var(--bd);border-radius:10px;overflow:hidden;background:var(--cd);}
 .rf-toc-h{background:var(--gl);padding:7px 12px;font-weight:800;color:var(--gd);font-size:13px;border-bottom:1px solid var(--bd);}
@@ -1872,12 +1881,55 @@ async function openInternalPanel(name){
     }
     body.innerHTML=`<div style="padding:6px 2px 24px;">${html}
       <div class="int-foot" style="margin-top:14px;">※ 본문의 「법령명」·"○○법 제N조"를 클릭하면 관련 법령 조문이 오른쪽에 열립니다.</div></div>`;
+    // 별표·별지 목록 + 본문 인용 링크
+    try{ const host=body.firstElementChild||body; buildApxIndex(host); linkifyApxRefs(host); }catch(e){}
   }catch(e){ body.innerHTML='<div class="fp-empty">내규 전문 조회 중 오류가 발생했습니다.</div>'; }
 }
 
 // ── 규정 전문 서식화: 계층(장/조/항/호)·목록을 인식해 정돈된 HTML로 ──
+// ── 별표·별지 인덱스: 전문 안의 서식 블록을 모아 상단 목록으로 제공 ──
+function buildApxIndex(container){
+  const items=[...container.querySelectorAll('.rf-appendix[data-apx]')];
+  if(items.length<2) return;
+  const chips=items.map(el=>{
+    const lab=el.getAttribute('data-apx')||'서식';
+    const meta=(el.querySelector('.rf-apx-cap')||el.querySelector('.rf-apx-meta')||{}).textContent||'';
+    const t=meta?`${lab} · ${meta.slice(0,24)}`:lab;
+    return `<button class="apx-chip" onclick="jumpApx('${el.id}')" title="${escHtml(meta||lab)}">${escHtml(t)}</button>`;
+  }).join('');
+  const box=document.createElement('div');
+  box.className='apx-idx';
+  box.innerHTML=`<div class="apx-idx-h" onclick="const b=this.nextElementSibling;b.style.display=b.style.display==='none'?'flex':'none';">`+
+    `📎 별표·별지 목록<span class="cnt">${items.length}건</span></div>`+
+    `<div class="apx-idx-b">${chips}</div>`;
+  container.insertBefore(box, container.firstChild);
+}
+function jumpApx(id){
+  const el=document.getElementById(id); if(!el) return;
+  el.scrollIntoView({behavior:'smooth',block:'center'});
+  el.classList.add('hl'); setTimeout(()=>el.classList.remove('hl'),1600);
+}
+// 본문 속 "[별지 제1호 서식]" 인용을 해당 서식 블록으로 이동하는 링크로 변환
+function linkifyApxRefs(container){
+  const map={};
+  container.querySelectorAll('.rf-appendix[data-apx]').forEach(el=>{
+    const k=(el.getAttribute('data-apx')||'').replace(/\s+/g,'');
+    if(k && !map[k]) map[k]=el.id;
+  });
+  if(!Object.keys(map).length) return;
+  const re=/\[\s*(별\s*[표지]\s*(?:제\s*)?\d+(?:의\s*\d+)?\s*호?)[^\]]{0,12}\]/g;
+  container.querySelectorAll('.rf-p,.rf-hang,.rf-num,.rf-ho,.rf-art,.rf-bul').forEach(node=>{
+    if(!/별\s*[표지]/.test(node.textContent)) return;
+    node.innerHTML=node.innerHTML.replace(re,(full,lab)=>{
+      const id=map[lab.replace(/\s+/g,'')];
+      return id?`<span class="apx-ref" onclick="jumpApx('${id}')">${full}</span>`:full;
+    });
+  });
+}
+let _apxSeq=0;   // 별표/별지 앵커 일련번호(문서별로 초기화)
 function formatRuleText(raw){
   if(!raw||!raw.trim()) return '<div class="rf-empty">전문을 찾지 못했습니다.</div>';
+  _apxSeq=0;
   // 줄 안에 붙어 나오는 ○/◦ 항목 불릿을 각각 새 줄로 분리(가독성)
   let src=_dedupeLines(raw).replace(/([^\n\s])\s*([○◦❍])/g,'$1\n$2');
   let lines=src.split('\n');
@@ -1937,13 +1989,20 @@ function formatRuleText(raw){
     return h+'</table></div>';
   }
   // ── 별표·별지 판별/렌더 ──
-  const isApxHeader=s=>/^(?:\[?\s*별\s*[표지]|<?\s*별\s*[표지])/.test(s) || /(?:서식|별지|별표)\s*[\]>]?\s*$/.test(s) && s.length<=30;
+  // 별표/별지 시작 줄만 헤더로 인정. "기안문 서식"처럼 '서식'으로 끝나는 캡션은 제외.
+  const isApxHeader=s=>/^[\[<（(]?\s*별\s*[표지]/.test(s) || /^[\[<（(]?\s*붙임\s*\d/.test(s);
   const isDocHeader=s=>/^제\s*\d+\s*(?:조|장|편|절|관)/.test(s) || /^부\s*칙/.test(s);
   const looksAddr=s=>/(?:특별시|광역시|[가-힣]{2,}도\b|[가-힣]{2,}시\b|[가-힣]{2,}군\b|[가-힣]{2,}구\b)/.test(s)
       || /(?:로|길)\s?\d|번지|\d+\s*층|타워|빌딩|[가-힣]호\b|\d+호\b/.test(s);
+  // 별표/별지 라벨 추출: "별표1", "별지 제1호 서식" 등 → 정규화 라벨
+  function apxLabel(title){
+    const m=title.match(/별\s*[표지]\s*(?:제\s*)?[0-9]+(?:의\s*[0-9]+)?\s*호?/)
+          || title.match(/별\s*[표지]/);
+    return m ? m[0].replace(/\s+/g,'') : '서식';
+  }
   function renderApxTitle(title){
-    const m=title.match(/별\s*[표지]\s*[0-9-]*/);
-    const tag=m?m[0].replace(/\s+/g,''):'서식';
+    const tag=apxLabel(title);
+    const m=title.match(/별\s*[표지]\s*(?:제\s*)?[0-9]*(?:의\s*[0-9]+)?\s*호?/);
     let rest=m?title.slice(m.index+m[0].length):title;
     rest=rest.replace(/[\[\]<>]/g,' ').replace(/\s+/g,' ').trim();
     return `<div class="rf-apx-head"><span class="rf-apx-tag">${escHtml(tag)}</span>`+
@@ -2010,7 +2069,10 @@ function formatRuleText(raw){
       bodyHtml='<div class="rf-tablewrap"><table class="rf-table"><tbody>'+
         rest.map(c=>`<tr><td>${seg(c)}</td></tr>`).join('')+'</tbody></table></div>';
     }
-    return `<div class="rf-appendix">${out}<div class="rf-apx-body">${bodyHtml}</div></div>`;
+    const lab=apxLabel(title);
+    const anchor='apx-'+(_apxSeq++);
+    return `<div class="rf-appendix" id="${anchor}" data-apx="${escHtml(lab)}">`+
+           `${out}<div class="rf-apx-body">${bodyHtml}</div></div>`;
   }
   // ── 제·개정 연혁 블록(구분/시행일/종류/번호가 셀 단위로 흩어진 경우) ──
   const _DATE_RE=/^\d{4}\s*[.\-]\s*\d{1,2}\s*[.\-]\s*\d{1,2}\s*\.?$/;
