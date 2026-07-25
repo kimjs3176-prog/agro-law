@@ -297,6 +297,7 @@ body.dark .reg-hist-chip{background:#161920;}
 .reg-more b{color:var(--g);}
 
 /* ── 좌측 내규 목록 사이드바 ── */
+.it-total{font-size:11.5px;color:var(--mu);padding:6px 12px 2px;font-weight:600;}
 .tree-toggle{width:34px;height:34px;border:none;border-radius:10px;background:var(--gl);color:var(--gd);font-size:17px;cursor:pointer;flex-shrink:0;margin-right:2px;transition:.15s;}
 .tree-toggle:hover{background:var(--g);color:#fff;}
 .sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:590;display:none;}
@@ -2341,14 +2342,15 @@ function formatRuleText(raw){
 }
 
 // ── 좌측 내규 목록(트리) ──
+// 원본 내규 체계(정관→규정→규칙→세칙→예규→매뉴얼) 순서·아이콘
 const RULE_TREE_ORDER=[
   {key:'정관',ic:'📕'},{key:'규정',ic:'📗'},{key:'규칙',ic:'📘'},
-  {key:'예규',ic:'📙'},{key:'지침',ic:'📒'},{key:'세칙',ic:'📓'},
-  {key:'기준',ic:'📄'},{key:'요령',ic:'📄'},{key:'매뉴얼',ic:'📖'},{key:'기타',ic:'📁'},
+  {key:'세칙',ic:'📓'},{key:'예규',ic:'📙'},{key:'매뉴얼',ic:'📖'},{key:'기타',ic:'📁'},
 ];
-let _internalNames=null;
+let _internalNames=null;   // [{title, category, revision}]
+// 서버가 분류를 주지 않는 경우(구 MCP 응답)의 보조 판별
 function classifyRule(name){
-  const cats=['정관','규정','규칙','예규','지침','세칙','기준','요령','매뉴얼'];
+  const cats=['정관','규정','규칙','세칙','예규','매뉴얼'];
   let best='기타', pos=-1;
   cats.forEach(c=>{ const p=name.lastIndexOf(c); if(p>pos){pos=p;best=c;} });
   const pm=name.lastIndexOf('메뉴얼'); if(pm>pos){best='매뉴얼';pos=pm;}
@@ -2374,24 +2376,34 @@ async function loadInternalTree(force){
       body.innerHTML=`<div class="it-empty">${escHtml(d.error||'내규 목록을 불러오지 못했습니다.')}<br><br>사규 MCP 연결을 확인하세요.</div>`;
       return;
     }
-    _internalNames=(d.names||[]).slice().sort((a,b)=>(a||'').localeCompare(b||'','ko'));
+    // 서버가 분류 포함 items를 주면 그대로(원본 기준), 아니면 이름만으로 구성
+    _internalNames = Array.isArray(d.items) && d.items.length
+      ? d.items.map(x=>({title:x.title, category:x.category||classifyRule(x.title),
+                         revision:x.revision||''}))
+      : (d.names||[]).map(n=>({title:n, category:classifyRule(n), revision:''}));
+    _internalNames.sort((a,b)=>(a.title||'').localeCompare(b.title||'','ko'));
+    _internalSource = d.source||'';
     renderInternalTree(_internalNames);
   }catch(e){ _internalNames=[]; body.innerHTML='<div class="it-empty">목록 조회에 실패했습니다.</div>'; }
 }
-function renderInternalTree(names){
+let _internalSource='';
+function renderInternalTree(items){
   const body=document.getElementById('internalTreeBody');
   const groups={}; RULE_TREE_ORDER.forEach(g=>groups[g.key]=[]);
-  names.forEach(n=>{ (groups[classifyRule(n)]||groups['기타']).push(n); });
+  items.forEach(it=>{ (groups[it.category]||groups['기타']).push(it); });
   let html='';
+  const total=items.length;
+  if(total) html+=`<div class="it-total">전체 ${total}건${_internalSource==='originals'?' · 원본 기준':''}</div>`;
   RULE_TREE_ORDER.forEach(g=>{
-    const items=groups[g.key]; if(!items||!items.length) return;
+    const list=groups[g.key]; if(!list||!list.length) return;
     html+=`<div class="it-group">
       <div class="it-group-h" onclick="this.parentElement.classList.toggle('collapsed')">
-        <span class="it-arrow">▾</span><span class="it-ic">${g.ic}</span>${g.key}<span class="it-cnt">${items.length}</span>
+        <span class="it-arrow">▾</span><span class="it-ic">${g.ic}</span>${g.key}<span class="it-cnt">${list.length}</span>
       </div>
-      <div class="it-items">${items.map(n=>{
-        const e=encodeURIComponent(n);
-        return `<button class="it-item" title="${escHtml(n)}" onclick="openInternalFromTree(decodeURIComponent('${e}'))">${escHtml(n)}</button>`;
+      <div class="it-items">${list.map(it=>{
+        const e=encodeURIComponent(it.title);
+        const tip=it.revision?`${it.title} · ${it.revision}`:it.title;
+        return `<button class="it-item" title="${escHtml(tip)}" onclick="openInternalFromTree(decodeURIComponent('${e}'))">${escHtml(it.title)}</button>`;
       }).join('')}</div>
     </div>`;
   });
@@ -2400,7 +2412,7 @@ function renderInternalTree(names){
 function filterInternalTree(){
   if(!_internalNames) return;
   const q=(document.getElementById('itFilter').value||'').trim().toLowerCase();
-  const filtered=q?_internalNames.filter(n=>n.toLowerCase().includes(q)):_internalNames;
+  const filtered=q?_internalNames.filter(it=>(it.title||'').toLowerCase().includes(q)):_internalNames;
   renderInternalTree(filtered);
 }
 function openInternalFromTree(name){
