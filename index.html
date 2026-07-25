@@ -356,6 +356,16 @@ body.dark .rf-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .rf-apx-cap{font-size:13px;font-weight:700;color:var(--tx);padding:9px 12px 3px;}
 .rf-apx-body{padding:6px 10px 10px;}
 .rf-apx-body .rf-tablewrap{margin:6px 0 0;}
+/* 내규 원본 PDF 전용 패널 */
+.origpdf{position:fixed;top:0;right:0;width:min(920px,96vw);height:100%;background:var(--sf);
+  border-left:1px solid var(--bd);box-shadow:-8px 0 28px rgba(0,0,0,.16);
+  display:flex;flex-direction:column;z-index:1400;transform:translateX(102%);
+  transition:transform .22s ease;}
+.origpdf.open{transform:translateX(0);}
+.origpdf>iframe{flex:1;min-height:0;width:100%;border:none;display:block;background:var(--bg);}
+@media(max-width:820px){.origpdf{width:100vw;}}
+/* 원본 버튼은 내규 전문 모드에서만 노출 */
+.fullpanel:not(.internal-doc) .int-orig{display:none!important;}
 /* 별표·별지 목록(문서 내 인덱스) */
 .apx-idx{margin:0 0 14px;border:1px solid var(--bd);border-radius:10px;background:var(--cd);overflow:hidden;}
 .apx-idx-h{display:flex;align-items:center;gap:7px;background:var(--gl);padding:8px 12px;font-weight:800;font-size:12.5px;color:var(--gd);cursor:pointer;}
@@ -1176,6 +1186,17 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 </div>
 
 <!-- 법령 전문 슬라이드 패널 -->
+<!-- 내규 원본 PDF 전용 패널 -->
+<div class="origpdf" id="origPdfPanel">
+  <div class="fp-header">
+    <span class="fp-title" id="origPdfTitle">원본</span>
+    <a class="fp-tbtn" id="origPdfExt" href="#" target="_blank" rel="noopener">↗ 새 창</a>
+    <a class="fp-tbtn" id="origPdfDl" href="#" download>⬇ 저장</a>
+    <button class="fp-close" onclick="closeOriginalPdf()">✕</button>
+  </div>
+  <iframe id="origPdfFrame" title="원본 PDF" src="about:blank"></iframe>
+</div>
+
 <div class="fullpanel" id="fullpanel">
   <!-- 좌측: 현재 법령 -->
   <div class="fp-left" id="fpLeft">
@@ -1188,6 +1209,8 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <button class="fp-tbtn law-only" onclick="fpShowHistory()">📅 개정이력</button>
       <button class="fp-tbtn law-only" id="fpRelatedBtn" onclick="fpShowRelated()" title="관련 판례·자치법규(조례) 연계 제안">🔗 관련 조례·판례</button>
       <button class="fp-tbtn law-only" onclick="fpPrint()">🖨 인쇄</button>
+      <button class="fp-tbtn int-orig" id="fpOrigBtn" onclick="openOriginalPdf()" style="display:none;" title="원본 서식 그대로 보기(PDF)">📄 원본 보기</button>
+      <a class="fp-tbtn int-orig" id="fpOrigDl" href="#" target="_blank" rel="noopener" style="display:none;" title="원본 PDF 다운로드">⬇ PDF</a>
       <button class="fp-close" onclick="closePanel()">✕</button>
     </div>
     <div class="fp-toolbar">
@@ -1883,10 +1906,48 @@ async function openInternalPanel(name){
       <div class="int-foot" style="margin-top:14px;">※ 본문의 「법령명」·"○○법 제N조"를 클릭하면 관련 법령 조문이 오른쪽에 열립니다.</div></div>`;
     // 별표·별지 목록 + 본문 인용 링크
     try{ const host=body.firstElementChild||body; buildApxIndex(host); linkifyApxRefs(host); }catch(e){}
+    loadOriginalInfo(name);   // 원본 PDF 유무 확인 → 헤더 버튼 노출
   }catch(e){ body.innerHTML='<div class="fp-empty">내규 전문 조회 중 오류가 발생했습니다.</div>'; }
 }
 
 // ── 규정 전문 서식화: 계층(장/조/항/호)·목록을 인식해 정돈된 HTML로 ──
+// ── 내규 원본 PDF(원본 서식 그대로) ──
+let _origInfo=null;
+async function loadOriginalInfo(name){
+  _origInfo=null;
+  const btn=document.getElementById('fpOrigBtn'), dl=document.getElementById('fpOrigDl');
+  if(btn) btn.style.display='none';
+  if(dl) dl.style.display='none';
+  try{
+    const r=await fetch('/api/internal/original?name='+encodeURIComponent(name));
+    const d=await r.json();
+    if(!d||!d.found) return;
+    _origInfo=d;
+    if(d.configured && d.pdf_url){
+      if(btn) btn.style.display='';
+      if(dl){ dl.href=d.pdf_url; dl.setAttribute('download',''); dl.style.display=''; }
+    }
+  }catch(e){}
+}
+// 원본 PDF를 전용 패널에 표시(브라우저 내장 PDF 뷰어 사용)
+// fpRight(동시보기 탭)와 충돌하지 않도록 별도 패널을 쓴다.
+function openOriginalPdf(){
+  if(!_origInfo||!_origInfo.pdf_url) return;
+  const p=document.getElementById('origPdfPanel');
+  const rev=_origInfo.revision?` · ${escHtml(_origInfo.revision)}`:'';
+  document.getElementById('origPdfTitle').innerHTML=
+    `📄 ${escHtml(_origInfo.title||'원본')}<span style="font-weight:500;color:var(--mu);font-size:11.5px;">${rev}</span>`;
+  document.getElementById('origPdfExt').href=_origInfo.pdf_url;
+  document.getElementById('origPdfDl').href=_origInfo.pdf_url;
+  document.getElementById('origPdfFrame').src=_origInfo.pdf_url+'#view=FitH';
+  p.classList.add('open');
+}
+function closeOriginalPdf(){
+  const p=document.getElementById('origPdfPanel');
+  if(!p) return;
+  p.classList.remove('open');
+  document.getElementById('origPdfFrame').src='about:blank';   // 메모리 해제
+}
 // ── 별표·별지 인덱스: 전문 안의 서식 블록을 모아 상단 목록으로 제공 ──
 function buildApxIndex(container){
   const items=[...container.querySelectorAll('.rf-appendix[data-apx]')];
