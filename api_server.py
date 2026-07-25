@@ -2055,19 +2055,19 @@ def internal_original():
         return jsonify({"error": "name 파라미터가 필요합니다"}), 400
     m = _find_reg_original(name)
     if not m:
-        return jsonify({"success": True, "found": False,
-                        "configured": bool(REG_PDF_BASE_URL), "name": name})
-    if not REG_PDF_BASE_URL:
-        return jsonify({"success": True, "found": True, "configured": False,
-                        "name": name, "title": m.get("title"),
-                        "revision": m.get("revision"), "category": m.get("category"),
-                        "message": "원본 저장소가 설정되지 않았습니다(REG_PDF_BASE_URL)."})
-    fname = os.path.basename(m.get("pdf", "")) or (m.get("slug", "") + ".pdf")
-    return jsonify({"success": True, "found": True, "configured": True,
-                    "name": name, "title": m.get("title"),
-                    "revision": m.get("revision"), "category": m.get("category"),
-                    "pdf_url": f"{REG_PDF_BASE_URL}/{quote(fname)}",
-                    "source_file": m.get("src", "")})
+        return jsonify({"success": True, "found": False, "name": name})
+    out = {"success": True, "found": True, "name": name,
+           "title": m.get("title"), "revision": m.get("revision"),
+           "category": m.get("category"), "source_file": m.get("src", "")}
+    # 원본 서식 HTML — 리포에 함께 배포되므로 항상 사용 가능
+    slug = m.get("slug", "")
+    if slug:
+        out["html_url"] = "/regulations/" + quote(slug) + "/index.html"
+    # PDF는 별도 스토리지를 설정한 경우에만
+    if REG_PDF_BASE_URL:
+        fname = os.path.basename(m.get("pdf", "")) or (slug + ".pdf")
+        out["pdf_url"] = f"{REG_PDF_BASE_URL}/{quote(fname)}"
+    return jsonify(out)
 # MCP 도구 목록 캐시 (URL → {tools, ts}) — 워밍된 프로세스에서 tools/list 왕복 절약
 _MCP_TOOLS_CACHE: dict = {}
 # 내규 검색 키워드 후보(도구/인자 자동 선택용)

@@ -9,10 +9,15 @@
     {
       "src": "index.html",
       "use": "@vercel/static"
+    },
+    {
+      "src": "regulations/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/index.py" },
+    { "src": "/regulations/(.*)", "dest": "/regulations/$1" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
