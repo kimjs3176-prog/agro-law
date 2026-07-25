@@ -1,0 +1,9003 @@
+body {
+  background-color: #eee;
+  padding: 4px;
+  margin: 0;
+}
+.Paper {
+  background-color: #fff;
+  border: 1px solid black;
+  margin: 1em auto;
+}
+.Paper:first-child {
+  margin-top: 0;
+}
+.Paper:last-child {
+  margin-bottom: 0;
+}
+/* Styles */
+.Normal {
+/* @parashape-id = 0*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.Normal > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 22*/
+.Normal > span {
+  color: #000000;
+}
+.Normal > span.lang-ko {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Normal > span.lang-en {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Normal > span.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Normal > span.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Normal > span.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Normal > span.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Normal > span.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Body {
+/* @parashape-id = 1*/
+  margin: 0pt 0pt 0pt 15pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.Body > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 22*/
+.Body > span {
+  color: #000000;
+}
+.Body > span.lang-ko {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Body > span.lang-en {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Body > span.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Body > span.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Body > span.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Body > span.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Body > span.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-1 {
+/* @parashape-id = 2*/
+  margin: 0pt 0pt 0pt 10pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.Outline-1 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 22*/
+.Outline-1 > span {
+  color: #000000;
+}
+.Outline-1 > span.lang-ko {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-1 > span.lang-en {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-1 > span.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-1 > span.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-1 > span.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-1 > span.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-1 > span.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-2 {
+/* @parashape-id = 10*/
+  margin: 0pt 0pt 0pt 20pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.Outline-2 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 22*/
+.Outline-2 > span {
+  color: #000000;
+}
+.Outline-2 > span.lang-ko {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-2 > span.lang-en {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-2 > span.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-2 > span.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-2 > span.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-2 > span.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-2 > span.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-3 {
+/* @parashape-id = 11*/
+  margin: 0pt 0pt 0pt 30pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.Outline-3 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 22*/
+.Outline-3 > span {
+  color: #000000;
+}
+.Outline-3 > span.lang-ko {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-3 > span.lang-en {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-3 > span.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-3 > span.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-3 > span.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-3 > span.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-3 > span.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-4 {
+/* @parashape-id = 12*/
+  margin: 0pt 0pt 0pt 40pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.Outline-4 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 22*/
+.Outline-4 > span {
+  color: #000000;
+}
+.Outline-4 > span.lang-ko {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-4 > span.lang-en {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-4 > span.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-4 > span.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-4 > span.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-4 > span.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-4 > span.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-5 {
+/* @parashape-id = 13*/
+  margin: 0pt 0pt 0pt 50pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.Outline-5 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 22*/
+.Outline-5 > span {
+  color: #000000;
+}
+.Outline-5 > span.lang-ko {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-5 > span.lang-en {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-5 > span.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-5 > span.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-5 > span.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-5 > span.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-5 > span.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-6 {
+/* @parashape-id = 14*/
+  margin: 0pt 0pt 0pt 60pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.Outline-6 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 22*/
+.Outline-6 > span {
+  color: #000000;
+}
+.Outline-6 > span.lang-ko {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-6 > span.lang-en {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-6 > span.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-6 > span.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-6 > span.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-6 > span.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-6 > span.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-7 {
+/* @parashape-id = 15*/
+  margin: 0pt 0pt 0pt 70pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.Outline-7 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 22*/
+.Outline-7 > span {
+  color: #000000;
+}
+.Outline-7 > span.lang-ko {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-7 > span.lang-en {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-7 > span.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-7 > span.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-7 > span.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-7 > span.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+.Outline-7 > span.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+/* @charshape-id = 24*/
+.Page-Number > span {
+  color: #000000;
+}
+.Page-Number > span.lang-ko {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 10pt;
+}
+.Page-Number > span.lang-en {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 10pt;
+}
+.Page-Number > span.lang-cn {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 10pt;
+}
+.Page-Number > span.lang-jp {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 10pt;
+}
+.Page-Number > span.lang-other {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 10pt;
+}
+.Page-Number > span.lang-symbol {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 10pt;
+}
+.Page-Number > span.lang-user {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 10pt;
+}
+.Header {
+/* @parashape-id = 3*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.5em;
+}
+.Header > span {
+  line-height: 1.5;
+}
+/* @charshape-id = 25*/
+.Header > span {
+  color: #000000;
+}
+.Header > span.lang-ko {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+.Header > span.lang-en {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+.Header > span.lang-cn {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+.Header > span.lang-jp {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+.Header > span.lang-other {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+.Header > span.lang-symbol {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+.Header > span.lang-user {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+.Footnote {
+/* @parashape-id = 5*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -13.1pt;
+  padding-left: 13.1pt;
+  min-height: 1.3em;
+}
+.Footnote > span {
+  line-height: 1.3;
+}
+/* @charshape-id = 26*/
+.Footnote > span {
+  color: #000000;
+}
+.Footnote > span.lang-ko {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+.Footnote > span.lang-en {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+.Footnote > span.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+.Footnote > span.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+.Footnote > span.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+.Footnote > span.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+.Footnote > span.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+.Endnote {
+/* @parashape-id = 5*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -13.1pt;
+  padding-left: 13.1pt;
+  min-height: 1.3em;
+}
+.Endnote > span {
+  line-height: 1.3;
+}
+/* @charshape-id = 26*/
+.Endnote > span {
+  color: #000000;
+}
+.Endnote > span.lang-ko {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+.Endnote > span.lang-en {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+.Endnote > span.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+.Endnote > span.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+.Endnote > span.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+.Endnote > span.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+.Endnote > span.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+.Memo {
+/* @parashape-id = 4*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: left;
+  text-indent: 0pt;
+  min-height: 1.3em;
+}
+.Memo > span {
+  line-height: 1.3;
+}
+/* @charshape-id = 27*/
+.Memo > span {
+  color: #000000;
+}
+.Memo > span.lang-ko {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+.Memo > span.lang-en {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+.Memo > span.lang-cn {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+.Memo > span.lang-jp {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+.Memo > span.lang-other {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+.Memo > span.lang-symbol {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+.Memo > span.lang-user {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+.TOC-Heading {
+/* @parashape-id = 6*/
+  margin: 12pt 0pt 3pt 0pt;
+  text-align: left;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.TOC-Heading > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 28*/
+.TOC-Heading > span {
+  color: #2e74b5;
+}
+.TOC-Heading > span.lang-ko {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 16pt;
+}
+.TOC-Heading > span.lang-en {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 16pt;
+}
+.TOC-Heading > span.lang-cn {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 16pt;
+}
+.TOC-Heading > span.lang-jp {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 16pt;
+}
+.TOC-Heading > span.lang-other {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 16pt;
+}
+.TOC-Heading > span.lang-symbol {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 16pt;
+}
+.TOC-Heading > span.lang-user {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 16pt;
+}
+.TOC-1 {
+/* @parashape-id = 7*/
+  margin: 0pt 0pt 7pt 0pt;
+  text-align: left;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.TOC-1 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 29*/
+.TOC-1 > span {
+  color: #000000;
+}
+.TOC-1 > span.lang-ko {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-1 > span.lang-en {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-1 > span.lang-cn {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-1 > span.lang-jp {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-1 > span.lang-other {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-1 > span.lang-symbol {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-1 > span.lang-user {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-2 {
+/* @parashape-id = 8*/
+  margin: 0pt 0pt 7pt 11pt;
+  text-align: left;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.TOC-2 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 29*/
+.TOC-2 > span {
+  color: #000000;
+}
+.TOC-2 > span.lang-ko {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-2 > span.lang-en {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-2 > span.lang-cn {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-2 > span.lang-jp {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-2 > span.lang-other {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-2 > span.lang-symbol {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-2 > span.lang-user {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-3 {
+/* @parashape-id = 9*/
+  margin: 0pt 0pt 7pt 22pt;
+  text-align: left;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.TOC-3 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 29*/
+.TOC-3 > span {
+  color: #000000;
+}
+.TOC-3 > span.lang-ko {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-3 > span.lang-en {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-3 > span.lang-cn {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-3 > span.lang-jp {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-3 > span.lang-other {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-3 > span.lang-symbol {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+.TOC-3 > span.lang-user {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+. {
+/* @parashape-id = 40*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: left;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+. > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 20*/
+. > span {
+  color: #000000;
+}
+. > span.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+. > span.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+. > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+. > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+. > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+. > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+. > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+.Normal-Copy2 {
+/* @parashape-id = 39*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.Normal-Copy2 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 21*/
+.Normal-Copy2 > span {
+  color: #000000;
+}
+.Normal-Copy2 > span.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Normal-Copy2 > span.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Normal-Copy2 > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Normal-Copy2 > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Normal-Copy2 > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Normal-Copy2 > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Normal-Copy2 > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+.Body-14 {
+/* @parashape-id = 41*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.Body-14 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 51*/
+.Body-14 > span {
+  color: #000000;
+}
+.Body-14 > span.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 16pt;
+}
+.Body-14 > span.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 16pt;
+}
+.Body-14 > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+.Body-14 > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+.Body-14 > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+.Body-14 > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+.Body-14 > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 16pt;
+}
+.xl66 {
+/* @parashape-id = 18*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.xl66 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 83*/
+.xl66 > span {
+  color: #000000;
+}
+.xl66 > span.lang-ko {
+  font-family: "휴먼엑스포", serif;
+  font-size: 11pt;
+}
+.xl66 > span.lang-en {
+  font-family: "휴먼엑스포", serif;
+  font-size: 11pt;
+}
+.xl66 > span.lang-cn {
+  font-family: "한컴바탕", serif;
+  font-size: 11pt;
+}
+.xl66 > span.lang-jp {
+  font-family: "한컴바탕", serif;
+  font-size: 11pt;
+}
+.xl66 > span.lang-other {
+  font-family: "한컴바탕", serif;
+  font-size: 11pt;
+}
+.xl66 > span.lang-symbol {
+  font-family: "한컴바탕", serif;
+  font-size: 11pt;
+}
+.xl66 > span.lang-user {
+  font-family: "한컴바탕", serif;
+  font-size: 11pt;
+}
+. {
+/* @parashape-id = 23*/
+  margin: 15pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -30.89pt;
+  padding-left: 30.89pt;
+  min-height: 1.6em;
+}
+. > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 5*/
+. > span {
+  color: #000000;
+  font-weight: bold;
+}
+. > span.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 16pt;
+}
+. > span.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 16pt;
+}
+. > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+. > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+. > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+. > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+. > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 16pt;
+}
+. {
+/* @parashape-id = 60*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -35.88pt;
+  padding-left: 35.88pt;
+  min-height: 2.1em;
+}
+. > span {
+  line-height: 2.1;
+}
+/* @charshape-id = 48*/
+. > span {
+  color: #000000;
+}
+. > span.lang-ko {
+  font-family: "HY헤드라인M", serif;
+  font-size: 16pt;
+}
+. > span.lang-en {
+  font-family: "HY헤드라인M", serif;
+  font-size: 16pt;
+}
+. > span.lang-cn {
+  font-family: "HY헤드라인M", serif;
+  font-size: 16pt;
+}
+. > span.lang-jp {
+  font-family: "HY헤드라인M", serif;
+  font-size: 16pt;
+}
+. > span.lang-other {
+  font-family: "HY헤드라인M", sans-serif;
+  font-size: 16pt;
+}
+. > span.lang-symbol {
+  font-family: "HY헤드라인M", serif;
+  font-size: 16pt;
+}
+. > span.lang-user {
+  font-family: "HY헤드라인M", serif;
+  font-size: 16pt;
+}
+.td {
+/* @parashape-id = 24*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.td > span {
+  line-height: 1;
+}
+/* @charshape-id = 23*/
+.td > span {
+  color: #000000;
+}
+.td > span.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.td > span.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.td > span.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.td > span.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.td > span.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.td > span.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.td > span.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+. {
+/* @parashape-id = 19*/
+  margin: 10pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -12.6pt;
+  padding-left: 12.6pt;
+  min-height: 2.3em;
+}
+. > span {
+  line-height: 2.3;
+}
+/* @charshape-id = 1*/
+. > span {
+  color: #000000;
+}
+. > span.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 12pt;
+}
+. > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+. {
+/* @parashape-id = 20*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -12.6pt;
+  padding-left: 12.6pt;
+  min-height: 2.3em;
+}
+. > span {
+  line-height: 2.3;
+}
+/* @charshape-id = 1*/
+. > span {
+  color: #000000;
+}
+. > span.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 12pt;
+}
+. > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+.MsoNormal {
+/* @parashape-id = 80*/
+  margin: 0pt 0pt 10pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.14em;
+}
+.MsoNormal > span {
+  line-height: 1.14;
+}
+/* @charshape-id = 12*/
+.MsoNormal > span {
+  color: #000000;
+}
+.MsoNormal > span.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+.MsoNormal > span.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+.MsoNormal > span.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+.MsoNormal > span.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+.MsoNormal > span.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+.MsoNormal > span.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+.MsoNormal > span.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+. {
+/* @parashape-id = 42*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+. > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 53*/
+. > span {
+  color: #000000;
+}
+. > span.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+. > span.lang-en {
+  font-family: "산세리프", serif;
+  font-size: 10pt;
+}
+. > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+. > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+. > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+. > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+. > span.lang-user {
+  font-family: "신명조■얒a", serif;
+  font-size: 10pt;
+}
+.xl67 {
+/* @parashape-id = 18*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.xl67 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 47*/
+.xl67 > span {
+  color: #000000;
+}
+.xl67 > span.lang-ko {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+.xl67 > span.lang-en {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+.xl67 > span.lang-cn {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+.xl67 > span.lang-jp {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+.xl67 > span.lang-other {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+.xl67 > span.lang-symbol {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+.xl67 > span.lang-user {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+.xl65 {
+/* @parashape-id = 18*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.xl65 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 47*/
+.xl65 > span {
+  color: #000000;
+}
+.xl65 > span.lang-ko {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+.xl65 > span.lang-en {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+.xl65 > span.lang-cn {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+.xl65 > span.lang-jp {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+.xl65 > span.lang-other {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+.xl65 > span.lang-symbol {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+.xl65 > span.lang-user {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+. {
+/* @parashape-id = 63*/
+  margin: 8.52pt 0pt 0pt 25pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.8em;
+}
+. > span {
+  line-height: 1.8;
+}
+/* @charshape-id = 20*/
+. > span {
+  color: #000000;
+}
+. > span.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+. > span.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+. > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+. > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+. > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+. > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+. > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+. {
+/* @parashape-id = 42*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+. > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 60*/
+. > span {
+  color: #000000;
+}
+. > span.lang-ko {
+  font-family: "굴림체", monospace;
+  font-size: 11pt;
+}
+. > span.lang-en {
+  font-family: "굴림체", monospace;
+  font-size: 11pt;
+}
+. > span.lang-cn {
+  font-family: "굴림체", monospace;
+  font-size: 11pt;
+}
+. > span.lang-jp {
+  font-family: "굴림체", monospace;
+  font-size: 11pt;
+}
+. > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+. > span.lang-symbol {
+  font-family: "굴림체", monospace;
+  font-size: 11pt;
+}
+. > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 11pt;
+}
+.xl78 {
+/* @parashape-id = 43*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl78 > span {
+  line-height: 1;
+}
+/* @charshape-id = 85*/
+.xl78 > span {
+  color: #000000;
+}
+.xl78 > span.lang-ko {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl78 > span.lang-en {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl78 > span.lang-cn {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl78 > span.lang-jp {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl78 > span.lang-other {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl78 > span.lang-symbol {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl78 > span.lang-user {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl80 {
+/* @parashape-id = 43*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl80 > span {
+  line-height: 1;
+}
+/* @charshape-id = 85*/
+.xl80 > span {
+  color: #000000;
+}
+.xl80 > span.lang-ko {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl80 > span.lang-en {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl80 > span.lang-cn {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl80 > span.lang-jp {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl80 > span.lang-other {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl80 > span.lang-symbol {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl80 > span.lang-user {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl84 {
+/* @parashape-id = 43*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl84 > span {
+  line-height: 1;
+}
+/* @charshape-id = 23*/
+.xl84 > span {
+  color: #000000;
+}
+.xl84 > span.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl84 > span.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl84 > span.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl84 > span.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl84 > span.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl84 > span.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl84 > span.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl86 {
+/* @parashape-id = 43*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl86 > span {
+  line-height: 1;
+}
+/* @charshape-id = 85*/
+.xl86 > span {
+  color: #000000;
+}
+.xl86 > span.lang-ko {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl86 > span.lang-en {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl86 > span.lang-cn {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl86 > span.lang-jp {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl86 > span.lang-other {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl86 > span.lang-symbol {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl86 > span.lang-user {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl90 {
+/* @parashape-id = 43*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl90 > span {
+  line-height: 1;
+}
+/* @charshape-id = 23*/
+.xl90 > span {
+  color: #000000;
+}
+.xl90 > span.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl90 > span.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl90 > span.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl90 > span.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl90 > span.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl90 > span.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl90 > span.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl68 {
+/* @parashape-id = 50*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: right;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.xl68 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 32*/
+.xl68 > span {
+  color: #000000;
+}
+.xl68 > span.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+.xl68 > span.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+.xl68 > span.lang-cn {
+  font-family: "한컴바탕", serif;
+  font-size: 10pt;
+}
+.xl68 > span.lang-jp {
+  font-family: "한컴바탕", serif;
+  font-size: 10pt;
+}
+.xl68 > span.lang-other {
+  font-family: "한컴바탕", serif;
+  font-size: 10pt;
+}
+.xl68 > span.lang-symbol {
+  font-family: "한컴바탕", serif;
+  font-size: 10pt;
+}
+.xl68 > span.lang-user {
+  font-family: "한컴바탕", serif;
+  font-size: 10pt;
+}
+.xl69 {
+/* @parashape-id = 43*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl69 > span {
+  line-height: 1;
+}
+/* @charshape-id = 23*/
+.xl69 > span {
+  color: #000000;
+}
+.xl69 > span.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl69 > span.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl69 > span.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl69 > span.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl69 > span.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl69 > span.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl69 > span.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl70 {
+/* @parashape-id = 43*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl70 > span {
+  line-height: 1;
+}
+/* @charshape-id = 23*/
+.xl70 > span {
+  color: #000000;
+}
+.xl70 > span.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl70 > span.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl70 > span.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl70 > span.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl70 > span.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl70 > span.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl70 > span.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl91 {
+/* @parashape-id = 43*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl91 > span {
+  line-height: 1;
+}
+/* @charshape-id = 84*/
+.xl91 > span {
+  color: #000000;
+  font-weight: bold;
+}
+.xl91 > span.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl91 > span.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl91 > span.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl91 > span.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl91 > span.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl91 > span.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl91 > span.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl71 {
+/* @parashape-id = 43*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl71 > span {
+  line-height: 1;
+}
+/* @charshape-id = 84*/
+.xl71 > span {
+  color: #000000;
+  font-weight: bold;
+}
+.xl71 > span.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl71 > span.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl71 > span.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl71 > span.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl71 > span.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl71 > span.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl71 > span.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl72 {
+/* @parashape-id = 43*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl72 > span {
+  line-height: 1;
+}
+/* @charshape-id = 84*/
+.xl72 > span {
+  color: #000000;
+  font-weight: bold;
+}
+.xl72 > span.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl72 > span.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl72 > span.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl72 > span.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl72 > span.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl72 > span.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl72 > span.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl73 {
+/* @parashape-id = 24*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl73 > span {
+  line-height: 1;
+}
+/* @charshape-id = 85*/
+.xl73 > span {
+  color: #000000;
+}
+.xl73 > span.lang-ko {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl73 > span.lang-en {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl73 > span.lang-cn {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl73 > span.lang-jp {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl73 > span.lang-other {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl73 > span.lang-symbol {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl73 > span.lang-user {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl74 {
+/* @parashape-id = 21*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: left;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl74 > span {
+  line-height: 1;
+}
+/* @charshape-id = 23*/
+.xl74 > span {
+  color: #000000;
+}
+.xl74 > span.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl74 > span.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl74 > span.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl74 > span.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl74 > span.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl74 > span.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl74 > span.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl76 {
+/* @parashape-id = 43*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl76 > span {
+  line-height: 1;
+}
+/* @charshape-id = 85*/
+.xl76 > span {
+  color: #000000;
+}
+.xl76 > span.lang-ko {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl76 > span.lang-en {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl76 > span.lang-cn {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl76 > span.lang-jp {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl76 > span.lang-other {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl76 > span.lang-symbol {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl76 > span.lang-user {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl77 {
+/* @parashape-id = 43*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl77 > span {
+  line-height: 1;
+}
+/* @charshape-id = 23*/
+.xl77 > span {
+  color: #000000;
+}
+.xl77 > span.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl77 > span.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl77 > span.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl77 > span.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl77 > span.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl77 > span.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl77 > span.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl95 {
+/* @parashape-id = 21*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: left;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl95 > span {
+  line-height: 1;
+}
+/* @charshape-id = 86*/
+.xl95 > span {
+  color: #000000;
+  font-weight: bold;
+}
+.xl95 > span.lang-ko {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl95 > span.lang-en {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl95 > span.lang-cn {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl95 > span.lang-jp {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl95 > span.lang-other {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl95 > span.lang-symbol {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl95 > span.lang-user {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+.xl97 {
+/* @parashape-id = 43*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl97 > span {
+  line-height: 1;
+}
+/* @charshape-id = 23*/
+.xl97 > span {
+  color: #000000;
+}
+.xl97 > span.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl97 > span.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl97 > span.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl97 > span.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl97 > span.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl97 > span.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl97 > span.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl99 {
+/* @parashape-id = 43*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+.xl99 > span {
+  line-height: 1;
+}
+/* @charshape-id = 84*/
+.xl99 > span {
+  color: #000000;
+  font-weight: bold;
+}
+.xl99 > span.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl99 > span.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl99 > span.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl99 > span.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl99 > span.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl99 > span.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl99 > span.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+.xl75 {
+/* @parashape-id = 18*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.xl75 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 87*/
+.xl75 > span {
+  color: #000000;
+}
+.xl75 > span.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+.xl75 > span.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+.xl75 > span.lang-cn {
+  font-family: "한컴바탕", serif;
+  font-size: 18pt;
+}
+.xl75 > span.lang-jp {
+  font-family: "한컴바탕", serif;
+  font-size: 18pt;
+}
+.xl75 > span.lang-other {
+  font-family: "한컴바탕", serif;
+  font-size: 18pt;
+}
+.xl75 > span.lang-symbol {
+  font-family: "한컴바탕", serif;
+  font-size: 18pt;
+}
+.xl75 > span.lang-user {
+  font-family: "한컴바탕", serif;
+  font-size: 18pt;
+}
+. {
+/* @parashape-id = 49*/
+  margin: 3pt 0pt 3pt 4pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+. > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 30*/
+. > span {
+  color: #000000;
+}
+. > span.lang-ko {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 17pt;
+}
+. > span.lang-en {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 17pt;
+}
+. > span.lang-cn {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 17pt;
+}
+. > span.lang-jp {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 17pt;
+}
+. > span.lang-other {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 17pt;
+}
+. > span.lang-symbol {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 17pt;
+}
+. > span.lang-user {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 17pt;
+}
+. {
+/* @parashape-id = 20*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -12.6pt;
+  padding-left: 12.6pt;
+  min-height: 2.3em;
+}
+. > span {
+  line-height: 2.3;
+}
+/* @charshape-id = 1*/
+. > span {
+  color: #000000;
+}
+. > span.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 12pt;
+}
+. > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+.lawdefault {
+/* @parashape-id = 32*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 2.3em;
+}
+.lawdefault > span {
+  line-height: 2.3;
+}
+/* @charshape-id = 2*/
+.lawdefault > span {
+  color: #000000;
+}
+.lawdefault > span.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.lawdefault > span.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.lawdefault > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.lawdefault > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.lawdefault > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.lawdefault > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.lawdefault > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+.Ho {
+/* @parashape-id = 61*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -24.4pt;
+  padding-left: 24.4pt;
+  min-height: 2.3em;
+}
+.Ho > span {
+  line-height: 2.3;
+}
+/* @charshape-id = 2*/
+.Ho > span {
+  color: #000000;
+}
+.Ho > span.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Ho > span.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Ho > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Ho > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Ho > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Ho > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Ho > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+.JOTBL {
+/* @parashape-id = 22*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -14pt;
+  padding-left: 14pt;
+  min-height: 1.8em;
+}
+.JOTBL > span {
+  line-height: 1.8;
+}
+/* @charshape-id = 2*/
+.JOTBL > span {
+  color: #000000;
+}
+.JOTBL > span.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.JOTBL > span.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.JOTBL > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.JOTBL > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.JOTBL > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.JOTBL > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.JOTBL > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+.HOTBL {
+/* @parashape-id = 48*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -24.4pt;
+  padding-left: 24.4pt;
+  min-height: 1.8em;
+}
+.HOTBL > span {
+  line-height: 1.8;
+}
+/* @charshape-id = 2*/
+.HOTBL > span {
+  color: #000000;
+}
+.HOTBL > span.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.HOTBL > span.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.HOTBL > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.HOTBL > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.HOTBL > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.HOTBL > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.HOTBL > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+. {
+/* @parashape-id = 78*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 2.3em;
+}
+. > span {
+  line-height: 2.3;
+}
+/* @charshape-id = 81*/
+. > span {
+  color: #000000;
+  font-weight: bold;
+}
+. > span.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+. > span.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+. > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+. > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+. > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+. > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+. > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 16pt;
+}
+.MsoListParagraph {
+/* @parashape-id = 75*/
+  margin: 0pt 0pt 0pt 20pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.MsoListParagraph > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 32*/
+.MsoListParagraph > span {
+  color: #000000;
+}
+.MsoListParagraph > span.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+.MsoListParagraph > span.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+.MsoListParagraph > span.lang-cn {
+  font-family: "한컴바탕", serif;
+  font-size: 10pt;
+}
+.MsoListParagraph > span.lang-jp {
+  font-family: "한컴바탕", serif;
+  font-size: 10pt;
+}
+.MsoListParagraph > span.lang-other {
+  font-family: "한컴바탕", serif;
+  font-size: 10pt;
+}
+.MsoListParagraph > span.lang-symbol {
+  font-family: "한컴바탕", serif;
+  font-size: 10pt;
+}
+.MsoListParagraph > span.lang-user {
+  font-family: "한컴바탕", serif;
+  font-size: 10pt;
+}
+.HANGTBL {
+/* @parashape-id = 22*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -14pt;
+  padding-left: 14pt;
+  min-height: 1.8em;
+}
+.HANGTBL > span {
+  line-height: 1.8;
+}
+/* @charshape-id = 2*/
+.HANGTBL > span {
+  color: #000000;
+}
+.HANGTBL > span.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.HANGTBL > span.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.HANGTBL > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.HANGTBL > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.HANGTBL > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.HANGTBL > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.HANGTBL > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+. {
+/* @parashape-id = 30*/
+  margin: 30pt 0pt 20pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 2.3em;
+}
+. > span {
+  line-height: 2.3;
+}
+/* @charshape-id = 14*/
+. > span {
+  color: #000000;
+  font-weight: bold;
+}
+. > span.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 12pt;
+}
+. > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+.Normal-Copy1 {
+/* @parashape-id = 44*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+.Normal-Copy1 > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 79*/
+.Normal-Copy1 > span {
+  color: #000000;
+}
+.Normal-Copy1 > span.lang-ko {
+  font-family: "바탕", serif;
+  font-size: 10pt;
+}
+.Normal-Copy1 > span.lang-en {
+  font-family: "바탕", serif;
+  font-size: 10pt;
+}
+.Normal-Copy1 > span.lang-cn {
+  font-family: "바탕", serif;
+  font-size: 10pt;
+}
+.Normal-Copy1 > span.lang-jp {
+  font-family: "바탕", serif;
+  font-size: 10pt;
+}
+.Normal-Copy1 > span.lang-other {
+  font-family: "바탕", serif;
+  font-size: 10pt;
+}
+.Normal-Copy1 > span.lang-symbol {
+  font-family: "바탕", serif;
+  font-size: 10pt;
+}
+.Normal-Copy1 > span.lang-user {
+  font-family: "바탕", serif;
+  font-size: 10pt;
+}
+. {
+/* @parashape-id = 45*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.5em;
+}
+. > span {
+  line-height: 1.5;
+}
+/* @charshape-id = 88*/
+. > span {
+  color: #000000;
+}
+. > span.lang-ko {
+  font-family: "휴먼옛체", serif;
+  font-size: 25pt;
+}
+. > span.lang-en {
+  font-family: "명조", serif;
+  font-size: 25pt;
+}
+. > span.lang-cn {
+  font-family: "명조", serif;
+  font-size: 25pt;
+}
+. > span.lang-jp {
+  font-family: "명조", serif;
+  font-size: 25pt;
+}
+. > span.lang-other {
+  font-family: "명조", serif;
+  font-size: 25pt;
+}
+. > span.lang-symbol {
+  font-family: "명조", serif;
+  font-size: 25pt;
+}
+. > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 25pt;
+}
+. {
+/* @parashape-id = 26*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+. > span {
+  line-height: 1.6;
+}
+/* @charshape-id = 37*/
+. > span {
+  color: #000000;
+  font-weight: bold;
+}
+. > span.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 18pt;
+}
+. > span.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 18pt;
+}
+. > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 18pt;
+}
+. > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 18pt;
+}
+. > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 18pt;
+}
+. > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 18pt;
+}
+. > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 18pt;
+}
+.Hang {
+/* @parashape-id = 46*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -14pt;
+  padding-left: 14pt;
+  min-height: 2.3em;
+}
+.Hang > span {
+  line-height: 2.3;
+}
+/* @charshape-id = 2*/
+.Hang > span {
+  color: #000000;
+}
+.Hang > span.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Hang > span.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Hang > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Hang > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Hang > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Hang > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Hang > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+. {
+/* @parashape-id = 74*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.72em;
+}
+. > span {
+  line-height: 1.72;
+}
+/* @charshape-id = 65*/
+. > span {
+  color: #000000;
+}
+. > span.lang-ko {
+  font-family: "신명 태고딕", sans-serif;
+  font-size: 10pt;
+}
+. > span.lang-en {
+  font-family: "신명 태고딕", sans-serif;
+  font-size: 10pt;
+}
+. > span.lang-cn {
+  font-family: "신명 태고딕", sans-serif;
+  font-size: 10pt;
+}
+. > span.lang-jp {
+  font-family: "신명 태고딕", sans-serif;
+  font-size: 10pt;
+}
+. > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+. > span.lang-symbol {
+  font-family: "#태고딕", sans-serif;
+  font-size: 10pt;
+}
+. > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 10pt;
+}
+. {
+/* @parashape-id = 79*/
+  margin: 0pt 15pt 0pt 15pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.5em;
+}
+. > span {
+  line-height: 1.5;
+}
+/* @charshape-id = 59*/
+. > span {
+  color: #000000;
+}
+. > span.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 15pt;
+}
+. > span.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 15pt;
+}
+. > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+. > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+. > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+. > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+. > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 15pt;
+}
+. {
+/* @parashape-id = 62*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.4em;
+}
+. > span {
+  line-height: 1.4;
+}
+/* @charshape-id = 49*/
+. > span {
+  color: #000000;
+}
+. > span.lang-ko {
+  font-family: "-윤고딕330", sans-serif;
+  font-size: 11pt;
+}
+. > span.lang-en {
+  font-family: "-윤고딕330", sans-serif;
+  font-size: 11pt;
+}
+. > span.lang-cn {
+  font-family: "-윤고딕330", sans-serif;
+  font-size: 11pt;
+}
+. > span.lang-jp {
+  font-family: "-윤고딕330", sans-serif;
+  font-size: 11pt;
+}
+. > span.lang-other {
+  font-family: "-윤고딕330", sans-serif;
+  font-size: 11pt;
+}
+. > span.lang-symbol {
+  font-family: "-윤고딕330", sans-serif;
+  font-size: 11pt;
+}
+. > span.lang-user {
+  font-family: "-윤고딕330", sans-serif;
+  font-size: 11pt;
+}
+. {
+/* @parashape-id = 77*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: right;
+  text-indent: -14.72pt;
+  padding-left: 14.72pt;
+  min-height: 1.8em;
+}
+. > span {
+  line-height: 1.8;
+}
+/* @charshape-id = 78*/
+. > span {
+  color: #000000;
+  font-weight: bold;
+}
+. > span.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 13pt;
+}
+. > span.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 13pt;
+}
+. > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+. > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+. > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+. > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+. > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 13pt;
+}
+. {
+/* @parashape-id = 47*/
+  margin: 20pt 0pt 10pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 2.3em;
+}
+. > span {
+  line-height: 2.3;
+}
+/* @charshape-id = 14*/
+. > span {
+  color: #000000;
+  font-weight: bold;
+}
+. > span.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 12pt;
+}
+. > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+. > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+.Jo {
+/* @parashape-id = 46*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -14pt;
+  padding-left: 14pt;
+  min-height: 2.3em;
+}
+.Jo > span {
+  line-height: 2.3;
+}
+/* @charshape-id = 2*/
+.Jo > span {
+  color: #000000;
+}
+.Jo > span.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Jo > span.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Jo > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Jo > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Jo > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Jo > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Jo > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+.Mok {
+/* @parashape-id = 54*/
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -45.4pt;
+  padding-left: 45.4pt;
+  min-height: 2.3em;
+}
+.Mok > span {
+  line-height: 2.3;
+}
+/* @charshape-id = 21*/
+.Mok > span {
+  color: #000000;
+}
+.Mok > span.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Mok > span.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Mok > span.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Mok > span.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Mok > span.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Mok > span.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+.Mok > span.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+/* Paragraph attributes */
+p.parashape-0 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-0 > span {
+  line-height: 1.6;
+}
+p.parashape-1 {
+  margin: 0pt 0pt 0pt 15pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-1 > span {
+  line-height: 1.6;
+}
+p.parashape-2 {
+  margin: 0pt 0pt 0pt 10pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-2 > span {
+  line-height: 1.6;
+}
+p.parashape-3 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.5em;
+}
+p.parashape-3 > span {
+  line-height: 1.5;
+}
+p.parashape-4 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: left;
+  text-indent: 0pt;
+  min-height: 1.3em;
+}
+p.parashape-4 > span {
+  line-height: 1.3;
+}
+p.parashape-5 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -13.1pt;
+  padding-left: 13.1pt;
+  min-height: 1.3em;
+}
+p.parashape-5 > span {
+  line-height: 1.3;
+}
+p.parashape-6 {
+  margin: 12pt 0pt 3pt 0pt;
+  text-align: left;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-6 > span {
+  line-height: 1.6;
+}
+p.parashape-7 {
+  margin: 0pt 0pt 7pt 0pt;
+  text-align: left;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-7 > span {
+  line-height: 1.6;
+}
+p.parashape-8 {
+  margin: 0pt 0pt 7pt 11pt;
+  text-align: left;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-8 > span {
+  line-height: 1.6;
+}
+p.parashape-9 {
+  margin: 0pt 0pt 7pt 22pt;
+  text-align: left;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-9 > span {
+  line-height: 1.6;
+}
+p.parashape-10 {
+  margin: 0pt 0pt 0pt 20pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-10 > span {
+  line-height: 1.6;
+}
+p.parashape-11 {
+  margin: 0pt 0pt 0pt 30pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-11 > span {
+  line-height: 1.6;
+}
+p.parashape-12 {
+  margin: 0pt 0pt 0pt 40pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-12 > span {
+  line-height: 1.6;
+}
+p.parashape-13 {
+  margin: 0pt 0pt 0pt 50pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-13 > span {
+  line-height: 1.6;
+}
+p.parashape-14 {
+  margin: 0pt 0pt 0pt 60pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-14 > span {
+  line-height: 1.6;
+}
+p.parashape-15 {
+  margin: 0pt 0pt 0pt 70pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-15 > span {
+  line-height: 1.6;
+}
+p.parashape-16 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-16 > span {
+  line-height: 1.6;
+}
+p.parashape-17 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.3em;
+}
+p.parashape-17 > span {
+  line-height: 1.3;
+}
+p.parashape-18 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-18 > span {
+  line-height: 1.6;
+}
+p.parashape-19 {
+  margin: 10pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -12.6pt;
+  padding-left: 12.6pt;
+  min-height: 2.3em;
+}
+p.parashape-19 > span {
+  line-height: 2.3;
+}
+p.parashape-20 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -12.6pt;
+  padding-left: 12.6pt;
+  min-height: 2.3em;
+}
+p.parashape-20 > span {
+  line-height: 2.3;
+}
+p.parashape-21 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: left;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+p.parashape-21 > span {
+  line-height: 1;
+}
+p.parashape-22 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -14pt;
+  padding-left: 14pt;
+  min-height: 1.8em;
+}
+p.parashape-22 > span {
+  line-height: 1.8;
+}
+p.parashape-23 {
+  margin: 15pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -30.89pt;
+  padding-left: 30.89pt;
+  min-height: 1.6em;
+}
+p.parashape-23 > span {
+  line-height: 1.6;
+}
+p.parashape-24 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+p.parashape-24 > span {
+  line-height: 1;
+}
+p.parashape-25 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.3em;
+}
+p.parashape-25 > span {
+  line-height: 1.3;
+}
+p.parashape-26 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-26 > span {
+  line-height: 1.6;
+}
+p.parashape-27 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -12.6pt;
+  padding-left: 12.6pt;
+  min-height: 2.3em;
+}
+p.parashape-27 > span {
+  line-height: 2.3;
+}
+p.parashape-28 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 2em;
+}
+p.parashape-28 > span {
+  line-height: 2;
+}
+p.parashape-29 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.5em;
+}
+p.parashape-29 > span {
+  line-height: 1.5;
+}
+p.parashape-30 {
+  margin: 30pt 0pt 20pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 2.3em;
+}
+p.parashape-30 > span {
+  line-height: 2.3;
+}
+p.parashape-31 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -12pt;
+  padding-left: 12pt;
+  min-height: 2.3em;
+}
+p.parashape-31 > span {
+  line-height: 2.3;
+}
+p.parashape-32 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 2.3em;
+}
+p.parashape-32 > span {
+  line-height: 2.3;
+}
+p.parashape-33 {
+  margin: 30pt 0pt 20pt 0pt;
+  text-align: center;
+  text-indent: -12pt;
+  padding-left: 12pt;
+  min-height: 2.3em;
+}
+p.parashape-33 > span {
+  line-height: 2.3;
+}
+p.parashape-34 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: right;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-34 > span {
+  line-height: 1.6;
+}
+p.parashape-35 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-35 > span {
+  line-height: 1.6;
+}
+p.parashape-36 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.2em;
+}
+p.parashape-36 > span {
+  line-height: 1.2;
+}
+p.parashape-37 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-37 > span {
+  line-height: 1.6;
+}
+p.parashape-38 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -12.6pt;
+  padding-left: 12.6pt;
+  min-height: 1.8em;
+}
+p.parashape-38 > span {
+  line-height: 1.8;
+}
+p.parashape-39 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-39 > span {
+  line-height: 1.6;
+}
+p.parashape-40 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: left;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-40 > span {
+  line-height: 1.6;
+}
+p.parashape-41 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-41 > span {
+  line-height: 1.6;
+}
+p.parashape-42 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-42 > span {
+  line-height: 1.6;
+}
+p.parashape-43 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+p.parashape-43 > span {
+  line-height: 1;
+}
+p.parashape-44 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-44 > span {
+  line-height: 1.6;
+}
+p.parashape-45 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.5em;
+}
+p.parashape-45 > span {
+  line-height: 1.5;
+}
+p.parashape-46 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -14pt;
+  padding-left: 14pt;
+  min-height: 2.3em;
+}
+p.parashape-46 > span {
+  line-height: 2.3;
+}
+p.parashape-47 {
+  margin: 20pt 0pt 10pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 2.3em;
+}
+p.parashape-47 > span {
+  line-height: 2.3;
+}
+p.parashape-48 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -24.4pt;
+  padding-left: 24.4pt;
+  min-height: 1.8em;
+}
+p.parashape-48 > span {
+  line-height: 1.8;
+}
+p.parashape-49 {
+  margin: 3pt 0pt 3pt 4pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-49 > span {
+  line-height: 1.6;
+}
+p.parashape-50 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: right;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-50 > span {
+  line-height: 1.6;
+}
+p.parashape-51 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: right;
+  text-indent: -14.72pt;
+  padding-left: 14.72pt;
+  min-height: 1.3em;
+}
+p.parashape-51 > span {
+  line-height: 1.3;
+}
+p.parashape-52 {
+  margin: 0pt 2pt 0pt 2pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-52 > span {
+  line-height: 1.6;
+}
+p.parashape-53 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 2em;
+}
+p.parashape-53 > span {
+  line-height: 2;
+}
+p.parashape-54 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -45.4pt;
+  padding-left: 45.4pt;
+  min-height: 2.3em;
+}
+p.parashape-54 > span {
+  line-height: 2.3;
+}
+p.parashape-55 {
+  margin: 30pt 0pt 20pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 2.3em;
+}
+p.parashape-55 > span {
+  line-height: 2.3;
+}
+p.parashape-56 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 2em;
+}
+p.parashape-56 > span {
+  line-height: 2;
+}
+p.parashape-57 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: right;
+  text-indent: 0pt;
+  min-height: 1.2em;
+}
+p.parashape-57 > span {
+  line-height: 1.2;
+}
+p.parashape-58 {
+  margin: 0pt 17.5pt 0pt 17.5pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+p.parashape-58 > span {
+  line-height: 1;
+}
+p.parashape-59 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1em;
+}
+p.parashape-59 > span {
+  line-height: 1;
+}
+p.parashape-60 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -35.88pt;
+  padding-left: 35.88pt;
+  min-height: 2.1em;
+}
+p.parashape-60 > span {
+  line-height: 2.1;
+}
+p.parashape-61 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -24.4pt;
+  padding-left: 24.4pt;
+  min-height: 2.3em;
+}
+p.parashape-61 > span {
+  line-height: 2.3;
+}
+p.parashape-62 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.4em;
+}
+p.parashape-62 > span {
+  line-height: 1.4;
+}
+p.parashape-63 {
+  margin: 8.52pt 0pt 0pt 25pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.8em;
+}
+p.parashape-63 > span {
+  line-height: 1.8;
+}
+p.parashape-64 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.8em;
+}
+p.parashape-64 > span {
+  line-height: 1.8;
+}
+p.parashape-65 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 2em;
+}
+p.parashape-65 > span {
+  line-height: 2;
+}
+p.parashape-66 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.8em;
+}
+p.parashape-66 > span {
+  line-height: 1.8;
+}
+p.parashape-67 {
+  margin: 30pt 0pt 20pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 2.3em;
+}
+p.parashape-67 > span {
+  line-height: 2.3;
+}
+p.parashape-68 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.55em;
+}
+p.parashape-68 > span {
+  line-height: 1.55;
+}
+p.parashape-69 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 2.3em;
+}
+p.parashape-69 > span {
+  line-height: 2.3;
+}
+p.parashape-70 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: right;
+  text-indent: 0pt;
+  min-height: 2em;
+}
+p.parashape-70 > span {
+  line-height: 2;
+}
+p.parashape-71 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.8em;
+}
+p.parashape-71 > span {
+  line-height: 1.8;
+}
+p.parashape-72 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 2em;
+}
+p.parashape-72 > span {
+  line-height: 2;
+}
+p.parashape-73 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 3em;
+}
+p.parashape-73 > span {
+  line-height: 3;
+}
+p.parashape-74 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.72em;
+}
+p.parashape-74 > span {
+  line-height: 1.72;
+}
+p.parashape-75 {
+  margin: 0pt 0pt 0pt 20pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-75 > span {
+  line-height: 1.6;
+}
+p.parashape-76 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.5em;
+}
+p.parashape-76 > span {
+  line-height: 1.5;
+}
+p.parashape-77 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: right;
+  text-indent: -14.72pt;
+  padding-left: 14.72pt;
+  min-height: 1.8em;
+}
+p.parashape-77 > span {
+  line-height: 1.8;
+}
+p.parashape-78 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 2.3em;
+}
+p.parashape-78 > span {
+  line-height: 2.3;
+}
+p.parashape-79 {
+  margin: 0pt 15pt 0pt 15pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.5em;
+}
+p.parashape-79 > span {
+  line-height: 1.5;
+}
+p.parashape-80 {
+  margin: 0pt 0pt 10pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.14em;
+}
+p.parashape-80 > span {
+  line-height: 1.14;
+}
+p.parashape-81 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: -14.72pt;
+  padding-left: 14.72pt;
+  min-height: 1.5em;
+}
+p.parashape-81 > span {
+  line-height: 1.5;
+}
+p.parashape-82 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -14.72pt;
+  padding-left: 14.72pt;
+  min-height: 1.5em;
+}
+p.parashape-82 > span {
+  line-height: 1.5;
+}
+p.parashape-83 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -25.36pt;
+  padding-left: 25.36pt;
+  min-height: 1.5em;
+}
+p.parashape-83 > span {
+  line-height: 1.5;
+}
+p.parashape-84 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -53.24pt;
+  padding-left: 53.24pt;
+  min-height: 1.53em;
+}
+p.parashape-84 > span {
+  line-height: 1.53;
+}
+p.parashape-85 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -25.36pt;
+  padding-left: 25.36pt;
+  min-height: 1.53em;
+}
+p.parashape-85 > span {
+  line-height: 1.53;
+}
+p.parashape-86 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: -12.6pt;
+  padding-left: 12.6pt;
+  min-height: 1.8em;
+}
+p.parashape-86 > span {
+  line-height: 1.8;
+}
+p.parashape-87 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: -14.72pt;
+  padding-left: 14.72pt;
+  min-height: 1.55em;
+}
+p.parashape-87 > span {
+  line-height: 1.55;
+}
+p.parashape-88 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -14.72pt;
+  padding-left: 14.72pt;
+  min-height: 1.55em;
+}
+p.parashape-88 > span {
+  line-height: 1.55;
+}
+p.parashape-89 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -53.24pt;
+  padding-left: 53.24pt;
+  min-height: 1.55em;
+}
+p.parashape-89 > span {
+  line-height: 1.55;
+}
+p.parashape-90 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -25.36pt;
+  padding-left: 25.36pt;
+  min-height: 1.55em;
+}
+p.parashape-90 > span {
+  line-height: 1.55;
+}
+p.parashape-91 {
+  margin: 0pt 0pt 0pt 1.06pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-91 > span {
+  line-height: 1.6;
+}
+p.parashape-92 {
+  margin: 0pt 1pt 0pt 1pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 2em;
+}
+p.parashape-92 > span {
+  line-height: 2;
+}
+p.parashape-93 {
+  margin: 0pt 0pt 0pt 11.26pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-93 > span {
+  line-height: 1.6;
+}
+p.parashape-94 {
+  margin: 0pt 10.7pt 0pt 0pt;
+  text-align: right;
+  text-indent: -1.06pt;
+  padding-left: 1.06pt;
+  min-height: 1.6em;
+}
+p.parashape-94 > span {
+  line-height: 1.6;
+}
+p.parashape-95 {
+  margin: 0pt 10.7pt 0pt 0pt;
+  text-align: center;
+  text-indent: -1.06pt;
+  padding-left: 1.06pt;
+  min-height: 1.6em;
+}
+p.parashape-95 > span {
+  line-height: 1.6;
+}
+p.parashape-96 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: right;
+  text-indent: -0.5pt;
+  padding-left: 0.5pt;
+  min-height: 1.6em;
+}
+p.parashape-96 > span {
+  line-height: 1.6;
+}
+p.parashape-97 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: -0.5pt;
+  padding-left: 0.5pt;
+  min-height: 1.3em;
+}
+p.parashape-97 > span {
+  line-height: 1.3;
+}
+p.parashape-98 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: -0.5pt;
+  padding-left: 0.5pt;
+  min-height: 1em;
+}
+p.parashape-98 > span {
+  line-height: 1;
+}
+p.parashape-99 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -0.5pt;
+  padding-left: 0.5pt;
+  min-height: 1.3em;
+}
+p.parashape-99 > span {
+  line-height: 1.3;
+}
+p.parashape-100 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -0.5pt;
+  padding-left: 0.5pt;
+  min-height: 3em;
+}
+p.parashape-100 > span {
+  line-height: 3;
+}
+p.parashape-101 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -0.5pt;
+  padding-left: 0.5pt;
+  min-height: 2em;
+}
+p.parashape-101 > span {
+  line-height: 2;
+}
+p.parashape-102 {
+  margin: 5pt 1pt 5pt 1pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 2em;
+}
+p.parashape-102 > span {
+  line-height: 2;
+}
+p.parashape-103 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: -14.72pt;
+  padding-left: 14.72pt;
+  min-height: 1.8em;
+}
+p.parashape-103 > span {
+  line-height: 1.8;
+}
+p.parashape-104 {
+  margin: 0pt 10.7pt 0pt 0pt;
+  text-align: right;
+  text-indent: -1.06pt;
+  padding-left: 1.06pt;
+  min-height: 1.6em;
+}
+p.parashape-104 > span {
+  line-height: 1.6;
+}
+p.parashape-105 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -14.72pt;
+  padding-left: 14.72pt;
+  min-height: 2em;
+}
+p.parashape-105 > span {
+  line-height: 2;
+}
+p.parashape-106 {
+  margin: 0pt 4.97pt 0pt -5pt;
+  text-align: right;
+  text-indent: -14.72pt;
+  padding-left: 14.72pt;
+  min-height: 1.2em;
+}
+p.parashape-106 > span {
+  line-height: 1.2;
+}
+p.parashape-107 {
+  margin: 0pt 4.97pt 0pt -5pt;
+  text-align: right;
+  text-indent: -14.72pt;
+  padding-left: 14.72pt;
+  min-height: 2em;
+}
+p.parashape-107 > span {
+  line-height: 2;
+}
+p.parashape-108 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: right;
+  text-indent: 0pt;
+  min-height: 1.8em;
+}
+p.parashape-108 > span {
+  line-height: 1.8;
+}
+p.parashape-109 {
+  margin: 0pt 0pt 0pt 1.06pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.3em;
+}
+p.parashape-109 > span {
+  line-height: 1.3;
+}
+p.parashape-110 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -18.96pt;
+  padding-left: 18.96pt;
+  min-height: 1.8em;
+}
+p.parashape-110 > span {
+  line-height: 1.8;
+}
+p.parashape-111 {
+  margin: 0pt 2pt 0pt 2pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.8em;
+}
+p.parashape-111 > span {
+  line-height: 1.8;
+}
+p.parashape-112 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -19.25pt;
+  padding-left: 19.25pt;
+  min-height: 1.3em;
+}
+p.parashape-112 > span {
+  line-height: 1.3;
+}
+p.parashape-113 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -17pt;
+  padding-left: 17pt;
+  min-height: 1.2em;
+}
+p.parashape-113 > span {
+  line-height: 1.2;
+}
+p.parashape-114 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: right;
+  text-indent: -0.5pt;
+  padding-left: 0.5pt;
+  min-height: 1em;
+}
+p.parashape-114 > span {
+  line-height: 1;
+}
+p.parashape-115 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -11.86pt;
+  padding-left: 11.86pt;
+  min-height: 1.3em;
+}
+p.parashape-115 > span {
+  line-height: 1.3;
+}
+p.parashape-116 {
+  margin: 0pt 0pt 0pt 1.06pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-116 > span {
+  line-height: 1.6;
+}
+p.parashape-117 {
+  margin: 0pt 0pt 0pt 1.06pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-117 > span {
+  line-height: 1.6;
+}
+p.parashape-118 {
+  margin: 0pt 0pt 0pt 1.06pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.6em;
+}
+p.parashape-118 > span {
+  line-height: 1.6;
+}
+p.parashape-119 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: -13pt;
+  padding-left: 13pt;
+  min-height: 1.3em;
+}
+p.parashape-119 > span {
+  line-height: 1.3;
+}
+p.parashape-120 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 1.7em;
+}
+p.parashape-120 > span {
+  line-height: 1.7;
+}
+p.parashape-121 {
+  margin: 0pt 2pt 0pt 2pt;
+  text-align: center;
+  text-indent: 0pt;
+  min-height: 1.7em;
+}
+p.parashape-121 > span {
+  line-height: 1.7;
+}
+p.parashape-122 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: 0pt;
+  min-height: 2.1em;
+}
+p.parashape-122 > span {
+  line-height: 2.1;
+}
+p.parashape-123 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -13pt;
+  padding-left: 13pt;
+  min-height: 1.3em;
+}
+p.parashape-123 > span {
+  line-height: 1.3;
+}
+p.parashape-124 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -19.48pt;
+  padding-left: 19.48pt;
+  min-height: 1.3em;
+}
+p.parashape-124 > span {
+  line-height: 1.3;
+}
+p.parashape-125 {
+  margin: 5pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -13pt;
+  padding-left: 13pt;
+  min-height: 1.3em;
+}
+p.parashape-125 > span {
+  line-height: 1.3;
+}
+p.parashape-126 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -14pt;
+  padding-left: 14pt;
+  min-height: 2.3em;
+}
+p.parashape-126 > span {
+  line-height: 2.3;
+}
+p.parashape-127 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: center;
+  text-indent: -12.6pt;
+  padding-left: 12.6pt;
+  min-height: 2.3em;
+}
+p.parashape-127 > span {
+  line-height: 2.3;
+}
+p.parashape-128 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -12pt;
+  padding-left: 12pt;
+  min-height: 2.1em;
+}
+p.parashape-128 > span {
+  line-height: 2.1;
+}
+p.parashape-129 {
+  margin: 0pt 0pt 0pt 0pt;
+  text-align: justify;
+  text-indent: -14pt;
+  padding-left: 14pt;
+  min-height: 2.1em;
+}
+p.parashape-129 > span {
+  line-height: 2.1;
+}
+/* Text attributes */
+span.charshape-0 {
+  color: #000000;
+}
+span.charshape-0.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-0.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-0.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-0.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-0.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-0.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-0.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-1 {
+  color: #000000;
+}
+span.charshape-1.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-1.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 12pt;
+}
+span.charshape-1.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-1.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-1.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-1.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-1.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-2 {
+  color: #000000;
+}
+span.charshape-2.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-2.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-2.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-2.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-2.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-2.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-2.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+span.charshape-3 {
+  color: #000000;
+}
+span.charshape-3.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-3.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-3.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-3.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-3.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-3.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-3.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-4 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-4.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-4.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-4.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-4.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-4.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-4.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-4.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-5 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-5.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 16pt;
+}
+span.charshape-5.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 16pt;
+}
+span.charshape-5.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-5.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-5.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-5.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-5.lang-user {
+  font-family: "명조", serif;
+  font-size: 16pt;
+}
+span.charshape-6 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-6.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-6.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-6.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-6.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-6.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-6.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-6.lang-user {
+  font-family: "명조", serif;
+  font-size: 16pt;
+}
+span.charshape-7 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-7.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-7.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-7.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-7.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-7.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-7.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-7.lang-user {
+  font-family: "명조", serif;
+  font-size: 13pt;
+}
+span.charshape-8 {
+  color: #000000;
+}
+span.charshape-8.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-8.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-8.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-8.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-8.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-8.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-8.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-9 {
+  color: #000000;
+}
+span.charshape-9.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-9.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-9.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-9.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-9.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-9.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-9.lang-user {
+  font-family: "명조", serif;
+  font-size: 11pt;
+}
+span.charshape-10 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-10.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-10.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-10.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-10.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-10.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-10.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-10.lang-user {
+  font-family: "명조", serif;
+  font-size: 13pt;
+}
+span.charshape-11 {
+  color: #000000;
+}
+span.charshape-11.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-11.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-11.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-11.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-11.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-11.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-11.lang-user {
+  font-family: "명조", serif;
+  font-size: 13pt;
+}
+span.charshape-12 {
+  color: #000000;
+}
+span.charshape-12.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-12.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-12.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-12.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-12.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-12.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-12.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-13 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-13.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-13.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-13.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-13.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-13.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-13.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-13.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-14 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-14.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-14.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 12pt;
+}
+span.charshape-14.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-14.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-14.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-14.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-14.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-15 {
+  color: #0000ff;
+}
+span.charshape-15.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-15.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-15.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-15.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-15.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-15.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-15.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-16 {
+  color: #000000;
+}
+span.charshape-16.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-16.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-16.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-16.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-16.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-16.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-16.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-17 {
+  color: #000000;
+}
+span.charshape-17.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-17.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-17.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-17.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-17.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-17.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-17.lang-user {
+  font-family: "명조", serif;
+  font-size: 11pt;
+}
+span.charshape-18 {
+  color: #000000;
+}
+span.charshape-18.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+span.charshape-18.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+span.charshape-18.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+span.charshape-18.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+span.charshape-18.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+span.charshape-18.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+span.charshape-18.lang-user {
+  font-family: "명조", serif;
+  font-size: 10pt;
+}
+span.charshape-19 {
+  color: #000000;
+}
+span.charshape-19.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-19.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-19.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-19.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-19.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-19.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-19.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-20 {
+  color: #000000;
+}
+span.charshape-20.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-20.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-20.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-20.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-20.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-20.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-20.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+span.charshape-21 {
+  color: #000000;
+}
+span.charshape-21.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-21.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-21.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-21.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-21.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-21.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-21.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+span.charshape-22 {
+  color: #000000;
+}
+span.charshape-22.lang-ko {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-22.lang-en {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-22.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-22.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-22.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-22.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-22.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-23 {
+  color: #000000;
+}
+span.charshape-23.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-23.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-23.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-23.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-23.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-23.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-23.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-24 {
+  color: #000000;
+}
+span.charshape-24.lang-ko {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-24.lang-en {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-24.lang-cn {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-24.lang-jp {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-24.lang-other {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-24.lang-symbol {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-24.lang-user {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-25 {
+  color: #000000;
+}
+span.charshape-25.lang-ko {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-25.lang-en {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-25.lang-cn {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-25.lang-jp {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-25.lang-other {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-25.lang-symbol {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-25.lang-user {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-26 {
+  color: #000000;
+}
+span.charshape-26.lang-ko {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+span.charshape-26.lang-en {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+span.charshape-26.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+span.charshape-26.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+span.charshape-26.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+span.charshape-26.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+span.charshape-26.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 9pt;
+}
+span.charshape-27 {
+  color: #000000;
+}
+span.charshape-27.lang-ko {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-27.lang-en {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-27.lang-cn {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-27.lang-jp {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-27.lang-other {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-27.lang-symbol {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-27.lang-user {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-28 {
+  color: #2e74b5;
+}
+span.charshape-28.lang-ko {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 16pt;
+}
+span.charshape-28.lang-en {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 16pt;
+}
+span.charshape-28.lang-cn {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 16pt;
+}
+span.charshape-28.lang-jp {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 16pt;
+}
+span.charshape-28.lang-other {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 16pt;
+}
+span.charshape-28.lang-symbol {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 16pt;
+}
+span.charshape-28.lang-user {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 16pt;
+}
+span.charshape-29 {
+  color: #000000;
+}
+span.charshape-29.lang-ko {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-29.lang-en {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-29.lang-cn {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-29.lang-jp {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-29.lang-other {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-29.lang-symbol {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-29.lang-user {
+  font-family: "함초롬돋움", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-30 {
+  color: #000000;
+}
+span.charshape-30.lang-ko {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 17pt;
+}
+span.charshape-30.lang-en {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 17pt;
+}
+span.charshape-30.lang-cn {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 17pt;
+}
+span.charshape-30.lang-jp {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 17pt;
+}
+span.charshape-30.lang-other {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 17pt;
+}
+span.charshape-30.lang-symbol {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 17pt;
+}
+span.charshape-30.lang-user {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 17pt;
+}
+span.charshape-31 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-31.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+span.charshape-31.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+span.charshape-31.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+span.charshape-31.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+span.charshape-31.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+span.charshape-31.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+span.charshape-31.lang-user {
+  font-family: "명조", serif;
+  font-size: 15pt;
+}
+span.charshape-32 {
+  color: #000000;
+}
+span.charshape-32.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-32.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-32.lang-cn {
+  font-family: "한컴바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-32.lang-jp {
+  font-family: "한컴바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-32.lang-other {
+  font-family: "한컴바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-32.lang-symbol {
+  font-family: "한컴바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-32.lang-user {
+  font-family: "한컴바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-33 {
+  color: #000000;
+}
+span.charshape-33.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+span.charshape-33.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+span.charshape-33.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+span.charshape-33.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+span.charshape-33.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+span.charshape-33.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+span.charshape-33.lang-user {
+  font-family: "명조", serif;
+  font-size: 15pt;
+}
+span.charshape-34 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-34.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-34.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-34.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-34.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-34.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-34.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-34.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+span.charshape-35 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-35.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 20pt;
+}
+span.charshape-35.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 20pt;
+}
+span.charshape-35.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 20pt;
+}
+span.charshape-35.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 20pt;
+}
+span.charshape-35.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 20pt;
+}
+span.charshape-35.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 20pt;
+}
+span.charshape-35.lang-user {
+  font-family: "명조", serif;
+  font-size: 20pt;
+}
+span.charshape-36 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-36.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-36.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-36.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-36.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-36.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-36.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-36.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-37 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-37.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 18pt;
+}
+span.charshape-37.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 18pt;
+}
+span.charshape-37.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 18pt;
+}
+span.charshape-37.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 18pt;
+}
+span.charshape-37.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 18pt;
+}
+span.charshape-37.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 18pt;
+}
+span.charshape-37.lang-user {
+  font-family: "명조", serif;
+  font-size: 18pt;
+}
+span.charshape-38 {
+  color: #000000;
+}
+span.charshape-38.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-38.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-38.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-38.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-38.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-38.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-38.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+span.charshape-39 {
+  color: #000000;
+}
+span.charshape-39.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-39.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-39.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-39.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-39.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-39.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-39.lang-user {
+  font-family: "명조", serif;
+  font-size: 13pt;
+}
+span.charshape-40 {
+  color: #000000;
+}
+span.charshape-40.lang-ko {
+  font-family: "HY헤드라인M", serif;
+  font-size: 24pt;
+}
+span.charshape-40.lang-en {
+  font-family: "HY헤드라인M", serif;
+  font-size: 24pt;
+}
+span.charshape-40.lang-cn {
+  font-family: "HY헤드라인M", serif;
+  font-size: 24pt;
+}
+span.charshape-40.lang-jp {
+  font-family: "HY헤드라인M", serif;
+  font-size: 24pt;
+}
+span.charshape-40.lang-other {
+  font-family: "HY헤드라인M", sans-serif;
+  font-size: 24pt;
+}
+span.charshape-40.lang-symbol {
+  font-family: "HY헤드라인M", serif;
+  font-size: 24pt;
+}
+span.charshape-40.lang-user {
+  font-family: "HY헤드라인M", serif;
+  font-size: 24pt;
+}
+span.charshape-41 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-41.lang-ko {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-41.lang-en {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-41.lang-cn {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-41.lang-jp {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-41.lang-other {
+  font-family: "HY헤드라인M", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-41.lang-symbol {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-41.lang-user {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-42 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-42.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-42.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-42.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-42.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-42.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-42.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-42.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-43 {
+  color: #000000;
+}
+span.charshape-43.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-43.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-43.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-43.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-43.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-43.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-43.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-44 {
+  color: #000000;
+}
+span.charshape-44.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-44.lang-en {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-44.lang-cn {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-44.lang-jp {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-44.lang-other {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-44.lang-symbol {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-44.lang-user {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-45 {
+  color: #000000;
+}
+span.charshape-45.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-45.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-45.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-45.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-45.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-45.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-45.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-46 {
+  color: #000000;
+}
+span.charshape-46.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 13pt;
+}
+span.charshape-46.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 13pt;
+}
+span.charshape-46.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-46.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-46.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-46.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-46.lang-user {
+  font-family: "명조", serif;
+  font-size: 13pt;
+}
+span.charshape-47 {
+  color: #000000;
+}
+span.charshape-47.lang-ko {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+span.charshape-47.lang-en {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+span.charshape-47.lang-cn {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+span.charshape-47.lang-jp {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+span.charshape-47.lang-other {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+span.charshape-47.lang-symbol {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+span.charshape-47.lang-user {
+  font-family: "한컴바탕", serif;
+  font-size: 13pt;
+}
+span.charshape-48 {
+  color: #000000;
+}
+span.charshape-48.lang-ko {
+  font-family: "HY헤드라인M", serif;
+  font-size: 16pt;
+}
+span.charshape-48.lang-en {
+  font-family: "HY헤드라인M", serif;
+  font-size: 16pt;
+}
+span.charshape-48.lang-cn {
+  font-family: "HY헤드라인M", serif;
+  font-size: 16pt;
+}
+span.charshape-48.lang-jp {
+  font-family: "HY헤드라인M", serif;
+  font-size: 16pt;
+}
+span.charshape-48.lang-other {
+  font-family: "HY헤드라인M", sans-serif;
+  font-size: 16pt;
+}
+span.charshape-48.lang-symbol {
+  font-family: "HY헤드라인M", serif;
+  font-size: 16pt;
+}
+span.charshape-48.lang-user {
+  font-family: "HY헤드라인M", serif;
+  font-size: 16pt;
+}
+span.charshape-49 {
+  color: #000000;
+}
+span.charshape-49.lang-ko {
+  font-family: "-윤고딕330", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-49.lang-en {
+  font-family: "-윤고딕330", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-49.lang-cn {
+  font-family: "-윤고딕330", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-49.lang-jp {
+  font-family: "-윤고딕330", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-49.lang-other {
+  font-family: "-윤고딕330", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-49.lang-symbol {
+  font-family: "-윤고딕330", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-49.lang-user {
+  font-family: "-윤고딕330", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-50 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-50.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 17pt;
+}
+span.charshape-50.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 17pt;
+}
+span.charshape-50.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 17pt;
+}
+span.charshape-50.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 17pt;
+}
+span.charshape-50.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 17pt;
+}
+span.charshape-50.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 17pt;
+}
+span.charshape-50.lang-user {
+  font-family: "명조", serif;
+  font-size: 17pt;
+}
+span.charshape-51 {
+  color: #000000;
+}
+span.charshape-51.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 16pt;
+}
+span.charshape-51.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 16pt;
+}
+span.charshape-51.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-51.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-51.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-51.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-51.lang-user {
+  font-family: "명조", serif;
+  font-size: 16pt;
+}
+span.charshape-52 {
+  color: #000000;
+}
+span.charshape-52.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-52.lang-en {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-52.lang-cn {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-52.lang-jp {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-52.lang-other {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-52.lang-symbol {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-52.lang-user {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-53 {
+  color: #000000;
+}
+span.charshape-53.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+span.charshape-53.lang-en {
+  font-family: "산세리프", serif;
+  font-size: 10pt;
+}
+span.charshape-53.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+span.charshape-53.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+span.charshape-53.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+span.charshape-53.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+span.charshape-53.lang-user {
+  font-family: "신명조■얒a", serif;
+  font-size: 10pt;
+}
+span.charshape-54 {
+  color: #000000;
+}
+span.charshape-54.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-54.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-54.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-54.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-54.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-54.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-54.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-55 {
+  color: #000000;
+}
+span.charshape-55.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-55.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-55.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-55.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-55.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-55.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-55.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-56 {
+  color: #000000;
+}
+span.charshape-56.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 11pt;
+}
+span.charshape-56.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 11pt;
+}
+span.charshape-56.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-56.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-56.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-56.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-56.lang-user {
+  font-family: "명조", serif;
+  font-size: 11pt;
+}
+span.charshape-57 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-57.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-57.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-57.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-57.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-57.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-57.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-57.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-58 {
+  color: #000000;
+}
+span.charshape-58.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-58.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-58.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-58.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-58.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-58.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-58.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-59 {
+  color: #000000;
+}
+span.charshape-59.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 15pt;
+}
+span.charshape-59.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 15pt;
+}
+span.charshape-59.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+span.charshape-59.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+span.charshape-59.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+span.charshape-59.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 15pt;
+}
+span.charshape-59.lang-user {
+  font-family: "명조", serif;
+  font-size: 15pt;
+}
+span.charshape-60 {
+  color: #000000;
+}
+span.charshape-60.lang-ko {
+  font-family: "굴림체", monospace;
+  font-size: 11pt;
+}
+span.charshape-60.lang-en {
+  font-family: "굴림체", monospace;
+  font-size: 11pt;
+}
+span.charshape-60.lang-cn {
+  font-family: "굴림체", monospace;
+  font-size: 11pt;
+}
+span.charshape-60.lang-jp {
+  font-family: "굴림체", monospace;
+  font-size: 11pt;
+}
+span.charshape-60.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-60.lang-symbol {
+  font-family: "굴림체", monospace;
+  font-size: 11pt;
+}
+span.charshape-60.lang-user {
+  font-family: "명조", serif;
+  font-size: 11pt;
+}
+span.charshape-61 {
+  color: #000000;
+}
+span.charshape-61.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-61.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-61.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-61.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-61.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-61.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-61.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-62 {
+  color: #000000;
+}
+span.charshape-62.lang-ko {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 14pt;
+}
+span.charshape-62.lang-en {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 14pt;
+}
+span.charshape-62.lang-cn {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 14pt;
+}
+span.charshape-62.lang-jp {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 14pt;
+}
+span.charshape-62.lang-other {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 14pt;
+}
+span.charshape-62.lang-symbol {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 14pt;
+}
+span.charshape-62.lang-user {
+  font-family: "HY견고딕", sans-serif;
+  font-size: 14pt;
+}
+span.charshape-63 {
+  color: #000000;
+}
+span.charshape-63.lang-ko {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-63.lang-en {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-63.lang-cn {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-63.lang-jp {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-63.lang-other {
+  font-family: "HY헤드라인M", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-63.lang-symbol {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-63.lang-user {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-64 {
+  color: #000000;
+  font-style: italic;
+}
+span.charshape-64.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 11.55pt;
+}
+span.charshape-64.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 11.55pt;
+}
+span.charshape-64.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 11.55pt;
+}
+span.charshape-64.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 11.55pt;
+}
+span.charshape-64.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 11.55pt;
+}
+span.charshape-64.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 11.55pt;
+}
+span.charshape-64.lang-user {
+  font-family: "명조", serif;
+  font-size: 11.55pt;
+}
+span.charshape-65 {
+  color: #000000;
+}
+span.charshape-65.lang-ko {
+  font-family: "신명 태고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-65.lang-en {
+  font-family: "신명 태고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-65.lang-cn {
+  font-family: "신명 태고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-65.lang-jp {
+  font-family: "신명 태고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-65.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 10pt;
+}
+span.charshape-65.lang-symbol {
+  font-family: "#태고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-65.lang-user {
+  font-family: "명조", serif;
+  font-size: 10pt;
+}
+span.charshape-66 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-66.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-66.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-66.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-66.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-66.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-66.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-66.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-67 {
+  color: #000000;
+}
+span.charshape-67.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-67.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-67.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-67.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-67.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-67.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-67.lang-user {
+  font-family: "명조", serif;
+  font-size: 13pt;
+}
+span.charshape-68 {
+  color: #000000;
+}
+span.charshape-68.lang-ko {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-68.lang-en {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-68.lang-cn {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-68.lang-jp {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-68.lang-other {
+  font-family: "HY헤드라인M", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-68.lang-symbol {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-68.lang-user {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-69 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-69.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-69.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-69.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-69.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-69.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-69.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 11pt;
+}
+span.charshape-69.lang-user {
+  font-family: "명조", serif;
+  font-size: 11pt;
+}
+span.charshape-70 {
+  color: #000000;
+}
+span.charshape-70.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-70.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-70.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-70.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-70.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-70.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-70.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-71 {
+  color: #000000;
+}
+span.charshape-71.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-71.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-71.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-71.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-71.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-71.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 14pt;
+}
+span.charshape-71.lang-user {
+  font-family: "명조", serif;
+  font-size: 14pt;
+}
+span.charshape-72 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-72.lang-ko {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-72.lang-en {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-72.lang-cn {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-72.lang-jp {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-72.lang-other {
+  font-family: "HY헤드라인M", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-72.lang-symbol {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-72.lang-user {
+  font-family: "HY헤드라인M", serif;
+  font-size: 18pt;
+}
+span.charshape-73 {
+  color: #000000;
+  text-decoration: underline;
+  text-decoration-color: #000000;
+  -moz-text-decoration-color: #000000;
+  -webkit-text-decoration-color: #000000;
+  text-decoration-style: solid;
+  -moz-text-decoration-style: solid;
+  -webkit-text-decoration-style: solid;
+}
+span.charshape-73.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-73.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-73.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-73.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-73.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-73.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-73.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-74 {
+  color: #000000;
+  font-weight: bold;
+  text-decoration: underline;
+  text-decoration-color: #000000;
+  -moz-text-decoration-color: #000000;
+  -webkit-text-decoration-color: #000000;
+  text-decoration-style: solid;
+  -moz-text-decoration-style: solid;
+  -webkit-text-decoration-style: solid;
+}
+span.charshape-74.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-74.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-74.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-74.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-74.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-74.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-74.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-75 {
+  color: #000000;
+  text-decoration: underline;
+  text-decoration-color: #000000;
+  -moz-text-decoration-color: #000000;
+  -webkit-text-decoration-color: #000000;
+  text-decoration-style: solid;
+  -moz-text-decoration-style: solid;
+  -webkit-text-decoration-style: solid;
+}
+span.charshape-75.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-75.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-75.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-75.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-75.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-75.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-75.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-76 {
+  color: #000000;
+}
+span.charshape-76.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-76.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-76.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-76.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-76.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-76.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-76.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-77 {
+  color: #000000;
+}
+span.charshape-77.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 14pt;
+}
+span.charshape-77.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 14pt;
+}
+span.charshape-77.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-77.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-77.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-77.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-77.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-78 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-78.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 13pt;
+}
+span.charshape-78.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 13pt;
+}
+span.charshape-78.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-78.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-78.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-78.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-78.lang-user {
+  font-family: "명조", serif;
+  font-size: 13pt;
+}
+span.charshape-79 {
+  color: #000000;
+}
+span.charshape-79.lang-ko {
+  font-family: "바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-79.lang-en {
+  font-family: "바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-79.lang-cn {
+  font-family: "바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-79.lang-jp {
+  font-family: "바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-79.lang-other {
+  font-family: "바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-79.lang-symbol {
+  font-family: "바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-79.lang-user {
+  font-family: "바탕", serif;
+  font-size: 10pt;
+}
+span.charshape-80 {
+  color: #000000;
+}
+span.charshape-80.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 13pt;
+}
+span.charshape-80.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 13pt;
+}
+span.charshape-80.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 13pt;
+}
+span.charshape-80.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 13pt;
+}
+span.charshape-80.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 13pt;
+}
+span.charshape-80.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 13pt;
+}
+span.charshape-80.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 13pt;
+}
+span.charshape-81 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-81.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-81.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-81.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-81.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-81.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-81.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 16pt;
+}
+span.charshape-81.lang-user {
+  font-family: "명조", serif;
+  font-size: 16pt;
+}
+span.charshape-82 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-82.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 12pt;
+}
+span.charshape-82.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 12pt;
+}
+span.charshape-82.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-82.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-82.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-82.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-82.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-83 {
+  color: #000000;
+}
+span.charshape-83.lang-ko {
+  font-family: "휴먼엑스포", serif;
+  font-size: 11pt;
+}
+span.charshape-83.lang-en {
+  font-family: "휴먼엑스포", serif;
+  font-size: 11pt;
+}
+span.charshape-83.lang-cn {
+  font-family: "한컴바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-83.lang-jp {
+  font-family: "한컴바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-83.lang-other {
+  font-family: "한컴바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-83.lang-symbol {
+  font-family: "한컴바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-83.lang-user {
+  font-family: "한컴바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-84 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-84.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-84.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-84.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-84.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-84.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-84.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-84.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-85 {
+  color: #000000;
+}
+span.charshape-85.lang-ko {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-85.lang-en {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-85.lang-cn {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-85.lang-jp {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-85.lang-other {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-85.lang-symbol {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-85.lang-user {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-86 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-86.lang-ko {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-86.lang-en {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-86.lang-cn {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-86.lang-jp {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-86.lang-other {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-86.lang-symbol {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-86.lang-user {
+  font-family: "바탕", serif;
+  font-size: 11pt;
+}
+span.charshape-87 {
+  color: #000000;
+}
+span.charshape-87.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-87.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-87.lang-cn {
+  font-family: "한컴바탕", serif;
+  font-size: 18pt;
+}
+span.charshape-87.lang-jp {
+  font-family: "한컴바탕", serif;
+  font-size: 18pt;
+}
+span.charshape-87.lang-other {
+  font-family: "한컴바탕", serif;
+  font-size: 18pt;
+}
+span.charshape-87.lang-symbol {
+  font-family: "한컴바탕", serif;
+  font-size: 18pt;
+}
+span.charshape-87.lang-user {
+  font-family: "한컴바탕", serif;
+  font-size: 18pt;
+}
+span.charshape-88 {
+  color: #000000;
+}
+span.charshape-88.lang-ko {
+  font-family: "휴먼옛체", serif;
+  font-size: 25pt;
+}
+span.charshape-88.lang-en {
+  font-family: "명조", serif;
+  font-size: 25pt;
+}
+span.charshape-88.lang-cn {
+  font-family: "명조", serif;
+  font-size: 25pt;
+}
+span.charshape-88.lang-jp {
+  font-family: "명조", serif;
+  font-size: 25pt;
+}
+span.charshape-88.lang-other {
+  font-family: "명조", serif;
+  font-size: 25pt;
+}
+span.charshape-88.lang-symbol {
+  font-family: "명조", serif;
+  font-size: 25pt;
+}
+span.charshape-88.lang-user {
+  font-family: "명조", serif;
+  font-size: 25pt;
+}
+span.charshape-89 {
+  color: #000000;
+}
+span.charshape-89.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-89.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-89.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-89.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-89.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-89.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-89.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 9pt;
+}
+span.charshape-90 {
+  color: #000000;
+}
+span.charshape-90.lang-ko {
+  font-family: "HY헤드라인M", serif;
+  font-size: 13pt;
+}
+span.charshape-90.lang-en {
+  font-family: "HY헤드라인M", serif;
+  font-size: 13pt;
+}
+span.charshape-90.lang-cn {
+  font-family: "HY헤드라인M", serif;
+  font-size: 13pt;
+}
+span.charshape-90.lang-jp {
+  font-family: "HY헤드라인M", serif;
+  font-size: 13pt;
+}
+span.charshape-90.lang-other {
+  font-family: "HY헤드라인M", sans-serif;
+  font-size: 13pt;
+}
+span.charshape-90.lang-symbol {
+  font-family: "HY헤드라인M", serif;
+  font-size: 13pt;
+}
+span.charshape-90.lang-user {
+  font-family: "HY헤드라인M", serif;
+  font-size: 13pt;
+}
+span.charshape-91 {
+  color: #000000;
+}
+span.charshape-91.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-91.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-91.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-91.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-91.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-91.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-91.lang-user {
+  font-family: "명조", serif;
+  font-size: 13pt;
+}
+span.charshape-92 {
+  color: #000000;
+}
+span.charshape-92.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 14pt;
+}
+span.charshape-92.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 14pt;
+}
+span.charshape-92.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-92.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-92.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-92.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-92.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-93 {
+  color: #000000;
+}
+span.charshape-93.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-93.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-93.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-93.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-93.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-93.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-93.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 10pt;
+}
+span.charshape-94 {
+  color: #000000;
+  text-decoration: underline;
+  text-decoration-color: #000000;
+  -moz-text-decoration-color: #000000;
+  -webkit-text-decoration-color: #000000;
+  text-decoration-style: solid;
+  -moz-text-decoration-style: solid;
+  -webkit-text-decoration-style: solid;
+}
+span.charshape-94.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 14pt;
+}
+span.charshape-94.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 14pt;
+}
+span.charshape-94.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-94.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-94.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-94.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-94.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-95 {
+  color: #000000;
+}
+span.charshape-95.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-95.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-95.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-95.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-95.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-95.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-95.lang-user {
+  font-family: "명조", serif;
+  font-size: 13pt;
+}
+span.charshape-96 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-96.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-96.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-96.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-96.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-96.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-96.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-96.lang-user {
+  font-family: "명조", serif;
+  font-size: 13pt;
+}
+span.charshape-97 {
+  color: #000000;
+}
+span.charshape-97.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 16pt;
+}
+span.charshape-97.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 16pt;
+}
+span.charshape-97.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 16pt;
+}
+span.charshape-97.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 16pt;
+}
+span.charshape-97.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 16pt;
+}
+span.charshape-97.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 16pt;
+}
+span.charshape-97.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 16pt;
+}
+span.charshape-98 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-98.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-98.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-98.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-98.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-98.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-98.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-98.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-99 {
+  color: #000000;
+  font-weight: bold;
+  text-decoration: underline;
+  text-decoration-color: #000000;
+  -moz-text-decoration-color: #000000;
+  -webkit-text-decoration-color: #000000;
+  text-decoration-style: solid;
+  -moz-text-decoration-style: solid;
+  -webkit-text-decoration-style: solid;
+}
+span.charshape-99.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-99.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-99.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-99.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-99.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-99.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-99.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-100 {
+  color: #000000;
+  font-style: italic;
+  text-decoration: underline;
+  text-decoration-color: #000000;
+  -moz-text-decoration-color: #000000;
+  -webkit-text-decoration-color: #000000;
+  text-decoration-style: solid;
+  -moz-text-decoration-style: solid;
+  -webkit-text-decoration-style: solid;
+}
+span.charshape-100.lang-ko {
+  font-family: "휴먼명조", serif;
+  font-size: 14pt;
+}
+span.charshape-100.lang-en {
+  font-family: "HCI Poppy";
+  font-size: 14pt;
+}
+span.charshape-100.lang-cn {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-100.lang-jp {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-100.lang-other {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-100.lang-symbol {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-100.lang-user {
+  font-family: "함초롬바탕", serif;
+  font-size: 14pt;
+}
+span.charshape-101 {
+  color: #000000;
+}
+span.charshape-101.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-101.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-101.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-101.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-101.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-101.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-101.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 18pt;
+}
+span.charshape-102 {
+  color: #000000;
+}
+span.charshape-102.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-102.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-102.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-102.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-102.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-102.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-102.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-103 {
+  color: #000000;
+}
+span.charshape-103.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-103.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-103.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-103.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-103.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-103.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-103.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-104 {
+  color: #000000;
+}
+span.charshape-104.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-104.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-104.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-104.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-104.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-104.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-104.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-105 {
+  color: #000000;
+}
+span.charshape-105.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-105.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-105.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-105.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-105.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-105.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-105.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-106 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-106.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-106.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-106.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-106.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-106.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-106.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-106.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-107 {
+  color: #000000;
+  font-weight: bold;
+  text-decoration: underline;
+  text-decoration-color: #000000;
+  -moz-text-decoration-color: #000000;
+  -webkit-text-decoration-color: #000000;
+  text-decoration-style: solid;
+  -moz-text-decoration-style: solid;
+  -webkit-text-decoration-style: solid;
+}
+span.charshape-107.lang-ko {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-107.lang-en {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-107.lang-cn {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-107.lang-jp {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-107.lang-other {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-107.lang-symbol {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-107.lang-user {
+  font-family: "맑은 고딕", sans-serif;
+  font-size: 11pt;
+}
+span.charshape-108 {
+  color: #000000;
+}
+span.charshape-108.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-108.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-108.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-108.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-108.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-108.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-108.lang-user {
+  font-family: "명조", serif;
+  font-size: 13pt;
+}
+span.charshape-109 {
+  color: #000000;
+}
+span.charshape-109.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-109.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-109.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-109.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-109.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-109.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-109.lang-user {
+  font-family: "명조", serif;
+  font-size: 13pt;
+}
+span.charshape-110 {
+  color: #000000;
+}
+span.charshape-110.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-110.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-110.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-110.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-110.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-110.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-110.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-111 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-111.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-111.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-111.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-111.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-111.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-111.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-111.lang-user {
+  font-family: "명조", serif;
+  font-size: 13pt;
+}
+span.charshape-112 {
+  color: #000000;
+}
+span.charshape-112.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-112.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-112.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-112.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-112.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-112.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-112.lang-user {
+  font-family: "명조", serif;
+  font-size: 13pt;
+}
+span.charshape-113 {
+  color: #000000;
+  font-weight: bold;
+}
+span.charshape-113.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-113.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-113.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-113.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-113.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-113.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-113.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-114 {
+  color: #000000;
+}
+span.charshape-114.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-114.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-114.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-114.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-114.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-114.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-114.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-115 {
+  color: #0000ff;
+  font-weight: bold;
+}
+span.charshape-115.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-115.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-115.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-115.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-115.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-115.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-115.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-116 {
+  color: #0000ff;
+  font-weight: bold;
+}
+span.charshape-116.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-116.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-116.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-116.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-116.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-116.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-116.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-117 {
+  color: #0000ff;
+}
+span.charshape-117.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-117.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-117.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-117.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-117.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-117.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-117.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-118 {
+  color: #0000ff;
+}
+span.charshape-118.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-118.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-118.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-118.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-118.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-118.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 13pt;
+}
+span.charshape-118.lang-user {
+  font-family: "명조", serif;
+  font-size: 13pt;
+}
+span.charshape-119 {
+  color: #0000ff;
+  font-weight: bold;
+}
+span.charshape-119.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-119.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-119.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-119.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-119.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-119.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-119.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+span.charshape-120 {
+  color: #0000ff;
+}
+span.charshape-120.lang-ko {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-120.lang-en {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-120.lang-cn {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-120.lang-jp {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-120.lang-other {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-120.lang-symbol {
+  font-family: "한양신명조", serif;
+  font-size: 12pt;
+}
+span.charshape-120.lang-user {
+  font-family: "명조", serif;
+  font-size: 12pt;
+}
+.borderfill-1 {
+  border-top: 1px none #000000;
+  border-right: 1px none #000000;
+  border-bottom: 1px none #000000;
+  border-left: 1px none #000000;
+}
+.borderfill-2 {
+  border-top: 1px none #000000;
+  border-right: 1px none #000000;
+  border-bottom: 1px none #000000;
+  border-left: 1px none #000000;
+  background-color: #ffffff;
+}
+.borderfill-3 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-4 {
+  border-top: 1px none #000000;
+  border-right: 1px none #000000;
+  border-bottom: 1px none #000000;
+  border-left: 1px none #000000;
+  background-color: #ffffff;
+}
+.borderfill-5 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-6 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-7 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-8 {
+  border-top: 1px none #000000;
+  border-right: 1px none #000000;
+  border-bottom: 1px none #000000;
+  border-left: 1px none #000000;
+}
+.borderfill-9 {
+  border-top: 1px none #000000;
+  border-right: 1px none #000000;
+  border-bottom: 1px none #000000;
+  border-left: 1px none #000000;
+  background-color: #ffffff;
+}
+.borderfill-10 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-11 {
+  border-top: 2px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-12 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-13 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-14 {
+  border-top: 2px solid #000000;
+  border-right: 2px none #000000;
+  border-bottom: 2px none #000000;
+  border-left: 2px none #000000;
+}
+.borderfill-15 {
+  border-top: 2px solid #000000;
+  border-right: 1px none #000000;
+  border-bottom: 1px none #000000;
+  border-left: 1px none #000000;
+}
+.borderfill-16 {
+  border-top: 2px double #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-17 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-18 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-19 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-20 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-21 {
+  border-top: 2px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-22 {
+  border-top: 2px solid #000000;
+  border-right: 0.7mm double #000000;
+  border-bottom: 0.7mm double #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-23 {
+  border-top: 1px none #000000;
+  border-right: 2px none #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px none #000000;
+}
+.borderfill-24 {
+  border-top: 2px none #000000;
+  border-right: 2px none #000000;
+  border-bottom: 1px none #000000;
+  border-left: 2px none #000000;
+}
+.borderfill-25 {
+  border-top: 2px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-26 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 2px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-27 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-28 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-29 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-30 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-31 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-32 {
+  border-top: 1px solid #000000;
+  border-right: 2px double #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-33 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px double #000000;
+}
+.borderfill-34 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-35 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-36 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-37 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-38 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-39 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-40 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-41 {
+  border-top: 2px double #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-42 {
+  border-top: 1px solid #000000;
+  border-right: 2px double #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-43 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-44 {
+  border-top: 2px double #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-45 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-46 {
+  border-top: 2px double #000000;
+  border-right: 2px double #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-47 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-48 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-49 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px double #000000;
+}
+.borderfill-50 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-51 {
+  border-top: 2px none #000000;
+  border-right: 2px none #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px none #000000;
+}
+.borderfill-52 {
+  border-top: 2px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px none #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-53 {
+  border-top: 2px none #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px none #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-54 {
+  border-top: 2px none #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-55 {
+  border-top: 2px solid #000000;
+  border-right: 2px none #000000;
+  border-bottom: 2px none #000000;
+  border-left: 2px none #000000;
+}
+.borderfill-56 {
+  border-top: 1px none #000000;
+  border-right: 1px none #000000;
+  border-bottom: 1px none #000000;
+  border-left: 1px none #000000;
+}
+.borderfill-57 {
+  border-top: 2px none #000000;
+  border-right: 2px none #000000;
+  border-bottom: 2px none #000000;
+  border-left: 2px none #000000;
+}
+.borderfill-58 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-59 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-60 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-61 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-62 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-63 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-64 {
+  border-top: 2px double #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-65 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-66 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-67 {
+  border-top: 2px none #000000;
+  border-right: 2px none #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px none #000000;
+}
+.borderfill-68 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-69 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-70 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 2px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-71 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-72 {
+  border-top: 2px none #000000;
+  border-right: 2px none #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px none #000000;
+}
+.borderfill-73 {
+  border-top: 2px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-74 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-75 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-76 {
+  border-top: 2px double #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-77 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-78 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-79 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-80 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-81 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-82 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-83 {
+  border-top: 2px none #000000;
+  border-right: 2px none #000000;
+  border-bottom: 2px none #000000;
+  border-left: 2px none #000000;
+}
+.borderfill-84 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 2px solid #000000;
+  background-color: #f2f2f2;
+}
+.borderfill-85 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #f2f2f2;
+}
+.borderfill-86 {
+  border-top: 2px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #f2f2f2;
+}
+.borderfill-87 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 2px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-88 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-89 {
+  border-top: 2px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-90 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-91 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-92 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-93 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-94 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 2px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-95 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-96 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-97 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-98 {
+  border-top: 2px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-99 {
+  border-top: 2px double #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-100 {
+  border-top: 2px none #000000;
+  border-right: 2px none #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px none #000000;
+}
+.borderfill-101 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-102 {
+  border-top: 2px double #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-103 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-104 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-105 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-106 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-107 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-108 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-109 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-110 {
+  border-top: 2px none #000000;
+  border-right: 2px none #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px none #000000;
+}
+.borderfill-111 {
+  border-top: 2px none #000000;
+  border-right: 2px none #000000;
+  border-bottom: 2px none #000000;
+  border-left: 2px none #000000;
+}
+.borderfill-112 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 2px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-113 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-114 {
+  border-top: 2px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-115 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-116 {
+  border-top: 2px double #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-117 {
+  border-top: 2px double #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-118 {
+  border-top: 2px none #000000;
+  border-right: 2px none #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px none #000000;
+}
+.borderfill-119 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-120 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-121 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-122 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 1px solid #000000;
+}
+.borderfill-123 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-124 {
+  border-top: 2px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-125 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-126 {
+  border-top: 1px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e5e5e5;
+}
+.borderfill-127 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e6e6e6;
+}
+.borderfill-128 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 2px solid #000000;
+  background-color: #e6e6e6;
+}
+.borderfill-129 {
+  border-top: 2px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e6e6e6;
+}
+.borderfill-130 {
+  border-top: 2px solid #000000;
+  border-right: 0.7mm double #000000;
+  border-bottom: 0.7mm double #000000;
+  border-left: 2px solid #000000;
+}
+.borderfill-131 {
+  border-top: 1px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  border-left: 2px double #000000;
+}
+.borderfill-132 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 2px solid #000000;
+  background-color: #e6e6e6;
+}
+.borderfill-133 {
+  border-top: 2px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e6e6e6;
+}
+.borderfill-134 {
+  border-top: 2px solid #000000;
+  border-right: 1px solid #000000;
+  border-bottom: 2px double #000000;
+  border-left: 2px double #000000;
+  background-color: #e6e6e6;
+}
+.borderfill-135 {
+  border-top: 2px solid #000000;
+  border-right: 2px double #000000;
+  border-bottom: 2px double #000000;
+  border-left: 1px solid #000000;
+  background-color: #e6e6e6;
+}

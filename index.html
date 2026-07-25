@@ -1989,23 +1989,33 @@ async function loadOriginalInfo(name){
     const d=await r.json();
     if(!d||!d.found) return;
     _origInfo=d;
-    if(d.configured && d.pdf_url){
+    // 원본 서식 HTML은 항상 제공(리포 동반 배포) — PDF는 스토리지 설정 시에만
+    if(d.html_url||d.pdf_url){
       if(btn) btn.style.display='';
-      if(dl){ dl.href=d.pdf_url; dl.setAttribute('download',''); dl.style.display=''; }
     }
+    if(dl && d.pdf_url){ dl.href=d.pdf_url; dl.setAttribute('download',''); dl.style.display=''; }
   }catch(e){}
 }
 // 원본 PDF를 전용 패널에 표시(브라우저 내장 PDF 뷰어 사용)
 // fpRight(동시보기 탭)와 충돌하지 않도록 별도 패널을 쓴다.
 function openOriginalPdf(){
-  if(!_origInfo||!_origInfo.pdf_url) return;
+  if(!_origInfo) return;
+  // 원본 서식 HTML 우선(항상 배포됨), 없으면 PDF
+  const url=_origInfo.html_url||_origInfo.pdf_url;
+  if(!url) return;
+  const isPdf=!_origInfo.html_url;
   const p=document.getElementById('origPdfPanel');
   const rev=_origInfo.revision?` · ${escHtml(_origInfo.revision)}`:'';
   document.getElementById('origPdfTitle').innerHTML=
     `📄 ${escHtml(_origInfo.title||'원본')}<span style="font-weight:500;color:var(--mu);font-size:11.5px;">${rev}</span>`;
-  document.getElementById('origPdfExt').href=_origInfo.pdf_url;
-  document.getElementById('origPdfDl').href=_origInfo.pdf_url;
-  document.getElementById('origPdfFrame').src=_origInfo.pdf_url+'#view=FitH';
+  document.getElementById('origPdfExt').href=url;
+  // 저장 버튼은 PDF가 있을 때만 노출
+  const dl=document.getElementById('origPdfDl');
+  if(dl){
+    if(_origInfo.pdf_url){ dl.href=_origInfo.pdf_url; dl.style.display=''; }
+    else dl.style.display='none';
+  }
+  document.getElementById('origPdfFrame').src=isPdf?(url+'#view=FitH'):url;
   p.classList.add('open');
 }
 function closeOriginalPdf(){
