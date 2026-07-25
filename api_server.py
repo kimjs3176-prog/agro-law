@@ -8,6 +8,7 @@ import os, json, re, time, threading, webbrowser
 import concurrent.futures as _cf
 import xml.etree.ElementTree as ET
 import urllib3
+from urllib.parse import quote
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 import requests as req_lib
@@ -1967,6 +1968,74 @@ def get_law_related():
 SAGYU_MCP_URL = os.environ.get(
     "SAGYU_MCP_URL", "https://tech-transfer-platform-zt79.vercel.app/mcp"
 ).strip()
+
+# ── 내규 원본 PDF(Supabase Storage 등) ───────────────────────────────────────
+# 원본 HWP/HWPX를 PDF로 변환해 올린 스토리지의 공개 URL 접두사.
+#   예) https://xxxx.supabase.co/storage/v1/object/public/regulations/pdf
+REG_PDF_BASE_URL = os.environ.get("REG_PDF_BASE_URL", "").strip().rstrip("/")
+_REG_MANIFEST: list | None = None
+
+
+def _load_reg_manifest() -> list:
+    """규정명 → 원본 PDF 매핑(regulations_manifest.json). 없으면 빈 목록."""
+    global _REG_MANIFEST
+    if _REG_MANIFEST is not None:
+        return _REG_MANIFEST
+    try:
+        p = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         "regulations_manifest.json")
+        with open(p, encoding="utf-8") as f:
+            _REG_MANIFEST = json.load(f)
+    except Exception as e:
+        print(f"[reg-manifest] 로드 실패: {e}")
+        _REG_MANIFEST = []
+    return _REG_MANIFEST
+
+
+def _norm_key(s: str) -> str:
+    return re.sub(r"\s+", "", (s or "")).lower()
+
+
+def _find_reg_original(name: str) -> dict | None:
+    """규정명으로 원본 PDF 항목을 찾는다(정확 일치 → 포함 관계)."""
+    man = _load_reg_manifest()
+    if not man:
+        return None
+    key = _norm_key(name)
+    if not key:
+        return None
+    for m in man:                                  # 1) 정확 일치
+        if _norm_key(m.get("title", "")) == key:
+            return m
+    cands = [m for m in man                        # 2) 포함 관계(가장 긴 제목 우선)
+             if _norm_key(m.get("title", "")) and
+             (_norm_key(m["title"]) in key or key in _norm_key(m["title"]))]
+    if cands:
+        return max(cands, key=lambda m: len(m.get("title", "")))
+    return None
+
+
+@app.route("/api/internal/original")
+def internal_original():
+    """내규 원본(PDF) 위치 조회 — 전문 화면의 '원본 보기/다운로드'용."""
+    name = request.args.get("name", "").strip()
+    if not name:
+        return jsonify({"error": "name 파라미터가 필요합니다"}), 400
+    m = _find_reg_original(name)
+    if not m:
+        return jsonify({"success": True, "found": False,
+                        "configured": bool(REG_PDF_BASE_URL), "name": name})
+    if not REG_PDF_BASE_URL:
+        return jsonify({"success": True, "found": True, "configured": False,
+                        "name": name, "title": m.get("title"),
+                        "revision": m.get("revision"), "category": m.get("category"),
+                        "message": "원본 저장소가 설정되지 않았습니다(REG_PDF_BASE_URL)."})
+    fname = os.path.basename(m.get("pdf", "")) or (m.get("slug", "") + ".pdf")
+    return jsonify({"success": True, "found": True, "configured": True,
+                    "name": name, "title": m.get("title"),
+                    "revision": m.get("revision"), "category": m.get("category"),
+                    "pdf_url": f"{REG_PDF_BASE_URL}/{quote(fname)}",
+                    "source_file": m.get("src", "")})
 # MCP 도구 목록 캐시 (URL → {tools, ts}) — 워밍된 프로세스에서 tools/list 왕복 절약
 _MCP_TOOLS_CACHE: dict = {}
 # 내규 검색 키워드 후보(도구/인자 자동 선택용)
