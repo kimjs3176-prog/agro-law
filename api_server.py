@@ -2015,6 +2015,38 @@ def _find_reg_original(name: str) -> dict | None:
     return None
 
 
+@app.route("/api/internal/names")
+def internal_names():
+    """내규 명칭 목록(원본 manifest 기준) — 본문 참조가 내규인지 법령인지 판별용."""
+    man = _load_reg_manifest()
+    items = [{"title": m.get("title", ""), "category": m.get("category", ""),
+              "revision": m.get("revision", "")}
+             for m in man if m.get("title")]
+    return jsonify({"success": True, "count": len(items), "names": items})
+
+
+def _name_match_regs(query: str, limit: int = 30) -> list:
+    """규정 '명칭'에 검색어가 포함된 내규 목록(본문 검색과 병행해 완성도를 높임)."""
+    man = _load_reg_manifest()
+    if not man or not query:
+        return []
+    q = _norm_key(query)
+    hits = []
+    for m in man:
+        t = m.get("title", "")
+        if not t:
+            continue
+        nt = _norm_key(t)
+        if q in nt:
+            # 앞부분 일치를 더 높은 점수로
+            score = 200 - nt.index(q) - len(nt) * 0.1
+            hits.append((score, {"title": t, "category": m.get("category", ""),
+                                 "revision": m.get("revision", ""),
+                                 "match": "name"}))
+    hits.sort(key=lambda x: -x[0])
+    return [h[1] for h in hits[:limit]]
+
+
 @app.route("/api/internal/original")
 def internal_original():
     """내규 원본(PDF) 위치 조회 — 전문 화면의 '원본 보기/다운로드'용."""
@@ -2270,6 +2302,8 @@ def internal_search():
             "arguments": args,
             "text": text,
             "structured": structured,
+            # 명칭 검색 결과(본문 검색과 병행) — 규정명에 검색어가 들어간 내규
+            "name_matches": _name_match_regs(query),
         })
     except req_lib.exceptions.Timeout:
         return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
