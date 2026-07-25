@@ -2541,15 +2541,43 @@ def _harvest_internal_names(cli, tools):
     return names
 
 
+# 원본(정관/규정/규칙/세칙/예규/매뉴얼) 분류 표시 순서
+_REG_CAT_ORDER = ("정관", "규정", "규칙", "세칙", "예규", "매뉴얼")
+
+
 @app.route("/api/internal/list")
 def internal_list():
-    """내규 전체 목록 조회 — 사이드바 트리 구성용. 목록도구(페이지네이션)+광역 검색으로 최대 수집."""
+    """내규 전체 목록 — 업로드 원본(regulations_manifest.json)을 기준으로 제공.
+
+    MCP 검색 텍스트에서 이름을 수집하면 본문에 인용된 정부 지침·법령까지 섞이므로,
+    실제 내규 원본 파일 목록을 정본으로 쓴다. 원본이 없을 때만 MCP 수집으로 대체.
+    """
+    man = _load_reg_manifest()
+    if man:
+        items, seen = [], set()
+        for m in man:
+            t = (m.get("title") or "").strip()
+            if not t or _norm_key(t) in seen:
+                continue
+            seen.add(_norm_key(t))
+            items.append({"title": t,
+                          "category": (m.get("category") or "기타").strip(),
+                          "revision": (m.get("revision") or "").strip(),
+                          "slug": m.get("slug", "")})
+        order = {c: i for i, c in enumerate(_REG_CAT_ORDER)}
+        items.sort(key=lambda x: (order.get(x["category"], 99), x["title"]))
+        return jsonify({"success": True, "count": len(items),
+                        "names": [x["title"] for x in items],
+                        "items": items, "source": "originals",
+                        "categories": list(_REG_CAT_ORDER)})
+    # ── 원본 목록이 없을 때만 MCP 수집(하위 호환) ──
     if not SAGYU_MCP_URL:
         return jsonify({"error": "사규 MCP 서버가 설정되지 않았습니다(SAGYU_MCP_URL)."}), 503
     force = request.args.get("t", "")  # 캐시 무시용 파라미터
     if not force and _INTERNAL_LIST_CACHE["names"] and (time.time() - _INTERNAL_LIST_CACHE["ts"] < 600):
         nm = _INTERNAL_LIST_CACHE["names"]
-        return jsonify({"success": True, "count": len(nm), "names": nm, "cached": True})
+        return jsonify({"success": True, "count": len(nm), "names": nm, "cached": True,
+                        "source": "mcp"})
     try:
         cli = _McpClient(SAGYU_MCP_URL)
         cli.initialize()
@@ -2558,7 +2586,8 @@ def internal_list():
         if names:
             _INTERNAL_LIST_CACHE["names"] = names
             _INTERNAL_LIST_CACHE["ts"] = time.time()
-        return jsonify({"success": True, "count": len(names), "names": names})
+        return jsonify({"success": True, "count": len(names), "names": names,
+                        "source": "mcp"})
     except req_lib.exceptions.Timeout:
         return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
     except Exception as e:
