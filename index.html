@@ -153,8 +153,19 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .fp-art-body mark{background:#fff176;color:inherit;border-radius:2px;padding:0 1px;}
 .fp-empty{text-align:center;padding:40px;color:var(--ht);font-size:14px;}
 .fp-loading{text-align:center;padding:40px;color:var(--mu);font-size:13px;}
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:400;display:none;}
-.overlay.show{display:block;}
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,.34);z-index:400;display:none;
+  opacity:0;transition:opacity .22s ease;backdrop-filter:blur(1.5px);}
+.overlay.show{display:block;opacity:1;}
+/* 원본 패널 전용 딤 — 바깥 클릭으로 닫기 */
+.origpdf-dim{position:fixed;inset:0;background:rgba(15,23,42,.38);z-index:1390;display:none;
+  opacity:0;transition:opacity .2s ease;backdrop-filter:blur(1.5px);}
+.origpdf-dim.show{display:block;opacity:1;}
+/* 스크롤바 — 과한 대비 없이 얇고 차분하게 */
+*::-webkit-scrollbar{width:10px;height:10px;}
+*::-webkit-scrollbar-track{background:transparent;}
+*::-webkit-scrollbar-thumb{background:rgba(100,116,139,.32);border-radius:8px;border:2px solid transparent;background-clip:content-box;}
+*::-webkit-scrollbar-thumb:hover{background:rgba(100,116,139,.55);background-clip:content-box;}
+body.dark *::-webkit-scrollbar-thumb{background:rgba(148,163,184,.28);background-clip:content-box;}
 /* 인쇄 */
 
 /* ── 카드 개선 ── */
@@ -327,11 +338,15 @@ body.dark .reg-hist-chip{background:#161920;}
 .it-item:hover{background:var(--gl);color:var(--gd);}
 
 /* ── 규정 전문 서식화(formatRuleText) ── */
-.rulefmt{font-size:13.5px;color:var(--tx);}
-.rulefmt>div{line-height:1.85;}
+.rulefmt{font-size:14px;color:var(--tx);max-width:74ch;margin:0 auto;
+  word-break:keep-all;overflow-wrap:anywhere;}
+.rulefmt>div{line-height:1.95;}
+@media(max-width:820px){.rulefmt{font-size:13.5px;max-width:none;}}
 .rf-h1{font-size:15px;font-weight:800;margin:16px 0 6px;padding-bottom:5px;border-bottom:1px solid var(--bd);}
 .rf-h2{font-size:14px;font-weight:700;margin:12px 0 4px;color:var(--tx);}
-.rf-art{font-size:14px;font-weight:700;color:var(--gd);margin:14px 0 4px;}
+.rf-art{font-size:14.5px;font-weight:700;color:var(--gd);margin:20px 0 6px;
+  scroll-margin-top:12px;padding-top:2px;border-top:1px solid transparent;}
+.rf-art+.rf-p,.rf-art+.rf-hang{margin-top:2px;}
 .rf-label{font-weight:700;color:var(--mu);margin:12px 0 4px;}
 .rf-p{margin:3px 0;}
 .rf-bul{padding-left:14px;margin:3px 0;}
@@ -373,9 +388,9 @@ body.dark .rf-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .nm-chip .cat{font-size:10px;font-weight:700;color:var(--mu);}
 /* 내규 원본 PDF 전용 패널 */
 .origpdf{position:fixed;top:0;right:0;width:min(920px,96vw);height:100%;background:var(--sf);
-  border-left:1px solid var(--bd);box-shadow:-8px 0 28px rgba(0,0,0,.16);
+  border-left:1px solid var(--bd);box-shadow:-10px 0 34px rgba(15,23,42,.18);
   display:flex;flex-direction:column;z-index:1400;transform:translateX(102%);
-  transition:transform .22s ease;}
+  transition:transform .28s cubic-bezier(.4,0,.2,1);}
 .origpdf.open{transform:translateX(0);}
 .origpdf>iframe{flex:1;min-height:0;width:100%;border:none;display:block;background:var(--bg);}
 @media(max-width:820px){.origpdf{width:100vw;}}
@@ -1201,7 +1216,8 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 </div>
 
 <!-- 법령 전문 슬라이드 패널 -->
-<!-- 내규 원본 PDF 전용 패널 -->
+<!-- 내규 원본 전용 패널 -->
+<div class="origpdf-dim" id="origPdfDim" onclick="closeOriginalPdf()"></div>
 <div class="origpdf" id="origPdfPanel">
   <div class="fp-header">
     <span class="fp-title" id="origPdfTitle">원본</span>
@@ -2018,11 +2034,13 @@ function openOriginalPdf(){
   }
   document.getElementById('origPdfFrame').src=isPdf?(url+'#view=FitH'):url;
   p.classList.add('open');
+  const dim=document.getElementById('origPdfDim'); if(dim) dim.classList.add('show');
 }
 function closeOriginalPdf(){
   const p=document.getElementById('origPdfPanel');
   if(!p) return;
   p.classList.remove('open');
+  const dim=document.getElementById('origPdfDim'); if(dim) dim.classList.remove('show');
   document.getElementById('origPdfFrame').src='about:blank';   // 메모리 해제
 }
 // ── 별표·별지 인덱스: 전문 안의 서식 블록을 모아 상단 목록으로 제공 ──
@@ -2033,7 +2051,8 @@ function buildApxIndex(container){
     const lab=el.getAttribute('data-apx')||'서식';
     const meta=(el.querySelector('.rf-apx-cap')||el.querySelector('.rf-apx-meta')||{}).textContent||'';
     const t=meta?`${lab} · ${meta.slice(0,24)}`:lab;
-    return `<button class="apx-chip" onclick="jumpApx('${el.id}')" title="${escHtml(meta||lab)}">${escHtml(t)}</button>`;
+    const L=lab.replace(/'/g,"\\'");
+    return `<button class="apx-chip" onclick="openAnnexOriginal('${L}','${el.id}')" title="${escHtml(meta||lab)} — 원본 서식 보기">${escHtml(t)}</button>`;
   }).join('');
   const box=document.createElement('div');
   box.className='apx-idx';
@@ -2047,6 +2066,44 @@ function jumpApx(id){
   el.scrollIntoView({behavior:'smooth',block:'center'});
   el.classList.add('hl'); setTimeout(()=>el.classList.remove('hl'),1600);
 }
+// 별표·별지 원본 보기: 원본 HTML 패널을 열고 해당 별표 위치로 스크롤
+// (MCP 텍스트에서 복원한 표가 아니라 원본 서식 그대로 표시)
+function openAnnexOriginal(label, fallbackId){
+  if(!_origInfo||!_origInfo.html_url){ if(fallbackId) jumpApx(fallbackId); return; }
+  openOriginalPdf();                       // 원본 패널 열기(HTML 우선)
+  const fr=document.getElementById('origPdfFrame');
+  if(!fr) return;
+  const go=()=>{ try{ scrollFrameToAnnex(fr, label); }catch(e){} };
+  // 이미 로드돼 있으면 즉시, 아니면 로드 후
+  if(fr.contentDocument && fr.contentDocument.readyState==='complete') setTimeout(go,120);
+  fr.addEventListener('load', ()=>setTimeout(go,120), {once:true});
+}
+function scrollFrameToAnnex(fr, label){
+  const doc=fr.contentDocument; if(!doc) return;
+  const key=(label||'').replace(/\s+/g,'');
+  if(!key) return;
+  // "별지제4호" → 별지 / 지 / 4 를 분해해 유연하게 매칭
+  const m=key.match(/^(별[표지])(?:제)?(\d+(?:의\d+)?)?/);
+  if(!m) return;
+  const kind=m[1], no=m[2]||'';
+  const re=new RegExp(kind[0]+'\\s*'+kind[1]+'\\s*(?:제)?\\s*'+(no?no:'\\d+')+'\\s*호?');
+  const blocks=[...doc.body.querySelectorAll('p,div,td,th,h1,h2,h3,span')];
+  // 정의부 우선: 텍스트가 짧고(제목 형태) 해당 라벨로 시작하는 요소
+  let target=null;
+  for(const el of blocks){
+    const t=(el.textContent||'').trim();
+    if(t.length>60 || !re.test(t.replace(/\s+/g,' '))) continue;
+    if(re.test(t.slice(0,20).replace(/\s+/g,' '))) target=el;   // 뒤쪽(정의부)일수록 우선
+  }
+  if(!target){ // 폴백: 라벨을 포함한 마지막 요소
+    for(const el of blocks){ if(re.test((el.textContent||'').replace(/\s+/g,' '))) target=el; }
+  }
+  if(!target) return;
+  target.scrollIntoView({behavior:'smooth',block:'start'});
+  const prev=target.style.backgroundColor;
+  target.style.backgroundColor='#fff3a3';
+  setTimeout(()=>{ target.style.backgroundColor=prev||''; }, 2200);
+}
 // 본문 속 "[별지 제1호 서식]" 인용을 해당 서식 블록으로 이동하는 링크로 변환
 function linkifyApxRefs(container){
   const map={};
@@ -2059,8 +2116,11 @@ function linkifyApxRefs(container){
   container.querySelectorAll('.rf-p,.rf-hang,.rf-num,.rf-ho,.rf-art,.rf-bul').forEach(node=>{
     if(!/별\s*[표지]/.test(node.textContent)) return;
     node.innerHTML=node.innerHTML.replace(re,(full,lab)=>{
-      const id=map[lab.replace(/\s+/g,'')];
-      return id?`<span class="apx-ref" onclick="jumpApx('${id}')">${full}</span>`:full;
+      const k=lab.replace(/\s+/g,'');
+      const id=map[k]||'';
+      const L=k.replace(/'/g,"\\'");
+      // 원본이 있으면 원본 서식으로, 없으면 본문 내 서식 블록으로 이동
+      return `<span class="apx-ref" title="원본 서식 보기" onclick="openAnnexOriginal('${L}','${id}')">${full}</span>`;
     });
   });
 }
@@ -4122,12 +4182,16 @@ document.addEventListener('DOMContentLoaded',()=>{
     const panel = document.getElementById('fullpanel');
     const isOpen = panel && panel.classList.contains('open');
 
-    // Esc: 패널/모달 닫기
+    // Esc: 위에 떠 있는 것부터 하나씩 닫기(원본 패널 → 모달 → 목록 → 비교 → 전문)
     if(e.key === 'Escape'){
+      const t=e.target;
+      if(t && /^(INPUT|TEXTAREA)$/.test(t.tagName) && t.value){ return; }  // 입력 중엔 보존
+      if(document.getElementById('origPdfPanel')?.classList.contains('open')){ closeOriginalPdf(); return; }
       if(document.getElementById('aiModalBg')?.classList.contains('show')){ closeAiModal(); return; }
       if(document.getElementById('diffPanel')?.classList.contains('show')){ closeDiff(); return; }
       if(document.getElementById('collModalBg')?.classList.contains('show')){ closeCollModal(); return; }
       if(document.getElementById('kwModalBg')?.classList.contains('show')){ closeKwEditor(); return; }
+      if(document.getElementById('internalTree')?.classList.contains('open')){ closeInternalTree(); return; }
       if(document.getElementById('fpRight')?.classList.contains('open')){ closeRefPanel(); return; }
       if(isOpen){ closePanel(); return; }
     }
@@ -5715,6 +5779,7 @@ function fpRightFilterFn(){
 initDark();
 checkStatus();
 loadRegNames();   // 내규 명칭 레지스트리 미리 로드(참조 판별용)
+
 loadRecent();
 loadFavs();
 renderAgencyTabs();
