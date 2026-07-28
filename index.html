@@ -28,6 +28,28 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .main{max-width:min(1320px,94vw);margin:0 auto;padding:24px 22px 40px;}
 @media(min-width:1600px){.main{max-width:1440px;}}
 @media(max-width:900px){.main{max-width:100%;padding:18px 14px 32px;}}
+/* 2단 결과 레이아웃 (넓은 화면에서 주 결과 | 교차 결과) */
+.res-split{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start;}
+@media(min-width:1180px){
+  .res-split.two{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);}
+  .res-split.two #internalResults{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto;}
+}
+/* 결과 필터 칩 */
+.res-filter{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px;}
+.res-filter .rf-label{font-size:11.5px;color:var(--mu);font-weight:700;margin-right:2px;}
+.rf-chip{border:1px solid var(--bd);background:var(--cd);color:var(--tx);border-radius:999px;
+  padding:3px 11px;font-size:12px;cursor:pointer;transition:.13s;}
+.rf-chip:hover{border-color:var(--g);color:var(--gd);}
+.rf-chip.on{background:var(--g);border-color:var(--g);color:#fff;font-weight:700;}
+.rf-chip .n{opacity:.75;margin-left:4px;font-size:11px;}
+/* 조문 클릭 미리보기 */
+.reg-art.art-click{cursor:pointer;border-radius:8px;transition:background .12s,box-shadow .12s;}
+.reg-art.art-click:hover{background:var(--gl);}
+.reg-art.art-click:focus-visible{outline:2px solid var(--g);outline-offset:1px;}
+.reg-art.art-click.on{background:var(--gl);box-shadow:inset 3px 0 0 var(--g);}
+.art-go{margin-left:auto;font-size:11px;color:var(--mu);opacity:0;transition:opacity .12s;white-space:nowrap;}
+.reg-art.art-click:hover .art-go{opacity:1;}
+@media(max-width:820px){.art-go{display:none;}}
 /* 교차 패널 안의 규정 카드 */
 .cross-cards{margin-top:8px;}
 .cross-cards .reg-card{box-shadow:none;background:var(--bg);}
@@ -1425,12 +1447,17 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   <!-- 검색 상태 메시지 -->
   <div id="status" style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mu);margin-bottom:8px;min-height:20px;"></div>
 
-  <!-- 통합 검색: 내규 결과 (법령 결과와 분리 렌더 — 페이지네이션 영향 없음) -->
-  <div id="internalResults"></div>
+  <!-- 결과 필터(카드 뷰) -->
+  <div id="resFilter" class="res-filter" style="display:none;"></div>
+  <!-- 2단 레이아웃: 왼쪽 주 결과 / 오른쪽 교차 결과 -->
+  <div class="res-split" id="resSplit">
   <!-- 검색 결과 컨테이너 -->
   <div id="results" class="results">
     <div class="empty"><div class="empty-icon">📋</div><p>검색어를 입력하고 검색 버튼을 눌러주세요</p></div>
   </div>
+  <!-- 교차 결과(법령↔내규) — 넓은 화면에서 오른쪽 열 -->
+  <div id="internalResults"></div>
+  </div><!-- /.res-split -->
   <!-- 페이지네이션 -->
   <div id="pagination" style="display:flex;justify-content:center;gap:6px;margin-top:12px;flex-wrap:wrap;"></div>
 
@@ -1758,14 +1785,30 @@ async function doSearchLaw(q){
     return;
   }
   document.getElementById('results').innerHTML = [1,2,3].map(()=>'<div class="skeleton"></div>').join('');
+  // 점진 표시: 관련도 높은 법령(본법·시행령·시행규칙)을 먼저 그리고,
+  // 전체 결과가 도착하면 병합해 다시 그린다. 두 요청은 병렬로 나간다.
+  let _shown=false;
+  const fullPromise = fetch(`/api/search/article?query=${encodeURIComponent(q)}&display=20`)
+    .then(r=>r.json()).catch(()=>null);
+  fetch(`/api/search/article?query=${encodeURIComponent(q)}&display=20&scope=priority`)
+    .then(r=>r.json()).then(p=>{
+      if(_shown || !p || !p.success || !p.laws?.length) return;
+      _shown=true;
+      setStatus(`법령 ${p.laws.length}건 우선 표시 · 나머지 조회 중...`, true);
+      renderRegCards(p.laws, q, 'law');
+    }).catch(()=>{});
   try{
-    const r = await fetch(`/api/search/article?query=${encodeURIComponent(q)}&display=20`);
-    const d = await r.json();
+    const d = await fullPromise;
+    if(!d){ throw new Error('network'); }
     if(d.error){ setStatus(`오류: ${escHtml(d.error)}`); renderEmpty(d.error); }
     else if(!d.success || !d.laws?.length){
-      setStatus(`"${q}" 법령 검색 결과가 없습니다`);
-      renderEmpty(`"${escHtml(q)}"을(를) 포함한 조문이 있는 법령을 찾지 못했습니다`);
+      if(_shown){ setStatus(`법령 우선 결과만 표시 · "${escHtml(q)}"`); }
+      else{
+        setStatus(`"${q}" 법령 검색 결과가 없습니다`);
+        renderEmpty(`"${escHtml(q)}"을(를) 포함한 조문이 있는 법령을 찾지 못했습니다`);
+      }
     } else {
+      _shown=true;
       if(!d.truncated) _cacheSet(`article:${q}`, d.laws);  // 완전한 결과만 캐시
       const tnote = d.truncated ? ' · ⚠ 일부 법령만 탐색' : '';
       setStatus(`법령 ${d.laws.length}건 · "${escHtml(q)}" 매칭 조문 표시${tnote}`);
@@ -1779,6 +1822,72 @@ async function doSearchLaw(q){
 // ── 규정(법령/내규) 단위 카드 렌더 (공용) ──
 function renderRegCards(items, kw, kind){
   document.getElementById('results').innerHTML = buildRegCards(items, kw, kind);
+  _resFilter='';
+  buildResultFilter(kind);
+  updateSplitLayout();
+}
+// ── 결과 필터(카드 뷰): 법령 유형 / 내규 분류별 ──
+let _resFilter='';
+function buildResultFilter(kind){
+  const bar=document.getElementById('resFilter'); if(!bar) return;
+  const cards=[...document.querySelectorAll('#results .reg-card')];
+  if(cards.length<2){ bar.style.display='none'; bar.innerHTML=''; _resFilter=''; return; }
+  const cnt={};
+  cards.forEach(c=>{ const t=(c.dataset.docType||'기타').trim()||'기타'; cnt[t]=(cnt[t]||0)+1; });
+  const keys=Object.keys(cnt);
+  if(keys.length<2){ bar.style.display='none'; bar.innerHTML=''; _resFilter=''; return; }
+  // 법령은 위계 순, 내규는 체계 순으로 정렬
+  const ORD=['법률','대통령령','총리령','부령','농림축산식품부령','행정규칙',
+             '정관','규정','규칙','세칙','예규','매뉴얼','내규'];
+  keys.sort((a,b)=>{
+    const ia=ORD.indexOf(a), ib=ORD.indexOf(b);
+    return (ia<0?99:ia)-(ib<0?99:ib) || a.localeCompare(b,'ko');
+  });
+  const label = kind==='internal' ? '분류' : '법령 유형';
+  bar.innerHTML=`<span class="rf-label">${label}</span>`+
+    `<button class="rf-chip${_resFilter?'':' on'}" onclick="applyResultFilter('')">전체<span class="n">${cards.length}</span></button>`+
+    keys.map(k=>`<button class="rf-chip${_resFilter===k?' on':''}" onclick="applyResultFilter('${k.replace(/'/g,"\\'")}')">${escHtml(k)}<span class="n">${cnt[k]}</span></button>`).join('');
+  bar.style.display='flex';
+}
+function applyResultFilter(type){
+  _resFilter=type||'';
+  document.querySelectorAll('#results .reg-card').forEach(c=>{
+    const t=(c.dataset.docType||'기타').trim()||'기타';
+    c.style.display=(!_resFilter||t===_resFilter)?'':'none';
+  });
+  document.querySelectorAll('#resFilter .rf-chip').forEach(b=>{
+    const on=(b.textContent.startsWith('전체')&&!_resFilter)||
+             (!!_resFilter&&b.textContent.startsWith(_resFilter));
+    b.classList.toggle('on',on);
+  });
+}
+// 교차 결과가 있으면 2단 레이아웃으로
+function updateSplitLayout(){
+  const sp=document.getElementById('resSplit'), ir=document.getElementById('internalResults');
+  if(!sp||!ir) return;
+  sp.classList.toggle('two', !!(ir.innerHTML||'').trim());
+}
+// 조문 즉시 미리보기: 카드의 문서를 열고 해당 조문으로 이동
+function previewArticle(el, artNo){
+  const card=el.closest('.reg-card'); if(!card) return;
+  const name=card.dataset.docName||'', kind=card.dataset.docKind||'law';
+  if(!name) return;
+  card.querySelectorAll('.reg-art.on').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  const no=parseInt(artNo,10);
+  if(kind==='internal'){
+    openPrimaryDoc(name,'internal');
+  }else{
+    openPrimaryDoc(name,'law',card.dataset.docUrl||'',card.dataset.docOrg||'',card.dataset.docType||'');
+  }
+  if(!no) return;
+  // 전문이 로드된 뒤 해당 조문으로 스크롤(로딩 시간 고려해 몇 차례 시도)
+  let tries=0;
+  const tick=setInterval(()=>{
+    tries++;
+    try{ if(typeof jumpToArt==='function' && document.querySelector('#fpBody .fp-art')){ jumpToArt(no); clearInterval(tick); return; } }catch(e){}
+    if(tries>24) clearInterval(tick);
+  },220);
 }
 // 규정 카드 HTML 생성(교차 패널 등에서 재사용)
 function buildRegCards(items, kw, kind){
@@ -1806,8 +1915,13 @@ function buildRegCards(items, kw, kind){
         if(lines.length && lines[0].trim()===title.trim()) content=lines.slice(1).join('\n').trim();
       }
       if(!title && !no && !content) return '';
-      return `<div class="reg-art">
-        <div class="reg-art-h">${no?`<span class="art-no">${escHtml(no)}</span>`:''}<span class="reg-art-t">${highlightKwsSafe(escHtml(title||no||'조문'),kw?[kw]:[])}</span></div>
+      // 조문 클릭 → 오른쪽에 전문을 열고 해당 조문으로 이동(즉시 미리보기)
+      const artNo=(no.match(/\d+/)||[''])[0];
+      return `<div class="reg-art art-click" role="button" tabindex="0"
+              title="클릭하면 전문에서 이 조문을 바로 봅니다"
+              onclick="previewArticle(this,'${artNo}')"
+              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();previewArticle(this,'${artNo}');}">
+        <div class="reg-art-h">${no?`<span class="art-no">${escHtml(no)}</span>`:''}<span class="reg-art-t">${highlightKwsSafe(escHtml(title||no||'조문'),kw?[kw]:[])}</span><span class="art-go">전문에서 보기 →</span></div>
         ${content?`<div class="reg-art-b">${highlightKwsSafe(applyXref(escHtml(content),name,abbrevMap),kw?[kw]:[])}</div>`:''}
       </div>`;
     }).join('') : `<div class="reg-none">키워드 매칭 미리보기가 없습니다. 전문에서 확인하세요.</div>`;
@@ -1822,7 +1936,8 @@ function buildRegCards(items, kw, kind){
     const splitBtn = `<button class="abtn reg-split-btn" title="왼쪽/오른쪽 분할 화면으로 나란히 보기" onclick="openDocSplit(${dtArgs})">⊞ 나란히</button>`;
     // 내규 개정이력·최신 개정일 메타
     const revMeta = kind==='internal' ? _buildRevMeta(it, arts, i) : '';
-    return `<div class="card reg-card">
+    return `<div class="card reg-card" data-doc-name="${escHtml(name)}" data-doc-kind="${kind}"
+      data-doc-url="${escHtml(url||'')}" data-doc-org="${escHtml(org||'')}" data-doc-type="${escHtml(type||'')}">
       <div class="card-head reg-head">
         <span class="ltype${kind==='internal'?' ltype-int':''}">${escHtml(type)}</span>
         <span class="lname">${escHtml(name)}</span>
@@ -1928,6 +2043,7 @@ function renderCrossPanel(d, q, fromMode){
         <div class="int-foot" style="margin-top:6px;">※ 「법령명」·"○○법 제N조"를 클릭하면 조문 전문이 열립니다.</div>
       </div>
     </div>`;
+  updateSplitLayout();
 }
 
 // ── 내규 전문 오른쪽 패널 ──
@@ -2866,7 +2982,7 @@ async function doSearchInternal(q){
     const r=await fetch(`/api/internal/search?query=${encodeURIComponent(q)}`);
     const d=await r.json();
     if(d.error){ setStatus(`오류: ${escHtml(d.error)}`); renderInternalError(d.error);
-      document.getElementById('internalResults').innerHTML=''; return; }
+      document.getElementById('internalResults').innerHTML='';updateSplitLayout(); return; }
     if(d.success) _cacheSet(`internal:${q}`, d);
     const hasText=d.text && d.text.trim();
     const hasStruct=Array.isArray(d.structured)&&d.structured.length;
@@ -2875,12 +2991,12 @@ async function doSearchInternal(q){
     if(!d.success || (!hasText && !hasStruct && !hasName)){
       setStatus(`"${q}" 내규 검색 결과가 없습니다`);
       renderEmpty(`"${escHtml(q)}"에 해당하는 내규를 찾지 못했습니다`);
-      document.getElementById('internalResults').innerHTML=''; return;
+      document.getElementById('internalResults').innerHTML='';updateSplitLayout(); return;
     }
     if(!hasText && !hasStruct){ document.getElementById('results').innerHTML=''; }
     renderInternalResults(d, q);
   }catch(e){ setStatus('서버 연결 실패'); renderInternalError('서버에 연결할 수 없습니다.');
-    document.getElementById('internalResults').innerHTML=''; }
+    document.getElementById('internalResults').innerHTML='';updateSplitLayout(); }
 }
 
 function renderInternalError(msg){
