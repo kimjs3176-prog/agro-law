@@ -713,7 +713,22 @@ CANDIDATE_ADMRUL = [
 ]
 
 # 키워드로 해당 법령 전체 조문을 불러와 매칭 조문 반환하는 공통 헬퍼
-def _fetch_matching_articles(law_name: str, kw: str, doc_type: str = "law"):
+def _law_name_rel(name: str, query: str) -> int:
+    """법령명과 질의어의 관계: 0=동일(본법), 1=같은 계열(시행령/규칙 등), 2=부분포함, 3=무관."""
+    n = re.sub(r"\s+", "", name or "")
+    q = re.sub(r"\s+", "", query or "")
+    if not n or not q:
+        return 3
+    if n == q:
+        return 0
+    if n.startswith(q):
+        return 1
+    if q in n:
+        return 2
+    return 3
+
+
+def _fetch_matching_articles(law_name: str, kw: str, doc_type: str = "law", always: bool = False):
     cache_key = f"{doc_type}:{law_name}"
     lname, articles = _cache_get(cache_key)
     if articles is None:
@@ -750,6 +765,13 @@ def _fetch_matching_articles(law_name: str, kw: str, doc_type: str = "law"):
                                     int(re.search(r"\d+", a.get("조문번호","") or "0").group()
                                         if re.search(r"\d+", a.get("조문번호","") or "0") else 0)))
         return {"law_name": lname or law_name, "keyword": kw, "articles": matched}
+    if always:
+        # 법령명이 질의어와 일치하는 경우, 본문에 자기 이름이 없어 매칭이 0이어도
+        # 결과에서 빠지지 않도록 앞부분 조문을 제공한다(본법 누락 방지).
+        head = [a for a in articles if a.get("type") == "article"][:15]
+        if head:
+            return {"law_name": lname or law_name, "keyword": kw,
+                    "articles": head, "name_only": True}
     return None
 
 
@@ -832,7 +854,11 @@ def search_by_article_keyword():
             entry = stage1_meta.get(law_name) or {}
             doc_type = entry.get("doc_type", "law")
             meta = entry.get("meta", {})
-            res = _fetch_matching_articles(law_name, kw, doc_type=doc_type)
+            # 질의어와 이름이 같거나 같은 계열(시행령·시행규칙)인 법령은
+            # 본문 키워드 매칭이 없어도 결과에 포함한다.
+            nrel = _law_name_rel(law_name, query)
+            res = _fetch_matching_articles(law_name, kw, doc_type=doc_type,
+                                           always=(nrel <= 1))
             if not res:
                 return None
             lname = res["law_name"]
@@ -883,7 +909,9 @@ def search_by_article_keyword():
     def _law_order(x):
         name = re.sub(r"\s+", "", x.get("법령명한글", "") or "")
         kind = x.get("법령구분명", "") or ""
-        exact = 0 if name == qn else 1          # 질의어와 정확히 같은 본법 최우선
+        # 1순위: 법령명과 질의어의 관계 (본법 → 같은 계열 → 부분포함 → 본문에만 언급)
+        rel = _law_name_rel(name, qn)
+        # 2순위: 같은 관계 안에서의 법령 위계 (법률 → 시행령 → 시행규칙)
         if name.endswith("시행규칙"):
             sub = 2
         elif name.endswith("시행령"):
@@ -896,7 +924,7 @@ def search_by_article_keyword():
             sub = 2
         else:
             sub = 3 if kind and kind != "법률" else 0
-        return (exact, sub, -int(x.get("_matched_count", 0) or 0), len(name))
+        return (rel, sub, -int(x.get("_matched_count", 0) or 0), len(name))
 
     results.sort(key=_law_order)
     for r in results:
