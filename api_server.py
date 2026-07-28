@@ -876,7 +876,29 @@ def search_by_article_keyword():
         truncated = True
         print(f"[article-search] 타임아웃, {len(results)}/{len(all_target)}건 탐색")
 
-    results.sort(key=lambda x: x.get("_matched_count", 0), reverse=True)
+    # 정렬: 본법 우선 → 시행령 → 시행규칙 → 그 외, 같은 순위 안에서 매칭 조문 수 순
+    # (조문이 많이 걸렸다는 이유로 시행규칙이 본법보다 앞서던 문제 수정)
+    qn = re.sub(r"\s+", "", query)
+
+    def _law_order(x):
+        name = re.sub(r"\s+", "", x.get("법령명한글", "") or "")
+        kind = x.get("법령구분명", "") or ""
+        exact = 0 if name == qn else 1          # 질의어와 정확히 같은 본법 최우선
+        if name.endswith("시행규칙"):
+            sub = 2
+        elif name.endswith("시행령"):
+            sub = 1
+        elif kind in ("법률", "헌법"):
+            sub = 0
+        elif kind in ("대통령령",):
+            sub = 1
+        elif kind in ("총리령", "부령", "기획재정부령", "농림축산식품부령"):
+            sub = 2
+        else:
+            sub = 3 if kind and kind != "법률" else 0
+        return (exact, sub, -int(x.get("_matched_count", 0) or 0), len(name))
+
+    results.sort(key=_law_order)
     for r in results:
         r.pop("_matched_count", None)
 

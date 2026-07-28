@@ -2033,7 +2033,8 @@ function buildApxIndex(container){
     const lab=el.getAttribute('data-apx')||'서식';
     const meta=(el.querySelector('.rf-apx-cap')||el.querySelector('.rf-apx-meta')||{}).textContent||'';
     const t=meta?`${lab} · ${meta.slice(0,24)}`:lab;
-    return `<button class="apx-chip" onclick="jumpApx('${el.id}')" title="${escHtml(meta||lab)}">${escHtml(t)}</button>`;
+    const L=lab.replace(/'/g,"\\'");
+    return `<button class="apx-chip" onclick="openAnnexOriginal('${L}','${el.id}')" title="${escHtml(meta||lab)} — 원본 서식 보기">${escHtml(t)}</button>`;
   }).join('');
   const box=document.createElement('div');
   box.className='apx-idx';
@@ -2047,6 +2048,44 @@ function jumpApx(id){
   el.scrollIntoView({behavior:'smooth',block:'center'});
   el.classList.add('hl'); setTimeout(()=>el.classList.remove('hl'),1600);
 }
+// 별표·별지 원본 보기: 원본 HTML 패널을 열고 해당 별표 위치로 스크롤
+// (MCP 텍스트에서 복원한 표가 아니라 원본 서식 그대로 표시)
+function openAnnexOriginal(label, fallbackId){
+  if(!_origInfo||!_origInfo.html_url){ if(fallbackId) jumpApx(fallbackId); return; }
+  openOriginalPdf();                       // 원본 패널 열기(HTML 우선)
+  const fr=document.getElementById('origPdfFrame');
+  if(!fr) return;
+  const go=()=>{ try{ scrollFrameToAnnex(fr, label); }catch(e){} };
+  // 이미 로드돼 있으면 즉시, 아니면 로드 후
+  if(fr.contentDocument && fr.contentDocument.readyState==='complete') setTimeout(go,120);
+  fr.addEventListener('load', ()=>setTimeout(go,120), {once:true});
+}
+function scrollFrameToAnnex(fr, label){
+  const doc=fr.contentDocument; if(!doc) return;
+  const key=(label||'').replace(/\s+/g,'');
+  if(!key) return;
+  // "별지제4호" → 별지 / 지 / 4 를 분해해 유연하게 매칭
+  const m=key.match(/^(별[표지])(?:제)?(\d+(?:의\d+)?)?/);
+  if(!m) return;
+  const kind=m[1], no=m[2]||'';
+  const re=new RegExp(kind[0]+'\\s*'+kind[1]+'\\s*(?:제)?\\s*'+(no?no:'\\d+')+'\\s*호?');
+  const blocks=[...doc.body.querySelectorAll('p,div,td,th,h1,h2,h3,span')];
+  // 정의부 우선: 텍스트가 짧고(제목 형태) 해당 라벨로 시작하는 요소
+  let target=null;
+  for(const el of blocks){
+    const t=(el.textContent||'').trim();
+    if(t.length>60 || !re.test(t.replace(/\s+/g,' '))) continue;
+    if(re.test(t.slice(0,20).replace(/\s+/g,' '))) target=el;   // 뒤쪽(정의부)일수록 우선
+  }
+  if(!target){ // 폴백: 라벨을 포함한 마지막 요소
+    for(const el of blocks){ if(re.test((el.textContent||'').replace(/\s+/g,' '))) target=el; }
+  }
+  if(!target) return;
+  target.scrollIntoView({behavior:'smooth',block:'start'});
+  const prev=target.style.backgroundColor;
+  target.style.backgroundColor='#fff3a3';
+  setTimeout(()=>{ target.style.backgroundColor=prev||''; }, 2200);
+}
 // 본문 속 "[별지 제1호 서식]" 인용을 해당 서식 블록으로 이동하는 링크로 변환
 function linkifyApxRefs(container){
   const map={};
@@ -2059,8 +2098,11 @@ function linkifyApxRefs(container){
   container.querySelectorAll('.rf-p,.rf-hang,.rf-num,.rf-ho,.rf-art,.rf-bul').forEach(node=>{
     if(!/별\s*[표지]/.test(node.textContent)) return;
     node.innerHTML=node.innerHTML.replace(re,(full,lab)=>{
-      const id=map[lab.replace(/\s+/g,'')];
-      return id?`<span class="apx-ref" onclick="jumpApx('${id}')">${full}</span>`:full;
+      const k=lab.replace(/\s+/g,'');
+      const id=map[k]||'';
+      const L=k.replace(/'/g,"\\'");
+      // 원본이 있으면 원본 서식으로, 없으면 본문 내 서식 블록으로 이동
+      return `<span class="apx-ref" title="원본 서식 보기" onclick="openAnnexOriginal('${L}','${id}')">${full}</span>`;
     });
   });
 }
