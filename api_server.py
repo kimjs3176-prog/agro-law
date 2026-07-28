@@ -1098,7 +1098,7 @@ def scenario_search():
         return jsonify({"error": "질문을 5자 이상 입력해 주세요."}), 400
 
     # ── AI 설정: 요청 본문(사용자 AI 설정) 우선 → 서버 환경변수 폴백 ──────────
-    provider = (body.get("provider") or os.environ.get("SCENARIO_AI_PROVIDER", "gemini")).lower()
+    provider = (body.get("provider") or os.environ.get("SCENARIO_AI_PROVIDER", "gemini")).lower()  # noqa: E501
     api_key  = (body.get("api_key")  or os.environ.get(f"{provider.upper()}_API_KEY", "")).strip()
     model    = (body.get("model")    or os.environ.get("SCENARIO_AI_MODEL", "")).strip()
     # ollama는 로컬 URL을 키 대신 사용하므로 키 없이도 허용
@@ -1108,9 +1108,7 @@ def scenario_search():
             "상단 [✦ AI 설정]에서 Gemini/Claude/GPT 키를 입력하세요."
         }), 503
 
-    _DEFAULTS = {"gemini": "gemini-2.5-flash", "claude": "claude-haiku-4-5-20251001",
-                 "gpt": "gpt-4.1-mini", "openai": "gpt-4.1-mini"}
-    mdl = model or _DEFAULTS.get(provider, "gemini-2.5-flash")
+    mdl = model or _default_model_for(provider, api_key)
 
     # ── AI Step-1: 의도 분석 → JSON ──────────────────────────────────────────
     AVAILABLE_LAWS = (
@@ -1445,6 +1443,88 @@ def remove_favorite():
     return jsonify({"ok": True})
 
 
+# ── AI 모델 자동 현행화 ─────────────────────────────────────────────────────
+# Gemini는 모델명이 자주 갱신되므로 하드코딩하지 않고 ListModels로 최신을 고른다.
+_AI_MODEL_FALLBACK = {"gemini": "gemini-2.5-flash",
+                      "claude": "claude-haiku-4-5-20251001",
+                      "gpt": "gpt-4.1-mini", "openai": "gpt-4.1-mini"}
+_GEMINI_MODEL_CACHE: dict = {"model": None, "ts": 0.0}
+_GEMINI_CACHE_TTL = 6 * 3600          # 6시간
+
+
+def _gemini_model_score(name: str):
+    """모델명에서 (버전, 등급, 안정성) 점수를 뽑아 최신·상위 모델을 고른다."""
+    n = name.lower()
+    m = re.search(r"gemini-(\d+)(?:\.(\d+))?", n)
+    if not m:
+        return None
+    ver = int(m.group(1)) * 100 + int(m.group(2) or 0)
+    # 등급: pro > flash > flash-lite  (본 서비스는 응답속도 중요 → flash 우대)
+    if "flash-lite" in n:
+        tier = 1
+    elif "flash" in n:
+        tier = 3
+    elif "pro" in n:
+        tier = 2
+    else:
+        tier = 0
+    # 실험/프리뷰 버전은 안정 버전보다 후순위
+    stable = 0 if re.search(r"(exp|preview|thinking|-\d{3,})", n) else 1
+    return (ver, stable, tier)
+
+
+def _gemini_latest_model(api_key: str) -> str:
+    """Gemini ListModels로 사용 가능한 최신 모델명을 조회(6시간 캐시)."""
+    now = time.time()
+    if _GEMINI_MODEL_CACHE["model"] and now - _GEMINI_MODEL_CACHE["ts"] < _GEMINI_CACHE_TTL:
+        return _GEMINI_MODEL_CACHE["model"]
+    fallback = _AI_MODEL_FALLBACK["gemini"]
+    if not api_key:
+        return fallback
+    try:
+        r = _SESSION.get(
+            "https://generativelanguage.googleapis.com/v1beta/models",
+            params={"key": api_key, "pageSize": 200}, timeout=8)
+        if r.status_code != 200:
+            print(f"[ai-model] ListModels 실패({r.status_code}) → 폴백 {fallback}")
+            return fallback
+        best, best_score = None, None
+        for m in (r.json().get("models") or []):
+            name = (m.get("name") or "").split("/")[-1]
+            methods = m.get("supportedGenerationMethods") or []
+            if "generateContent" not in methods:
+                continue
+            sc = _gemini_model_score(name)
+            if sc and (best_score is None or sc > best_score):
+                best, best_score = name, sc
+        if best:
+            _GEMINI_MODEL_CACHE.update({"model": best, "ts": now})
+            print(f"[ai-model] Gemini 최신 모델 선택: {best}")
+            return best
+    except Exception as e:
+        print(f"[ai-model] 조회 오류: {e}")
+    return fallback
+
+
+def _default_model_for(provider: str, api_key: str = "") -> str:
+    """프로바이더별 기본 모델. Gemini는 실시간 조회로 최신 모델을 사용."""
+    if provider == "gemini":
+        return _gemini_latest_model(api_key)
+    return _AI_MODEL_FALLBACK.get(provider, _AI_MODEL_FALLBACK["gemini"])
+
+
+@app.route("/api/ai/models")
+def ai_models():
+    """현재 선택될 기본 모델 확인용(설정 화면 표시)."""
+    provider = (request.args.get("provider") or "gemini").lower()
+    key = (request.args.get("api_key") or
+           os.environ.get(f"{provider.upper()}_API_KEY", "")).strip()
+    mdl = _default_model_for(provider, key)
+    return jsonify({"success": True, "provider": provider, "model": mdl,
+                    "resolved": provider == "gemini" and bool(key),
+                    "cached_at": _GEMINI_MODEL_CACHE["ts"] if provider == "gemini" else 0})
+
+
 def _ai_post_retry(do_post, tries=3):
     """AI 프로바이더 호출 — 과부하/일시오류(429/500/502/503/504)는 백오프 재시도."""
     import time as _t
@@ -1556,7 +1636,7 @@ def ai_interpret():
 
         # ── Google Gemini ──────────────────────────────────────────────────────
         elif provider == "gemini":
-            mdl = model or "gemini-2.5-flash"
+            mdl = model or _default_model_for("gemini", api_key)
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{mdl}:generateContent?key={api_key}"
             resp = _ai_post_retry(lambda: req_lib.post(
                 url,
