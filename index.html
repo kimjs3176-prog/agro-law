@@ -386,6 +386,23 @@ body.dark .rf-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
   cursor:pointer;color:var(--tx);transition:.13s;display:inline-flex;align-items:center;gap:6px;}
 .nm-chip:hover{background:var(--gl);border-color:var(--g);color:var(--gd);}
 .nm-chip .cat{font-size:10px;font-weight:700;color:var(--mu);}
+/* 시나리오: 자료 기반 답변(RAG) 카드 */
+.scen-answer{border:1px solid var(--g);border-left:4px solid var(--g);border-radius:12px;
+  background:var(--cd);padding:14px 16px;margin:0 0 12px;box-shadow:0 1px 3px rgba(15,23,42,.05);}
+.scen-answer.warn{border-color:#f59e0b;border-left-color:#f59e0b;}
+.scen-answer-h{font-size:13.5px;font-weight:800;color:var(--gd);display:flex;align-items:center;
+  gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.scen-answer-sub{font-size:11px;font-weight:600;color:var(--mu);}
+.scen-answer-b{font-size:13.5px;line-height:1.9;color:var(--tx);word-break:keep-all;overflow-wrap:anywhere;}
+.scen-answer-b p{margin:0 0 8px;}
+.scen-answer-b strong{color:var(--gd);}
+.scen-ul{margin:4px 0 10px;padding-left:20px;}
+.scen-ul li{margin:3px 0;}
+.scen-cite{color:var(--gd);background:var(--gl);border-radius:4px;padding:0 4px;font-size:12px;font-weight:700;white-space:nowrap;}
+.scen-src{margin-top:10px;padding-top:9px;border-top:1px dashed var(--bd);font-size:11.5px;color:var(--mu);
+  display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.scen-src-tag{background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:1px 7px;color:var(--tx);}
+.scen-src-tag.int{border-color:var(--g);color:var(--gd);}
 /* 내규 원본 PDF 전용 패널 */
 .origpdf{position:fixed;top:0;right:0;width:min(920px,96vw);height:100%;background:var(--sf);
   border-left:1px solid var(--bd);box-shadow:-10px 0 34px rgba(15,23,42,.18);
@@ -2532,6 +2549,22 @@ async function doSearchScenario(q){
   }
 }
 
+// 간단 마크다운 → HTML (굵게/목록/줄바꿈 + [근거] 표기 강조). 항상 escape 후 변환.
+function mdToHtml(md){
+  let h=escHtml(String(md||''));
+  h=h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  h=h.replace(/\[([^\[\]]{2,60}?제\s*\d+[^\[\]]{0,20})\]/g,'<span class="scen-cite">[$1]</span>');
+  const lines=h.split('\n'); let out='', inUl=false;
+  for(const raw of lines){
+    const t=raw.trim();
+    const li=t.match(/^(?:[-*·]|\d+\.)\s+(.*)$/);
+    if(li){ if(!inUl){ out+='<ul class="scen-ul">'; inUl=true; } out+=`<li>${li[1]}</li>`; continue; }
+    if(inUl){ out+='</ul>'; inUl=false; }
+    if(t) out+=`<p>${t}</p>`;
+  }
+  if(inUl) out+='</ul>';
+  return out||`<p>${h}</p>`;
+}
 function renderScenarioResults(d){
   const laws      = d.laws || [];
   const steps     = d.steps || [];
@@ -2559,7 +2592,22 @@ function renderScenarioResults(d){
   const kwTagsHtml = keywords.length
     ? `<div class="scenario-kwtags">${keywords.map(k=>`<span class="scenario-kwtag">${escHtml(k)}</span>`).join('')}</div>` : '';
 
-  const guideCard = `
+  // 자료 근거 답변(RAG) — 조회한 내규·법령 조문만 근거로 생성된 답변
+  const ansHtml = (d.answer||'').trim()
+    ? `<div class="scen-answer">
+         <div class="scen-answer-h">🤖 자료 기반 답변
+           <span class="scen-answer-sub">조회된 내규·법령 조문을 근거로 생성</span></div>
+         <div class="scen-answer-b">${mdToHtml(d.answer)}</div>
+         ${(d.sources||[]).length?`<div class="scen-src">근거 ${d.sources.length}건 · ${
+             d.sources.slice(0,6).map(s=>`<span class="scen-src-tag ${s.type==='internal'?'int':''}">${escHtml(s.label)}</span>`).join('')
+           }</div>`:''}
+       </div>`
+    : (d.answer_error
+        ? `<div class="scen-answer warn"><div class="scen-answer-h">🤖 자료 기반 답변</div>
+           <div class="scen-answer-b">답변 생성에 실패했습니다: ${escHtml(d.answer_error)}<br>
+           아래 조회 결과는 정상 표시됩니다.</div></div>` : '');
+
+  const guideCard = ansHtml + `
   <div class="scenario-guide">
     <div class="scenario-guide-head">
       <span class="scenario-badge">✦ AI 분석</span>
