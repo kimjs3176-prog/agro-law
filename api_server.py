@@ -1530,6 +1530,9 @@ _AI_MODEL_FALLBACK = {"gemini": "gemini-2.5-flash",
                       "gpt": "gpt-4.1-mini", "openai": "gpt-4.1-mini"}
 _GEMINI_MODEL_CACHE: dict = {"model": None, "ts": 0.0}
 _GEMINI_CACHE_TTL = 6 * 3600          # 6시간
+# 선호 Gemini 버전(환경변수 GEMINI_MODEL_PREF로 재지정 가능).
+# 계정에서 사용 가능하면 이 버전을, 아니면 사용 가능한 최신 버전을 쓴다.
+_GEMINI_PREF_DEFAULT = "4.6"
 
 
 def _gemini_model_score(name: str):
@@ -1554,7 +1557,12 @@ def _gemini_model_score(name: str):
 
 
 def _gemini_latest_model(api_key: str) -> str:
-    """Gemini ListModels로 사용 가능한 최신 모델명을 조회(6시간 캐시)."""
+    """Gemini ListModels로 모델명을 결정(6시간 캐시).
+
+    GEMINI_MODEL_PREF(예: "4.6")로 선호 버전을 지정할 수 있고, 계정에서 해당 버전을
+    쓸 수 있으면 그 버전을 우선 사용한다. 없으면 사용 가능한 최신 버전으로 폴백한다.
+    (모델명을 고정하면 미출시/미허용 버전일 때 AI 기능 전체가 실패하므로 검증 후 사용)
+    """
     now = time.time()
     if _GEMINI_MODEL_CACHE["model"] and now - _GEMINI_MODEL_CACHE["ts"] < _GEMINI_CACHE_TTL:
         return _GEMINI_MODEL_CACHE["model"]
@@ -1568,15 +1576,36 @@ def _gemini_latest_model(api_key: str) -> str:
         if r.status_code != 200:
             print(f"[ai-model] ListModels 실패({r.status_code}) → 폴백 {fallback}")
             return fallback
+        pref = (os.environ.get("GEMINI_MODEL_PREF") or _GEMINI_PREF_DEFAULT).strip()
+        pref_ver = None
+        if pref:
+            pm = re.match(r"(\d+)(?:\.(\d+))?$", pref)
+            if pm:
+                pref_ver = int(pm.group(1)) * 100 + int(pm.group(2) or 0)
         best, best_score = None, None
+        pbest, pbest_score = None, None      # 선호 버전 중 최적
         for m in (r.json().get("models") or []):
             name = (m.get("name") or "").split("/")[-1]
             methods = m.get("supportedGenerationMethods") or []
             if "generateContent" not in methods:
                 continue
             sc = _gemini_model_score(name)
-            if sc and (best_score is None or sc > best_score):
+            if not sc:
+                continue
+            if best_score is None or sc > best_score:
                 best, best_score = name, sc
+            if pref_ver is not None and sc[0] == pref_ver:
+                if pbest_score is None or sc > pbest_score:
+                    pbest, pbest_score = name, sc
+            elif pref and not pref_ver and pref.lower() in name.lower():
+                if pbest_score is None or sc > pbest_score:
+                    pbest, pbest_score = name, sc
+        if pbest:
+            _GEMINI_MODEL_CACHE.update({"model": pbest, "ts": now})
+            print(f"[ai-model] 선호 버전({pref}) 모델 사용: {pbest}")
+            return pbest
+        if pref:
+            print(f"[ai-model] 선호 버전({pref}) 사용 불가 → 최신 버전으로 대체")
         if best:
             _GEMINI_MODEL_CACHE.update({"model": best, "ts": now})
             print(f"[ai-model] Gemini 최신 모델 선택: {best}")
@@ -2275,11 +2304,13 @@ def _name_match_regs(query: str, limit: int = 30) -> list:
             continue
         nt = _norm_key(t)
         if q in nt:
-            # 앞부분 일치를 더 높은 점수로
-            score = 200 - nt.index(q) - len(nt) * 0.1
+            exact = (nt == q)               # 규정명과 100% 일치
+            # 완전일치 최우선 → 앞부분 일치 → 짧은 이름
+            score = (10000 if exact else 0) + 200 - nt.index(q) - len(nt) * 0.1
             hits.append((score, {"title": t, "category": m.get("category", ""),
                                  "revision": m.get("revision", ""),
-                                 "match": "name"}))
+                                 "match": "exact" if exact else "name",
+                                 "exact": exact}))
     hits.sort(key=lambda x: -x[0])
     return [h[1] for h in hits[:limit]]
 
