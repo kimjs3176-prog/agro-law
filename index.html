@@ -28,6 +28,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .main{max-width:min(1320px,94vw);margin:0 auto;padding:24px 22px 40px;}
 @media(min-width:1600px){.main{max-width:1440px;}}
 @media(max-width:900px){.main{max-width:100%;padding:18px 14px 32px;}}
+.reg-exact{box-shadow:0 0 0 2px var(--g),0 1px 3px rgba(15,23,42,.06);}
+.reg-exact-badge{font-size:10.5px;font-weight:800;color:#fff;background:var(--g);
+  border-radius:5px;padding:2px 7px;white-space:nowrap;}
 /* 2단 결과 레이아웃 (넓은 화면에서 주 결과 | 교차 결과) */
 .res-split{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start;}
 @media(min-width:1180px){
@@ -1936,13 +1939,14 @@ function buildRegCards(items, kw, kind){
     const splitBtn = `<button class="abtn reg-split-btn" title="왼쪽/오른쪽 분할 화면으로 나란히 보기" onclick="openDocSplit(${dtArgs})">⊞ 나란히</button>`;
     // 내규 개정이력·최신 개정일 메타
     const revMeta = kind==='internal' ? _buildRevMeta(it, arts, i) : '';
-    return `<div class="card reg-card" data-doc-name="${escHtml(name)}" data-doc-kind="${kind}"
+    return `<div class="card reg-card${it._exact?' reg-exact':''}" data-doc-name="${escHtml(name)}" data-doc-kind="${kind}"
       data-doc-url="${escHtml(url||'')}" data-doc-org="${escHtml(org||'')}" data-doc-type="${escHtml(type||'')}">
       <div class="card-head reg-head">
         <span class="ltype${kind==='internal'?' ltype-int':''}">${escHtml(type)}</span>
         <span class="lname">${escHtml(name)}</span>
         <div class="reg-head-actions">
           <span class="lorg">${escHtml(org)}</span>
+          ${it._exact?'<span class="reg-exact-badge">규정명 일치</span>':''}
           <span class="reg-badge">${cnt}개 조문 매칭</span>
           ${fullBtn}${splitBtn}
         </div>
@@ -3024,9 +3028,26 @@ function renderInternalResults(d, q){
     // 텍스트 응답: 《규정명》 블록 기준으로 규정별 그룹화(+조문 중복 제거)
     items = parseInternalGrouped(raw, q);
   }
+  // 명칭 100% 일치 규정은 최상단으로 (없으면 카드를 만들어 올림)
+  const nmAll=(d.name_matches||[]).filter(x=>x.title);
+  const exactHit=nmAll.find(x=>x.exact) ||
+                 nmAll.find(x=>_rnorm(x.title)===_rnorm(q));
+  if(exactHit){
+    const ek=_rnorm(exactHit.title);
+    const idx=items.findIndex(it=>_rnorm(it.name)===ek);
+    if(idx>0){                                  // 이미 있으면 맨 앞으로 이동
+      const [hit]=items.splice(idx,1);
+      hit._exact=true; items.unshift(hit);
+    }else if(idx===0){
+      items[0]._exact=true;
+    }else{                                      // 본문 매칭이 없으면 카드 추가
+      items.unshift({name:exactHit.title, org:'사내 규정', _exact:true,
+                     matched_articles:[], matched_count:0});
+    }
+  }
   renderRegCards(items, q, 'internal');
   // 명칭 검색 결과: 규정명에 검색어가 포함된 내규를 상단에 별도 표시
-  const nm=(d.name_matches||[]).filter(x=>x.title);
+  const nm=nmAll;
   if(nm.length){
     const bodyNames=new Set(items.map(it=>_rnorm(it.name)));
     const chips=nm.map(x=>{
