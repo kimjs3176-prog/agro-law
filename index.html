@@ -25,7 +25,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .brand{font-size:17px;font-weight:800;letter-spacing:-.5px;color:var(--tx);}.brand-sub{font-size:11px;color:var(--mu);font-weight:500;letter-spacing:.1px;}
 .apibadge{margin-left:auto;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;background:var(--gl);color:var(--gd);}
 /* 레이아웃 */
-.main{max-width:960px;margin:0 auto;padding:28px 20px;}
+.main{max-width:min(1320px,94vw);margin:0 auto;padding:24px 22px 40px;}
+@media(min-width:1600px){.main{max-width:1440px;}}
+@media(max-width:900px){.main{max-width:100%;padding:18px 14px 32px;}}
+/* 교차 패널 안의 규정 카드 */
+.cross-cards{margin-top:8px;}
+.cross-cards .reg-card{box-shadow:none;background:var(--bg);}
+.int-cnt-badge{font-size:11px;font-weight:700;color:var(--gd);background:var(--gl);
+  border-radius:5px;padding:1px 7px;}
 /* 검색 패널 — Toss card */
 .spanel{background:var(--sf);border-radius:20px;padding:24px 24px 20px;margin-bottom:20px;box-shadow:var(--shadow-md);}
 /* 기관 탭 */
@@ -1771,8 +1778,11 @@ async function doSearchLaw(q){
 
 // ── 규정(법령/내규) 단위 카드 렌더 (공용) ──
 function renderRegCards(items, kw, kind){
-  const results=document.getElementById('results');
-  results.innerHTML = items.map((it,i)=>{
+  document.getElementById('results').innerHTML = buildRegCards(items, kw, kind);
+}
+// 규정 카드 HTML 생성(교차 패널 등에서 재사용)
+function buildRegCards(items, kw, kind){
+  return items.map((it,i)=>{
     const name = it['법령명한글'] || it.name || '';
     const type = it['법령구분명'] || (kind==='internal'?'내규':'법률');
     const org  = it['소관부처명'] || (kind==='internal'?(it.org||'사내 규정'):guessOrg(name));
@@ -1885,34 +1895,35 @@ function renderCrossPanel(d, q, fromMode){
     el.innerHTML = `<div class="int-uni"><span class="int-badge">${label}</span><span style="font-size:12.5px;color:var(--mu);">"${escHtml(q)}" 관련 내규를 찾지 못했습니다.</span></div>`;
     return;
   }
-  let bodyHtml='';
+  // 내규 모드와 동일하게 '규정 단위 카드 + 매칭 조문'으로 렌더(중복 조문 제거 포함)
+  let items=[];
   if(hasStruct){
-    bodyHtml = d.structured.map(it=>{
-      const title=it.title||it.name||it['제목']||it['규정명']||'';
-      const content=it.content||it.text||it['내용']||it['본문']||(typeof it==='string'?it:JSON.stringify(it,null,2));
-      const nm=String(title||'사내 규정');
-      return `<div class="int-item" style="box-shadow:none;background:var(--bg);margin-top:8px;">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-          <div class="int-item-t" style="border:none;padding:0;margin:0;flex:1;">${escHtml(nm)}</div>
-          <button class="fp-tbtn" onclick="openPrimaryDoc(decodeURIComponent('${encodeURIComponent(nm)}'),'internal')">전문 →</button>
-          <button class="fp-tbtn" title="왼쪽 법령과 나란히 보기" onclick="openDocSplit(decodeURIComponent('${encodeURIComponent(nm)}'),'internal')">⊞ 나란히</button>
-        </div>
-        <div class="int-item-b">${applyXref(applyTermTooltip(escHtml(String(content))),'',{})}</div>
-      </div>`;
-    }).join('');
-  } else {
-    bodyHtml = `<div class="int-item" style="box-shadow:none;background:var(--bg);margin-top:8px;">
-      <div class="int-item-b">${applyXref(applyTermTooltip(escHtml(raw)),'',{})}</div></div>`;
+    items = d.structured.map(it=>{
+      const nm=String(it.title||it.name||it['제목']||it['규정명']||'사내 규정');
+      const content=String(it.content||it.text||it['내용']||it['본문']||
+                           (typeof it==='string'?it:JSON.stringify(it,null,2)));
+      _intDocCache[nm]=content;
+      const arts=extractRuleArticles(content,q);
+      return {name:nm, org:'사내 규정', matched_articles:arts, matched_count:arts.length};
+    });
+  } else if(raw){
+    items = parseInternalGrouped(raw, q);
   }
+  const cnt=items.length;
+  let bodyHtml = cnt
+    ? `<div class="cross-cards">${buildRegCards(items, q, 'internal')}</div>`
+    : `<div class="int-item" style="box-shadow:none;background:var(--bg);margin-top:8px;">
+         <div class="int-item-b">${applyXref(applyTermTooltip(escHtml(raw)),'',{})}</div></div>`;
   el.innerHTML = `
     <div class="int-uni int-uni-card" onclick="const b=document.getElementById('intUniBody');const o=b.style.display==='block';b.style.display=o?'none':'block';document.getElementById('intUniArrow').style.transform=o?'':'rotate(180deg)';">
       <div class="int-uni-head">
         <span class="int-badge">${label}</span>
         <span style="font-size:13.5px;font-weight:700;color:var(--tx);">"${escHtml(q)}" 관련 사내 규정</span>
-        <span style="font-size:11px;color:var(--ht);">펼쳐서 보기</span>
-        <span id="intUniArrow" class="arrow" style="margin-left:auto;">▼</span>
+        ${cnt?`<span class="int-cnt-badge">${cnt}개 규정</span>`:''}
+        <span style="font-size:11px;color:var(--ht);">${cnt?'접기':'펼쳐서 보기'}</span>
+        <span id="intUniArrow" class="arrow" style="margin-left:auto;${cnt?'transform:rotate(180deg);':''}">▼</span>
       </div>
-      <div id="intUniBody" style="display:none;cursor:auto;" onclick="event.stopPropagation();">
+      <div id="intUniBody" style="display:${cnt?'block':'none'};cursor:auto;" onclick="event.stopPropagation();">
         ${bodyHtml}
         <div class="int-foot" style="margin-top:6px;">※ 「법령명」·"○○법 제N조"를 클릭하면 조문 전문이 열립니다.</div>
       </div>
