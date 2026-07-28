@@ -1530,9 +1530,9 @@ _AI_MODEL_FALLBACK = {"gemini": "gemini-2.5-flash",
                       "gpt": "gpt-4.1-mini", "openai": "gpt-4.1-mini"}
 _GEMINI_MODEL_CACHE: dict = {"model": None, "ts": 0.0}
 _GEMINI_CACHE_TTL = 6 * 3600          # 6시간
-# 선호 Gemini 버전(환경변수 GEMINI_MODEL_PREF로 재지정 가능).
-# 계정에서 사용 가능하면 이 버전을, 아니면 사용 가능한 최신 버전을 쓴다.
-_GEMINI_PREF_DEFAULT = "4.6"
+# 선호 Gemini 버전. 기본은 비워 두고 ListModels 기준 '사용 가능한 최신'을 자동 선택한다
+# (현재 최신 계열은 3.x). 특정 버전으로 묶고 싶을 때만 GEMINI_MODEL_PREF=3.0 처럼 지정.
+_GEMINI_PREF_DEFAULT = ""
 
 
 def _gemini_model_score(name: str):
