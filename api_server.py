@@ -713,7 +713,22 @@ CANDIDATE_ADMRUL = [
 ]
 
 # 키워드로 해당 법령 전체 조문을 불러와 매칭 조문 반환하는 공통 헬퍼
-def _fetch_matching_articles(law_name: str, kw: str, doc_type: str = "law"):
+def _law_name_rel(name: str, query: str) -> int:
+    """법령명과 질의어의 관계: 0=동일(본법), 1=같은 계열(시행령/규칙 등), 2=부분포함, 3=무관."""
+    n = re.sub(r"\s+", "", name or "")
+    q = re.sub(r"\s+", "", query or "")
+    if not n or not q:
+        return 3
+    if n == q:
+        return 0
+    if n.startswith(q):
+        return 1
+    if q in n:
+        return 2
+    return 3
+
+
+def _fetch_matching_articles(law_name: str, kw: str, doc_type: str = "law", always: bool = False):
     cache_key = f"{doc_type}:{law_name}"
     lname, articles = _cache_get(cache_key)
     if articles is None:
@@ -750,6 +765,13 @@ def _fetch_matching_articles(law_name: str, kw: str, doc_type: str = "law"):
                                     int(re.search(r"\d+", a.get("조문번호","") or "0").group()
                                         if re.search(r"\d+", a.get("조문번호","") or "0") else 0)))
         return {"law_name": lname or law_name, "keyword": kw, "articles": matched}
+    if always:
+        # 법령명이 질의어와 일치하는 경우, 본문에 자기 이름이 없어 매칭이 0이어도
+        # 결과에서 빠지지 않도록 앞부분 조문을 제공한다(본법 누락 방지).
+        head = [a for a in articles if a.get("type") == "article"][:15]
+        if head:
+            return {"law_name": lname or law_name, "keyword": kw,
+                    "articles": head, "name_only": True}
     return None
 
 
@@ -832,7 +854,11 @@ def search_by_article_keyword():
             entry = stage1_meta.get(law_name) or {}
             doc_type = entry.get("doc_type", "law")
             meta = entry.get("meta", {})
-            res = _fetch_matching_articles(law_name, kw, doc_type=doc_type)
+            # 질의어와 이름이 같거나 같은 계열(시행령·시행규칙)인 법령은
+            # 본문 키워드 매칭이 없어도 결과에 포함한다.
+            nrel = _law_name_rel(law_name, query)
+            res = _fetch_matching_articles(law_name, kw, doc_type=doc_type,
+                                           always=(nrel <= 1))
             if not res:
                 return None
             lname = res["law_name"]
@@ -883,7 +909,9 @@ def search_by_article_keyword():
     def _law_order(x):
         name = re.sub(r"\s+", "", x.get("법령명한글", "") or "")
         kind = x.get("법령구분명", "") or ""
-        exact = 0 if name == qn else 1          # 질의어와 정확히 같은 본법 최우선
+        # 1순위: 법령명과 질의어의 관계 (본법 → 같은 계열 → 부분포함 → 본문에만 언급)
+        rel = _law_name_rel(name, qn)
+        # 2순위: 같은 관계 안에서의 법령 위계 (법률 → 시행령 → 시행규칙)
         if name.endswith("시행규칙"):
             sub = 2
         elif name.endswith("시행령"):
@@ -896,7 +924,7 @@ def search_by_article_keyword():
             sub = 2
         else:
             sub = 3 if kind and kind != "법률" else 0
-        return (exact, sub, -int(x.get("_matched_count", 0) or 0), len(name))
+        return (rel, sub, -int(x.get("_matched_count", 0) or 0), len(name))
 
     results.sort(key=_law_order)
     for r in results:
@@ -1280,12 +1308,57 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
             internal_err = str(e)
             print(f"[scenario] 내규 MCP 오류: {e}")
 
+    # ── Step-4: 조회한 내규·법령을 근거로 자연어 답변 생성(RAG) ───────────────
+    # 키워드 나열이 아니라, 실제 조문·내규 본문만 근거로 질문에 답하게 한다.
+    answer, answer_err, sources = "", "", []
+    ctx_parts, budget = [], 14000
+
+    for r in results[:5]:                       # 법령 조문 근거
+        ln = r.get("법령명한글", "")
+        for a in (r.get("matched_articles") or [])[:4]:
+            no = a.get("조문번호", ""); ti = a.get("조문제목", "")
+            body_txt = re.sub(r"\s+", " ", (a.get("조문내용", "") or ""))[:700]
+            tag = f"{ln} 제{no}조" + (f"({ti})" if ti else "")
+            blk = f"[법령] {tag}\n{body_txt}"
+            if budget - len(blk) < 0:
+                break
+            ctx_parts.append(blk); budget -= len(blk)
+            sources.append({"type": "law", "label": tag})
+
+    if internal_text:                            # 내규 근거
+        itxt = re.sub(r"\n{3,}", "\n\n", internal_text)[:5000]
+        blk = f"[내규] 사내 규정 검색 결과\n{itxt}"
+        ctx_parts.append(blk)
+        sources.append({"type": "internal", "label": "사내 내규 검색 결과"})
+
+    if ctx_parts and (api_key or provider == "ollama"):
+        ctx = "\n\n---\n\n".join(ctx_parts)
+        ans_system = (
+            "당신은 한국농업기술진흥원(KOAT)의 법무·규정 담당 전문가입니다.\n"
+            "아래 <자료>에 담긴 사내 내규와 국가법령 조문만을 근거로 질문에 답하세요.\n\n"
+            "규칙:\n"
+            "1. 자료에 없는 내용은 지어내지 말고, 필요하면 '제공된 자료에서 확인되지 않습니다'라고 밝히세요.\n"
+            "2. 근거가 되는 조문을 문장 끝에 [내규명 제N조] 또는 [법령명 제N조] 형태로 표기하세요.\n"
+            "3. 사내 내규와 국가법령이 모두 관련되면 '내규 기준'과 '법령 근거'를 나누어 설명하세요.\n"
+            "4. 실무자가 바로 행동할 수 있도록 결론 → 근거 → 절차/유의사항 순으로 쓰세요.\n"
+            "5. 한국어 존댓말, 마크다운(**굵게**, 목록) 사용. 800자 내외로 간결하게.\n"
+            "6. 질문이 자료와 무관하면 억지로 답하지 말고 그 사실을 알리세요."
+        )
+        ans_user = f"<자료>\n{ctx}\n</자료>\n\n질문: {query}"
+        answer, answer_err = _ai_generate(provider, api_key, mdl, ans_system, ans_user,
+                                          max_tokens=1500, temperature=0.15)
+        if answer_err:
+            print(f"[scenario] 답변 생성 실패: {answer_err}")
+
     return jsonify({
         "success":    True,
         "query":      query,
         "category":   category,
         "basis_type": basis_type,
         "guidance":   guidance,
+        "answer":     (answer or "").strip(),
+        "answer_error": answer_err,
+        "sources":    sources,
         "steps":      steps,
         "caution":    caution,
         "keywords":   keywords,
@@ -1523,6 +1596,61 @@ def ai_models():
     return jsonify({"success": True, "provider": provider, "model": mdl,
                     "resolved": provider == "gemini" and bool(key),
                     "cached_at": _GEMINI_MODEL_CACHE["ts"] if provider == "gemini" else 0})
+
+
+def _ai_generate(provider: str, api_key: str, mdl: str, system: str, user: str,
+                 max_tokens: int = 1800, temperature: float = 0.2):
+    """프로바이더 공통 텍스트 생성. 반환: (text, error_message). 실패 시 text=''."""
+    try:
+        if provider == "gemini":
+            url = (f"https://generativelanguage.googleapis.com/v1beta/models"
+                   f"/{mdl}:generateContent?key={api_key}")
+            r = _ai_post_retry(lambda: req_lib.post(
+                url, timeout=40, headers={"Content-Type": "application/json"},
+                json={"contents": [{"parts": [{"text": f"{system}\n\n{user}"}]}],
+                      "generationConfig": {"maxOutputTokens": max_tokens,
+                                           "temperature": temperature}}))
+            if r.status_code != 200:
+                return "", _ai_error(r)[0]
+            cands = r.json().get("candidates") or []
+            if not cands:
+                return "", "AI 응답이 비어 있습니다."
+            parts = cands[0].get("content", {}).get("parts") or []
+            return "".join(p.get("text", "") for p in parts), ""
+        if provider == "claude":
+            r = _ai_post_retry(lambda: req_lib.post(
+                "https://api.anthropic.com/v1/messages", timeout=40,
+                headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
+                         "content-type": "application/json"},
+                json={"model": mdl, "max_tokens": max_tokens, "temperature": temperature,
+                      "system": system, "messages": [{"role": "user", "content": user}]}))
+            if r.status_code != 200:
+                return "", _ai_error(r)[0]
+            return "".join(p.get("text", "") for p in r.json().get("content", [])), ""
+        if provider in ("gpt", "openai"):
+            r = _ai_post_retry(lambda: req_lib.post(
+                "https://api.openai.com/v1/chat/completions", timeout=40,
+                headers={"Authorization": f"Bearer {api_key}",
+                         "Content-Type": "application/json"},
+                json={"model": mdl, "temperature": temperature,
+                      "max_tokens": max_tokens,
+                      "messages": [{"role": "system", "content": system},
+                                   {"role": "user", "content": user}]}))
+            if r.status_code != 200:
+                return "", _ai_error(r)[0]
+            return r.json()["choices"][0]["message"]["content"], ""
+        if provider == "ollama":
+            base = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+            r = req_lib.post(f"{base}/api/chat", timeout=60,
+                             json={"model": mdl or "gemma2", "stream": False,
+                                   "messages": [{"role": "system", "content": system},
+                                                {"role": "user", "content": user}]})
+            if r.status_code != 200:
+                return "", f"Ollama 오류({r.status_code})"
+            return (r.json().get("message") or {}).get("content", ""), ""
+    except Exception as e:
+        return "", f"AI 호출 오류: {e}"
+    return "", f"지원하지 않는 프로바이더: {provider}"
 
 
 def _ai_post_retry(do_post, tries=3):
