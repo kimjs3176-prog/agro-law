@@ -844,7 +844,14 @@ def search_by_article_keyword():
         if nm not in stage1_meta:
             stage1_meta[nm] = {"meta": {}, "doc_type": "admrul", "name": nm}
     all_target = list(CANDIDATE_LAWS) + list(CANDIDATE_ADMRUL) + extra_laws
-    print(f"[article-search] '{query}' 대상 {len(all_target)}개 "
+    # scope=priority: 질의어와 이름이 직접 관련된 법령만 먼저 조회(빠른 1차 응답용).
+    # 프런트가 1차/전체를 병렬 호출해, 가장 관련 높은 결과를 먼저 그린다.
+    scope = (request.args.get("scope") or "").strip()
+    if scope == "priority":
+        prio = [n for n in all_target if _law_name_rel(n, query) <= 2]
+        if prio:
+            all_target = prio[:8]
+    print(f"[article-search] '{query}' 대상 {len(all_target)}개 scope={scope or 'all'} "
           f"(법령:{len(CANDIDATE_LAWS)} + 행정규칙:{len(CANDIDATE_ADMRUL)} + 추가:{len(extra_laws)})")
 
     kw = query.lower()
