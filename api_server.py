@@ -150,121 +150,170 @@ def _node_text(el) -> str:
     """단일 노드의 직접 텍스트만 반환 (자식 텍스트 제외)"""
     return (el.text or "").strip()
 
-def _render_jo(u: ET.Element) -> str:
-    """
-    <조문단위> 하나를 읽어서 깔끔한 조문 텍스트를 반환한다.
-    번호 태그(<항번호> 등)는 제목으로만 사용하고, 내용 태그가 이미
-    '1. 내용…' 형태로 시작하면 번호를 붙이지 않는다.
-    """
-    lines = []
+# ── 항/호/목 계층 깊이 ────────────────────────────────────────────────────────
+# 법제처 XML은 <목>을 <호>의 자식이 아니라 <항>의 자식(= <호>의 형제)으로 내려준다.
+# 따라서 부모를 따라 깊이를 세면 목이 누락되므로, 태그별 고정 깊이를 사용한다.
+_ITEM_DEPTH = {"항": 1, "호": 2, "목": 3, "호목": 3}
+# 각 계층의 (번호 태그, 내용 태그)
+_ITEM_TAGS = {
+    "항":   ("항번호", "항내용"),
+    "호":   ("호번호", "호내용"),
+    "목":   ("목번호", "목내용"),
+    "호목": ("목번호", "목내용"),
+}
+_CONTENT_TAGS = ("조문내용", "항내용", "호내용", "목내용")
 
-    def _already_numbered(txt: str) -> bool:
-        """텍스트가 이미 번호(1. / 가. / ① 등)로 시작하는지 확인"""
-        return bool(re.match(r"^(\d+\.|[가-힣]\.|①|②|③|④|⑤|⑥|⑦|⑧|⑨|⑩)", txt))
+# 내용 텍스트 맨 앞의 항·호·목 번호 패턴
+#   ① / 1. / 1의2. / 가. / 가의2. / (1) / 1) / 가)
+_NUM_PREFIX_RE = re.compile(
+    r"^(?:[①-⑮㉑-㉟]"                       # 동그라미 숫자(항)
+    r"|\d{1,3}(?:의\d{1,3})?\s*[.)]"        # 1.  1의2.  1)   (연도 '2024.' 오인 방지: 3자리 이내)
+    r"|[가-힣](?:의\d{1,3})?\s*[.)]"        # 가.  가의2.  가)
+    r"|\(\s*\d{1,3}\s*\)"                   # (1)
+    r")"
+)
+def _split_no(depth: int, no: str, txt: str) -> tuple:
+    """
+    (번호, 내용) 을 확정한다.
+      · 내용이 번호를 이미 품고 있으면 떼어내어 중복 표기를 막는다
+        (예: 번호 '1의2.' + 내용 '1의2. 농업기계의 보급…' → ('1의2.', '농업기계의 보급…'))
+      · 번호 태그가 비어 있어도 내용 앞의 번호를 인식해 계층 들여쓰기에 쓴다
+      · depth 0(조문 본문)은 '제N조(제목)' 형태를 그대로 두어야 하므로 분리하지 않는다
+    """
+    no, txt = (no or "").strip(), (txt or "").strip()
+    if depth <= 0 or not txt:
+        return no, txt
 
-    def _render_node(node: ET.Element, depth: int = 0):
+    if no and txt.startswith(no):
+        return no, txt[len(no):].lstrip()
+
+    # 번호 태그가 없거나 표기가 달라도(1 vs 1.) 본문 앞 번호를 그대로 신뢰한다
+    m = _NUM_PREFIX_RE.match(txt)
+    if m:
+        return m.group().strip(), txt[m.end():].lstrip()
+
+    return no, txt
+
+
+def _render_jo_struct(u: ET.Element) -> list:
+    """
+    <조문단위> 하나를 읽어 계층 구조를 가진 항목 리스트로 반환한다.
+      [{"depth": 0, "no": "", "text": "제2조(정의) …"},
+       {"depth": 2, "no": "1.", "text": "\"농업기계\"란 …"},
+       {"depth": 3, "no": "가.", "text": "농림축산물의 생산에 …"}, …]
+    depth 0=조문본문, 1=항, 2=호, 3=목.
+    프론트엔드는 이 깊이로 매달린 들여쓰기(hanging indent)를 적용한다.
+    """
+    items = []
+
+    def _emit(depth: int, no: str, txt: str):
+        no, txt = _split_no(depth, no, txt)
+        if no or txt:
+            items.append({"depth": depth, "no": no, "text": txt})
+
+    def _walk(node: ET.Element, depth: int):
         tag = node.tag
-        indent = "  " * depth
 
-        # ── 번호 태그: 건너뜀 (부모가 내용 태그에서 이미 포함) ──
         if tag in _NO_TAGS:
+            return                              # 번호 태그는 부모에서 처리
+
+        if tag in _ITEM_TAGS:                   # 항 / 호 / 목
+            d = _ITEM_DEPTH.get(tag, depth)
+            no_tag, con_tag = _ITEM_TAGS[tag]
+            _emit(d, _node_text(node.find(no_tag)) if node.find(no_tag) is not None else "",
+                     _node_text(node.find(con_tag)) if node.find(con_tag) is not None else "")
+            for child in node:                  # 하위 계층(호·목)은 문서 순서대로
+                if child.tag in (no_tag, con_tag):
+                    continue
+                _walk(child, d)
             return
 
-        # ── 조문 내용 계열 태그 ──
-        if tag in ("조문내용", "항내용", "호내용", "목내용"):
-            txt = _node_text(node)
-            if txt:
-                # 이미 "1." 등으로 시작하면 그대로, 아니면 인덴트만 추가
-                lines.append(f"{indent}{txt}")
-            # tail 텍스트
+        if tag in _CONTENT_TAGS:                # 조문내용 등 단독 내용 태그
+            _emit(depth, "", _node_text(node))
             if node.tail and node.tail.strip():
-                lines.append(f"{indent}{node.tail.strip()}")
+                _emit(depth, "", node.tail.strip())
             return
 
-        # ── 항 ──
-        if tag == "항":
-            no_el  = node.find("항번호")
-            con_el = node.find("항내용")
-            no_txt  = _node_text(no_el)  if no_el  is not None else ""
-            con_txt = _node_text(con_el) if con_el is not None else ""
+        for child in node:                      # 기타 컨테이너: 자식 순회
+            _walk(child, depth)
 
-            # "1." 등이 내용에 이미 포함되어 있으면 번호 생략
-            if con_txt and _already_numbered(con_txt):
-                lines.append(f"{indent}{con_txt}")
-            elif no_txt and con_txt:
-                lines.append(f"{indent}{no_txt} {con_txt}")
-            elif con_txt:
-                lines.append(f"{indent}{con_txt}")
-
-            # 호 처리
-            for ho in node.findall("호"):
-                _render_node(ho, depth + 1)
-            return
-
-        # ── 호 ──
-        if tag == "호":
-            no_el  = node.find("호번호")
-            con_el = node.find("호내용")
-            no_txt  = _node_text(no_el)  if no_el  is not None else ""
-            con_txt = _node_text(con_el) if con_el is not None else ""
-
-            if con_txt and _already_numbered(con_txt):
-                lines.append(f"{indent}{con_txt}")
-            elif no_txt and con_txt:
-                lines.append(f"{indent}{no_txt} {con_txt}")
-            elif con_txt:
-                lines.append(f"{indent}{con_txt}")
-
-            for mok in node.findall("목"):
-                _render_node(mok, depth + 2)
-            return
-
-        # ── 목 ──
-        if tag == "목":
-            no_el  = node.find("목번호")
-            con_el = node.find("목내용")
-            no_txt  = _node_text(no_el)  if no_el  is not None else ""
-            con_txt = _node_text(con_el) if con_el is not None else ""
-
-            if con_txt and _already_numbered(con_txt):
-                lines.append(f"{indent}{con_txt}")
-            elif no_txt and con_txt:
-                lines.append(f"{indent}{no_txt} {con_txt}")
-            elif con_txt:
-                lines.append(f"{indent}{con_txt}")
-            return
-
-        # ── 기타: 자식 순회 ──
-        for child in node:
-            _render_node(child, depth)
-
-    # 조문단위 직접 자식 순회
     for child in u:
-        if child.tag in ("조번호", "조문제목", "조제목"):
-            continue  # 조 번호·제목은 별도 필드로 이미 추출
-        _render_node(child, 0)
+        if child.tag in ("조번호", "조문번호", "조문가지번호", "조문제목", "조제목"):
+            continue                            # 번호·제목은 별도 필드로 추출
+        _walk(child, 0)
 
+    return items
+
+
+def _struct_to_text(items: list) -> str:
+    """계층 항목 리스트를 들여쓴 평문으로 변환(기존 조문내용 필드 호환)."""
+    lines = []
+    for it in items:
+        indent = "  " * max(0, it.get("depth", 0) - 1)
+        no, txt = it.get("no", ""), it.get("text", "")
+        lines.append(f"{indent}{(no + ' ' + txt).strip() if no else txt}")
     return "\n".join(l for l in lines if l.strip())
 
 
+def _render_jo(u: ET.Element) -> str:
+    """<조문단위> 하나를 읽어서 깔끔한 조문 텍스트를 반환한다."""
+    return _struct_to_text(_render_jo_struct(u))
+
+
 # ── 법령MST 취득 (XML 검색 → 태그 추출) ──────────────────────────────────────
+_MST_TAGS  = ("법령MST", "법령Mst", "행정규칙MST", "행정규칙Mst", "lawMst", "MST", "mst",
+              "법령일련번호", "행정규칙일련번호")
+_NAME_TAGS = ("법령명한글", "법령명", "행정규칙명")
+
+
+def _mst_of(item: ET.Element) -> str:
+    for tag in _MST_TAGS:
+        v = (item.findtext(tag) or "").strip()
+        if v:
+            return v
+    return ""
+
+
 def _get_mst(law_name: str, target: str = "law") -> str:
+    """
+    법령명 → MST(일련번호). 법제처 검색은 질의어를 포함하는 다른 법령을 먼저 주는
+    경우가 있어(예: '특허법' → '특허료 등의 징수규칙') 이름이 정확히 일치하는
+    항목을 우선 선택한다.
+    """
     try:
-        root = _law_get_xml("lawSearch.do", {"target": target, "query": law_name, "display": "1"})
-        for tag in ("법령MST", "법령Mst", "행정규칙MST", "행정규칙Mst", "lawMst", "MST", "mst"):
+        root = _law_get_xml("lawSearch.do",
+                            {"target": target, "query": law_name, "display": "20"})
+        items = [el for el in root if _mst_of(el)] or \
+                [el for el in root.iter() if el is not root and _mst_of(el)]
+        want = _norm_key(law_name)
+
+        best, best_rank = "", 99
+        for it in items:
+            nm = ""
+            for tag in _NAME_TAGS:
+                nm = (it.findtext(tag) or "").strip()
+                if nm:
+                    break
+            n = _norm_key(nm)
+            rank = (0 if n == want else            # 완전 일치
+                    1 if n.startswith(want) else   # '특허법 시행령' 류
+                    2 if want in n else 3)         # 부분 포함 → 무관
+            if rank < best_rank:
+                best, best_rank, best_nm = _mst_of(it), rank, nm
+                if rank == 0:
+                    break
+        if best:
+            print(f"[MST] '{law_name}'({target}) → {best} "
+                  f"(선택:'{best_nm}' 일치도={best_rank})")
+            return best
+
+        # 항목 단위 추출이 실패하면 문서 전체에서 첫 태그 사용(구버전 동작)
+        for tag in _MST_TAGS:
             el = root.find(f".//{tag}")
             if el is not None and el.text and el.text.strip():
-                print(f"[MST] '{law_name}'({target}) → {el.text.strip()} (태그:{tag})")
+                print(f"[MST] '{law_name}'({target}) fallback {tag}={el.text.strip()}")
                 return el.text.strip()
-        # 발견된 태그 목록 디버그
-        tags = {e.tag for e in root.iter()}
-        print(f"[MST] '{law_name}'({target}) XML 태그 목록: {sorted(tags)}")
-        # 일련번호 fallback
-        for seq_tag in ("법령일련번호", "행정규칙일련번호"):
-            seq_el = root.find(f".//{seq_tag}")
-            if seq_el is not None and seq_el.text:
-                print(f"[MST] fallback {seq_tag}={seq_el.text.strip()}")
-                return seq_el.text.strip()
+        print(f"[MST] '{law_name}'({target}) 실패 — 태그: {sorted({e.tag for e in root.iter()})}")
     except Exception as e:
         print(f"[MST] 오류: {e}")
     return ""
@@ -380,6 +429,14 @@ def _struct_label(u: ET.Element) -> tuple:
     return no_label, title
 
 
+def _art_label(no_d: str, branch: str, no_raw: str = "") -> str:
+    """조문 표시번호: 조문번호 + 가지번호 → '제5조의2'."""
+    if no_d:
+        return f"제{no_d}조" + (f"의{branch}" if branch else "")
+    m = re.match(r"^\s*(제\s*\d+\s*조(?:\s*의\s*\d+)?)", no_raw or "")
+    return m.group(1).replace(" ", "") if m else ""
+
+
 def _clean_article_title(title: str, art_no: str) -> str:
     """조문제목에서 앞의 '제N조(의M)' 중복 접두사 제거
     예: '제1조(목적)' → '(목적)' 또는 '목적'
@@ -451,6 +508,7 @@ def _parse_articles(root: ET.Element):
 
             no_raw = (u.findtext("조번호") or u.findtext("조문번호") or "").strip()
             title  = (u.findtext("조문제목") or u.findtext("조제목") or "").strip()
+            branch = (u.findtext("조문가지번호") or "").strip()
 
             # 조번호에서 첫 번째 숫자만 추출 ("제5조의2" → "5")
             m_no  = re.search(r"\d+", no_raw)
@@ -459,11 +517,14 @@ def _parse_articles(root: ET.Element):
             # 조문제목에서 앞의 "제N조" 중복 접두사 제거
             title = _clean_article_title(title, no_d)
 
-            content = _render_jo(u).strip()
+            struct  = _render_jo_struct(u)
+            content = _struct_to_text(struct).strip()
             amend   = _get_amend_info(u)
             if no_d or title or content:
-                art = {"조문번호": no_d, "조문제목": title,
-                       "조문내용": content, "type": "article"}
+                art = {"조문번호": no_d, "조문가지번호": branch,
+                       "조문표시번호": _art_label(no_d, branch, no_raw),
+                       "조문제목": title,
+                       "조문내용": content, "조문구조": struct, "type": "article"}
                 art.update(amend)
                 articles.append(art)
         if articles:
@@ -476,14 +537,18 @@ def _parse_articles(root: ET.Element):
         for jo in jos:
             no_raw = (jo.findtext("조번호") or jo.findtext("번호") or "").strip()
             title  = (jo.findtext("조문제목") or jo.findtext("제목") or "").strip()
+            branch = (jo.findtext("조문가지번호") or "").strip()
             m_no   = re.search(r"\d+", no_raw)
             no_d   = m_no.group() if m_no else ""
             title  = _clean_article_title(title, no_d)
-            content = _render_jo(jo).strip()
+            struct  = _render_jo_struct(jo)
+            content = _struct_to_text(struct).strip()
             amend   = _get_amend_info(jo)
             if no_d or title or content:
-                art = {"조문번호": no_d, "조문제목": title,
-                       "조문내용": content, "type": "article"}
+                art = {"조문번호": no_d, "조문가지번호": branch,
+                       "조문표시번호": _art_label(no_d, branch, no_raw),
+                       "조문제목": title,
+                       "조문내용": content, "조문구조": struct, "type": "article"}
                 art.update(amend)
                 articles.append(art)
         if articles:
@@ -502,14 +567,18 @@ def _parse_articles(root: ET.Element):
             if no_raw in seen: continue
             seen.add(no_raw)
             title   = (parent.findtext("조문제목") or parent.findtext("제목") or "").strip()
+            branch  = (parent.findtext("조문가지번호") or "").strip()
             m_no    = re.search(r"\d+", no_raw)
             no_d    = m_no.group() if m_no else ""
             title   = _clean_article_title(title, no_d)
-            content = _render_jo(parent).strip()
+            struct  = _render_jo_struct(parent)
+            content = _struct_to_text(struct).strip()
             amend   = _get_amend_info(parent)
             if no_d or title:
-                art = {"조문번호": no_d, "조문제목": title,
-                       "조문내용": content, "type": "article"}
+                art = {"조문번호": no_d, "조문가지번호": branch,
+                       "조문표시번호": _art_label(no_d, branch, no_raw),
+                       "조문제목": title,
+                       "조문내용": content, "조문구조": struct, "type": "article"}
                 art.update(amend)
                 articles.append(art)
         if articles:
@@ -2262,6 +2331,15 @@ def _norm_key(s: str) -> str:
     return re.sub(r"\s+", "", (s or "")).lower()
 
 
+def _save_reg_manifest(man: list) -> None:
+    """manifest 저장 — 기존 파일과 같은 포맷(indent=1)으로 써서 diff 를 최소화한다."""
+    tmp = REG_MANIFEST_PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(man, f, ensure_ascii=False, indent=1)
+        f.write("\n")
+    os.replace(tmp, REG_MANIFEST_PATH)
+
+
 def _find_reg_original(name: str) -> dict | None:
     """규정명으로 원본 PDF 항목을 찾는다(정확 일치 → 포함 관계)."""
     man = _load_reg_manifest()
@@ -2279,6 +2357,687 @@ def _find_reg_original(name: str) -> dict | None:
     if cands:
         return max(cands, key=lambda m: len(m.get("title", "")))
     return None
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  개정 내규 업로드 (HWPX·DOCX·HTML·TXT·PDF)
+#    · 원본을 regulations/<슬러그>/ 에 보관하고 열람용 HTML 을 생성한다
+#    · regulations_manifest.json 에 등록해 기존 내규 조회·전문 화면에서 바로 열린다
+#    · 추출 본문(text.txt)은 내규 검색·전문 조회의 로컬 소스로 쓰인다
+# ══════════════════════════════════════════════════════════════════════════════
+import zipfile, io as _io, unicodedata
+from datetime import datetime, timezone, timedelta
+
+REG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "regulations")
+REG_MANIFEST_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                 "regulations_manifest.json")
+# 업로드 토큰(설정 시 업로드에 필수) — 공개 배포본에서 무단 업로드 방지
+REG_UPLOAD_TOKEN = os.environ.get("REG_UPLOAD_TOKEN", "").strip()
+REG_UPLOAD_MAX_MB = int(os.environ.get("REG_UPLOAD_MAX_MB", "40"))
+REG_CATEGORIES = ["정관", "규정", "규칙", "세칙", "예규", "지침", "요령", "매뉴얼", "기타"]
+_ALLOWED_EXT = {".hwpx", ".hwp", ".docx", ".pdf", ".html", ".htm", ".txt", ".md"}
+_KST = timezone(timedelta(hours=9))
+
+
+def _now_kst() -> str:
+    return datetime.now(_KST).strftime("%Y-%m-%d %H:%M")
+
+
+def _reg_slug(title: str) -> str:
+    """규정명 → 디렉터리 슬러그. 기존 manifest 규칙(공백→_)을 따른다."""
+    s = unicodedata.normalize("NFC", (title or "").strip())
+    s = re.sub(r"[\\/:*?\"<>|]+", "", s)          # 경로·윈도우 금지문자 제거
+    s = re.sub(r"\s+", "_", s).strip("._")
+    return s[:120]
+
+
+def _reg_writable() -> bool:
+    """regulations/ 에 실제로 쓸 수 있는지(Vercel 등 읽기전용 FS 판별)."""
+    try:
+        os.makedirs(REG_DIR, exist_ok=True)
+        probe = os.path.join(REG_DIR, ".write_probe")
+        with open(probe, "w", encoding="utf-8") as f:
+            f.write("ok")
+        os.remove(probe)
+        return os.access(REG_MANIFEST_PATH, os.W_OK) or not os.path.exists(REG_MANIFEST_PATH)
+    except Exception:
+        return False
+
+
+# ── 문서 → 블록(단락·표) 추출 ────────────────────────────────────────────────
+def _local(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1]
+
+
+def _xml_blocks(root: ET.Element, para_tag: str, table_tag: str,
+                row_tag: str, cell_tag: str, text_tags: set,
+                break_tags: set) -> list:
+    """
+    OWPML(HWPX)·OOXML(DOCX) 공통 블록 추출.
+    표는 단락 안에 중첩되어 나타나므로(HWPX: p > run > tbl) 표를 만나면
+    앞까지의 텍스트를 단락으로 끊고 표 블록을 따로 만든다 — 표가 줄글로 풀리지 않게.
+    """
+    blocks = []
+    buf = []
+
+    def flush():
+        txt = re.sub(r"[ \t]+", " ", "".join(buf)).strip()
+        buf.clear()
+        if not txt:
+            blocks.append({"type": "p", "text": ""})
+            return
+        for line in txt.split("\n"):
+            blocks.append({"type": "p", "text": line.strip()})
+
+    def cell_text(tc: ET.Element) -> str:
+        parts = []
+        for el in tc.iter():
+            t = _local(el.tag)
+            if t in text_tags:
+                parts.append(el.text or "")
+            elif t == para_tag and parts:
+                parts.append(" ")
+        return re.sub(r"\s+", " ", "".join(parts)).strip()
+
+    def table_block(tbl: ET.Element):
+        rows = []
+        for tr in tbl.iter():
+            if _local(tr.tag) != row_tag:
+                continue
+            cells = [cell_text(tc) for tc in tr if _local(tc.tag) == cell_tag]
+            if cells:
+                rows.append(cells)
+        while rows and not any(c for c in rows[0]):      # 앞뒤 빈 행 제거
+            rows.pop(0)
+        while rows and not any(c for c in rows[-1]):
+            rows.pop()
+        if not rows:
+            return None
+        # 1열 표는 제목·안내 박스로 쓰인 레이아웃 표 → 표 대신 단락으로
+        if max(len(r) for r in rows) <= 1:
+            for r in rows:
+                blocks.append({"type": "p", "text": (r[0] if r else "").strip()})
+            return None
+        return {"type": "table", "rows": rows}
+
+    def walk(node, in_para: bool):
+        for child in list(node):
+            tag = _local(child.tag)
+            if tag == table_tag:
+                flush()                       # 표 앞 텍스트를 단락으로 마무리
+                tb = table_block(child)
+                if tb:
+                    blocks.append(tb)
+                continue
+            if tag == para_tag and not in_para:
+                buf.clear()
+                walk(child, True)
+                flush()
+                continue
+            if tag in text_tags:
+                buf.append(child.text or "")
+                continue
+            if tag in break_tags:
+                buf.append("\n")
+                continue
+            walk(child, in_para)
+
+    walk(root, False)
+    if buf:
+        flush()
+    return blocks
+
+
+def _hwpx_blocks(raw: bytes) -> list:
+    """HWPX(한/글 OWPML, zip) 본문 추출."""
+    blocks = []
+    with zipfile.ZipFile(_io.BytesIO(raw)) as z:
+        names = [n for n in z.namelist()
+                 if re.match(r"Contents/section\d+\.xml$", n, re.I)]
+        names.sort(key=lambda n: int(re.search(r"(\d+)", n).group(1)))
+        if not names:
+            raise ValueError("HWPX 본문(Contents/section*.xml)을 찾을 수 없습니다.")
+        for n in names:
+            root = ET.fromstring(z.read(n))
+            blocks += _xml_blocks(root, "p", "tbl", "tr", "tc",
+                                  {"t"}, {"lineBreak"})
+    return blocks
+
+
+def _docx_blocks(raw: bytes) -> list:
+    """DOCX(OOXML) 본문 추출."""
+    with zipfile.ZipFile(_io.BytesIO(raw)) as z:
+        root = ET.fromstring(z.read("word/document.xml"))
+    return _xml_blocks(root, "p", "tbl", "tr", "tc", {"t"}, {"br", "cr"})
+
+
+def _text_blocks(text: str) -> list:
+    return [{"type": "p", "text": l.rstrip()} for l in text.replace("\r\n", "\n").split("\n")]
+
+
+_SCRIPT_RE = re.compile(r"<\s*(script|iframe|object|embed)\b.*?<\s*/\s*\1\s*>",
+                        re.I | re.S)
+_SCRIPT_OPEN_RE = re.compile(r"<\s*/?\s*(script|iframe|object|embed)\b[^>]*>", re.I)
+_ON_ATTR_RE = re.compile(r"\son[a-z]+\s*=\s*(\"[^\"]*\"|'[^']*'|[^\s>]+)", re.I)
+_JS_URL_RE = re.compile(r"(href|src)\s*=\s*(\"|')\s*javascript:[^\"']*(\2)", re.I)
+
+
+def _sanitize_html(html: str) -> str:
+    """업로드된 HTML에서 스크립트·이벤트 핸들러 제거(같은 출처에서 서빙되므로 필수)."""
+    out = _SCRIPT_RE.sub("", html)
+    out = _SCRIPT_OPEN_RE.sub("", out)
+    out = _ON_ATTR_RE.sub("", out)
+    out = _JS_URL_RE.sub(r"\1=\2#\2", out)
+    return out
+
+
+def _blocks_to_text(blocks: list) -> str:
+    lines = []
+    for b in blocks:
+        if b["type"] == "table":
+            for row in b["rows"]:
+                lines.append(" | ".join(row))
+        else:
+            lines.append(b.get("text", ""))
+    # 3줄 이상 연속 공백 줄은 2줄로 압축
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+
+
+def _esc(s: str) -> str:
+    return (str(s or "").replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;").replace('"', "&quot;"))
+
+
+_ART_HEAD_RE = re.compile(r"^제\s*\d+\s*조(?:\s*의\s*\d+)?\s*(?:\(|$|\s)")
+_CHAP_HEAD_RE = re.compile(r"^제\s*\d+\s*(?:편|장|절|관)\b")
+_APX_HEAD_RE = re.compile(r"^\[?\s*(?:별표|별지|붙임|서식)")
+
+
+def _blocks_to_view_html(title: str, meta: dict, blocks: list,
+                         orig_name: str = "") -> str:
+    """열람용 HTML 생성 — 조·장 제목을 구분해 기존 원본 뷰어와 동일하게 읽히도록."""
+    body = []
+    for b in blocks:
+        if b["type"] == "table":
+            rows = b["rows"]
+            th, td = rows[0], rows[1:]
+            body.append("<table><thead><tr>"
+                        + "".join(f"<th>{_esc(c)}</th>" for c in th)
+                        + "</tr></thead><tbody>"
+                        + "".join("<tr>" + "".join(f"<td>{_esc(c)}</td>" for c in r) + "</tr>"
+                                  for r in td)
+                        + "</tbody></table>")
+            continue
+        t = (b.get("text") or "").strip()
+        if not t:
+            body.append('<p class="blank"></p>')
+        elif _CHAP_HEAD_RE.match(t):
+            body.append(f'<h2 class="chap">{_esc(t)}</h2>')
+        elif _ART_HEAD_RE.match(t):
+            body.append(f'<h3 class="art">{_esc(t)}</h3>')
+        elif _APX_HEAD_RE.match(t):
+            body.append(f'<h3 class="apx">{_esc(t)}</h3>')
+        else:
+            body.append(f"<p>{_esc(t)}</p>")
+
+    metarows = "".join(
+        f"<tr><th>{_esc(k)}</th><td>{_esc(v)}</td></tr>"
+        for k, v in [("규정 구분", meta.get("category")),
+                     ("개정 구분", meta.get("revision")),
+                     ("시행일자", meta.get("effective_date")),
+                     ("담당 부서", meta.get("department")),
+                     ("원본 파일", orig_name),
+                     ("업로드", meta.get("uploaded_at"))] if v)
+    note = meta.get("note") or ""
+    return f"""<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{_esc(title)}</title>
+<style>
+ :root{{--tx:#1a1d21;--mu:#5b6472;--bd:#e5e8ec;--g:#1D9E75;--gl:#eafaf3;}}
+ body{{font-family:'Malgun Gothic','맑은 고딕',system-ui,sans-serif;color:var(--tx);
+   line-height:1.85;max-width:900px;margin:0 auto;padding:28px 26px 60px;font-size:15px;}}
+ h1{{font-size:22px;text-align:center;margin:0 0 6px;letter-spacing:2px;}}
+ .sub{{text-align:center;color:var(--mu);font-size:13px;margin-bottom:18px;}}
+ .meta{{border-collapse:collapse;margin:0 auto 26px;font-size:13px;min-width:60%;}}
+ .meta th,.meta td{{border:1px solid var(--bd);padding:5px 12px;text-align:left;}}
+ .meta th{{background:var(--gl);color:var(--g);white-space:nowrap;font-weight:700;}}
+ .note{{background:#fffbeb;border-left:3px solid #f59e0b;padding:8px 12px;
+   font-size:13px;margin-bottom:22px;white-space:pre-wrap;}}
+ h2.chap{{font-size:17px;margin:32px 0 12px;padding-bottom:5px;
+   border-bottom:1px solid var(--bd);}}
+ h3.art{{font-size:15px;margin:22px 0 6px;color:#0f172a;}}
+ h3.apx{{font-size:15px;margin:26px 0 8px;color:var(--g);}}
+ p{{margin:0 0 4px;white-space:pre-wrap;word-break:keep-all;}}
+ p.blank{{height:8px;margin:0;}}
+ table{{border-collapse:collapse;margin:10px 0 18px;font-size:13px;width:100%;}}
+ th,td{{border:1px solid var(--bd);padding:5px 8px;vertical-align:top;}}
+ thead th{{background:#f7f8fa;}}
+ @media print{{body{{padding:0;}}}}
+</style></head><body>
+<h1>{_esc(title)}</h1>
+<div class="sub">{_esc(meta.get('revision') or '')}</div>
+{f'<table class="meta">{metarows}</table>' if metarows else ''}
+{f'<div class="note">{_esc(note)}</div>' if note else ''}
+{chr(10).join(body)}
+</body></html>"""
+
+
+def _convert_upload(filename: str, raw: bytes, title: str, meta: dict) -> dict:
+    """업로드 파일 → {view_html, text, converted, warning}."""
+    ext = os.path.splitext(filename)[1].lower()
+    if ext in (".html", ".htm"):
+        html = _sanitize_html(raw.decode("utf-8", errors="replace"))
+        text = re.sub(r"<[^>]+>", " ", html)
+        text = re.sub(r"[ \t]+", " ", text)
+        return {"view_html": html, "text": re.sub(r"\n{3,}", "\n\n", text).strip(),
+                "converted": True, "warning": ""}
+    if ext == ".hwpx":
+        blocks = _hwpx_blocks(raw)
+    elif ext == ".docx":
+        blocks = _docx_blocks(raw)
+    elif ext in (".txt", ".md"):
+        blocks = _text_blocks(_decode(raw))
+    elif ext == ".pdf":
+        # PDF 는 원본 그대로 열람(텍스트 추출은 외부 라이브러리 필요)
+        src = "original.pdf"
+        html = (f'<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">'
+                f'<title>{_esc(title)}</title><style>html,body{{margin:0;height:100%;}}'
+                f'embed{{width:100%;height:100%;border:0;}}</style></head><body>'
+                f'<embed src="{src}" type="application/pdf"></body></html>')
+        return {"view_html": html, "text": "", "converted": False,
+                "warning": "PDF는 원본 그대로 열람됩니다. 본문 검색이 필요하면 HWPX 또는 DOCX로 올려주세요."}
+    elif ext == ".hwp":
+        blocks = []
+    else:
+        raise ValueError(f"지원하지 않는 형식입니다: {ext}")
+
+    if ext == ".hwp":
+        html = _blocks_to_view_html(
+            title, meta,
+            [{"type": "p", "text": "이 규정은 구버전 HWP(바이너리) 형식으로 업로드되어 "
+                                   "본문을 자동 변환하지 못했습니다."},
+             {"type": "p", "text": "한/글에서 '다른 이름으로 저장 → HWPX'로 저장해 다시 올리면 "
+                                   "본문까지 조회·검색됩니다. 원본 파일은 아래 링크로 내려받을 수 있습니다."}],
+            orig_name=filename)
+        return {"view_html": html, "text": "", "converted": False,
+                "warning": "HWP(구버전)는 본문 자동 변환을 지원하지 않습니다. HWPX로 저장해 올리면 본문까지 검색됩니다."}
+
+    text = _blocks_to_text(blocks)
+    if not text:
+        raise ValueError("본문 텍스트를 추출하지 못했습니다. 파일이 손상되었는지 확인해주세요.")
+    return {"view_html": _blocks_to_view_html(title, meta, blocks, orig_name=filename),
+            "text": text, "converted": True, "warning": ""}
+
+
+# ── 업로드된 내규의 로컬 본문 (내규 검색·전문 조회에 사용) ────────────────────
+def _local_reg_text(slug: str) -> str:
+    try:
+        p = os.path.join(REG_DIR, slug, "text.txt")
+        if os.path.exists(p):
+            with open(p, encoding="utf-8") as f:
+                return f.read()
+    except Exception as e:
+        print(f"[reg-upload] 로컬 본문 읽기 실패({slug}): {e}")
+    return ""
+
+
+def _uploaded_regs() -> list:
+    return [m for m in _load_reg_manifest() if m.get("uploaded_at")]
+
+
+def _merge_local_hits(resp: dict, local_hits: list) -> dict:
+    """업로드된 내규 검색 결과를 MCP 응답에 병합(업로드분을 앞쪽에 노출)."""
+    if not local_hits:
+        return resp
+    resp["local"] = local_hits
+    resp["local_count"] = len(local_hits)
+    st = resp.get("structured")
+    if isinstance(st, list):
+        titles = {_norm_key(h["title"]) for h in local_hits}
+        rest = [it for it in st
+                if _norm_key(str((it or {}).get("title") or (it or {}).get("name") or "")) not in titles]
+        resp["structured"] = local_hits + rest
+    elif not st:
+        resp["structured"] = local_hits
+    return resp
+
+
+def _local_reg_search(query: str, limit: int = 20) -> list:
+    """업로드된 내규 본문에서 키워드 검색 → MCP 결과와 같은 형식의 항목 반환."""
+    q = (query or "").strip()
+    if not q:
+        return []
+    qL = q.lower()
+    hits = []
+    for m in _uploaded_regs():
+        text = _local_reg_text(m.get("slug", ""))
+        if not text:
+            continue
+        if qL in text.lower() or qL in _norm_key(m.get("title", "")):
+            hits.append({"title": m.get("title", ""), "content": text,
+                         "source": "upload", "revision": m.get("revision", ""),
+                         "category": m.get("category", "")})
+        if len(hits) >= limit:
+            break
+    return hits
+
+
+REG_BACKUP_DIR = os.path.join(REG_DIR, ".backup")
+
+
+def _backup_reg_dir(slug: str) -> str:
+    """개정본으로 덮어쓰기 전 기존 규정 폴더를 보관한다(되돌리기용). 보관 경로명 반환."""
+    src = os.path.join(REG_DIR, slug)
+    if not os.path.isdir(src):
+        return ""
+    import shutil
+    os.makedirs(REG_BACKUP_DIR, exist_ok=True)
+    name = f"{slug}__{datetime.now(_KST).strftime('%Y%m%d-%H%M%S')}"
+    dst = os.path.join(REG_BACKUP_DIR, name)
+    shutil.rmtree(dst, ignore_errors=True)
+    shutil.copytree(src, dst)
+    return name
+
+
+def _restore_reg_dir(slug: str, backup_name: str) -> bool:
+    """보관해 둔 이전 규정 폴더를 되돌린다."""
+    if not backup_name:
+        return False
+    src = os.path.join(REG_BACKUP_DIR, os.path.basename(backup_name))
+    dst = os.path.join(REG_DIR, slug)
+    if not os.path.isdir(src):
+        return False
+    import shutil
+    shutil.rmtree(dst, ignore_errors=True)
+    shutil.move(src, dst)
+    return True
+
+
+def _write_reg_files(slug: str, view_html: str, text: str,
+                     orig_filename: str, raw: bytes) -> str:
+    """regulations/<slug>/ 에 열람 HTML·본문·원본을 쓴다. 저장된 원본 파일명 반환."""
+    d = os.path.join(REG_DIR, slug)
+    os.makedirs(d, exist_ok=True)
+    with open(os.path.join(d, "index.html"), "w", encoding="utf-8") as f:
+        f.write(view_html)
+    if text:
+        with open(os.path.join(d, "text.txt"), "w", encoding="utf-8") as f:
+            f.write(text)
+    ext = os.path.splitext(orig_filename)[1].lower()
+    stored = ("original.pdf" if ext == ".pdf" else f"original{ext}")
+    with open(os.path.join(d, stored), "wb") as f:
+        f.write(raw)
+    return stored
+
+
+def _upsert_manifest(entry: dict, backup_name: str = "") -> dict:
+    """
+    manifest 에 등록/갱신. 같은 규정명이 있으면 개정판으로 교체하고
+    이전 항목 전체를 이력에 남긴다(되돌리기로 복원 가능).
+    """
+    man = list(_load_reg_manifest())
+    key = _norm_key(entry["title"])
+    idx = next((i for i, m in enumerate(man)
+                if _norm_key(m.get("title", "")) == key), -1)
+    if idx >= 0:
+        old = dict(man[idx])
+        history = list(old.pop("history", None) or [])
+        history.insert(0, {"revision": old.get("revision", ""),
+                           "src": old.get("src", ""),
+                           "replaced_at": entry.get("uploaded_at", ""),
+                           "backup": backup_name,
+                           "entry": old})
+        entry = {**old, **entry, "history": history[:20]}
+        man[idx] = entry
+    else:
+        man.append(entry)
+    # 정렬하지 않는다 — 기존 항목 순서를 유지해 커밋 diff 를 최소화한다
+    _save_reg_manifest(man)
+    global _REG_MANIFEST
+    _REG_MANIFEST = man
+    return entry
+
+
+def _upload_authorized() -> bool:
+    if not REG_UPLOAD_TOKEN:
+        return True
+    tok = (request.form.get("token") or request.headers.get("X-Upload-Token") or "").strip()
+    return tok == REG_UPLOAD_TOKEN
+
+
+@app.route("/regulations/<path:subpath>")
+def serve_regulation_file(subpath):
+    """내규 원본 서식·업로드 문서 서빙(로컬 실행용 — Vercel은 vercel.json이 정적 처리)."""
+    from flask import send_from_directory
+    # 보관용 백업 폴더(.backup)는 노출하지 않는다
+    if any(part.startswith(".") for part in subpath.replace("\\", "/").split("/")):
+        return Response("<h1>404</h1>", status=404, mimetype="text/html; charset=utf-8")
+    try:
+        return send_from_directory(REG_DIR, subpath)
+    except Exception:
+        return Response("<h1>404 — 규정 파일을 찾을 수 없습니다</h1>",
+                        status=404, mimetype="text/html; charset=utf-8")
+
+
+@app.route("/upload")
+@app.route("/upload.html")
+def upload_page():
+    """개정 내규 업로드 페이지."""
+    try:
+        p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "upload.html")
+        with open(p, encoding="utf-8") as f:
+            return Response(f.read(), mimetype="text/html; charset=utf-8")
+    except FileNotFoundError:
+        return Response("<h1>upload.html not found</h1>", status=404)
+
+
+@app.route("/api/regs/upload/status")
+def reg_upload_status():
+    """업로드 가능 여부·카테고리·업로드 이력."""
+    ups = _uploaded_regs()
+    return jsonify({
+        "success": True,
+        "writable": _reg_writable(),
+        "token_required": bool(REG_UPLOAD_TOKEN),
+        "max_mb": REG_UPLOAD_MAX_MB,
+        "categories": REG_CATEGORIES,
+        "allowed_ext": sorted(_ALLOWED_EXT),
+        "total": len(_load_reg_manifest()),
+        "uploaded": [
+            {"title": m.get("title"), "revision": m.get("revision"),
+             "category": m.get("category"), "slug": m.get("slug"),
+             "html": m.get("html"), "src": m.get("src"),
+             "uploaded_at": m.get("uploaded_at"),
+             "searchable": bool(_local_reg_text(m.get("slug", ""))),
+             "history": m.get("history") or []}
+            for m in sorted(ups, key=lambda x: x.get("uploaded_at", ""), reverse=True)
+        ],
+    })
+
+
+@app.route("/api/regs/names")
+def reg_names_for_upload():
+    """등록된 규정명 목록 — 업로드 화면의 '기존 규정 개정' 자동완성용."""
+    man = _load_reg_manifest()
+    return jsonify({"success": True, "names": [
+        {"title": m.get("title", ""), "category": m.get("category", ""),
+         "revision": m.get("revision", ""), "uploaded_at": m.get("uploaded_at", "")}
+        for m in man if m.get("title")]})
+
+
+@app.route("/api/regs/upload", methods=["POST"])
+def reg_upload():
+    """개정 내규 업로드 — 변환·저장·manifest 등록."""
+    if not _upload_authorized():
+        return jsonify({"error": "업로드 토큰이 올바르지 않습니다."}), 401
+
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"error": "파일을 선택해주세요."}), 400
+    filename = os.path.basename(f.filename)
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in _ALLOWED_EXT:
+        return jsonify({"error": f"지원하지 않는 형식입니다({ext}). "
+                                f"가능: {', '.join(sorted(_ALLOWED_EXT))}"}), 400
+
+    raw = f.read()
+    if not raw:
+        return jsonify({"error": "빈 파일입니다."}), 400
+    if len(raw) > REG_UPLOAD_MAX_MB * 1024 * 1024:
+        return jsonify({"error": f"파일이 너무 큽니다(최대 {REG_UPLOAD_MAX_MB}MB)."}), 413
+
+    # 규정명: 입력값 우선, 없으면 파일명에서 추출 ("감사규정(2023년도 7월 일부개정).hwpx")
+    title = (request.form.get("title") or "").strip()
+    stem = os.path.splitext(filename)[0]
+    m_par = re.match(r"^(.*?)\s*\(([^)]*)\)\s*$", stem)
+    if not title:
+        title = (m_par.group(1) if m_par else stem).strip()
+    revision = (request.form.get("revision") or "").strip()
+    if not revision and m_par:
+        revision = m_par.group(2).strip()
+    if not title:
+        return jsonify({"error": "규정명을 입력해주세요."}), 400
+
+    category = (request.form.get("category") or "").strip()
+    if not category:
+        category = next((c for c in ("정관", "세칙", "예규", "지침", "요령", "매뉴얼",
+                                     "규칙", "규정") if title.endswith(c)), "기타")
+
+    meta = {
+        "category": category,
+        "revision": revision,
+        "effective_date": (request.form.get("effective_date") or "").strip(),
+        "department": (request.form.get("department") or "").strip(),
+        "note": (request.form.get("note") or "").strip(),
+        "uploaded_at": _now_kst(),
+    }
+
+    try:
+        conv = _convert_upload(filename, raw, title, meta)
+    except zipfile.BadZipFile:
+        return jsonify({"error": "파일을 열 수 없습니다. HWPX/DOCX 파일이 손상되었을 수 있습니다."}), 400
+    except Exception as e:
+        return jsonify({"error": f"변환 실패: {e}"}), 400
+
+    slug = _reg_slug(title)
+    if not slug:
+        return jsonify({"error": "규정명에서 저장 폴더명을 만들 수 없습니다."}), 400
+
+    stored_ext = ".pdf" if ext == ".pdf" else ext
+    entry = {
+        "title": title,
+        "revision": revision or meta["uploaded_at"][:10] + " 개정",
+        "category": category,
+        "slug": slug,
+        "src": filename,
+        # 기존 manifest 형식과 동일하게 인코딩하지 않은 경로로 저장
+        "html": f"/regulations/{slug}/index.html",
+        "pdf": f"pdf/{slug}.pdf",
+        "effective_date": meta["effective_date"],
+        "department": meta["department"],
+        "note": meta["note"],
+        "uploaded_at": meta["uploaded_at"],
+        "original": f"/regulations/{slug}/original{stored_ext}",
+        "searchable": bool(conv["text"]),
+    }
+
+    # ── 읽기 전용 배포(Vercel 등): 변환 결과를 ZIP 으로 내려준다 ──
+    want_zip = (request.args.get("as") or request.form.get("as") or "") == "zip"
+    if want_zip or not _reg_writable():
+        buf = _io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+            base = f"regulations/{slug}"
+            z.writestr(f"{base}/index.html", conv["view_html"])
+            if conv["text"]:
+                z.writestr(f"{base}/text.txt", conv["text"])
+            z.writestr(f"{base}/original{stored_ext}", raw)
+            z.writestr("manifest_entry.json",
+                       json.dumps(entry, ensure_ascii=False, indent=2))
+            z.writestr("READ_ME.txt",
+                       "이 ZIP 을 리포지토리 루트에 풀고 manifest_entry.json 의 내용을\n"
+                       "regulations_manifest.json 배열에 추가(같은 규정명이 있으면 교체)한 뒤\n"
+                       "커밋·푸시하면 배포본에 반영됩니다.\n")
+        if not want_zip and not _reg_writable():
+            print(f"[reg-upload] 읽기 전용 FS — ZIP 응답으로 대체: {title}")
+        buf.seek(0)
+        return Response(
+            buf.read(), mimetype="application/zip",
+            headers={"Content-Disposition":
+                     f"attachment; filename*=UTF-8''{quote(slug)}.zip",
+                     "X-Reg-Readonly": "1" if not _reg_writable() else "0",
+                     "X-Reg-Warning": quote(conv["warning"] or "")})
+
+    try:
+        backup = _backup_reg_dir(slug)      # 기존 규정 폴더 보관(되돌리기용)
+        stored = _write_reg_files(slug, conv["view_html"], conv["text"], filename, raw)
+        entry["original"] = f"/regulations/{slug}/{stored}"
+        entry = _upsert_manifest(entry, backup)
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": f"저장 실패: {e}"}), 500
+
+    print(f"[reg-upload] 등록 완료: {title} ({revision}) → {slug}")
+    return jsonify({"success": True, "entry": entry,
+                    "warning": conv["warning"],
+                    "searchable": bool(conv["text"]),
+                    "view_url": entry["html"],
+                    "replaced": bool(entry.get("history"))})
+
+
+@app.route("/api/regs/upload/delete", methods=["POST"])
+def reg_upload_delete():
+    """
+    업로드한 개정 내규 되돌리기.
+      · 이전 개정이 있으면 그 개정본(파일·manifest 항목)으로 복원한다
+      · 이전 개정이 없으면(신규 등록) 등록을 해제하고 파일을 삭제한다
+    """
+    if not _upload_authorized():
+        return jsonify({"error": "업로드 토큰이 올바르지 않습니다."}), 401
+    if not _reg_writable():
+        return jsonify({"error": "읽기 전용 환경에서는 되돌릴 수 없습니다."}), 503
+    slug = (request.form.get("slug") or (request.json or {}).get("slug") or "").strip()
+    if not slug or "/" in slug or "\\" in slug or slug.startswith("."):
+        return jsonify({"error": "slug 값이 올바르지 않습니다."}), 400
+
+    man = list(_load_reg_manifest())
+    idx = next((i for i, m in enumerate(man) if m.get("slug") == slug), -1)
+    if idx < 0:
+        return jsonify({"error": "해당 규정을 찾을 수 없습니다."}), 404
+    cur = man[idx]
+    if not cur.get("uploaded_at"):
+        return jsonify({"error": "업로드로 등록된 규정만 되돌릴 수 있습니다."}), 400
+
+    history = list(cur.get("history") or [])
+    restored_rev, files_restored = "", True
+    if history:                                   # 이전 개정본으로 복원
+        h = history.pop(0)
+        prev = dict(h.get("entry") or {})
+        prev.pop("history", None)
+        if history:                               # 남은 이력이 없으면 키를 만들지 않는다
+            prev["history"] = history
+        files_restored = _restore_reg_dir(slug, h.get("backup", ""))
+        man[idx] = prev
+        restored_rev = prev.get("revision", "")
+    else:                                         # 신규 등록 → 완전 삭제
+        man.pop(idx)
+        d = os.path.join(REG_DIR, slug)
+        if os.path.isdir(d) and os.path.abspath(d).startswith(
+                os.path.abspath(REG_DIR) + os.sep):
+            import shutil
+            shutil.rmtree(d, ignore_errors=True)
+
+    _save_reg_manifest(man)
+    global _REG_MANIFEST
+    _REG_MANIFEST = man
+
+    return jsonify({"success": True, "removed": cur.get("title", ""),
+                    "restored": bool(restored_rev),
+                    "restored_revision": restored_rev,
+                    "files_restored": files_restored,
+                    "warning": ("" if files_restored else
+                                "이전 개정본 파일 보관분을 찾지 못해 등록 정보만 되돌렸습니다. "
+                                "regulations/ 폴더는 git 에서 복원해주세요(git checkout -- regulations/).")})
 
 
 @app.route("/api/internal/names")
@@ -2546,7 +3305,16 @@ def internal_search():
         return jsonify({"error": "검색어를 입력하세요"}), 400
     if len(query) < 2:
         return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
+
+    # 업로드된 개정 내규는 로컬 본문에서 먼저 찾는다(MCP 서버에는 아직 없음)
+    local_hits = _local_reg_search(query)
+
     if not SAGYU_MCP_URL:
+        if local_hits:
+            return jsonify({"success": True, "query": query, "tool": "local-upload",
+                            "text": "", "structured": local_hits,
+                            "local_count": len(local_hits),
+                            "name_matches": _name_match_regs(query)})
         return jsonify({"error": "사규 MCP 서버가 설정되지 않았습니다(SAGYU_MCP_URL)."}), 503
     try:
         cli = _McpClient(SAGYU_MCP_URL)
@@ -2561,24 +3329,38 @@ def internal_search():
         text = _mcp_extract_text(result)
         structured = result.get("structuredContent") if isinstance(result, dict) else None
         is_error = bool(result.get("isError")) if isinstance(result, dict) else False
-        if is_error:
+        if is_error and not local_hits:
             return jsonify({"error": text or "내규 검색 중 오류가 발생했습니다."}), 502
-        return jsonify({
+        resp = {
             "success": True,
             "query": query,
             "tool": tool.get("name"),
             "arguments": args,
-            "text": text,
+            "text": "" if is_error else text,
             "structured": structured,
             # 명칭 검색 결과(본문 검색과 병행) — 규정명에 검색어가 들어간 내규
             "name_matches": _name_match_regs(query),
-        })
-    except req_lib.exceptions.Timeout:
-        return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
-    except req_lib.exceptions.ConnectionError as e:
+        }
+        return jsonify(_merge_local_hits(resp, local_hits))
+    except (req_lib.exceptions.Timeout,
+            req_lib.exceptions.ConnectionError) as e:
+        # MCP 서버가 죽어도 업로드된 개정 내규는 계속 조회되도록 한다
+        if local_hits:
+            return jsonify(_merge_local_hits(
+                {"success": True, "query": query, "tool": "local-upload",
+                 "text": "", "structured": None,
+                 "mcp_error": f"사규 MCP 서버 연결 실패: {e}",
+                 "name_matches": _name_match_regs(query)}, local_hits))
+        if isinstance(e, req_lib.exceptions.Timeout):
+            return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
         return jsonify({"error": f"사규 MCP 서버에 연결할 수 없습니다: {e}"}), 502
     except Exception as e:
         import traceback; traceback.print_exc()
+        if local_hits:
+            return jsonify(_merge_local_hits(
+                {"success": True, "query": query, "tool": "local-upload",
+                 "text": "", "structured": None, "mcp_error": str(e),
+                 "name_matches": _name_match_regs(query)}, local_hits))
         return jsonify({"error": f"내규 검색 오류: {e}"}), 500
 
 
@@ -2589,6 +3371,17 @@ def internal_doc():
     doc_id = request.args.get("id", "").strip()
     if not name:
         return jsonify({"error": "name 파라미터가 필요합니다"}), 400
+
+    # 업로드로 등록된 개정 내규는 로컬 본문을 최신본으로 사용(MCP 왕복 없음)
+    m_local = _find_reg_original(name)
+    local_text = _local_reg_text(m_local.get("slug", "")) if m_local else ""
+    if local_text and m_local.get("uploaded_at"):
+        return jsonify({"success": True, "name": m_local.get("title", name),
+                        "tool": "local-upload", "is_full": True,
+                        "text": local_text, "structured": None,
+                        "source": "upload", "revision": m_local.get("revision", ""),
+                        "uploaded_at": m_local.get("uploaded_at", "")})
+
     if not SAGYU_MCP_URL:
         return jsonify({"error": "사규 MCP 서버가 설정되지 않았습니다(SAGYU_MCP_URL)."}), 503
     try:
@@ -2613,8 +3406,15 @@ def internal_doc():
         return jsonify({"success": True, "name": name, "tool": tool.get("name"),
                         "is_full": bool(doc_tool), "text": text, "structured": structured})
     except req_lib.exceptions.Timeout:
+        if local_text:
+            return jsonify({"success": True, "name": name, "tool": "local-upload",
+                            "is_full": True, "text": local_text, "source": "upload"})
         return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
     except Exception as e:
+        if local_text:
+            return jsonify({"success": True, "name": name, "tool": "local-upload",
+                            "is_full": True, "text": local_text, "source": "upload",
+                            "mcp_error": str(e)})
         return jsonify({"error": f"내규 전문 조회 오류: {e}"}), 500
 
 

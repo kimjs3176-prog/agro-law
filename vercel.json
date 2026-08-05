@@ -11,6 +11,10 @@
       "use": "@vercel/static"
     },
     {
+      "src": "upload.html",
+      "use": "@vercel/static"
+    },
+    {
       "src": "regulations/**",
       "use": "@vercel/static"
     }
@@ -18,6 +22,7 @@
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/index.py" },
     { "src": "/regulations/(.*)", "dest": "/regulations/$1" },
+    { "src": "/upload(?:\\.html)?", "dest": "/upload.html" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
