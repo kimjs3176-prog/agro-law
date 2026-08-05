@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>개정 내규 업로드 · KOAT 내규&국가법령 종합 검색</title>
+<style>
+:root{
+  --bg:#f6f7f9; --sf:#fff; --tx:#1a1d21; --mu:#5b6472; --ht:#8b95a5;
+  --bd:#e5e8ec; --g:#1D9E75; --gd:#158060; --gl:#eafaf3;
+  --rs:8px; --rm:12px;
+  --font:'Malgun Gothic','맑은 고딕',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+}
+body.dark{
+  --bg:#161a1f; --sf:#1e232a; --tx:#e8ecf1; --mu:#9aa5b4; --ht:#6b7684;
+  --bd:#2c333c; --gl:#14312a;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--font);font-size:14px;line-height:1.6;}
+a{color:var(--g);}
+.wrap{max-width:960px;margin:0 auto;padding:20px 18px 70px;}
+
+/* 헤더 */
+.hd{display:flex;align-items:center;gap:10px;padding:14px 0 18px;flex-wrap:wrap;}
+.hd-logo{width:36px;height:36px;border-radius:10px;background:var(--g);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.hd-t{font-size:17px;font-weight:700;}
+.hd-s{font-size:12px;color:var(--mu);}
+.hd-actions{margin-left:auto;display:flex;gap:6px;align-items:center;}
+.tbtn{padding:6px 12px;border:1px solid var(--bd);border-radius:999px;background:var(--sf);
+  color:var(--mu);font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;
+  display:inline-flex;align-items:center;gap:4px;font-family:var(--font);}
+.tbtn:hover{border-color:var(--g);color:var(--g);}
+
+/* 카드 */
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rm);
+  padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+.card-t{font-size:14px;font-weight:700;margin:0 0 4px;display:flex;align-items:center;gap:7px;}
+.card-d{font-size:12.5px;color:var(--mu);margin:0 0 16px;}
+.badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;
+  background:var(--gl);color:var(--gd);}
+
+/* 상태 배너 */
+.banner{display:flex;gap:9px;align-items:flex-start;padding:11px 14px;border-radius:var(--rs);
+  font-size:12.5px;line-height:1.55;margin-bottom:14px;}
+.banner.ok{background:var(--gl);color:var(--gd);border:1px solid #a7f3d0;}
+.banner.warn{background:#fffbeb;color:#92400e;border:1px solid #fcd34d;}
+.banner.err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;}
+.banner b{font-weight:700;}
+.banner code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px;font-size:11.5px;}
+
+/* 드롭존 */
+.drop{border:2px dashed var(--bd);border-radius:var(--rm);padding:30px 20px;text-align:center;
+  cursor:pointer;transition:.15s;background:var(--bg);}
+.drop:hover,.drop.over{border-color:var(--g);background:var(--gl);}
+.drop-i{font-size:30px;line-height:1;margin-bottom:8px;}
+.drop-t{font-size:13.5px;font-weight:600;margin-bottom:4px;}
+.drop-s{font-size:12px;color:var(--mu);}
+.file-row{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--gl);
+  border:1px solid #a7f3d0;border-radius:var(--rs);margin-top:12px;}
+.file-n{font-weight:600;font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.file-sz{font-size:11.5px;color:var(--mu);flex-shrink:0;}
+.file-x{border:none;background:transparent;color:var(--mu);cursor:pointer;font-size:15px;padding:0 2px;}
+
+/* 폼 */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;margin-top:16px;}
+.f{display:flex;flex-direction:column;gap:5px;}
+.f.full{grid-column:1 / -1;}
+.f label{font-size:12px;font-weight:600;color:var(--mu);}
+.f label .req{color:#dc2626;}
+.f input,.f select,.f textarea{padding:8px 11px;border:1px solid var(--bd);border-radius:var(--rs);
+  background:var(--bg);color:var(--tx);font-size:13px;font-family:var(--font);outline:none;width:100%;}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--g);background:var(--sf);}
+.f textarea{resize:vertical;min-height:64px;}
+.f .hint{font-size:11.5px;color:var(--ht);}
+.actions{display:flex;gap:8px;align-items:center;margin-top:18px;flex-wrap:wrap;}
+.btn{padding:9px 18px;border:1px solid var(--bd);border-radius:var(--rs);background:var(--sf);
+  color:var(--tx);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);}
+.btn:hover{background:var(--bg);}
+.btn.primary{background:var(--g);border-color:var(--g);color:#fff;}
+.btn.primary:hover{background:var(--gd);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.45);
+  border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px;}
+@keyframes sp{to{transform:rotate(360deg);}}
+
+/* 결과 */
+.result{margin-top:14px;padding:14px 16px;border-radius:var(--rs);font-size:13px;display:none;}
+.result.show{display:block;}
+.result.ok{background:var(--gl);border:1px solid #a7f3d0;}
+.result.err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;}
+.result h4{margin:0 0 8px;font-size:13.5px;}
+.result dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:0 0 10px;font-size:12.5px;}
+.result dt{color:var(--mu);font-weight:600;}
+.result dd{margin:0;word-break:break-all;}
+
+/* 업로드 이력 */
+.up-list{display:flex;flex-direction:column;gap:8px;}
+.up-item{display:flex;align-items:center;gap:10px;padding:10px 13px;border:1px solid var(--bd);
+  border-radius:var(--rs);background:var(--bg);flex-wrap:wrap;}
+.up-cat{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;
+  background:var(--gl);color:var(--gd);flex-shrink:0;}
+.up-t{font-size:13px;font-weight:600;}
+.up-r{font-size:11.5px;color:var(--mu);}
+.up-d{font-size:11px;color:var(--ht);margin-left:auto;flex-shrink:0;}
+.up-acts{display:flex;gap:5px;flex-shrink:0;}
+.up-acts a,.up-acts button{padding:4px 9px;font-size:11.5px;border:1px solid var(--bd);
+  border-radius:6px;background:var(--sf);color:var(--mu);cursor:pointer;text-decoration:none;
+  font-family:var(--font);}
+.up-acts a:hover{border-color:var(--g);color:var(--g);}
+.up-acts button:hover{border-color:#dc2626;color:#dc2626;}
+.no-search{font-size:10.5px;color:#92400e;background:#fffbeb;border:1px solid #fcd34d;
+  padding:1px 6px;border-radius:999px;}
+.empty{text-align:center;padding:24px;color:var(--ht);font-size:12.5px;}
+.foot{text-align:center;font-size:11.5px;color:var(--ht);padding:24px 0 0;}
+@media(max-width:640px){ .grid{grid-template-columns:1fr;} .up-d{margin-left:0;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hd">
+    <div class="hd-logo">📤</div>
+    <div>
+      <div class="hd-t">개정 내규 업로드</div>
+      <div class="hd-s">개정된 사규(내규)를 올리면 내규 조회·전문 화면에 최신본으로 반영됩니다</div>
+    </div>
+    <div class="hd-actions">
+      <a class="tbtn" href="/">← 검색으로</a>
+      <button class="tbtn" id="darkBtn" onclick="toggleDark()">🌙</button>
+    </div>
+  </div>
+
+  <div id="statusBanner"></div>
+
+  <!-- 업로드 폼 -->
+  <form class="card" id="upForm" onsubmit="return false;">
+    <div class="card-t">① 개정 문서 선택 <span class="badge" id="extBadge">HWPX·DOCX·PDF·HTML·TXT</span></div>
+    <p class="card-d">HWPX·DOCX는 본문을 자동 추출해 <b>조문 단위 검색</b>까지 가능합니다.
+      구버전 HWP·PDF는 원본 열람만 지원합니다.</p>
+
+    <div class="drop" id="drop" tabindex="0"
+         onclick="document.getElementById('file').click()"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('file').click();}">
+      <div class="drop-i">📄</div>
+      <div class="drop-t">파일을 끌어다 놓거나 클릭해서 선택</div>
+      <div class="drop-s" id="dropSub">최대 40MB</div>
+    </div>
+    <input type="file" id="file" style="display:none"
+           accept=".hwpx,.hwp,.docx,.pdf,.html,.htm,.txt,.md" onchange="onPick(this.files)">
+    <div id="fileRow"></div>
+
+    <div class="card-t" style="margin-top:22px;">② 개정 정보</div>
+    <p class="card-d">파일명이 <code>감사규정(2023년도 7월 일부개정).hwpx</code> 형식이면 규정명·개정 구분을 자동으로 채웁니다.</p>
+
+    <div class="grid">
+      <div class="f full">
+        <label for="title">규정명 <span class="req">*</span></label>
+        <input id="title" list="regNames" placeholder="예: 감사규정" autocomplete="off"
+               oninput="checkExisting()">
+        <datalist id="regNames"></datalist>
+        <div class="hint" id="titleHint">이미 등록된 규정명을 그대로 쓰면 개정판으로 교체되고 이전 개정 이력이 남습니다.</div>
+      </div>
+      <div class="f">
+        <label for="category">규정 구분</label>
+        <select id="category"></select>
+      </div>
+      <div class="f">
+        <label for="revision">개정 구분</label>
+        <input id="revision" placeholder="예: 2026년도 3월 일부개정">
+      </div>
+      <div class="f">
+        <label for="effective">시행일자</label>
+        <input id="effective" type="date">
+      </div>
+      <div class="f">
+        <label for="department">담당 부서</label>
+        <input id="department" placeholder="예: 감사실">
+      </div>
+      <div class="f full">
+        <label for="note">개정 사유·비고</label>
+        <textarea id="note" placeholder="주요 개정 내용이나 참고사항을 적어두면 전문 화면 상단에 표시됩니다."></textarea>
+      </div>
+      <div class="f full" id="tokenField" style="display:none;">
+        <label for="token">업로드 토큰 <span class="req">*</span></label>
+        <input id="token" type="password" placeholder="관리자에게 받은 업로드 토큰">
+        <div class="hint">서버에 <code>REG_UPLOAD_TOKEN</code>이 설정되어 있어 토큰이 필요합니다.</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" id="submitBtn" onclick="doUpload(false)">등록하기</button>
+      <button class="btn" id="zipBtn" onclick="doUpload(true)" title="변환 결과를 ZIP으로 받아 리포지토리에 커밋할 수 있습니다">⬇ 변환 결과 ZIP</button>
+      <button class="btn" onclick="resetForm()">초기화</button>
+    </div>
+
+    <div class="result" id="result"></div>
+  </form>
+
+  <!-- 업로드 이력 -->
+  <div class="card">
+    <div class="card-t">업로드한 개정 내규 <span class="badge" id="upCount">0건</span>
+      <button class="tbtn" style="margin-left:auto;" onclick="loadStatus()">↻ 새로고침</button>
+    </div>
+    <p class="card-d">이 화면에서 올린 규정만 표시됩니다. 되돌리면 등록이 해제되고 파일도 삭제됩니다.</p>
+    <div class="up-list" id="upList"><div class="empty">불러오는 중...</div></div>
+  </div>
+
+  <div class="foot">KOAT 내규&국가법령 종합 검색 서비스 · 개정 내규 업로드</div>
+</div>
+
+<script>
+let _picked=null, _status=null;
+
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtSize(n){return n<1024?n+'B':n<1048576?(n/1024).toFixed(1)+'KB':(n/1048576).toFixed(1)+'MB';}
+
+/* ── 다크모드 (검색 화면과 같은 키 사용) ── */
+function toggleDark(){
+  const dark=!document.body.classList.contains('dark');
+  document.body.classList.toggle('dark',dark);
+  localStorage.setItem('dark',dark?'1':'0');
+  document.getElementById('darkBtn').textContent=dark?'☀':'🌙';
+}
+if(localStorage.getItem('dark')==='1'){
+  document.body.classList.add('dark');
+  document.getElementById('darkBtn').textContent='☀';
+}
+
+/* ── 드래그&드롭 ── */
+const drop=document.getElementById('drop');
+['dragenter','dragover'].forEach(e=>drop.addEventListener(e,ev=>{
+  ev.preventDefault(); drop.classList.add('over');}));
+['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{
+  ev.preventDefault(); drop.classList.remove('over');}));
+drop.addEventListener('drop',ev=>onPick(ev.dataTransfer.files));
+
+function onPick(files){
+  if(!files||!files.length) return;
+  const f=files[0];
+  const ext='.'+(f.name.split('.').pop()||'').toLowerCase();
+  const allowed=(_status&&_status.allowed_ext)||['.hwpx','.hwp','.docx','.pdf','.html','.htm','.txt','.md'];
+  if(!allowed.includes(ext)){
+    showResult(false,`지원하지 않는 형식입니다(${esc(ext)}). 가능: ${allowed.join(', ')}`);
+    return;
+  }
+  const maxMb=(_status&&_status.max_mb)||40;
+  if(f.size>maxMb*1024*1024){
+    showResult(false,`파일이 너무 큽니다(최대 ${maxMb}MB).`); return;
+  }
+  _picked=f;
+  document.getElementById('fileRow').innerHTML=
+    `<div class="file-row"><span>📎</span><span class="file-n">${esc(f.name)}</span>
+     <span class="file-sz">${fmtSize(f.size)}</span>
+     <button type="button" class="file-x" onclick="clearFile()" title="선택 해제">✕</button></div>`;
+  autoFill(f.name);
+  hideResult();
+}
+function clearFile(){
+  _picked=null;
+  document.getElementById('file').value='';
+  document.getElementById('fileRow').innerHTML='';
+}
+
+/* 파일명에서 규정명·개정 구분 추출: "감사규정(2023년도 7월 일부개정).hwpx" */
+function autoFill(fname){
+  const stem=fname.replace(/\.[^.]+$/,'');
+  const m=stem.match(/^(.*?)\s*\(([^)]*)\)\s*$/);
+  const t=document.getElementById('title'), r=document.getElementById('revision');
+  if(!t.value.trim()) t.value=(m?m[1]:stem).trim();
+  if(!r.value.trim() && m) r.value=m[2].trim();
+  guessCategory();
+  checkExisting();
+}
+function guessCategory(){
+  const sel=document.getElementById('category');
+  if(sel.dataset.touched==='1') return;
+  const title=document.getElementById('title').value.trim();
+  const cats=(_status&&_status.categories)||[];
+  const hit=cats.find(c=>c!=='기타'&&title.endsWith(c));
+  if(hit) sel.value=hit;
+}
+
+/* 기존 규정명과 일치하면 '개정판 교체' 안내 */
+let _names=[];
+function checkExisting(){
+  const t=document.getElementById('title').value.trim().replace(/\s+/g,'').toLowerCase();
+  const hint=document.getElementById('titleHint');
+  const hit=_names.find(n=>n.title.replace(/\s+/g,'').toLowerCase()===t);
+  if(hit){
+    hint.innerHTML=`✔ 등록된 규정입니다 — 현재 <b>${esc(hit.revision||'개정 정보 없음')}</b>. `
+      +`이대로 등록하면 <b>개정판으로 교체</b>되고 이전 개정은 이력으로 남습니다.`;
+    hint.style.color='var(--gd)';
+  }else{
+    hint.textContent='이미 등록된 규정명을 그대로 쓰면 개정판으로 교체되고 이전 개정 이력이 남습니다.';
+    hint.style.color='';
+  }
+  guessCategory();
+}
+document.getElementById('category').addEventListener('change',function(){this.dataset.touched='1';});
+
+/* ── 상태 조회 ── */
+async function loadStatus(){
+  try{
+    const r=await fetch('/api/regs/upload/status');
+    const d=await r.json();
+    _status=d;
+    // 카테고리
+    const sel=document.getElementById('category');
+    const cur=sel.value;
+    sel.innerHTML=(d.categories||[]).map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    if(cur) sel.value=cur;
+    document.getElementById('extBadge').textContent=
+      (d.allowed_ext||[]).map(e=>e.replace('.','').toUpperCase()).join('·');
+    document.getElementById('dropSub').textContent=`최대 ${d.max_mb}MB · ${(d.allowed_ext||[]).join(', ')}`;
+    document.getElementById('tokenField').style.display=d.token_required?'':'none';
+
+    // 저장 가능 여부 배너
+    const b=document.getElementById('statusBanner');
+    if(d.writable){
+      b.innerHTML=`<div class="banner ok"><span>✅</span><div>
+        업로드하면 <b>즉시 반영</b>됩니다. 현재 등록된 내규 <b>${d.total}건</b>.
+        배포본(Vercel)에도 반영하려면 <code>regulations/</code>와
+        <code>regulations_manifest.json</code> 변경분을 커밋·푸시하세요.</div></div>`;
+    }else{
+      b.innerHTML=`<div class="banner warn"><span>⚠️</span><div>
+        <b>읽기 전용 환경</b>입니다(서버리스 배포). 등록하기를 누르면 저장 대신
+        <b>변환 결과 ZIP</b>이 내려옵니다. ZIP을 리포지토리에 풀고 커밋하면 반영됩니다.
+        바로 저장하려면 로컬에서 <code>python run_local.py</code>로 실행하세요.</div></div>`;
+      document.getElementById('submitBtn').textContent='변환 결과 ZIP 받기';
+    }
+    renderUploads(d.uploaded||[]);
+
+    const rn=await fetch('/api/regs/names');
+    const dn=await rn.json();
+    _names=(dn.names||[]).filter(n=>n.title);
+    document.getElementById('regNames').innerHTML=
+      _names.map(n=>`<option value="${esc(n.title)}">${esc(n.category||'')}${n.revision?' · '+esc(n.revision):''}</option>`).join('');
+  }catch(e){
+    document.getElementById('statusBanner').innerHTML=
+      `<div class="banner err"><span>⚠️</span><div>서버 상태를 확인할 수 없습니다: ${esc(e.message)}</div></div>`;
+  }
+}
+
+function renderUploads(list){
+  document.getElementById('upCount').textContent=list.length+'건';
+  const el=document.getElementById('upList');
+  if(!list.length){
+    el.innerHTML='<div class="empty">아직 업로드한 개정 내규가 없습니다.</div>'; return;
+  }
+  el.innerHTML=list.map(u=>`
+    <div class="up-item">
+      <span class="up-cat">${esc(u.category||'기타')}</span>
+      <div style="min-width:0;">
+        <div class="up-t">${esc(u.title)}</div>
+        <div class="up-r">${esc(u.revision||'')}
+          ${u.searchable?'':'<span class="no-search">본문 검색 불가</span>'}
+          ${(u.history&&u.history.length)?`<span style="color:var(--ht);"> · 이전 개정 ${u.history.length}건</span>`:''}
+        </div>
+      </div>
+      <span class="up-d">${esc(u.uploaded_at||'')}</span>
+      <div class="up-acts">
+        <a href="${esc(u.html||'#')}" target="_blank">전문 보기</a>
+        <a href="/?q=${encodeURIComponent(u.title)}">검색에서 열기</a>
+        <button onclick="removeUpload('${encodeURIComponent(u.slug)}','${esc(u.title).replace(/'/g,"\\'")}')">되돌리기</button>
+      </div>
+    </div>`).join('');
+}
+
+/* ── 업로드 ── */
+function showResult(ok,html){
+  const r=document.getElementById('result');
+  r.className='result show '+(ok?'ok':'err');
+  r.innerHTML=html;
+  r.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function hideResult(){document.getElementById('result').className='result';}
+
+function buildForm(asZip){
+  const fd=new FormData();
+  fd.append('file',_picked);
+  fd.append('title',document.getElementById('title').value.trim());
+  fd.append('category',document.getElementById('category').value);
+  fd.append('revision',document.getElementById('revision').value.trim());
+  fd.append('effective_date',document.getElementById('effective').value);
+  fd.append('department',document.getElementById('department').value.trim());
+  fd.append('note',document.getElementById('note').value.trim());
+  const tok=document.getElementById('token').value;
+  if(tok) fd.append('token',tok);
+  if(asZip) fd.append('as','zip');
+  return fd;
+}
+
+async function doUpload(asZip){
+  if(!_picked){ showResult(false,'먼저 개정 문서 파일을 선택해주세요.'); return; }
+  if(!document.getElementById('title').value.trim()){
+    showResult(false,'규정명을 입력해주세요.'); return;
+  }
+  if(_status&&_status.token_required&&!document.getElementById('token').value){
+    showResult(false,'업로드 토큰을 입력해주세요.'); return;
+  }
+  const btn=asZip?document.getElementById('zipBtn'):document.getElementById('submitBtn');
+  const label=btn.textContent;
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>처리 중...';
+  hideResult();
+  try{
+    const res=await fetch('/api/regs/upload'+(asZip?'?as=zip':''),
+      {method:'POST',body:buildForm(asZip)});
+    const ct=(res.headers.get('Content-Type')||'').toLowerCase();
+
+    // 읽기 전용 환경이거나 ZIP 요청 → 파일 다운로드
+    if(ct.includes('application/zip')){
+      const blob=await res.blob();
+      const slug=(document.getElementById('title').value.trim()||'regulation').replace(/\s+/g,'_');
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob); a.download=slug+'.zip';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+      const warn=decodeURIComponent(res.headers.get('X-Reg-Warning')||'');
+      const ro=res.headers.get('X-Reg-Readonly')==='1';
+      showResult(true,`<h4>✅ 변환 완료 — ZIP을 내려받았습니다</h4>
+        ${ro?'<p style="margin:0 0 8px;">읽기 전용 환경이라 서버에 저장하지 않았습니다.</p>':''}
+        <p style="margin:0 0 8px;">ZIP을 리포지토리 루트에 풀고 <code>manifest_entry.json</code> 내용을
+        <code>regulations_manifest.json</code>에 추가한 뒤 커밋·푸시하면 배포본에 반영됩니다.</p>
+        ${warn?`<p style="margin:0;color:#92400e;">⚠️ ${esc(warn)}</p>`:''}`);
+      return;
+    }
+
+    const d=await res.json();
+    if(!res.ok||d.error){ showResult(false,'❌ '+esc(d.error||('업로드 실패 ('+res.status+')'))); return; }
+
+    const e=d.entry||{};
+    showResult(true,`<h4>✅ ${esc(e.title)} 등록 완료${d.replaced?' (개정판으로 교체)':''}</h4>
+      <dl>
+        <dt>개정 구분</dt><dd>${esc(e.revision||'-')}</dd>
+        <dt>규정 구분</dt><dd>${esc(e.category||'-')}</dd>
+        ${e.effective_date?`<dt>시행일자</dt><dd>${esc(e.effective_date)}</dd>`:''}
+        <dt>본문 검색</dt><dd>${d.searchable?'가능 — 내규 검색·전문 조회에 반영됩니다':'불가 — 원본 열람만 가능합니다'}</dd>
+      </dl>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <a class="tbtn" href="${esc(e.html||'#')}" target="_blank">📄 전문 보기</a>
+        <a class="tbtn" href="/?q=${encodeURIComponent(e.title||'')}">🔍 검색에서 열기</a>
+        ${e.original?`<a class="tbtn" href="${esc(e.original)}" target="_blank">⬇ 원본 파일</a>`:''}
+      </div>
+      ${d.warning?`<p style="margin:10px 0 0;color:#92400e;">⚠️ ${esc(d.warning)}</p>`:''}`);
+    clearFile(); resetFields();
+    loadStatus();
+  }catch(err){
+    showResult(false,'❌ 업로드 중 오류가 발생했습니다: '+esc(err.message));
+  }finally{
+    btn.disabled=false; btn.textContent=label;
+  }
+}
+
+async function removeUpload(slugEnc,title){
+  if(!confirm(`"${title}" 업로드를 되돌립니다.\n\n이전 개정본이 있으면 그 버전으로 복원하고,\n신규 등록이었다면 등록을 해제하고 파일을 삭제합니다.\n\n계속할까요?`)) return;
+  const fd=new FormData();
+  fd.append('slug',decodeURIComponent(slugEnc));
+  const tok=document.getElementById('token').value;
+  if(tok) fd.append('token',tok);
+  try{
+    const r=await fetch('/api/regs/upload/delete',{method:'POST',body:fd});
+    const d=await r.json();
+    if(!r.ok||d.error){ showResult(false,'❌ '+esc(d.error||'되돌리기 실패')); return; }
+    showResult(true,`<h4>되돌렸습니다 — ${esc(d.removed||title)}</h4>`
+      + (d.restored
+          ? `<p style="margin:0;">이전 개정본 <b>${esc(d.restored_revision||'')}</b>으로 복원했습니다.</p>`
+          : `<p style="margin:0;">등록을 해제하고 저장된 파일을 삭제했습니다.</p>`)
+      + (d.warning?`<p style="margin:8px 0 0;color:#92400e;">⚠️ ${esc(d.warning)}</p>`:''));
+    loadStatus();
+  }catch(e){ showResult(false,'❌ '+esc(e.message)); }
+}
+
+function resetFields(){
+  ['title','revision','effective','department','note'].forEach(id=>document.getElementById(id).value='');
+  const sel=document.getElementById('category'); sel.dataset.touched=''; sel.selectedIndex=0;
+  checkExisting();
+}
+function resetForm(){ clearFile(); resetFields(); hideResult(); }
+
+loadStatus();
+</script>
+</body>
+</html>

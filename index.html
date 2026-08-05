@@ -212,6 +212,27 @@ body.dark *::-webkit-scrollbar-thumb{background:rgba(148,163,184,.28);background
 /* ── 즐겨찾기 localStorage 표시 ── */
 .fav-local-badge{font-size:10px;padding:1px 5px;border-radius:8px;background:var(--gl);color:var(--gd);margin-left:4px;}
 
+/* ── 조문 계층 렌더링 (항·호·목 매달린 들여쓰기) ──
+   pre-wrap + 공백 들여쓰기는 줄이 넘어갈 때 두 번째 줄이 왼쪽 끝으로 붙어
+   항·호·목 구분이 풀려 보인다. 번호와 본문을 분리한 flex 행으로 정렬을 유지한다. */
+.art-lines{display:flex;flex-direction:column;gap:3px;white-space:normal;}
+.art-l{display:flex;align-items:flex-start;gap:.35em;}
+.art-l-no{flex-shrink:0;font-weight:600;color:var(--gd);font-variant-numeric:tabular-nums;}
+.art-l-tx{flex:1;min-width:0;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;}
+.art-l-d0{margin-bottom:3px;}
+.art-l-d0>.art-l-tx{font-weight:500;}
+/* 같은 계층의 번호 폭을 고정해 본문 왼쪽 선을 맞춘다(1. 과 1의2. 혼재 대응) */
+.art-l-d1{padding-left:0;}      .art-l-d1>.art-l-no{min-width:1.5em;}
+.art-l-d2{padding-left:1.6em;}  .art-l-d2>.art-l-no{min-width:2.9em;}
+.art-l-d3{padding-left:4.7em;}  .art-l-d3>.art-l-no{min-width:2.2em;}
+.art-l-d4{padding-left:7.2em;}  .art-l-d4>.art-l-no{min-width:2.2em;}
+.art-l.hang-hl{background:#fef9c3;border-radius:3px;}
+body.dark .art-l-no{color:#7ab4ff;}   /* 어두운 배경에서 번호 대비 확보 */
+body.dark .art-l.hang-hl{background:rgba(250,204,21,.18);}
+@media(max-width:640px){
+  .art-l-d2{padding-left:.7em;} .art-l-d3{padding-left:2.6em;} .art-l-d4{padding-left:4.4em;}
+}
+
 /* ── 조문 검색결과 하이라이트 강화 ── */
 .art-body mark,.fp-art-body mark,.ref-art-body mark{background:#fef08a;color:inherit;border-radius:2px;padding:0 1px;font-weight:600;}
 .art-match-count{font-size:10px;color:var(--g);background:var(--gl);padding:1px 6px;border-radius:10px;margin-left:6px;}
@@ -1366,6 +1387,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   <button class="settings-btn hide-mobile" onclick="openStatPanel()"><span class="sb-icon">📊</span><span class="sb-label"> 통계</span></button>
   <button class="settings-btn hide-mobile" onclick="openCollModal()"><span class="sb-icon">📁</span><span class="sb-label"> 컬렉션</span></button>
   <button class="settings-btn" onclick="openNetPanel()"><span class="sb-icon">🕸</span><span class="sb-label"> 관계도</span></button>
+  <a class="settings-btn" href="/upload" style="text-decoration:none;display:inline-flex;align-items:center;" title="개정된 내규를 업로드해 최신본으로 반영"><span class="sb-icon">📤</span><span class="sb-label"> 개정 내규 업로드</span></a>
   <button class="settings-btn" onclick="openAiModal()"><span class="sb-icon">✦</span><span class="sb-label"> AI 설정</span> <span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
 </div>
 
@@ -1904,7 +1926,7 @@ function buildRegCards(items, kw, kind){
     const arts = it['matched_articles'] || [];
     const abbrevMap = {};
     const artsHtml = arts.length ? arts.map(a=>{
-      let no=a['조문번호']?`제${a['조문번호']}조`:'';
+      let no=artNoLabel(a);
       let title=a['조문제목']||'';
       let content=_dedupeLines(a['조문내용']||'');   // 인접 중복 줄 제거
       // 번호·제목이 없는 조각: 첫 줄을 제목으로 승격하고 본문에서 제거(중복 표시 방지)
@@ -1925,7 +1947,7 @@ function buildRegCards(items, kw, kind){
               onclick="previewArticle(this,'${artNo}')"
               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();previewArticle(this,'${artNo}');}">
         <div class="reg-art-h">${no?`<span class="art-no">${escHtml(no)}</span>`:''}<span class="reg-art-t">${highlightKwsSafe(escHtml(title||no||'조문'),kw?[kw]:[])}</span><span class="art-go">전문에서 보기 →</span></div>
-        ${content?`<div class="reg-art-b">${highlightKwsSafe(applyXref(escHtml(content),name,abbrevMap),kw?[kw]:[])}</div>`:''}
+        ${content?`<div class="reg-art-b">${artBodyFrom(a,content,{lawName:name,abbrevMap,kws:kw?[kw]:[]})}</div>`:''}
       </div>`;
     }).join('') : `<div class="reg-none">키워드 매칭 미리보기가 없습니다. 전문에서 확인하세요.</div>`;
     const moreNote = (cnt > arts.length)
@@ -2773,9 +2795,9 @@ function renderScenarioResults(d){
   const intCardsHtml = intItems.map((it)=>{
     const nm=it.name; const arts=it.matched_articles||[]; const enc=encodeURIComponent(nm);
     const artHtml=arts.slice(0,5).map(a=>{
-      const no=a['조문번호']?`제${a['조문번호']}조`:''; let c=_dedupeLines(a['조문내용']||''); let t=a['조문제목']||'';
+      const no=artNoLabel(a); let c=_dedupeLines(a['조문내용']||''); let t=a['조문제목']||'';
       if(!no&&!t){ const ls=c.split('\n'); t=(ls[0]||'').trim(); c=ls.slice(1).join('\n').trim(); }
-      return `<div class="reg-art"><div class="reg-art-h">${no?`<span class="art-no">${escHtml(no)}</span>`:''}<span class="reg-art-t">${highlightKwsSafe(escHtml(t||no||'조문'),kwL)}</span></div>${c?`<div class="reg-art-b">${highlightKwsSafe(applyXref(escHtml(c),'',{}),kwL)}</div>`:''}</div>`;
+      return `<div class="reg-art"><div class="reg-art-h">${no?`<span class="art-no">${escHtml(no)}</span>`:''}<span class="reg-art-t">${highlightKwsSafe(escHtml(t||no||'조문'),kwL)}</span></div>${c?`<div class="reg-art-b">${artBodyFrom(a,c,{lawName:'',abbrevMap:{},kws:kwL})}</div>`:''}</div>`;
     }).join('');
     return `<div class="card reg-card"><div class="card-head reg-head">
         <span class="ltype ltype-int">내규</span><span class="lname">${escHtml(nm)}</span>
@@ -2799,7 +2821,7 @@ function renderScenarioResults(d){
     const lawUrl  = `https://www.law.go.kr/법령/${encodeURIComponent(name)}`;
 
     const artHtml = arts.map(a => {
-      const no      = a['조문번호'] ? `제${a['조문번호']}조` : '';
+      const no      = artNoLabel(a);
       const title   = a['조문제목'] || '';
       const content = a['조문내용'] || '';
       return `<div class="art-item" style="margin-bottom:4px;">
@@ -2808,7 +2830,7 @@ function renderScenarioResults(d){
           <span class="art-title">${highlightKws(title||no||'조문')}</span>
           <span class="arrow" style="margin-left:auto;font-size:11px;color:var(--ht);transition:transform .2s;flex-shrink:0;">▼</span>
         </div>
-        ${content?`<div class="art-body" style="display:none;">${highlightKwsSafe(applyXref(escHtml(content), name), kwL)}</div>`:''}
+        ${content?`<div class="art-body" style="display:none;">${artBodyHtml(a,{lawName:name,kws:kwL})}</div>`:''}
       </div>`;
     }).join('');
 
@@ -2894,12 +2916,14 @@ function _dedupeLines(text){
 function _dedupeArts(arts){
   const map=new Map(); const out=[];
   arts.forEach(a=>{
-    const key = a.조문번호 ? ('조'+a.조문번호)
+    // 가지번호(제5조의2)를 키에 포함 — 제5조와 제5조의2가 서로를 지우지 않게 한다
+    const key = a.조문번호 ? ('조'+a.조문번호+'_'+(a.조문가지번호||''))
               : ('_'+(a.조문내용||'').replace(/\s+/g,'').slice(0,40));
     const ex=map.get(key);
     if(ex){
       if((a.조문내용||'').length > (ex.조문내용||'').length){
-        ex.조문내용=a.조문내용; if(a.조문제목) ex.조문제목=a.조문제목;
+        ex.조문내용=a.조문내용; ex.조문구조=a.조문구조;
+        if(a.조문제목) ex.조문제목=a.조문제목;
       }
       return;
     }
@@ -3132,7 +3156,7 @@ function renderBasisResults(laws, basisType, keywords){
     const lawUrl = `https://www.law.go.kr/법령/${encodeURIComponent(name)}`;
 
     const artHtml = arts.map(a=>{
-      const no = a['조문번호'] ? `제${a['조문번호']}조` : '';
+      const no = artNoLabel(a);
       const title = a['조문제목'] || '';
       const content = a['조문내용'] || '';
       return `<div class="art-item" style="margin-bottom:4px;">
@@ -3141,7 +3165,7 @@ function renderBasisResults(laws, basisType, keywords){
           <span class="art-title">${highlightKws(title||no||'조문')}</span>
           <span class="arrow" style="margin-left:auto;font-size:11px;color:var(--ht);transition:transform .2s;flex-shrink:0;">▼</span>
         </div>
-        ${content?`<div class="art-body" style="display:none;">${highlightKwsSafe(applyXref(escHtml(content), name), kwL)}</div>`:''}
+        ${content?`<div class="art-body" style="display:none;">${artBodyHtml(a,{lawName:name,kws:kwL})}</div>`:''}
       </div>`;
     }).join('');
 
@@ -3374,7 +3398,7 @@ function renderInlineArticles(arts, lawName, lawUrl, kw=''){
     <div id="${id}list">`+
     displayArts.map((a,i)=>{
       const isHeader = a['type']==='header';
-      const no=a['조문번호']?`제${a['조문번호']}조`:'';
+      const no=artNoLabel(a);
       const title=a['조문제목']||'';
       const content=a['조문내용']||'';
       const hno = a['header_no']||'';
@@ -3396,7 +3420,7 @@ function renderInlineArticles(arts, lawName, lawUrl, kw=''){
           <span class="art-title">${highlight(title||no||'조문')}</span>
           <span class="arrow" style="font-size:11px;color:var(--ht);transition:transform .2s;flex-shrink:0;">▼</span>
         </div>
-        ${content?`<div class="art-body" style="${isMatch?'display:block;':''}">${highlightKwsSafe(applyXref(escHtml(content), lawName, abbrevMap), kw?[kw]:[])}</div>`:''}
+        ${content?`<div class="art-body" style="${isMatch?'display:block;':''}">${artBodyHtml(a,{lawName,abbrevMap,kws:kw?[kw]:[]})}</div>`:''}
       </div>`;
     }).join('')+
     `</div></div>`;
@@ -3435,6 +3459,73 @@ function escHtml(s){
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ── 조문 계층 렌더링 ────────────────────────────────────────────────────────
+// 조문 표시번호: 가지번호를 반영한 '제5조의2'. 서버가 주지 않으면 조문번호로 조립.
+function artNoLabel(a){
+  if(!a) return '';
+  const shown = a['조문표시번호'];
+  if(shown) return shown;
+  const no = a['조문번호'];
+  if(!no) return '';
+  const br = a['조문가지번호'];
+  return `제${no}조` + (br?`의${br}`:'');
+}
+
+// 평문 조문 텍스트 → 계층 항목 배열 (서버 구조가 없는 내규·구버전 응답 대비)
+const _ART_NO_RE = /^(?:[①-⑮㉑-㉟]|\d{1,3}(?:의\d{1,3})?\s*[.)]|[가-힣](?:의\d{1,3})?\s*[.)]|\(\s*\d{1,3}\s*\))/;
+function parseArtLines(text){
+  const items=[];
+  String(text||'').split('\n').forEach(raw=>{
+    if(!raw.trim()) return;
+    const indent=(raw.match(/^\s*/)||[''])[0].length;
+    const line=raw.trim();
+    const m=_ART_NO_RE.exec(line);
+    const no=m?m[0].trim():'';
+    const tx=m?line.slice(m[0].length).trim():line;
+    let depth;
+    if(!no) depth = indent>0 ? Math.min(4, 1+Math.floor(indent/2)) : 0;
+    else if(/^[①-⑮㉑-㉟]/.test(no)) depth=1;
+    else if(/^\d/.test(no)||/^\(/.test(no)) depth=2;
+    else depth=3;
+    if(indent>=4 && depth<3) depth=3;      // 들여쓰기가 더 깊으면 존중
+    items.push({depth, no, text:tx});
+  });
+  return items;
+}
+
+// 계층 항목 배열 → 매달린 들여쓰기 HTML
+// transform: 텍스트(이스케이프 후)에 추가 가공(준용 링크 등)을 적용하는 함수
+function artLinesHtml(items, transform){
+  if(!items || !items.length) return '';
+  const f = transform || (s=>s);
+  return `<div class="art-lines">` + items.map(it=>{
+    const d=Math.max(0,Math.min(4, it.depth|0));
+    const no=it.no?`<span class="art-l-no">${f(escHtml(it.no))}</span>`:'';
+    return `<div class="art-l art-l-d${d}">${no}<span class="art-l-tx">${f(escHtml(it.text||''))}</span></div>`;
+  }).join('') + `</div>`;
+}
+
+// 조문 본문 HTML — 서버 구조(조문구조) 우선, 없으면 평문 파싱
+//   opts: {lawName, abbrevMap, kws:[하이라이트 키워드], plain:true→구조화 없이 기존 방식}
+function artBodyHtml(a, opts){
+  const o=opts||{};
+  const content=(a && a['조문내용'])||'';
+  if(!content && !(a && a['조문구조'])) return '';
+  const items=(a && Array.isArray(a['조문구조']) && a['조문구조'].length)
+    ? a['조문구조'] : parseArtLines(content);
+  let html = artLinesHtml(items, s=>s);
+  if(o.lawName!==undefined) html = applyXref(html, o.lawName||'', o.abbrevMap||{});
+  if(o.tooltip) html = applyTermTooltip(html);
+  const kws=(o.kws||[]).filter(Boolean);
+  return kws.length ? highlightKwsSafe(html, kws) : html;
+}
+
+// 호출부에서 본문을 가공(중복 줄 제거·제목 승격)한 경우 서버 구조를 쓰지 않고 그 텍스트로 렌더
+function artBodyFrom(a, content, opts){
+  const orig=(a && a['조문내용'])||'';
+  return artBodyHtml(orig===(content||'') ? a : {'조문내용':content||''}, opts);
+}
+
 function toggleFpArt(i){
   const body=document.getElementById('fpbody'+i);
   const arr=document.getElementById('fparr'+i);
@@ -3466,7 +3557,7 @@ function fpFilterArts(){
     const no=art['조문번호']||'';
     const title=(art['조문제목']||'').toLowerCase();
     const content=(art['조문내용']||'').toLowerCase();
-    const noMatch = kw && /^\\d+$/.test(kw) && no===kw;
+    const noMatch = kw && /^\d+$/.test(kw) && no===kw;
     const txtMatch = !kw || noMatch || title.includes(kwL) || content.includes(kwL);
     el.style.display=txtMatch?'':'none';
     if(!txtMatch) return;
@@ -3474,11 +3565,14 @@ function fpFilterArts(){
 
     const bodyEl=document.getElementById('fpbody'+i);
     if(!bodyEl) return;
-    const raw=art['조문내용']||'';
-    const lawNameFP=document.getElementById('fpTitle').textContent;
-    // applyXref 를 항상 적용하여 art-xref/law-ref 스팬이 사라지지 않도록 함
-    const rendered=applyXref(applyTermTooltip(escHtml(raw)), lawNameFP, _fpAbbrevMap);
-    bodyEl.innerHTML = highlightTextOnly(rendered, kw);
+    // 본문 텍스트 영역만 갱신 — AI해석·복사·메모 버튼과 메모 입력칸을 지우지 않는다
+    const textEl=document.getElementById('fptext'+i);
+    if(textEl){
+      const lawNameFP=document.getElementById('fpTitle').textContent;
+      // applyXref 를 항상 적용하여 art-xref/law-ref 스팬이 사라지지 않도록 함
+      const rendered=artBodyHtml(art,{lawName:lawNameFP,abbrevMap:_fpAbbrevMap,tooltip:true});
+      textEl.innerHTML = highlightTextOnly(rendered, kw);
+    }
     if(kw){
       bodyEl.style.display='block';
       const arr=document.getElementById('fparr'+i);
@@ -3488,7 +3582,7 @@ function fpFilterArts(){
   document.getElementById('fpCnt').textContent=kw?`${shown}/${total}개`:`${total}개 조문`;
 }
 
-function escRegex(s){return s.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&');}
+function escRegex(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
 
 // 텍스트 노드에만 키워드 하이라이트 적용 (span/mark 태그 속성 보호)
 function highlightTextOnly(html, kw){
@@ -3757,7 +3851,7 @@ function renderFpArts(arts){
   }
   document.getElementById('fpBody').innerHTML=arts.map((a,i)=>{
     const isHeader=a['type']==='header';
-    const no=a['조문번호']?`제${a['조문번호']}조`:'';
+    const no=artNoLabel(a);
     const hno=a['header_no']||'';
     const title=a['조문제목']||'';
     const content=a['조문내용']||'';
@@ -3799,7 +3893,7 @@ function renderFpArts(arts){
             <button class="memo-del" onclick="deleteMemo(${i},'${memoKey}')">삭제</button>
           </div>
         </div>
-        ${applyXref(applyTermTooltip(escHtml(content)), lawName, _fpAbbrevMap)}
+        <div class="fp-art-text" id="fptext${i}">${artBodyHtml(a,{lawName,abbrevMap:_fpAbbrevMap,tooltip:true})}</div>
         <div class="ai-box" id="aibox_${i}" style="display:none;"></div>
       </div>`:''}
     </div>`;
@@ -4010,7 +4104,7 @@ async function aiInterpretByIdx(btnEl, isRetry=false){
   const art=fpArts[idx];
   if(!art) return;
   const lawName=document.getElementById('fpTitle').textContent;
-  const no=art['조문번호']?`제${art['조문번호']}조`:'';
+  const no=artNoLabel(art);
   const title=art['조문제목']||'';
   const content=art['조문내용']||'';
   const boxId=`aibox_${idx}`;
@@ -4089,11 +4183,10 @@ function copyArticleByIdx(btnEl){
   const idx=parseInt(btnEl.dataset.idx);
   const art=fpArts[idx];
   if(!art) return;
-  const no=art['조문번호']?`제${art['조문번호']}조`:'';
+  const no=artNoLabel(art);
   const title=art['조문제목']||'';
   const content=art['조문내용']||'';
-  const text=`${no?no+' ':''}${title}\
-${content}`.trim();
+  const text=`${no?no+' ':''}${title}\n${content}`.trim();
   navigator.clipboard.writeText(text).then(()=>{
     btnEl.textContent='✓ 복사됨'; btnEl.classList.add('copied');
     setTimeout(()=>{btnEl.textContent='⎘ 복사'; btnEl.classList.remove('copied');},2000);
@@ -4112,7 +4205,7 @@ function fpPrint(){
       const ttl = a['조문제목']||'';
       return `<div style="margin:16px 0 4px;padding:6px 10px;background:#f0f0f0;font-size:13px;font-weight:700;color:#1D9E75;">${escHtml(lbl?lbl+' ':'')}${escHtml(ttl)}</div>`;
     }
-    const no=a['조문번호']?`제${a['조문번호']}조 `:'';
+    const no=artNoLabel(a)?artNoLabel(a)+' ':'';
     const tit=a['조문제목']||'';
     const con=a['조문내용']||'';
     const memo=a['조문번호']?localStorage.getItem(`memo__${a['조문번호']}__${encodeURIComponent(title)}`)||'':'';
@@ -4279,13 +4372,13 @@ async function loadCmpLaw(col){
       if(a.type==='header'){
         return `<div class="cmp-struct">${escHtml(a['header_no']?a['header_no']+' ':'')}${escHtml(a['조문제목']||'')}</div>`;
       }
-      const no=a['조문번호']?`제${a['조문번호']}조`:'';
+      const no=artNoLabel(a);
       const title=a['조문제목']||'';
       const content=a['조문내용']||'';
       return `<div class="cmp-art">
         ${no?`<span class="cmp-art-no">${escHtml(no)}</span>`:''}
         ${title?`<div class="cmp-art-title">${escHtml(title)}</div>`:''}
-        ${content?`<div class="cmp-art-body">${escHtml(content)}</div>`:''}
+        ${content?`<div class="cmp-art-body">${artBodyHtml(a,{})}</div>`:''}
       </div>`;
     }).join('');
   }catch{
@@ -4462,7 +4555,7 @@ const TERMS = {
 function applyTermTooltip(html){
   let result=html;
   Object.entries(TERMS).forEach(([term, desc])=>{
-    const escaped=term.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&');
+    const escaped=escRegex(term);
     const safe_desc=desc.replace(/'/g,'&#39;');
     result=result.replace(
       new RegExp(`(?<!<[^>]*)(${escaped})(?![^<]*>)`,'g'),
@@ -4491,15 +4584,13 @@ function exportCSV(){
     const name=law['법령명한글']||'';
     const type=law['법령구분명']||'';
     const org=law['소관부처명']||guessOrg(name);
-    const date=(law['공포일자']||'').replace(/(\\d{4})(\\d{2})(\\d{2})/,'$1.$2.$3');
+    const date=(law['공포일자']||'').replace(/(\d{4})(\d{2})(\d{2})/,'$1.$2.$3');
     const no=law['법령일련번호']||'';
     const url=`https://www.law.go.kr/법령/${encodeURIComponent(name)}`;
     return [name,type,org,date,no,url].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',');
   });
-  const bom='\\uFEFF'; // 한글 깨짐 방지 BOM
-  const csv=bom+header.join(',')+'\
-'+rows.join('\
-');
+  const bom='﻿'; // 한글 깨짐 방지 BOM
+  const csv=bom+header.join(',')+'\n'+rows.join('\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -4534,7 +4625,7 @@ function toggleBookmark(idx, key){
     localStorage.removeItem(key);
     if(btn){btn.textContent='🔖 북마크'; btn.classList.remove('active');}
   } else {
-    const no=art['조문번호']?`제${art['조문번호']}조`:'';
+    const no=artNoLabel(art);
     const title=art['조문제목']||'';
     const data=JSON.stringify({law:lawName, no, title, idx,
       url:`https://www.law.go.kr/법령/${encodeURIComponent(lawName)}`,
@@ -5014,7 +5105,7 @@ function renderActiveRefTab(){
   if(t._singleArt){
     const a = t._singleArt;
     const lawName = document.getElementById('fpTitle').textContent;
-    const artNo   = a['조문번호'] ? `제${a['조문번호']}조` : '';
+    const artNo   = artNoLabel(a);
     const content = (a['조문내용'] || '').replace(/<[^>]+>/g, '');
     const body    = document.getElementById('fpRightBody');
     body.innerHTML = `
@@ -5022,7 +5113,7 @@ function renderActiveRefTab(){
         <div class="single-art-law">📋 ${escHtml(lawName)}</div>
         <div class="single-art-no">${escHtml(artNo)}</div>
         <div class="single-art-title">${escHtml(a['조문제목']||'')}</div>
-        <div class="single-art-content" id="singleArtContent">${escHtml(content)}</div>
+        <div class="single-art-content" id="singleArtContent">${artBodyFrom(a,content,{})}</div>
         <div style="margin-top:12px;display:flex;gap:8px;">
           <button class="abtn" onclick="jumpToArt(${parseInt(a['조문번호'])||0})">
             ↑ 원문으로 이동
@@ -5110,7 +5201,7 @@ function renderRefArts(arts, kw){
     ? arts.filter(a => a.type!=='header' && (
         (a['조문내용']||'').toLowerCase().includes(kwL) ||
         (a['조문제목']||'').toLowerCase().includes(kwL) ||
-        (a['조문번호']===kw.replace(/\\D/g,''))
+        (a['조문번호']===kw.replace(/\D/g,''))
       ))
     : arts;
 
@@ -5126,12 +5217,10 @@ function renderRefArts(arts, kw){
     if(a.type === 'header'){
       return `<div class="ref-divider">${escHtml(a['header_no']?a['header_no']+' ':'')}${escHtml(a['조문제목']||'')}</div>`;
     }
-    const no      = a['조문번호'] ? `제${a['조문번호']}조` : '';
+    const no      = artNoLabel(a);
     const title   = a['조문제목'] || '';
     const content = a['조문내용'] || '';
-    const hl = kw
-      ? escHtml(content).replace(new RegExp(escRegex(escHtml(kw)),'gi'), m=>`<mark style="background:#fef08a;">${m}</mark>`)
-      : escHtml(content);
+    const hl = artBodyHtml(a,{kws:kw?[kw]:[]});
     const autoOpen = kw && (content.toLowerCase().includes(kwL) || title.toLowerCase().includes(kwL));
 
     return `<div class="ref-art" id="refa${i}" data-artno="${escHtml(String(a['조문번호']||''))}">
@@ -5275,26 +5364,43 @@ function hangNoToCircle(n){
 // 조문 본문 내 항·호 하이라이트
 function highlightHangInEl(bodyEl, hangNo, hoNo){
   if(!bodyEl) return;
-  const text = bodyEl.innerHTML;
   const circle = hangNoToCircle(hangNo);
 
-  // 이전 하이라이트 제거
-  const cleaned = text.replace(/<mark class="hang-hl"[^>]*>/g,'').replace(/<\/mark>/g,'');
+  // 계층 렌더링(.art-l) 구조: 해당 항 행과 그 하위(호·목) 행에 표시만 붙인다
+  const rows = bodyEl.querySelectorAll('.art-l');
+  if(rows.length){
+    rows.forEach(r=>r.classList.remove('hang-hl'));
+    if(!hangNo) return;
+    const norm = s => String(s||'').replace(/[.)\s]+$/,'');
+    let on=false, first=null;
+    rows.forEach(r=>{
+      const d  = Array.from(r.classList).some(c=>c==='art-l-d1') ? 1
+               : Array.from(r.classList).some(c=>c==='art-l-d0') ? 0 : 2;
+      const no = norm(r.querySelector('.art-l-no')?.textContent);
+      if(d<=1){ on = (no===norm(circle) || no===norm(hangNo)); }
+      if(on){
+        // 호 지정이 있으면 그 호 행만 강조(항 행은 항상 포함)
+        if(hoNo && d>=2 && no!==norm(hoNo)) return;
+        r.classList.add('hang-hl');
+        if(!first) first=r;
+      }
+    });
+    if(first) first.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
 
+  // 구조 정보가 없는 평문 본문: 기존 방식(텍스트 범위 하이라이트)
+  const cleaned = bodyEl.innerHTML
+    .replace(/<mark class="hang-hl"[^>]*>/g,'').replace(/<\/mark>/g,'');
   let highlighted = cleaned;
-
   if(hangNo){
-    // ① 스타일 하이라이트
-    const escCircle = circle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escCircle = escRegex(circle);
     highlighted = highlighted.replace(
       new RegExp(`(${escCircle}[^①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]*?)(?=[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]|$)`, 'g'),
       `<mark class="hang-hl" style="background:#fef08a;border-radius:3px;padding:1px 0;">$1</mark>`
     );
   }
-
   bodyEl.innerHTML = highlighted;
-
-  // 스크롤
   const mark = bodyEl.querySelector('.hang-hl');
   if(mark) mark.scrollIntoView({behavior:'smooth', block:'center'});
 }
@@ -5310,7 +5416,7 @@ function showArtInRightPanel(art, hangNo='', hoNo=''){
   const lawName  = document.getElementById('fpTitle').textContent;
   const artNo    = art['조문번호'] || '';
   const artTitle = art['조문제목'] || '';
-  const artLabel = `제${artNo}조 ${artTitle}`.trim();
+  const artLabel = `${artNoLabel(art)} ${artTitle}`.trim();
 
   // 탭 추가 (같은 법령 내 자기 참조)
   const tabKey = `${lawName}#${artNo}`;
@@ -5402,7 +5508,7 @@ async function fpShowAmendments(){
           <span class="amend-badge ${label}">${label}</span> ${items.length}개 조문
         </div>
         ${items.map((a,i)=>{
-          const no=a['조문번호']?`제${a['조문번호']}조`:'';
+          const no=artNoLabel(a);
           const title=a['조문제목']||'';
           const content=a['조문내용']||'';
           const adate=a['amended_date']||d.law_date||'';
@@ -5413,7 +5519,7 @@ async function fpShowAmendments(){
               ${adate?`<span style="font-size:11px;color:var(--ht);margin-left:4px;">${adate}</span>`:''}
               <button class="amend-goto" onclick="event.stopPropagation();closeAmendView('${encodeURIComponent(name)}','${encodeURIComponent(lawUrl)}',${parseInt(a['조문번호'])||0})">조문 보기 →</button>
             </div>
-            ${content?`<div class="amend-item-body">${escHtml(content)}</div>`:''}
+            ${content?`<div class="amend-item-body">${artBodyHtml(a,{})}</div>`:''}
           </div>`;
         }).join('')}
       </div>`;
@@ -5694,7 +5800,7 @@ function buildRefList(){
   fpArts.forEach(a => {
     if(a.type === 'header') return;
     const text = (a['조문내용']||'') + (a['조문제목']||'');
-    const no    = a['조문번호'] ? `제${a['조문번호']}조` : '';
+    const no    = artNoLabel(a);
     const title = a['조문제목'] || '';
     let m;
     lawRefRe.lastIndex = 0;
@@ -5910,7 +6016,7 @@ function renderPopoverArts(arts){
   if(!arts.length){ body.innerHTML = '<div style="color:var(--ht);">조문 없음</div>'; return; }
   body.innerHTML = arts.map(a=>`
     <div class="ref-popover-art">
-      <div class="ref-popover-art-no">제${a['조문번호']||''}조 ${escHtml(a['조문제목']||'')}</div>
+      <div class="ref-popover-art-no">${escHtml(artNoLabel(a))} ${escHtml(a['조문제목']||'')}</div>
       <div style="color:var(--mu);">${escHtml((a['조문내용']||'').slice(0,80))}${(a['조문내용']||'').length>80?'…':''}</div>
     </div>`).join('');
 }
@@ -5942,7 +6048,7 @@ function showRefPreview(e, refName){
 
     prev.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--g);margin-bottom:6px;">「${escHtml(refName)}」 주요 조문</div>`
       + arts.map(a=>`<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--bd);">
-          <div style="font-size:11px;font-weight:600;">제${a['조문번호']||''}조 ${escHtml(a['조문제목']||'')}</div>
+          <div style="font-size:11px;font-weight:600;">${escHtml(artNoLabel(a))} ${escHtml(a['조문제목']||'')}</div>
           <div style="font-size:11px;color:var(--mu);">${escHtml((a['조문내용']||'').slice(0,60))}…</div>
         </div>`).join('');
 
@@ -5982,6 +6088,18 @@ renderAgencyTabs();
 validateKeywords();
 setMode('internal');  // 기본: 내규 검색 (온보딩 패널 포함 초기화)
 try{ updateAiStatusUI(getAiSettings()); }catch{}
+
+// URL 쿼리로 진입한 검색 (?q=규정명&mode=internal|law|scenario) — 업로드 페이지에서 바로 열기
+try{
+  const _p=new URLSearchParams(location.search);
+  const _q=(_p.get('q')||'').trim();
+  if(_q){
+    const _m=_p.get('mode');
+    if(_m&&['internal','law','scenario'].includes(_m)) setMode(_m);
+    const _inp=document.getElementById('q');
+    if(_inp){ _inp.value=_q; setTimeout(()=>doSearch(),120); }
+  }
+}catch(e){ console.warn('쿼리 검색 초기화 실패', e); }
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ① 조문 변경 diff 뷰
@@ -6317,7 +6435,7 @@ async function showArtHistory(idx){
   if(!art) return;
   const lawName=document.getElementById('fpTitle').textContent;
   const lawUrl=document.getElementById('fpExtLink').href;
-  const no=art['조문번호']?`제${art['조문번호']}조`:'';
+  const no=artNoLabel(art);
   const title=art['조문제목']||'';
   const body=document.getElementById('fpBody');
   const backBtn=`<button class="fp-tbtn" style="margin-bottom:14px;" onclick="openFullPanel(decodeURIComponent('${encodeURIComponent(lawName)}'),decodeURIComponent('${encodeURIComponent(lawUrl)}'))">← 조문 전문으로 돌아가기</button>`;
@@ -6393,7 +6511,7 @@ function scoreArticleNL(art, keywords){
   const text=(art['조문내용']||'')+(art['조문제목']||'');
   let score=0;
   keywords.forEach(kw=>{
-    const re=new RegExp(kw.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&'),'g');
+    const re=new RegExp(escRegex(kw),'g');
     const matches=text.match(re);
     if(matches) score+=matches.length*(kw.length>=4?3:1);
   });
