@@ -177,6 +177,11 @@ a{color:var(--g);}
         <label for="department">담당 부서</label>
         <input id="department" placeholder="예: 감사실">
       </div>
+      <div class="f">
+        <label for="uploader">올린 사람 <span class="req">*</span></label>
+        <input id="uploader" placeholder="예: 홍길동" autocomplete="name" maxlength="40">
+        <div class="hint">업로드 이력과 커밋 기록에 남습니다.</div>
+      </div>
       <div class="f full">
         <label for="note">개정 사유·비고</label>
         <textarea id="note" placeholder="주요 개정 내용이나 참고사항을 적어두면 전문 화면 상단에 표시됩니다."></textarea>
@@ -318,7 +323,12 @@ async function loadStatus(){
 
     // 저장 가능 여부 배너
     const b=document.getElementById('statusBanner');
-    if(d.writable){
+    if(d.github){
+      b.innerHTML=`<div class="banner ok"><span>✅</span><div>
+        업로드하면 <b>자동으로 저장·배포</b>됩니다(<code>${esc(d.github_repo)}</code>에 커밋).
+        현재 등록된 내규 <b>${d.total}건</b>.
+        반영까지 <b>1~2분</b> 정도 걸립니다.</div></div>`;
+    }else if(d.writable){
       b.innerHTML=`<div class="banner ok"><span>✅</span><div>
         업로드하면 <b>즉시 반영</b>됩니다. 현재 등록된 내규 <b>${d.total}건</b>.
         배포본(Vercel)에도 반영하려면 <code>regulations/</code>와
@@ -354,7 +364,7 @@ function renderUploads(list){
       <span class="up-cat">${esc(u.category||'기타')}</span>
       <div style="min-width:0;">
         <div class="up-t">${esc(u.title)}</div>
-        <div class="up-r">${esc(u.revision||'')}
+        <div class="up-r">${esc(u.revision||'')}${u.uploader?` · ${esc(u.uploader)}`:''}
           ${u.searchable?'':'<span class="no-search">본문 검색 불가</span>'}
           ${(u.history&&u.history.length)?`<span style="color:var(--ht);"> · 이전 개정 ${u.history.length}건</span>`:''}
         </div>
@@ -385,6 +395,7 @@ function buildForm(asZip){
   fd.append('revision',document.getElementById('revision').value.trim());
   fd.append('effective_date',document.getElementById('effective').value);
   fd.append('department',document.getElementById('department').value.trim());
+  fd.append('uploader',document.getElementById('uploader').value.trim());
   fd.append('note',document.getElementById('note').value.trim());
   const tok=document.getElementById('token').value;
   if(tok) fd.append('token',tok);
@@ -396,6 +407,9 @@ async function doUpload(asZip){
   if(!_picked){ showResult(false,'먼저 개정 문서 파일을 선택해주세요.'); return; }
   if(!document.getElementById('title').value.trim()){
     showResult(false,'규정명을 입력해주세요.'); return;
+  }
+  if(!document.getElementById('uploader').value.trim()){
+    showResult(false,'올린 사람 이름을 입력해주세요.'); return;
   }
   if(_status&&_status.token_required&&!document.getElementById('token').value){
     showResult(false,'업로드 토큰을 입력해주세요.'); return;
@@ -431,6 +445,21 @@ async function doUpload(asZip){
     if(!res.ok||d.error){ showResult(false,'❌ '+esc(d.error||('업로드 실패 ('+res.status+')'))); return; }
 
     const e=d.entry||{};
+    if(d.committed){
+      showResult(true,`<h4>✅ ${esc(e.title)} ${d.replaced?'개정본 등록':'등록'} 완료</h4>
+        <p style="margin:0 0 8px;">리포지토리에 커밋했습니다 —
+          <a href="${esc(d.commit_url||'#')}" target="_blank"><code>${esc(d.commit_sha||'')}</code></a>.
+          <b>배포 반영까지 1~2분</b> 걸립니다. 잠시 후 검색에서 확인하세요.</p>
+        <dl>
+          <dt>개정 구분</dt><dd>${esc(e.revision||'-')}</dd>
+          <dt>규정 구분</dt><dd>${esc(e.category||'-')}</dd>
+          <dt>올린 사람</dt><dd>${esc(e.uploader||'-')}</dd>
+          <dt>본문 검색</dt><dd>${d.searchable?'가능 — 조문 단위 검색에 반영됩니다':'불가 — 원본 열람만 가능합니다'}</dd>
+        </dl>
+        ${d.warning?`<p style="margin:0;color:#92400e;">⚠️ ${esc(d.warning)}</p>`:''}`);
+      clearFile(); resetFields(); loadStatus();
+      return;
+    }
     showResult(true,`<h4>✅ ${esc(e.title)} 등록 완료${d.replaced?' (개정판으로 교체)':''}</h4>
       <dl>
         <dt>개정 구분</dt><dd>${esc(e.revision||'-')}</dd>

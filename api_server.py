@@ -4,7 +4,7 @@ KOAT 내규&국가법령 종합 검색 서비스
 로컬: python run_local.py
 """
 
-import os, json, re, time, threading, webbrowser
+import os, json, re, time, threading, webbrowser, base64
 import concurrent.futures as _cf
 import xml.etree.ElementTree as ET
 import urllib3
@@ -2806,6 +2806,103 @@ def _upload_authorized() -> bool:
     return tok == REG_UPLOAD_TOKEN
 
 
+# ── GitHub 직접 커밋 (읽기전용 배포에서 업로드를 반영하는 경로) ────────────────
+# 업로드 → 변환 → 리포지토리에 커밋 → Vercel 자동 배포.
+# regulations/ 를 그대로 단일 출처로 유지하고, 개정 이력이 git 히스토리로 남는다.
+GITHUB_TOKEN  = os.environ.get("GITHUB_TOKEN", "").strip()
+GITHUB_REPO   = os.environ.get("GITHUB_REPO", "").strip()          # 예: owner/repo
+GITHUB_BRANCH = os.environ.get("GITHUB_BRANCH", "main").strip() or "main"
+GITHUB_API    = os.environ.get("GITHUB_API", "https://api.github.com").rstrip("/")
+
+
+def _gh_enabled() -> bool:
+    return bool(GITHUB_TOKEN and GITHUB_REPO)
+
+
+def _gh_headers() -> dict:
+    return {"Authorization": f"Bearer {GITHUB_TOKEN}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28"}
+
+
+def _gh(method: str, path: str, **kw):
+    url = f"{GITHUB_API}/repos/{GITHUB_REPO}{path}"
+    r = _SESSION.request(method, url, headers=_gh_headers(), timeout=30, **kw)
+    if r.status_code >= 400:
+        detail = ""
+        try:
+            detail = (r.json() or {}).get("message", "")
+        except Exception:
+            detail = (r.text or "")[:160]
+        raise RuntimeError(f"GitHub {method} {path} 실패({r.status_code}): {detail}")
+    return r.json() if r.content else {}
+
+
+def _gh_commit_files(files: dict, message: str, deletes=None):
+    """여러 파일을 한 커밋으로 반영. files={경로: bytes|str}, deletes=[경로].
+
+    Git Data API(blob→tree→commit→ref)로 원자적으로 커밋한다.
+    Contents API를 파일마다 호출하면 커밋이 쪼개지고 중간 실패 시 상태가 깨진다.
+    """
+    ref = _gh("GET", f"/git/ref/heads/{GITHUB_BRANCH}")
+    head_sha = ref["object"]["sha"]
+    base_tree = _gh("GET", f"/git/commits/{head_sha}")["tree"]["sha"]
+
+    tree = []
+    for path, content in (files or {}).items():
+        if isinstance(content, str):
+            content = content.encode("utf-8")
+        blob = _gh("POST", "/git/blobs",
+                   json={"content": base64.b64encode(content).decode("ascii"),
+                         "encoding": "base64"})
+        tree.append({"path": path, "mode": "100644", "type": "blob",
+                     "sha": blob["sha"]})
+    for path in (deletes or []):
+        tree.append({"path": path, "mode": "100644", "type": "blob", "sha": None})
+    if not tree:
+        raise RuntimeError("커밋할 파일이 없습니다.")
+
+    new_tree = _gh("POST", "/git/trees",
+                   json={"base_tree": base_tree, "tree": tree})
+    commit = _gh("POST", "/git/commits",
+                 json={"message": message, "tree": new_tree["sha"],
+                       "parents": [head_sha]})
+    _gh("PATCH", f"/git/refs/heads/{GITHUB_BRANCH}",
+        json={"sha": commit["sha"], "force": False})
+    return commit["sha"]
+
+
+def _gh_get_manifest():
+    """리포지토리의 현재 manifest 를 읽어온다(로컬 파일이 낡았을 수 있으므로)."""
+    try:
+        d = _gh("GET", "/contents/regulations_manifest.json",
+                params={"ref": GITHUB_BRANCH})
+        raw = base64.b64decode(d.get("content", "") or "")
+        return json.loads(raw.decode("utf-8"))
+    except Exception as e:
+        print(f"[gh] manifest 조회 실패, 로컬 사용: {e}")
+        return list(_load_reg_manifest())
+
+
+def _merge_manifest(man: list, entry: dict):
+    """같은 규정명이 있으면 교체(이전 개정은 history 에 누적), 없으면 추가."""
+    key = _norm_key(entry.get("title", ""))
+    out, replaced, prev = [], False, None
+    for m in man:
+        if _norm_key(m.get("title", "")) == key:
+            prev = {k: v for k, v in m.items() if k != "history"}
+            hist = list(m.get("history") or [])
+            hist.insert(0, {"entry": prev})
+            entry = dict(entry)
+            entry["history"] = hist[:20]
+            out.append(entry); replaced = True
+        else:
+            out.append(m)
+    if not replaced:
+        out.append(entry)
+    return out, replaced
+
+
 @app.route("/regulations/<path:subpath>")
 def serve_regulation_file(subpath):
     """내규 원본 서식·업로드 문서 서빙(로컬 실행용 — Vercel은 vercel.json이 정적 처리)."""
@@ -2839,6 +2936,8 @@ def reg_upload_status():
     return jsonify({
         "success": True,
         "writable": _reg_writable(),
+        "github": _gh_enabled(),
+        "github_repo": GITHUB_REPO if _gh_enabled() else "",
         "token_required": bool(REG_UPLOAD_TOKEN),
         "max_mb": REG_UPLOAD_MAX_MB,
         "categories": REG_CATEGORIES,
@@ -2849,6 +2948,7 @@ def reg_upload_status():
              "category": m.get("category"), "slug": m.get("slug"),
              "html": m.get("html"), "src": m.get("src"),
              "uploaded_at": m.get("uploaded_at"),
+             "uploader": m.get("uploader", ""),
              "searchable": bool(_local_reg_text(m.get("slug", ""))),
              "history": m.get("history") or []}
             for m in sorted(ups, key=lambda x: x.get("uploaded_at", ""), reverse=True)
@@ -2910,6 +3010,7 @@ def reg_upload():
         "effective_date": (request.form.get("effective_date") or "").strip(),
         "department": (request.form.get("department") or "").strip(),
         "note": (request.form.get("note") or "").strip(),
+        "uploader": (request.form.get("uploader") or "").strip()[:40],
         "uploaded_at": _now_kst(),
     }
 
@@ -2937,13 +3038,48 @@ def reg_upload():
         "effective_date": meta["effective_date"],
         "department": meta["department"],
         "note": meta["note"],
+        "uploader": meta["uploader"],
         "uploaded_at": meta["uploaded_at"],
         "original": f"/regulations/{slug}/original{stored_ext}",
         "searchable": bool(conv["text"]),
     }
 
-    # ── 읽기 전용 배포(Vercel 등): 변환 결과를 ZIP 으로 내려준다 ──
+    # ── GitHub 직접 커밋: 읽기전용 배포에서도 업로드를 반영한다 ──
     want_zip = (request.args.get("as") or request.form.get("as") or "") == "zip"
+    if not want_zip and _gh_enabled():
+        try:
+            base = f"regulations/{slug}"
+            stored_name = f"original{stored_ext}"
+            entry["original"] = f"/{base}/{stored_name}"
+            man, replaced = _merge_manifest(_gh_get_manifest(), entry)
+            files = {
+                f"{base}/index.html": conv["view_html"],
+                f"{base}/{stored_name}": raw,
+                "regulations_manifest.json":
+                    json.dumps(man, ensure_ascii=False, indent=1) + "\n",
+            }
+            if conv["text"]:
+                files[f"{base}/text.txt"] = conv["text"]
+            who = meta.get("uploader") or "익명"
+            msg = (f"내규 {'개정' if replaced else '등록'}: {title}"
+                   + (f" ({revision})" if revision else "")
+                   + f"\n\n업로더: {who}"
+                   + (f"\n개정사유: {meta['note']}" if meta.get("note") else "")
+                   + "\n\n업로드 화면(/upload)에서 자동 커밋됨")
+            sha = _gh_commit_files(files, msg)
+            print(f"[reg-upload] GitHub 커밋 완료: {title} → {sha[:7]}")
+            return jsonify({
+                "success": True, "entry": entry, "replaced": replaced,
+                "searchable": bool(conv["text"]), "warning": conv["warning"],
+                "committed": True, "commit_sha": sha[:7],
+                "commit_url": f"https://github.com/{GITHUB_REPO}/commit/{sha}",
+                "message": "리포지토리에 커밋했습니다. 배포 반영까지 1~2분 걸립니다.",
+            })
+        except Exception as e:
+            import traceback; traceback.print_exc()
+            return jsonify({"error": f"GitHub 커밋 실패: {e}"}), 502
+
+    # ── 읽기 전용 배포에서 GitHub 미설정: 변환 결과를 ZIP 으로 내려준다 ──
     if want_zip or not _reg_writable():
         buf = _io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
