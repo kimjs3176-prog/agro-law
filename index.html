@@ -74,7 +74,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .mbtn.active{background:var(--sf);color:var(--g);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.10);}
 /* 검색창 — large Toss style */
 .srow{display:flex;gap:10px;}
-.sinput{flex:1;padding:14px 18px;border:2px solid transparent;border-radius:14px;font-size:15px;background:#f1f3f6;color:var(--tx);outline:none;transition:all .2s cubic-bezier(.34,1.56,.64,1);font-family:var(--font);}
+.sinput{flex:1;min-width:0;padding:14px 18px;border:2px solid transparent;border-radius:14px;font-size:15px;background:#f1f3f6;color:var(--tx);outline:none;transition:all .2s cubic-bezier(.34,1.56,.64,1);font-family:var(--font);}
 .sinput:focus{border-color:var(--g);background:#fff;box-shadow:var(--shadow-focus);}
 .sinput::placeholder{color:#b0bac6;}
 .sbtn{padding:12px 26px;border-radius:14px;border:none;background:var(--g);color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:all .18s cubic-bezier(.34,1.56,.64,1);letter-spacing:-.2px;box-shadow:0 2px 10px rgba(49,130,246,.3);}
@@ -438,9 +438,10 @@ body.dark .rf-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .nm-sec-h .cnt{margin-left:auto;font-weight:700;color:var(--mu);font-size:11.5px;}
 .nm-list{display:flex;flex-wrap:wrap;gap:6px;padding:9px 11px;}
 .nm-chip{border:1px solid var(--bd);background:var(--bg);border-radius:6px;padding:4px 10px;font-size:12px;
-  cursor:pointer;color:var(--tx);transition:.13s;display:inline-flex;align-items:center;gap:6px;}
+  cursor:pointer;color:var(--tx);transition:.13s;display:inline-flex;align-items:center;gap:6px;
+  max-width:100%;text-align:left;}
 .nm-chip:hover{background:var(--gl);border-color:var(--g);color:var(--gd);}
-.nm-chip .cat{font-size:10px;font-weight:700;color:var(--mu);}
+.nm-chip .cat{font-size:10px;font-weight:700;color:var(--mu);flex:0 0 auto;white-space:nowrap;}
 /* 시나리오: 자료 기반 답변(RAG) 카드 */
 .scen-answer{border:1px solid var(--g);border-left:4px solid var(--g);border-radius:12px;
   background:var(--cd);padding:14px 16px;margin:0 0 12px;box-shadow:0 1px 3px rgba(15,23,42,.05);}
@@ -511,7 +512,9 @@ body.dark .int-law-chip{background:#161920;color:#93c5fd;}
 /* ── 모바일 반응형 ── */
 @media(max-width:640px){
   html,body{overflow-x:hidden;}
-  .topbar{padding:0 12px;gap:4px;height:52px;}
+  .topbar{padding:0 10px;gap:3px;height:52px;overflow:hidden;}
+  .topbar .brand{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .settings-btn{flex-shrink:0;}
   .brand-sub,.brand-en{display:none;}
   .brand{font-size:16px;}
   .brand-full{display:none;}
@@ -538,10 +541,33 @@ body.dark .int-law-chip{background:#161920;color:#93c5fd;}
   .wc-mode{flex-direction:row;align-items:center;flex-wrap:wrap;}
   .wc-mode-ic{margin-right:4px;}
   .wc-mode-d{flex-basis:100%;}
-  .srow{gap:8px;}
-  .sinput{font-size:16px;padding:12px 14px;}  /* 16px: iOS 포커스 시 자동 확대 방지 */
-  .sbtn{padding:11px 16px;font-size:14px;flex-shrink:0;}
-  .card-head{flex-wrap:wrap;gap:4px;padding:14px 16px;}
+  /* ── 검색 영역: 가로 넘침 제거 + 세로 공간 절약 ── */
+  .srow{gap:6px;}
+  .sinput{font-size:16px;padding:11px 12px;min-width:0;}  /* 16px: iOS 자동확대 방지 */
+  .sbtn{padding:11px 14px;font-size:14px;flex-shrink:0;box-shadow:none;}
+  /* 즐겨찾기 한 줄이 통째로 차지하던 공간 축소 */
+  .tabs{margin-bottom:10px;}
+  .mtoggle{margin-bottom:10px;}
+  .qlabel{margin:10px 0 6px;font-size:11.5px;}
+  /* 카테고리 칩: 3줄 → 가로 스크롤 한 줄 */
+  .chips{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
+         padding-bottom:4px;scrollbar-width:none;}
+  .chips::-webkit-scrollbar{display:none;}
+  .chips>*{flex:0 0 auto;}
+  /* 결과 카드: 헤더 정리 + 분할보기(모바일 무의미) 숨김 */
+  .card-head{flex-wrap:wrap;gap:4px;padding:12px 14px;}
+  .reg-head-actions{width:100%;gap:5px;margin-top:2px;}
+  .reg-split-btn{display:none;}
+  .reg-card{border-radius:12px;}
+  .reg-arts{padding:0 12px 12px;}
+  .reg-art{padding:9px 10px;}
+  .lname{font-size:14.5px;line-height:1.45;}
+  .nm-list{gap:5px;}
+  .nm-chip{font-size:12px;padding:5px 9px;}
+  .nm-sec-h{font-size:12px;padding:7px 10px;}
+  .res-filter{gap:5px;overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;scrollbar-width:none;}
+  .res-filter::-webkit-scrollbar{display:none;}
+  .rf-chip{flex:0 0 auto;}
   .ldate{display:none;}
   .lorg{font-size:10px;}
   .mgrid{grid-template-columns:1fr 1fr;}
@@ -1418,7 +1444,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
     <!-- 검색창 -->
     <div class="srow">
-      <input id="q" class="sinput" style="padding-left:40px;" placeholder="🔍  내규 키워드 검색 (예: 직무발명, 기술이전, 여비) — 관련 법령도 함께 표시" onkeydown="if(event.key==='Enter')doSearch()">
+      <input id="q" class="sinput" style="padding-left:40px;" placeholder="🔍  내규 검색 (예: 직무발명, 여비)" onkeydown="if(event.key==='Enter')doSearch()">
       <button id="sbtn" class="sbtn" onclick="doSearch()">검색</button>
     </div>
     <!-- 내규 카테고리 바로가기 (내규·통합 모드일 때 표시) -->
@@ -1696,10 +1722,15 @@ function setMode(m){
   }
   qlabel.style.display    = (m==='law') ? '' : 'none';
   chipsWrap.style.display = (m==='law') ? '' : 'none';
-  document.getElementById('q').placeholder =
-    m==='internal' ? '내규 키워드 검색 (예: 직무발명, 기술이전, 여비) — 관련 법령도 함께 표시' :
-    m==='law'      ? '법령명 또는 키워드 검색 (예: 농지법, 직무발명, 전용허가) — 관련 내규도 함께 표시' :
-                     '실무 질문을 입력하세요 (예: 농약을 수입·판매하려면 어떤 절차가 필요한가요?)';
+  // 모바일은 짧은 문구 — 긴 placeholder 는 입력창 최소폭을 키워 버튼을 밀어낸다
+  const _narrow = window.matchMedia('(max-width:640px)').matches;
+  document.getElementById('q').placeholder = _narrow
+    ? (m==='internal' ? '내규 검색 (예: 직무발명, 여비)'
+     : m==='law'      ? '법령 검색 (예: 농지법, 직무발명)'
+     :                  '실무 질문을 입력하세요')
+    : (m==='internal' ? '내규 키워드 검색 (예: 직무발명, 기술이전, 여비) — 관련 법령도 함께 표시'
+     : m==='law'      ? '법령명 또는 키워드 검색 (예: 농지법, 직무발명, 전용허가) — 관련 내규도 함께 표시'
+     :                  '실무 질문을 입력하세요 (예: 농약을 수입·판매하려면 어떤 절차가 필요한가요?)');
   renderAgencyInfo();
   clearResults();
 }
