@@ -3176,6 +3176,134 @@ def reg_upload_delete():
                                 "regulations/ 폴더는 git 에서 복원해주세요(git checkout -- regulations/).")})
 
 
+# ── 의미 검색(임베딩) + 키워드 하이브리드 ─────────────────────────────────────
+# 벡터는 리포지토리에 함께 배포되는 int8 파일에서 읽는다(벡터DB 불필요).
+_VEC_BIN = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "regulations_vectors.bin")
+_VEC_META = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         "regulations_vectors.json")
+_VEC_CACHE: dict = {"loaded": False, "meta": None, "mat": None, "np": None}
+
+
+def _vec_load():
+    """벡터 파일 로드(프로세스당 1회). numpy 가 없으면 의미 검색을 끈다."""
+    if _VEC_CACHE["loaded"]:
+        return _VEC_CACHE
+    _VEC_CACHE["loaded"] = True
+    try:
+        import numpy as np
+    except ImportError:
+        print("[vec] numpy 미설치 — 의미 검색 비활성")
+        return _VEC_CACHE
+    try:
+        with open(_VEC_META, encoding="utf-8") as f:
+            meta = json.load(f)
+        dim, cnt = meta["dim"], meta["count"]
+        raw = np.fromfile(_VEC_BIN, dtype=np.int8)
+        if raw.size != dim * cnt:
+            print(f"[vec] 크기 불일치 {raw.size} != {dim*cnt} — 비활성")
+            return _VEC_CACHE
+        mat = raw.reshape(cnt, dim).astype(np.float32)
+        norms = np.linalg.norm(mat, axis=1, keepdims=True)
+        norms[norms == 0] = 1.0
+        _VEC_CACHE.update({"meta": meta, "mat": mat / norms, "np": np})
+        print(f"[vec] 로드 {cnt:,}청크 × {dim}차원")
+    except FileNotFoundError:
+        pass                                   # 벡터 파일 없음 = 기능 미사용
+    except Exception as e:
+        print(f"[vec] 로드 실패: {e}")
+    return _VEC_CACHE
+
+
+def _embed_query(text: str, api_key: str, model: str):
+    """질의 임베딩. 실패 시 None."""
+    try:
+        url = (f"https://generativelanguage.googleapis.com/v1beta/models"
+               f"/{model}:embedContent?key={api_key}")
+        r = _SESSION.post(url, timeout=15, json={
+            "model": f"models/{model}",
+            "content": {"parts": [{"text": text}]},
+            "taskType": "RETRIEVAL_QUERY"})
+        if r.status_code != 200:
+            print(f"[vec] 질의 임베딩 실패({r.status_code})")
+            return None
+        return r.json()["embedding"]["values"]
+    except Exception as e:
+        print(f"[vec] 질의 임베딩 오류: {e}")
+        return None
+
+
+def semantic_search(query: str, api_key: str, top_k: int = 20):
+    """의미 검색. [{slug,title,no,art_title,preview,score}] 또는 []"""
+    c = _vec_load()
+    if c["mat"] is None or not api_key:
+        return []
+    np = c["np"]
+    qv = _embed_query(query, api_key, c["meta"].get("model", "text-embedding-004"))
+    if not qv:
+        return []
+    q = np.asarray(qv, dtype=np.float32)
+    n = float(np.linalg.norm(q)) or 1.0
+    sims = c["mat"] @ (q / n)
+    k = min(top_k, sims.shape[0])
+    idx = np.argpartition(-sims, k - 1)[:k]
+    idx = idx[np.argsort(-sims[idx])]
+    chunks = c["meta"]["chunks"]
+    return [{**chunks[int(i)], "score": float(sims[int(i)])} for i in idx]
+
+
+def _semantic_for_search(query: str, top_k: int = 18):
+    """내규 검색 응답에 실을 의미 검색 결과. 인덱스·키가 없으면 빈 목록."""
+    try:
+        key = (request.args.get("api_key")
+               or os.environ.get("GEMINI_API_KEY", "")).strip()
+        if not key or _vec_load()["mat"] is None:
+            return []
+        return [{"title": h["title"], "slug": h["slug"], "no": h["no"],
+                 "art_title": h["art_title"], "preview": h["preview"],
+                 "score": round(h["score"], 4)}
+                for h in semantic_search(query, key, top_k=top_k)]
+    except Exception as e:
+        print(f"[internal-search] 의미 검색 생략: {e}")
+        return []
+
+
+@app.route("/api/internal/semantic")
+def internal_semantic():
+    """의미 검색 결과(규정 단위로 묶어 반환)."""
+    q = (request.args.get("query") or "").strip()
+    if len(q) < 2:
+        return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
+    key = (request.args.get("api_key")
+           or os.environ.get("GEMINI_API_KEY", "")).strip()
+    c = _vec_load()
+    if c["mat"] is None:
+        return jsonify({"success": True, "available": False, "regs": [],
+                        "message": "의미 검색 인덱스가 없습니다(벡터 파일 미배포)."})
+    if not key:
+        return jsonify({"success": True, "available": False, "regs": [],
+                        "message": "Gemini 키가 필요합니다(AI 설정 또는 서버 환경변수)."})
+    hits = semantic_search(q, key, top_k=int(request.args.get("top", 24)))
+    regs: dict = {}
+    for h in hits:
+        r = regs.setdefault(h["title"], {"name": h["title"], "org": "사내 규정",
+                                         "slug": h["slug"], "matched_articles": [],
+                                         "score": 0.0})
+        r["score"] = max(r["score"], h["score"])
+        if len(r["matched_articles"]) < 5:
+            r["matched_articles"].append({
+                "조문번호": h["no"], "조문제목": h["art_title"],
+                "조문내용": h["preview"]})
+    out = sorted(regs.values(), key=lambda x: -x["score"])
+    for r in out:
+        r["matched_count"] = len(r["matched_articles"])
+    return jsonify({"success": True, "available": True, "query": q,
+                    "count": len(out), "regs": out,
+                    "index": {"chunks": c["meta"]["count"],
+                              "model": c["meta"].get("model"),
+                              "built_at": c["meta"].get("built_at")}})
+
+
 @app.route("/api/internal/names")
 def internal_names():
     """내규 명칭 목록(원본 manifest 기준) — 본문 참조가 내규인지 법령인지 판별용."""
@@ -3476,6 +3604,8 @@ def internal_search():
             "structured": structured,
             # 명칭 검색 결과(본문 검색과 병행) — 규정명에 검색어가 들어간 내규
             "name_matches": _name_match_regs(query),
+            # 의미 검색(임베딩) — 어휘가 달라 키워드로 못 찾는 조문을 보완
+            "semantic": _semantic_for_search(query),
         }
         return jsonify(_merge_local_hits(resp, local_hits))
     except (req_lib.exceptions.Timeout,
