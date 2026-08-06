@@ -28,6 +28,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .main{max-width:min(1320px,94vw);margin:0 auto;padding:24px 22px 40px;}
 @media(min-width:1600px){.main{max-width:1440px;}}
 @media(max-width:900px){.main{max-width:100%;padding:18px 14px 32px;}}
+.reg-sem-badge{font-size:10.5px;font-weight:800;color:#fff;background:#7c3aed;
+  border-radius:5px;padding:2px 7px;white-space:nowrap;}
 .reg-exact{box-shadow:0 0 0 2px var(--g),0 1px 3px rgba(15,23,42,.06);}
 .reg-exact-badge{font-size:10.5px;font-weight:800;color:#fff;background:var(--g);
   border-radius:5px;padding:2px 7px;white-space:nowrap;}
@@ -1969,6 +1971,7 @@ function buildRegCards(items, kw, kind){
         <div class="reg-head-actions">
           <span class="lorg">${escHtml(org)}</span>
           ${it._exact?'<span class="reg-exact-badge">규정명 일치</span>':''}
+          ${it._semantic?'<span class="reg-sem-badge" title="키워드가 달라도 의미가 비슷한 조문">의미 검색</span>':''}
           <span class="reg-badge">${cnt}개 조문 매칭</span>
           ${fullBtn}${splitBtn}
         </div>
@@ -3051,6 +3054,26 @@ function renderInternalResults(d, q){
   } else if(raw){
     // 텍스트 응답: 《규정명》 블록 기준으로 규정별 그룹화(+조문 중복 제거)
     items = parseInternalGrouped(raw, q);
+  }
+  // 의미 검색(임베딩) 보완: 키워드로 못 찾은 규정을 뒤에 덧붙인다.
+  // 어휘가 달라 놓친 조문을 살리되, 키워드 상위 결과의 순서는 건드리지 않는다.
+  const sem=(d.semantic||[]).filter(x=>x&&x.title);
+  if(sem.length){
+    const have=new Set(items.map(it=>_rnorm(it.name)));
+    const byReg=new Map();
+    sem.forEach(h=>{
+      if(have.has(_rnorm(h.title))) return;      // 이미 키워드로 찾은 규정
+      const r=byReg.get(h.title)||{name:h.title,org:'사내 규정',_semantic:true,
+                                   matched_articles:[],matched_count:0,_score:0};
+      r._score=Math.max(r._score,h.score||0);
+      if(r.matched_articles.length<4){
+        r.matched_articles.push({'조문번호':h.no,'조문제목':h.art_title,'조문내용':h.preview});
+        r.matched_count=r.matched_articles.length;
+      }
+      byReg.set(h.title,r);
+    });
+    const add=[...byReg.values()].sort((a,b)=>b._score-a._score).slice(0,6);
+    items=items.concat(add);
   }
   // 명칭 100% 일치 규정은 최상단으로 (없으면 카드를 만들어 올림)
   const nmAll=(d.name_matches||[]).filter(x=>x.title);
