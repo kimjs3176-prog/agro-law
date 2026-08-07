@@ -793,12 +793,32 @@
  },
  {
   "title": "보직관리기준",
-  "revision": "2025년도 12월 18일 개정",
-  "category": "예규",
+  "revision": "2026년도 7월 13일 개정",
+  "category": "정관",
   "slug": "보직관리기준",
-  "src": "보직관리기준(2025년도 12월 18일 개정).hwpx",
+  "src": "보직관리기준(2026년도 7월 13일 개정).hwpx",
   "html": "/regulations/보직관리기준/index.html",
-  "pdf": "pdf/보직관리기준.pdf"
+  "pdf": "pdf/보직관리기준.pdf",
+  "effective_date": "2026-07-13",
+  "department": "",
+  "note": "",
+  "uploader": "김진선",
+  "uploaded_at": "2026-08-07 15:04",
+  "original": "/regulations/보직관리기준/original.hwpx",
+  "searchable": true,
+  "history": [
+   {
+    "entry": {
+     "title": "보직관리기준",
+     "revision": "2025년도 12월 18일 개정",
+     "category": "예규",
+     "slug": "보직관리기준",
+     "src": "보직관리기준(2025년도 12월 18일 개정).hwpx",
+     "html": "/regulations/보직관리기준/index.html",
+     "pdf": "pdf/보직관리기준.pdf"
+    }
+   }
+  ]
  },
  {
   "title": "부패행위 처리 및 신고자 보호 등에 관한 지침",
