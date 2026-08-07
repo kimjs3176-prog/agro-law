@@ -2016,7 +2016,21 @@ function buildRegCards(items, kw, kind){
 // 내규 텍스트에서 개정/신설 날짜 추출 → 최신 개정일 + 개정이력
 function _extractRevInfo(item, arts){
   let 시행일='';
-  // 구조화 필드 우선
+  // ① 등록된 내규 메타(manifest) 우선 — 실제 개정 정보의 정본.
+  //    조문 본문의 <개정 …> 표기는 그 조문이 고쳐진 시점일 뿐 규정 전체의 최신 개정이 아니다.
+  const nm=_rnorm((item&&(item.name||item['법령명한글']))||'');
+  const meta=nm?_regMeta.get(nm):null;
+  if(meta){
+    const hist=(meta.history||[]).map(h=>h.revision).filter(Boolean);
+    const cur=(meta.revision||'').trim();
+    return {
+      시행일:(meta.effective_date||'').replace(/-/g,'.'),
+      latest: cur,
+      history: cur?[...hist].reverse().concat([cur]):hist.slice().reverse(),
+      fromMeta:true,
+    };
+  }
+  // ② 메타가 없으면 기존 방식(조문 본문의 개정 표기)으로 추정
   if(item && typeof item==='object'){
     시행일 = item['시행일']||item['시행일자']||item['effectiveDate']||item['enforceDate']||'';
   }
@@ -2035,7 +2049,7 @@ function _buildRevMeta(item, arts, i){
   if(!rv.latest && !rv.시행일 && !rv.history.length) return '';
   const bits=[];
   if(rv.시행일) bits.push(`<span class="reg-rev-item">📅 시행 <b>${escHtml(rv.시행일)}</b></span>`);
-  if(rv.latest) bits.push(`<span class="reg-rev-item">🕒 최근 개정 <b>${escHtml(rv.latest)}</b></span>`);
+  if(rv.latest) bits.push(`<span class="reg-rev-item">🕒 ${rv.fromMeta?'현행':'최근 개정'} <b>${escHtml(rv.latest)}</b></span>`);
   let histBtn='';
   if(rv.history.length){
     const list=rv.history.slice().reverse().map(dt=>`<span class="reg-hist-chip">${escHtml(dt)}</span>`).join('');
@@ -2151,6 +2165,7 @@ async function openInternalPanel(name){
 // ── 내규 명칭 레지스트리: 본문 참조가 '내규'인지 '법령'인지 판별 ──
 let _regNames=null;              // Set(정규화 명칭)
 let _regNameOrig=new Map();      // 정규화 → 원래 표기
+let _regMeta=new Map();          // 정규화 → {revision, effective_date, history}
 const _rnorm=s=>(s||'').replace(/\s+/g,'').toLowerCase();
 async function loadRegNames(){
   if(_regNames) return _regNames;
@@ -2160,7 +2175,7 @@ async function loadRegNames(){
     const d=await r.json();
     (d.names||[]).forEach(x=>{
       const k=_rnorm(x.title);
-      if(k){ _regNames.add(k); _regNameOrig.set(k,x.title); }
+      if(k){ _regNames.add(k); _regNameOrig.set(k,x.title); _regMeta.set(k,x); }
     });
   }catch(e){}
   return _regNames;

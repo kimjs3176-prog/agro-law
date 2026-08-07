@@ -3308,9 +3308,24 @@ def internal_semantic():
 def internal_names():
     """내규 명칭 목록(원본 manifest 기준) — 본문 참조가 내규인지 법령인지 판별용."""
     man = _load_reg_manifest()
-    items = [{"title": m.get("title", ""), "category": m.get("category", ""),
-              "revision": m.get("revision", "")}
-             for m in man if m.get("title")]
+    items = []
+    for m in man:
+        if not m.get("title"):
+            continue
+        # 개정 이력: 업로드 시 누적된 이전 개정본(최신순)
+        hist = []
+        for h in (m.get("history") or [])[:20]:
+            e = h.get("entry") or h
+            rv = (e.get("revision") or "").strip()
+            if rv:
+                hist.append({"revision": rv,
+                             "effective_date": e.get("effective_date", ""),
+                             "uploaded_at": e.get("uploaded_at", "")})
+        items.append({"title": m.get("title", ""), "category": m.get("category", ""),
+                      "revision": m.get("revision", ""),
+                      "effective_date": m.get("effective_date", ""),
+                      "uploaded_at": m.get("uploaded_at", ""),
+                      "history": hist})
     return jsonify({"success": True, "count": len(items), "names": items})
 
 
