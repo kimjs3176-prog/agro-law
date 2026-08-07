@@ -2439,24 +2439,44 @@ def _xml_blocks(root: ET.Element, para_tag: str, table_tag: str,
                 parts.append(" ")
         return re.sub(r"\s+", " ", "".join(parts)).strip()
 
+    def cell_span(tc: ET.Element):
+        """셀 병합 정보(colspan, rowspan). HWPX는 hp:cellSpan, DOCX는 gridSpan/vMerge."""
+        cs = rs = 1
+        for sub in tc.iter():
+            n = _local(sub.tag)
+            if n == "cellSpan":                      # HWPX
+                cs = int(sub.get("colSpan") or 1)
+                rs = int(sub.get("rowSpan") or 1)
+            elif n == "gridSpan":                    # DOCX
+                try:
+                    cs = int(list(sub.attrib.values())[0])
+                except (ValueError, IndexError):
+                    pass
+        return max(cs, 1), max(rs, 1)
+
     def table_block(tbl: ET.Element):
         rows = []
         for tr in tbl.iter():
             if _local(tr.tag) != row_tag:
                 continue
-            cells = [cell_text(tc) for tc in tr if _local(tc.tag) == cell_tag]
+            cells = []
+            for tc in tr:
+                if _local(tc.tag) != cell_tag:
+                    continue
+                cs, rs = cell_span(tc)
+                cells.append({"t": cell_text(tc), "cs": cs, "rs": rs})
             if cells:
                 rows.append(cells)
-        while rows and not any(c for c in rows[0]):      # 앞뒤 빈 행 제거
+        while rows and not any(c["t"] for c in rows[0]):   # 앞뒤 빈 행 제거
             rows.pop(0)
-        while rows and not any(c for c in rows[-1]):
+        while rows and not any(c["t"] for c in rows[-1]):
             rows.pop()
         if not rows:
             return None
         # 1열 표는 제목·안내 박스로 쓰인 레이아웃 표 → 표 대신 단락으로
-        if max(len(r) for r in rows) <= 1:
+        if max(sum(c["cs"] for c in r) for r in rows) <= 1:
             for r in rows:
-                blocks.append({"type": "p", "text": (r[0] if r else "").strip()})
+                blocks.append({"type": "p", "text": (r[0]["t"] if r else "").strip()})
             return None
         return {"type": "table", "rows": rows}
 
@@ -2536,7 +2556,7 @@ def _blocks_to_text(blocks: list) -> str:
     for b in blocks:
         if b["type"] == "table":
             for row in b["rows"]:
-                lines.append(" | ".join(row))
+                lines.append(" | ".join(c["t"] for c in row))
         else:
             lines.append(b.get("text", ""))
     # 3줄 이상 연속 공백 줄은 2줄로 압축
@@ -2553,20 +2573,44 @@ _CHAP_HEAD_RE = re.compile(r"^제\s*\d+\s*(?:편|장|절|관)\b")
 _APX_HEAD_RE = re.compile(r"^\[?\s*(?:별표|별지|붙임|서식)")
 
 
+def _table_html(rows: list) -> str:
+    """병합(colspan/rowspan)을 반영해 표를 렌더. 첫 행이 머리글로 보일 때만 thead 사용."""
+    def cells(row, tag):
+        out = []
+        for c in row:
+            attr = ""
+            if c["cs"] > 1:
+                attr += f' colspan="{c["cs"]}"'
+            if c["rs"] > 1:
+                attr += f' rowspan="{c["rs"]}"'
+            out.append(f'<{tag}{attr}>{_esc(c["t"])}</{tag}>')
+        return "".join(out)
+
+    if not rows:
+        return ""
+    # 머리글 판정: 첫 행이 모두 채워져 있고 짧으면 헤더로 본다.
+    # (자료 행이 헤더로 올라가 열이 어긋나는 것을 막는다)
+    first = rows[0]
+    # 날짜·호수·순수 숫자가 있으면 머리글이 아니라 자료 행(예: 연혁 표의 '제정 2010.07.14 …')
+    _data_like = re.compile(r"^\s*(?:\d{4}\s*[.\-]|제\s*[\d\-]+\s*호|[\d,]+)\s*\.?\s*$")
+    is_head = (len(rows) > 1
+               and all(c["t"].strip() for c in first)
+               and all(len(c["t"]) <= 20 for c in first)
+               and not any(c["rs"] > 1 for c in first)
+               and not any(_data_like.match(c["t"]) for c in first))
+    head = f"<thead><tr>{cells(first, 'th')}</tr></thead>" if is_head else ""
+    body_rows = rows[1:] if is_head else rows
+    tb = "".join(f"<tr>{cells(r, 'td')}</tr>" for r in body_rows)
+    return f'<div class="tbl-wrap"><table>{head}<tbody>{tb}</tbody></table></div>'
+
+
 def _blocks_to_view_html(title: str, meta: dict, blocks: list,
                          orig_name: str = "") -> str:
     """열람용 HTML 생성 — 조·장 제목을 구분해 기존 원본 뷰어와 동일하게 읽히도록."""
     body = []
     for b in blocks:
         if b["type"] == "table":
-            rows = b["rows"]
-            th, td = rows[0], rows[1:]
-            body.append("<table><thead><tr>"
-                        + "".join(f"<th>{_esc(c)}</th>" for c in th)
-                        + "</tr></thead><tbody>"
-                        + "".join("<tr>" + "".join(f"<td>{_esc(c)}</td>" for c in r) + "</tr>"
-                                  for r in td)
-                        + "</tbody></table>")
+            body.append(_table_html(b["rows"]))
             continue
         t = (b.get("text") or "").strip()
         if not t:
@@ -2610,9 +2654,14 @@ def _blocks_to_view_html(title: str, meta: dict, blocks: list,
  h3.apx{{font-size:15px;margin:26px 0 8px;color:var(--g);}}
  p{{margin:0 0 4px;white-space:pre-wrap;word-break:keep-all;}}
  p.blank{{height:8px;margin:0;}}
- table{{border-collapse:collapse;margin:10px 0 18px;font-size:13px;width:100%;}}
- th,td{{border:1px solid var(--bd);padding:5px 8px;vertical-align:top;}}
- thead th{{background:#f7f8fa;}}
+ .tbl-wrap{{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:10px 0 18px;}}
+ table{{border-collapse:collapse;font-size:12.5px;width:100%;table-layout:auto;}}
+ th,td{{border:1px solid var(--bd);padding:5px 8px;vertical-align:top;
+   word-break:keep-all;overflow-wrap:anywhere;line-height:1.55;}}
+ thead th{{background:#f7f8fa;font-weight:700;text-align:center;}}
+ /* 좁은 화면: 표를 원래 폭으로 두고 가로 스크롤(줄바꿈으로 뭉개지는 것 방지) */
+ @media(max-width:820px){{ table{{width:auto;min-width:100%;}}
+   th,td{{white-space:nowrap;}} }}
  @media print{{body{{padding:0;}}}}
 </style></head><body>
 <h1>{_esc(title)}</h1>
