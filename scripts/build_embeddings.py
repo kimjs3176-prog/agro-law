@@ -35,17 +35,23 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BIN_PATH = os.path.join(BASE, "regulations_vectors.bin")
 META_PATH = os.path.join(BASE, "regulations_vectors.json")
 
-DEFAULT_MODEL = os.environ.get("EMBED_MODEL", "text-embedding-004")
+DEFAULT_MODEL = os.environ.get("EMBED_MODEL", "gemini-embedding-001")
+# 저장 용량·검색 속도를 위해 차원 축소(MRL). 3072→768 로도 검색 품질 손실이 작다.
+DEFAULT_DIM = int(os.environ.get("EMBED_DIM", "768"))
 API = "https://generativelanguage.googleapis.com/v1beta/models"
-BATCH = 50          # Gemini batchEmbedContents 요청당 청크 수
+BATCH = int(os.environ.get("EMBED_BATCH", "20"))    # 요청당 청크 수
+SLEEP = float(os.environ.get("EMBED_SLEEP", "1.0")) # 배치 사이 대기(분당 쿼터 회피)
+CKPT_PATH = os.path.join(BASE, ".embed_checkpoint.jsonl")
 
 
-def embed_batch(texts, api_key: str, model: str, task: str = "RETRIEVAL_DOCUMENT"):
+def embed_batch(texts, api_key: str, model: str, task: str = "RETRIEVAL_DOCUMENT",
+                dim: int = DEFAULT_DIM):
     """텍스트 배치 → 임베딩 벡터 목록."""
     url = f"{API}/{model}:batchEmbedContents?key={api_key}"
-    body = {"requests": [{"model": f"models/{model}",
-                          "content": {"parts": [{"text": t}]},
-                          "taskType": task} for t in texts]}
+    req = {"model": f"models/{model}", "taskType": task}
+    if dim:
+        req["outputDimensionality"] = dim
+    body = {"requests": [dict(req, content={"parts": [{"text": t}]}) for t in texts]}
     last = None
     for attempt in range(4):
         try:
@@ -54,7 +60,8 @@ def embed_batch(texts, api_key: str, model: str, task: str = "RETRIEVAL_DOCUMENT
                 return [e["values"] for e in r.json()["embeddings"]]
             last = f"{r.status_code} {r.text[:200]}"
             if r.status_code in (429, 500, 502, 503, 504):
-                time.sleep(2 ** attempt)
+                # 429(쿼터)는 분 단위 리셋이라 넉넉히 기다린다
+                time.sleep((10 * 2 ** attempt) if r.status_code == 429 else 2 ** attempt)
                 continue
             break
         except Exception as e:                       # 네트워크 오류 재시도
@@ -69,14 +76,55 @@ def quantize(vec):
     return [max(-127, min(127, int(round(v / norm * 127)))) for v in vec]
 
 
+def ckpt_load(sig):
+    """체크포인트 로드. 서명(모델·차원·청크수)이 다르면 무시한다."""
+    if not os.path.exists(CKPT_PATH):
+        return {}
+    done, head = {}, None
+    with open(CKPT_PATH, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue                      # 중단으로 잘린 마지막 줄
+            if head is None:
+                head = rec
+                if rec != sig:
+                    print("체크포인트 서명이 달라 무시합니다(--restart 와 동일).")
+                    return {}
+                continue
+            done[rec["i"]] = rec
+    return done
+
+
+def ckpt_init(sig):
+    with open(CKPT_PATH, "w", encoding="utf-8") as f:
+        f.write(json.dumps(sig, ensure_ascii=False) + "\n")
+
+
+def ckpt_append(recs):
+    with open(CKPT_PATH, "a", encoding="utf-8") as f:
+        for r in recs:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        f.flush()
+        os.fsync(f.fileno())
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--api-key", default=os.environ.get("GEMINI_API_KEY", ""))
     ap.add_argument("--model", default=DEFAULT_MODEL)
+    ap.add_argument("--dim", type=int, default=DEFAULT_DIM,
+                    help="임베딩 차원(MRL 축소). 0이면 모델 기본값")
     ap.add_argument("--slug", action="append", help="특정 규정만 갱신(반복 지정 가능)")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--include-boilerplate", action="store_true",
                     help="부칙·경과조치 등 상용구도 포함(기본: 제외)")
+    ap.add_argument("--restart", action="store_true",
+                    help="체크포인트를 버리고 처음부터 다시 생성")
     args = ap.parse_args()
 
     chunks = [c for c in rc.iter_chunks(slugs=args.slug)
@@ -102,20 +150,46 @@ def main():
         old_vecs = [raw[i * dim:(i + 1) * dim] for i in range(old_meta["count"])]
         print(f"기존 벡터 {old_meta['count']:,}개 로드 (dim={dim})")
 
+    # 체크포인트: 배치마다 결과를 남겨 쿼터 소진·중단 후 이어서 생성한다.
+    sig = {"model": args.model, "dim": args.dim, "n": len(chunks),
+           "slug": sorted(args.slug) if args.slug else None,
+           "boiler": bool(args.include_boilerplate)}
+    if args.restart and os.path.exists(CKPT_PATH):
+        os.remove(CKPT_PATH)
+    done = {} if args.restart else ckpt_load(sig)
+    if done:
+        print(f"체크포인트에서 {len(done):,}개 재사용 — 남은 {len(chunks) - len(done):,}개만 생성")
+    else:
+        ckpt_init(sig)
+
+    todo = [i for i in range(len(chunks)) if i not in done]
+    for b, i in enumerate(range(0, len(todo), BATCH)):
+        idxs = todo[i:i + BATCH]
+        batch = [chunks[j] for j in idxs]
+        if b and SLEEP:
+            time.sleep(SLEEP)                  # 분당 요청 쿼터 회피
+        vecs = embed_batch([c["text"] for c in batch], args.api_key,
+                           args.model, dim=args.dim)
+        recs = []
+        for j, c, v in zip(idxs, batch, vecs):
+            recs.append({"i": j, "q": quantize(v),
+                         "m": {"slug": c["slug"], "title": c["title"], "no": c["no"],
+                               "art_title": c["art_title"],
+                               "preview": c["text"][:240]}})
+        ckpt_append(recs)
+        for r in recs:
+            done[r["i"]] = r
+        print(f"  {len(done):>5,}/{len(chunks):,} 임베딩 완료", flush=True)
+
     new_meta, new_vecs = [], []
-    for i in range(0, len(chunks), BATCH):
-        batch = chunks[i:i + BATCH]
-        vecs = embed_batch([c["text"] for c in batch], args.api_key, args.model)
+    for j in range(len(chunks)):
+        r = done[j]
         if dim is None:
-            dim = len(vecs[0])
-        for c, v in zip(batch, vecs):
-            if len(v) != dim:
-                sys.exit(f"차원 불일치: {len(v)} != {dim} — 모델을 확인하세요.")
-            new_vecs.append(bytes((x & 0xFF) for x in quantize(v)))
-            new_meta.append({"slug": c["slug"], "title": c["title"], "no": c["no"],
-                             "art_title": c["art_title"],
-                             "preview": c["text"][:240]})
-        print(f"  {min(i + BATCH, len(chunks)):>5,}/{len(chunks):,} 임베딩 완료", flush=True)
+            dim = len(r["q"])
+        if len(r["q"]) != dim:
+            sys.exit(f"차원 불일치: {len(r['q'])} != {dim} — 모델을 확인하세요.")
+        new_vecs.append(bytes((x & 0xFF) for x in r["q"]))
+        new_meta.append(r["m"])
 
     if old_meta:                                   # 부분 갱신 병합
         keep = [(m, v) for m, v in zip(old_meta["chunks"], old_vecs)
@@ -132,6 +206,9 @@ def main():
             "chunks": new_meta}
     with open(META_PATH, "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False)
+
+    if os.path.exists(CKPT_PATH):
+        os.remove(CKPT_PATH)                   # 정상 완료 → 체크포인트 정리
 
     mb = os.path.getsize(BIN_PATH) / 1024 / 1024
     print(f"\n완료: {len(new_meta):,}청크 × {dim}차원 → {mb:.1f}MB")

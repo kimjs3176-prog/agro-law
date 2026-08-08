@@ -3296,15 +3296,20 @@ def _vec_load():
     return _VEC_CACHE
 
 
-def _embed_query(text: str, api_key: str, model: str):
-    """질의 임베딩. 실패 시 None."""
+def _embed_query(text: str, api_key: str, model: str, dim: int = 0):
+    """질의 임베딩. 실패 시 None.
+
+    문서 벡터를 MRL 로 축소해 저장했으면 질의도 같은 차원으로 뽑아야 한다.
+    """
     try:
         url = (f"https://generativelanguage.googleapis.com/v1beta/models"
                f"/{model}:embedContent?key={api_key}")
-        r = _SESSION.post(url, timeout=15, json={
-            "model": f"models/{model}",
-            "content": {"parts": [{"text": text}]},
-            "taskType": "RETRIEVAL_QUERY"})
+        body = {"model": f"models/{model}",
+                "content": {"parts": [{"text": text}]},
+                "taskType": "RETRIEVAL_QUERY"}
+        if dim:
+            body["outputDimensionality"] = dim
+        r = _SESSION.post(url, timeout=15, json=body)
         if r.status_code != 200:
             print(f"[vec] 질의 임베딩 실패({r.status_code})")
             return None
@@ -3320,8 +3325,12 @@ def semantic_search(query: str, api_key: str, top_k: int = 20):
     if c["mat"] is None or not api_key:
         return []
     np = c["np"]
-    qv = _embed_query(query, api_key, c["meta"].get("model", "text-embedding-004"))
-    if not qv:
+    qv = _embed_query(query, api_key,
+                      c["meta"].get("model", "gemini-embedding-001"),
+                      dim=int(c["meta"].get("dim") or 0))
+    if not qv or len(qv) != c["mat"].shape[1]:
+        if qv:
+            print(f"[vec] 질의 차원 불일치 {len(qv)} != {c['mat'].shape[1]}")
         return []
     q = np.asarray(qv, dtype=np.float32)
     n = float(np.linalg.norm(q)) or 1.0
