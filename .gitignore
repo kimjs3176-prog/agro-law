@@ -2,4 +2,3 @@ __pycache__/
 *.pyc
 .env
 regulations/.backup/
-.embed_checkpoint.jsonl

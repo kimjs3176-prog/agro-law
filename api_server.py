@@ -3264,6 +3264,8 @@ _VEC_BIN = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 _VEC_META = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                          "regulations_vectors.json")
 _VEC_CACHE: dict = {"loaded": False, "meta": None, "mat": None, "np": None}
+# 코사인 하한. 관련 없는 조문은 대체로 0.5 아래에 몰려 있어 노이즈를 걸러낸다.
+_SEM_MIN = float(os.environ.get("SEMANTIC_MIN_SCORE", "0.55"))
 
 
 def _vec_load():
@@ -3352,7 +3354,8 @@ def _semantic_for_search(query: str, top_k: int = 18):
         return [{"title": h["title"], "slug": h["slug"], "no": h["no"],
                  "art_title": h["art_title"], "preview": h["preview"],
                  "score": round(h["score"], 4)}
-                for h in semantic_search(query, key, top_k=top_k)]
+                for h in semantic_search(query, key, top_k=top_k)
+                if h["score"] >= _SEM_MIN]
     except Exception as e:
         print(f"[internal-search] 의미 검색 생략: {e}")
         return []
@@ -3390,6 +3393,8 @@ def internal_semantic():
     return jsonify({"success": True, "available": True, "query": q,
                     "count": len(out), "regs": out,
                     "index": {"chunks": c["meta"]["count"],
+                              "total_chunks": c["meta"].get("total_chunks"),
+                              "complete": c["meta"].get("complete", True),
                               "model": c["meta"].get("model"),
                               "built_at": c["meta"].get("built_at")}})
 
