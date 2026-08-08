@@ -2467,6 +2467,7 @@ def _xml_blocks(root: ET.Element, para_tag: str, table_tag: str,
                 cells.append({"t": cell_text(tc), "cs": cs, "rs": rs})
             if cells:
                 rows.append(cells)
+        _merge_char_cells(rows)      # 세로쓰기로 글자마다 쪼개진 셀 복원
         while rows and not any(c["t"] for c in rows[0]):   # 앞뒤 빈 행 제거
             rows.pop(0)
         while rows and not any(c["t"] for c in rows[-1]):
@@ -2549,6 +2550,37 @@ def _sanitize_html(html: str) -> str:
     out = _ON_ATTR_RE.sub("", out)
     out = _JS_URL_RE.sub(r"\1=\2#\2", out)
     return out
+
+
+_ONE_HANGUL = re.compile(r"^[가-힣]$")
+
+
+def _merge_char_cells(rows: list) -> list:
+    """세로쓰기 라벨이 글자마다 별도 셀로 쪼개진 것을 한 셀로 합친다.
+
+    한글 문서에서 '활 용 기' 같은 라벨은 칸을 나눠 글자를 하나씩 넣는 경우가 많다.
+    그대로 두면 폭 좁은 빈 칸이 늘어서 표가 어수선해진다.
+    합친 셀의 colspan 을 합계로 유지해 열 정렬은 그대로 둔다.
+    (숫자·기호는 실제 자료일 수 있으므로 한글 한 글자만 대상으로 한다)
+    """
+    for r in rows:
+        out, i = [], 0
+        while i < len(r):
+            j = i
+            while (j < len(r)
+                   and _ONE_HANGUL.match((r[j]["t"] or "").strip())
+                   and r[j]["rs"] == r[i]["rs"]):
+                j += 1
+            if j - i >= 2:
+                out.append({"t": "".join((c["t"] or "").strip() for c in r[i:j]),
+                            "cs": sum(c["cs"] for c in r[i:j]),
+                            "rs": r[i]["rs"]})
+                i = j
+            else:
+                out.append(r[i])
+                i += 1
+        r[:] = out
+    return rows
 
 
 def _blocks_to_text(blocks: list) -> str:
