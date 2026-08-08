@@ -19,7 +19,7 @@ import argparse
 import json
 import math
 import os
-import struct
+import re
 import sys
 import time
 
@@ -41,7 +41,16 @@ DEFAULT_DIM = int(os.environ.get("EMBED_DIM", "768"))
 API = "https://generativelanguage.googleapis.com/v1beta/models"
 BATCH = int(os.environ.get("EMBED_BATCH", "20"))    # 요청당 청크 수
 SLEEP = float(os.environ.get("EMBED_SLEEP", "1.0")) # 배치 사이 대기(분당 쿼터 회피)
+RETRIES = int(os.environ.get("EMBED_RETRIES", "30"))# 429 는 리셋될 때까지 길게 버틴다
 CKPT_PATH = os.path.join(BASE, ".embed_checkpoint.jsonl")
+
+# 429 응답의 "Please retry in 15.4s" 안내
+_RETRY_AFTER = re.compile(r"retry in ([\d.]+)s")
+
+
+def _retry_after(text: str):
+    m = _RETRY_AFTER.search(text or "")
+    return float(m.group(1)) if m else None
 
 
 def embed_batch(texts, api_key: str, model: str, task: str = "RETRIEVAL_DOCUMENT",
@@ -53,20 +62,25 @@ def embed_batch(texts, api_key: str, model: str, task: str = "RETRIEVAL_DOCUMENT
         req["outputDimensionality"] = dim
     body = {"requests": [dict(req, content={"parts": [{"text": t}]}) for t in texts]}
     last = None
-    for attempt in range(4):
+    for attempt in range(RETRIES):
         try:
             r = requests.post(url, json=body, timeout=120)
             if r.status_code == 200:
                 return [e["values"] for e in r.json()["embeddings"]]
-            last = f"{r.status_code} {r.text[:200]}"
-            if r.status_code in (429, 500, 502, 503, 504):
-                # 429(쿼터)는 분 단위 리셋이라 넉넉히 기다린다
-                time.sleep((10 * 2 ** attempt) if r.status_code == 429 else 2 ** attempt)
+            last = f"{r.status_code} {r.text[:400]}"
+            if r.status_code == 429:
+                # 무료 등급 쿼터. 서버가 알려주는 대기 시간을 우선 따른다.
+                wait = _retry_after(r.text) or min(60.0, 10 * 2 ** attempt)
+                print(f"    쿼터 대기 {wait:.0f}초 ({attempt + 1}/{RETRIES})", flush=True)
+                time.sleep(wait + 2)
+                continue
+            if r.status_code in (500, 502, 503, 504):
+                time.sleep(2 ** min(attempt, 5))
                 continue
             break
         except Exception as e:                       # 네트워크 오류 재시도
             last = str(e)
-            time.sleep(2 ** attempt)
+            time.sleep(2 ** min(attempt, 5))
     raise RuntimeError(f"임베딩 실패: {last}")
 
 
