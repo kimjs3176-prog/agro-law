@@ -455,8 +455,12 @@ body.dark .rf-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .scen-answer-b{font-size:13.5px;line-height:1.9;color:var(--tx);word-break:keep-all;overflow-wrap:anywhere;}
 .scen-answer-b p{margin:0 0 8px;}
 .scen-answer-b strong{color:var(--gd);}
-.scen-ul{margin:4px 0 10px;padding-left:20px;}
-.scen-ul li{margin:3px 0;}
+.scen-ul,.scen-ol{margin:4px 0 10px;padding-left:22px;}
+.scen-ul li,.scen-ol li{margin:3px 0;}
+.scen-ol{list-style:decimal;}
+.scen-hr{border:0;border-top:1px solid var(--bd);margin:12px 0;}
+.scen-h{font-weight:800;color:var(--gd);margin:12px 0 4px;font-size:14px;}
+.scen-answer-b em{font-style:normal;color:var(--mu);}
 .scen-cite{color:var(--gd);background:var(--gl);border-radius:4px;padding:0 4px;font-size:12px;font-weight:700;white-space:nowrap;}
 .scen-src{margin-top:10px;padding-top:9px;border-top:1px dashed var(--bd);font-size:11.5px;color:var(--mu);
   display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
@@ -2764,16 +2768,26 @@ async function doSearchScenario(q){
 function mdToHtml(md){
   let h=escHtml(String(md||''));
   h=h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  h=h.replace(/(^|[^*])\*(?!\s)([^*\n]+?)\*(?!\*)/g,'$1<em>$2</em>');
   h=h.replace(/\[([^\[\]]{2,60}?제\s*\d+[^\[\]]{0,20})\]/g,'<span class="scen-cite">[$1]</span>');
-  const lines=h.split('\n'); let out='', inUl=false;
+  const lines=h.split('\n'); let out='', list='';
+  const closeList=()=>{ if(list){ out+=`</${list}>`; list=''; } };
   for(const raw of lines){
     const t=raw.trim();
-    const li=t.match(/^(?:[-*·]|\d+\.)\s+(.*)$/);
-    if(li){ if(!inUl){ out+='<ul class="scen-ul">'; inUl=true; } out+=`<li>${li[1]}</li>`; continue; }
-    if(inUl){ out+='</ul>'; inUl=false; }
+    if(/^(-{3,}|\*{3,}|_{3,})$/.test(t)){ closeList(); out+='<hr class="scen-hr">'; continue; }
+    const hd=t.match(/^(#{1,6})\s+(.*)$/);
+    if(hd){ closeList(); out+=`<div class="scen-h">${hd[2]}</div>`; continue; }
+    const ol=t.match(/^\d+[.)]\s+(.*)$/);
+    const ul=t.match(/^(?:[-*·•])\s+(.*)$/);
+    if(ol||ul){
+      const want=ol?'ol':'ul';
+      if(list!==want){ closeList(); out+=`<${want} class="scen-${want}">`; list=want; }
+      out+=`<li>${(ol||ul)[1]}</li>`; continue;
+    }
+    closeList();
     if(t) out+=`<p>${t}</p>`;
   }
-  if(inUl) out+='</ul>';
+  closeList();
   return out||`<p>${h}</p>`;
 }
 function renderScenarioResults(d){

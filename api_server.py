@@ -1242,48 +1242,23 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
     user_msg = f"질문: {query}"
 
     try:
-        ai_text = ""
-        if provider == "gemini":
-            url = (f"https://generativelanguage.googleapis.com/v1beta/models"
-                   f"/{mdl}:generateContent?key={api_key}")
-            resp = _ai_post_retry(lambda: req_lib.post(url, timeout=25,
-                headers={"Content-Type": "application/json"},
-                json={"contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_msg}"}]}],
-                      "generationConfig": {"maxOutputTokens": 600, "temperature": 0.2}}))
-            if resp.status_code != 200:
-                err, _k = _ai_error(resp)
-                return jsonify({"error": f"AI 오류: {err}"}), 502
-            ai_text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-
-        elif provider in ("claude",):
-            resp = _ai_post_retry(lambda: req_lib.post("https://api.anthropic.com/v1/messages", timeout=25,
-                headers={"Content-Type": "application/json",
-                         "x-api-key": api_key, "anthropic-version": "2023-06-01"},
-                json={"model": mdl, "max_tokens": 600,
-                      "system": system_prompt,
-                      "messages": [{"role": "user", "content": user_msg}]}))
-            if resp.status_code != 200:
-                err, _k = _ai_error(resp)
-                return jsonify({"error": f"AI 오류: {err}"}), 502
-            ai_text = resp.json()["content"][0]["text"]
-
-        elif provider in ("gpt", "openai"):
-            resp = _ai_post_retry(lambda: req_lib.post("https://api.openai.com/v1/chat/completions", timeout=25,
-                headers={"Content-Type": "application/json",
-                         "Authorization": f"Bearer {api_key}"},
-                json={"model": mdl, "max_tokens": 600, "temperature": 0.2,
-                      "messages": [{"role": "system", "content": system_prompt},
-                                   {"role": "user",   "content": user_msg}]}))
-            if resp.status_code != 200:
-                err, _k = _ai_error(resp)
-                return jsonify({"error": f"AI 오류: {err}"}), 502
-            ai_text = resp.json()["choices"][0]["message"]["content"]
-        else:
+        if provider not in ("gemini", "claude", "gpt", "openai", "ollama"):
             return jsonify({"error": f"지원하지 않는 AI 프로바이더: {provider}"}), 400
+        # 공통 생성기 사용 — Gemini 3.x 의 사고 토큰 예산까지 처리해 응답이 잘리지 않게 한다.
+        ai_text, ai_err = _ai_generate(provider, api_key, mdl, system_prompt, user_msg,
+                                       max_tokens=1200, temperature=0.2, json_mode=True)
+        if ai_err:
+            return jsonify({"error": f"AI 오류: {ai_err}"}), 502
 
-        # JSON 파싱 (코드블록 제거 후)
+        # JSON 파싱 (코드블록·앞뒤 설명 제거 후)
         clean = re.sub(r"```(?:json)?|```", "", ai_text).strip()
-        ai = json.loads(clean)
+        try:
+            ai = json.loads(clean)
+        except json.JSONDecodeError:
+            m = re.search(r"\{.*\}", clean, re.S)      # 설명 사이에 낀 JSON 구제
+            if not m:
+                raise
+            ai = json.loads(m.group(0))
 
     except json.JSONDecodeError:
         # AI가 JSON을 제대로 반환 못한 경우 — 키워드 기반 폴백
@@ -1307,9 +1282,15 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
         tokens = re.findall(r"[가-힣]{2,}", query)
         keywords = tokens[:5]
 
-    # laws가 비어있으면 CANDIDATE_LAWS 전체 대상
+    # laws 가 비면 질문 어휘로 후보를 좁힌다.
+    # (예전에는 CANDIDATE_LAWS 앞 6개를 그대로 썼는데, 사내 복무 질문에 특허법·상표법이
+    #  근거로 붙어 답변이 엉뚱해지는 원인이었다.)
     if not laws_to_search:
-        laws_to_search = list(CANDIDATE_LAWS)[:6]
+        picked = []
+        for kw, names in DOMAIN_LAW_MAP.items():
+            if kw in query:
+                picked += [n for n in names if n not in picked]
+        laws_to_search = picked[:4]      # 매칭이 없으면 빈 목록 = 법령 검색 생략
 
     # ── Step-2: 법령별 관련 조문 조회 ─────────────────────────────────────────
     def _fetch_for_law(law_name):
@@ -1401,9 +1382,27 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
             ctx_parts.append(blk); budget -= len(blk)
             sources.append({"type": "law", "label": tag})
 
-    if internal_text:                            # 내규 근거
-        itxt = re.sub(r"\n{3,}", "\n\n", internal_text)[:5000]
-        blk = f"[내규] 사내 규정 검색 결과\n{itxt}"
+    # 의미 검색으로 찾은 내규 조문 — 질문 어휘가 규정 표현과 달라도 근거를 잡아준다.
+    sem_hits = []
+    try:
+        gkey = (api_key if provider == "gemini" else "") or os.environ.get("GEMINI_API_KEY", "")
+        if gkey.strip():
+            sem_hits = [h for h in semantic_search(query, gkey.strip(), top_k=10)
+                        if h["score"] >= _SEM_MIN]
+    except Exception as e:
+        print(f"[scenario] 의미 검색 생략: {e}")
+    for h in sem_hits[:8]:
+        tag = f"{h['title']} 제{h['no']}조" + (f"({h['art_title']})" if h["art_title"] else "")
+        prev = re.sub(r"\s+", " ", h.get("preview") or "")
+        blk = "[내규] " + tag + "\n" + prev
+        if budget - len(blk) < 0:
+            break
+        ctx_parts.append(blk); budget -= len(blk)
+        sources.append({"type": "internal", "label": tag, "slug": h["slug"]})
+
+    if internal_text:                            # 내규 근거(키워드 검색)
+        itxt = re.sub(r"\n{3,}", "\n\n", internal_text)[:max(1500, min(5000, budget))]
+        blk = f"[내규] 사내 규정 키워드 검색 결과\n{itxt}"
         ctx_parts.append(blk)
         sources.append({"type": "internal", "label": "사내 내규 검색 결과"})
 
@@ -1416,13 +1415,19 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
             "1. 자료에 없는 내용은 지어내지 말고, 필요하면 '제공된 자료에서 확인되지 않습니다'라고 밝히세요.\n"
             "2. 근거가 되는 조문을 문장 끝에 [내규명 제N조] 또는 [법령명 제N조] 형태로 표기하세요.\n"
             "3. 사내 내규와 국가법령이 모두 관련되면 '내규 기준'과 '법령 근거'를 나누어 설명하세요.\n"
-            "4. 실무자가 바로 행동할 수 있도록 결론 → 근거 → 절차/유의사항 순으로 쓰세요.\n"
-            "5. 한국어 존댓말, 마크다운(**굵게**, 목록) 사용. 800자 내외로 간결하게.\n"
-            "6. 질문이 자료와 무관하면 억지로 답하지 말고 그 사실을 알리세요."
+            "4. 질문과 관계없는 자료는 언급하지 말고, 질문에 실제로 답하는 조문만 골라 쓰세요.\n"
+            "5. 다음 순서를 모두 채워 완결된 답변을 쓰세요 — "
+            "**결론**(1~2문장) → **근거 조문**(조문별로 무엇을 정하는지) → "
+            "**절차**(실무자가 밟을 단계를 번호 목록으로) → **유의사항**.\n"
+            "6. 한국어 존댓말, 마크다운(**굵게**, 번호·불릿 목록) 사용. "
+            "1,000~1,500자로 충분히 설명하되 같은 말을 반복하지 마세요.\n"
+            "7. 문장을 중간에 끊지 말고 반드시 끝맺으세요.\n"
+            "8. 질문이 자료와 무관하면 억지로 답하지 말고 그 사실을 알린 뒤, "
+            "어떤 규정을 확인하면 좋을지 안내하세요."
         )
         ans_user = f"<자료>\n{ctx}\n</자료>\n\n질문: {query}"
         answer, answer_err = _ai_generate(provider, api_key, mdl, ans_system, ans_user,
-                                          max_tokens=1500, temperature=0.15)
+                                          max_tokens=4000, temperature=0.15)
         if answer_err:
             print(f"[scenario] 답변 생성 실패: {answer_err}")
 
@@ -1711,25 +1716,69 @@ def ai_models():
                     "cached_at": _GEMINI_MODEL_CACHE["ts"] if provider == "gemini" else 0})
 
 
+def _gemini_thinking_cfg(mdl: str):
+    """모델 세대에 맞는 사고(thinking) 설정.
+
+    Gemini 3.x 는 기본적으로 길게 '생각'하고, 그 토큰이 maxOutputTokens 를 함께 쓴다.
+    설정하지 않으면 답변이 나오기도 전에 예산이 소진돼 본문이 잘린다(finishReason=MAX_TOKENS).
+    """
+    n = (mdl or "").lower()
+    if "gemini-2.5" in n:
+        return {"thinkingBudget": 0}          # 2.5 계열은 예산(int)만 받는다
+    if re.search(r"gemini-(1\.5|2\.0)", n):
+        return None                           # 사고 기능 없음
+    return {"thinkingLevel": "low"}           # 3.x·'-latest' 별칭
+
+
 def _ai_generate(provider: str, api_key: str, mdl: str, system: str, user: str,
-                 max_tokens: int = 1800, temperature: float = 0.2):
+                 max_tokens: int = 1800, temperature: float = 0.2,
+                 json_mode: bool = False):
     """프로바이더 공통 텍스트 생성. 반환: (text, error_message). 실패 시 text=''."""
     try:
         if provider == "gemini":
             url = (f"https://generativelanguage.googleapis.com/v1beta/models"
                    f"/{mdl}:generateContent?key={api_key}")
-            r = _ai_post_retry(lambda: req_lib.post(
-                url, timeout=40, headers={"Content-Type": "application/json"},
-                json={"contents": [{"parts": [{"text": f"{system}\n\n{user}"}]}],
-                      "generationConfig": {"maxOutputTokens": max_tokens,
-                                           "temperature": temperature}}))
+
+            def call(limit, think):
+                cfg = {"maxOutputTokens": limit, "temperature": temperature}
+                if json_mode:
+                    cfg["responseMimeType"] = "application/json"
+                if think:
+                    cfg["thinkingConfig"] = think
+                return _ai_post_retry(lambda: req_lib.post(
+                    url, timeout=60, headers={"Content-Type": "application/json"},
+                    json={"contents": [{"parts": [{"text": f"{system}\n\n{user}"}]}],
+                          "generationConfig": cfg}))
+
+            think = _gemini_thinking_cfg(mdl)
+            # 사고 토큰까지 감안해 넉넉히 잡는다(본문이 잘리는 것보다 낫다)
+            limit = max(max_tokens, 3000)
+            r = call(limit, think)
+            if r.status_code == 400 and think and "thinking" in (r.text or "").lower():
+                r = call(limit, None)           # 사고 설정 미지원 모델 폴백
             if r.status_code != 200:
                 return "", _ai_error(r)[0]
-            cands = r.json().get("candidates") or []
+            data = r.json()
+            cands = data.get("candidates") or []
             if not cands:
                 return "", "AI 응답이 비어 있습니다."
-            parts = cands[0].get("content", {}).get("parts") or []
-            return "".join(p.get("text", "") for p in parts), ""
+
+            def text_of(d):
+                cs = d.get("candidates") or [{}]
+                ps = cs[0].get("content", {}).get("parts") or []
+                return "".join(p.get("text", "") for p in ps)
+
+            txt = text_of(data)
+            # 사고에 예산을 다 써서 본문이 잘렸으면 한 번 더 크게 잡아 재시도
+            if cands[0].get("finishReason") == "MAX_TOKENS":
+                r2 = call(min(limit * 3, 12000), think or {"thinkingLevel": "low"})
+                if r2.status_code == 200:
+                    t2 = text_of(r2.json())
+                    if len(t2) > len(txt):
+                        txt = t2
+            if not txt.strip():
+                return "", "AI가 본문을 생성하지 못했습니다(사고 토큰 초과). 잠시 후 다시 시도하세요."
+            return txt, ""
         if provider == "claude":
             r = _ai_post_retry(lambda: req_lib.post(
                 "https://api.anthropic.com/v1/messages", timeout=40,
