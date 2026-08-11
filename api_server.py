@@ -2431,9 +2431,39 @@ REG_MANIFEST_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 # 업로드 토큰(설정 시 업로드에 필수) — 공개 배포본에서 무단 업로드 방지
 REG_UPLOAD_TOKEN = os.environ.get("REG_UPLOAD_TOKEN", "").strip()
 REG_UPLOAD_MAX_MB = int(os.environ.get("REG_UPLOAD_MAX_MB", "40"))
-REG_CATEGORIES = ["정관", "규정", "규칙", "세칙", "예규", "지침", "요령", "매뉴얼", "기타"]
+REG_CATEGORIES = ["정관", "규정", "규칙", "세칙", "예규", "매뉴얼", "기타"]
 _ALLOWED_EXT = {".hwpx", ".hwp", ".docx", ".pdf", ".html", ".htm", ".txt", ".md"}
 _KST = timezone(timedelta(hours=9))
+
+# 규정명 끝말 → 내규 체계상의 구분.
+# 기관 내규는 정관 > 규정 > 규칙 > 세칙 > 예규 순이고,
+# 지침·요령·기준·수칙·계획 등 하위 문서는 모두 예규로 묶는다.
+_REG_CAT_SUFFIX = (
+    ("정관", "정관"),
+    ("규정", "규정"),
+    ("규칙", "규칙"),
+    ("세칙", "세칙"),
+    ("예규", "예규"),
+    ("지침", "예규"), ("요령", "예규"), ("기준", "예규"), ("수칙", "예규"),
+    ("준칙", "예규"), ("규준", "예규"), ("요강", "예규"), ("계획", "예규"),
+    ("매뉴얼", "매뉴얼"), ("편람", "매뉴얼"), ("가이드", "매뉴얼"),
+    ("안내서", "매뉴얼"), ("핸드북", "매뉴얼"),
+)
+
+
+def _guess_reg_category(title: str) -> str:
+    """규정명으로 구분을 추정. 판단이 서지 않으면 '기타'.
+
+    정관은 기관당 1건뿐이므로 이름이 '정관'으로 끝날 때만 인정한다.
+    (예전에는 업로드 폼의 첫 선택지가 정관이라 '보직관리기준'처럼
+     끝말이 목록에 없는 규정이 그대로 정관으로 등록되는 사고가 있었다.)
+    """
+    t = re.sub(r"\s+", "", (title or ""))
+    t = re.sub(r"[(（\[【].*$", "", t)          # 뒤에 붙은 (제정 …)·[별표] 등 제거
+    for suf, cat in _REG_CAT_SUFFIX:
+        if t.endswith(suf):
+            return cat
+    return "기타"
 
 
 def _now_kst() -> str:
@@ -3137,10 +3167,22 @@ def reg_upload():
     if not title:
         return jsonify({"error": "규정명을 입력해주세요."}), 400
 
+    # 구분 결정: 개정판이면 기존 등록 구분을 잇고, 없으면 규정명으로 추정한다.
+    # 사람이 고른 값이라도 이름과 어긋나는 '정관'은 받지 않는다(정관은 기관당 1건).
     category = (request.form.get("category") or "").strip()
-    if not category:
-        category = next((c for c in ("정관", "세칙", "예규", "지침", "요령", "매뉴얼",
-                                     "규칙", "규정") if title.endswith(c)), "기타")
+    guessed = _guess_reg_category(title)
+    prev_cat = ""
+    for _m in (_load_reg_manifest() or []):
+        if _norm_key(_m.get("title") or "") == _norm_key(title):
+            prev_cat = (_m.get("category") or "").strip()
+            break
+    if category in ("", "자동", "자동 분류"):
+        category = prev_cat or guessed
+    if category == "정관" and guessed != "정관":
+        print(f"[upload] '{title}' 구분 정관 → {prev_cat or guessed} 로 교정")
+        category = prev_cat if prev_cat and prev_cat != "정관" else guessed
+    if category not in REG_CATEGORIES:
+        category = guessed
 
     meta = {
         "category": category,

@@ -164,6 +164,7 @@ a{color:var(--g);}
       <div class="f">
         <label for="category">규정 구분</label>
         <select id="category"></select>
+        <div class="hint" id="catHint">규정명에서 자동으로 판단합니다. 다르면 직접 고르세요.</div>
       </div>
       <div class="f">
         <label for="revision">개정 구분</label>
@@ -278,13 +279,45 @@ function autoFill(fname){
   guessCategory();
   checkExisting();
 }
+/* 규정명 끝말 → 구분. 서버(_REG_CAT_SUFFIX)와 같은 기준을 쓴다.
+   지침·요령·기준 등 하위 문서는 예규로 묶고, 정관은 이름이 '정관'일 때만 인정한다. */
+const CAT_SUFFIX=[['정관','정관'],['규정','규정'],['규칙','규칙'],['세칙','세칙'],['예규','예규'],
+  ['지침','예규'],['요령','예규'],['기준','예규'],['수칙','예규'],['준칙','예규'],
+  ['규준','예규'],['요강','예규'],['계획','예규'],
+  ['매뉴얼','매뉴얼'],['편람','매뉴얼'],['가이드','매뉴얼'],['안내서','매뉴얼'],['핸드북','매뉴얼']];
+/* 받침 유무에 따라 '로 / 으로' (ㄹ 받침은 '로') */
+function _ro(w){
+  const c=String(w||'').slice(-1).charCodeAt(0)-0xAC00;
+  if(c<0||c>11171) return '로';
+  const jong=c%28;
+  return (jong===0||jong===8)?'로':'으로';
+}
+function catFromTitle(title){
+  const t=String(title||'').replace(/\s+/g,'').replace(/[(（\[【].*$/,'');
+  const hit=CAT_SUFFIX.find(([suf])=>t.endsWith(suf));
+  return hit?hit[1]:'';
+}
 function guessCategory(){
   const sel=document.getElementById('category');
-  if(sel.dataset.touched==='1') return;
+  const hint=document.getElementById('catHint');
+  if(sel.dataset.touched==='1'){
+    if(hint) hint.textContent='직접 선택한 구분으로 등록됩니다.';
+    return;
+  }
   const title=document.getElementById('title').value.trim();
-  const cats=(_status&&_status.categories)||[];
-  const hit=cats.find(c=>c!=='기타'&&title.endsWith(c));
-  if(hit) sel.value=hit;
+  // 이미 등록된 규정의 개정판이면 기존 구분을 잇는다
+  const key=title.replace(/\s+/g,'').toLowerCase();
+  const prev=_names.find(n=>n.title.replace(/\s+/g,'').toLowerCase()===key);
+  const cat=(prev&&prev.category)||catFromTitle(title);
+  if(cat && [...sel.options].some(o=>o.value===cat)){
+    sel.value=cat;
+    if(hint) hint.textContent=prev
+      ? `기존 등록 구분(${cat})을 그대로 사용합니다.`
+      : `규정명을 보고 '${cat}'${_ro(cat)} 판단했습니다. 다르면 직접 고르세요.`;
+  }else{
+    sel.value='기타';
+    if(hint) hint.textContent='규정명으로 구분을 판단하지 못했습니다. 직접 골라주세요.';
+  }
 }
 
 /* 기존 규정명과 일치하면 '개정판 교체' 안내 */
@@ -503,7 +536,7 @@ async function removeUpload(slugEnc,title){
 
 function resetFields(){
   ['title','revision','effective','department','note'].forEach(id=>document.getElementById(id).value='');
-  const sel=document.getElementById('category'); sel.dataset.touched=''; sel.selectedIndex=0;
+  const sel=document.getElementById('category'); sel.dataset.touched=''; sel.value='기타';
   checkExisting();
 }
 function resetForm(){ clearFile(); resetFields(); hideResult(); }
