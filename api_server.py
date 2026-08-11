@@ -1594,7 +1594,7 @@ def remove_favorite():
 
 # ── AI 모델 자동 현행화 ─────────────────────────────────────────────────────
 # Gemini는 모델명이 자주 갱신되므로 하드코딩하지 않고 ListModels로 최신을 고른다.
-_AI_MODEL_FALLBACK = {"gemini": "gemini-2.5-flash",
+_AI_MODEL_FALLBACK = {"gemini": "gemini-flash-latest",
                       "claude": "claude-haiku-4-5-20251001",
                       "gpt": "gpt-4.1-mini", "openai": "gpt-4.1-mini"}
 _GEMINI_MODEL_CACHE: dict = {"model": None, "ts": 0.0}
@@ -1604,9 +1604,17 @@ _GEMINI_CACHE_TTL = 6 * 3600          # 6시간
 _GEMINI_PREF_DEFAULT = ""
 
 
+# 텍스트 생성용이 아닌 계열(이미지·음성·로보틱스 등)은 generateContent 를 지원해도 제외한다.
+_GEMINI_SKIP = re.compile(
+    r"(image|nano-banana|tts|audio|native-audio|live|robotics|computer-use|omni|"
+    r"embedding|deep-research|antigravity|gemma|lyria|veo|imagen)")
+
+
 def _gemini_model_score(name: str):
     """모델명에서 (버전, 등급, 안정성) 점수를 뽑아 최신·상위 모델을 고른다."""
     n = name.lower()
+    if _GEMINI_SKIP.search(n):
+        return None
     m = re.search(r"gemini-(\d+)(?:\.(\d+))?", n)
     if not m:
         return None
