@@ -2851,7 +2851,7 @@ def _local_reg_text(slug: str) -> str:
 
 
 def _uploaded_regs() -> list:
-    return [m for m in _load_reg_manifest() if m.get("uploaded_at")]
+    return [m for m in _load_reg_manifest() if m.get("uploaded_at") or m.get("history")]
 
 
 def _merge_local_hits(resp: dict, local_hits: list) -> dict:
@@ -3420,7 +3420,7 @@ def _gh_revert(slug: str):
     if idx < 0:
         return jsonify({"error": "해당 규정을 찾을 수 없습니다."}), 404
     cur = man[idx]
-    if not cur.get("uploaded_at"):
+    if not cur.get("uploaded_at") and not cur.get("history"):
         return jsonify({"error": "업로드로 등록된 규정만 되돌릴 수 있습니다."}), 400
 
     base = f"regulations/{slug}"
@@ -3502,7 +3502,7 @@ def reg_upload_delete():
     if idx < 0:
         return jsonify({"error": "해당 규정을 찾을 수 없습니다."}), 404
     cur = man[idx]
-    if not cur.get("uploaded_at"):
+    if not cur.get("uploaded_at") and not cur.get("history"):
         return jsonify({"error": "업로드로 등록된 규정만 되돌릴 수 있습니다."}), 400
 
     history = list(cur.get("history") or [])
