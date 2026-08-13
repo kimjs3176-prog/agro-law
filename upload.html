@@ -543,6 +543,10 @@ async function removeUpload(slugEnc,title){
       + (d.restored
           ? `<p style="margin:0;">이전 개정본 <b>${esc(d.restored_revision||'')}</b>으로 복원했습니다.</p>`
           : `<p style="margin:0;">등록을 해제하고 저장된 파일을 삭제했습니다.</p>`)
+      + (d.committed
+          ? `<p style="margin:8px 0 0;">리포지토리에 커밋했습니다 —
+             <a href="${esc(d.commit_url||'#')}" target="_blank"><code>${esc(d.commit_sha||'')}</code></a>.
+             배포 반영까지 <b>1~2분</b> 걸립니다.</p>` : '')
       + (d.warning?`<p style="margin:8px 0 0;color:#92400e;">⚠️ ${esc(d.warning)}</p>`:''));
     loadStatus();
   }catch(e){ showResult(false,'❌ '+esc(e.message)); }

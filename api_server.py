@@ -3108,6 +3108,54 @@ def _gh_get_manifest():
         return list(_load_reg_manifest())
 
 
+def _gh_dir(path: str, ref: str = ""):
+    """저장소 디렉터리 목록. 없으면 []."""
+    try:
+        d = _gh("GET", f"/contents/{path}", params={"ref": ref or GITHUB_BRANCH})
+        return d if isinstance(d, list) else []
+    except Exception:
+        return []
+
+
+def _gh_file(path: str, ref: str = ""):
+    """저장소 파일 내용(bytes). 없으면 None."""
+    try:
+        d = _gh("GET", f"/contents/{path}", params={"ref": ref or GITHUB_BRANCH})
+        if isinstance(d, dict) and d.get("content"):
+            return base64.b64decode(d["content"])
+        # 1MB 초과 파일은 content 가 비므로 blob 으로 받는다
+        if isinstance(d, dict) and d.get("sha"):
+            b = _gh("GET", f"/git/blobs/{d['sha']}")
+            return base64.b64decode(b.get("content", "") or "")
+    except Exception:
+        pass
+    return None
+
+
+def _gh_prev_commit(path: str) -> str:
+    """이 경로에 개정본이 올라오기 '직전' 상태의 커밋 sha. 없으면 ''.
+
+    업로드 화면이 만든 커밋('내규 등록/개정: …')을 먼저 찾아 그 부모를 쓴다.
+    그 뒤에 다른 수정 커밋이 끼어 있어도 개정 이전 원본을 정확히 되살리기 위함이다.
+    """
+    try:
+        cs = _gh("GET", "/commits", params={"path": path, "sha": GITHUB_BRANCH,
+                                            "per_page": 10})
+        if not isinstance(cs, list) or not cs:
+            return ""
+        for c in cs:
+            msg = ((c.get("commit") or {}).get("message") or "")
+            if msg.startswith("내규 등록:") or msg.startswith("내규 개정:"):
+                parents = c.get("parents") or []
+                if parents:
+                    return parents[0].get("sha", "")
+                break
+        return cs[1].get("sha", "") if len(cs) >= 2 else ""
+    except Exception as e:
+        print(f"[gh] 이전 커밋 조회 실패({path}): {e}")
+    return ""
+
+
 def _merge_manifest(man: list, entry: dict):
     """같은 규정명이 있으면 교체(이전 개정은 history 에 누적), 없으면 추가."""
     key = _norm_key(entry.get("title", ""))
@@ -3361,6 +3409,70 @@ def reg_upload():
                     "replaced": bool(entry.get("history"))})
 
 
+def _gh_revert(slug: str):
+    """GitHub 커밋으로 개정 되돌리기.
+
+    이전 개정이 있으면 그 개정본을 올리기 직전 커밋에서 파일을 되살리고,
+    신규 등록이었으면 폴더 파일을 지운다. manifest 와 함께 한 커밋으로 반영한다.
+    """
+    man = _gh_get_manifest()
+    idx = next((i for i, m in enumerate(man) if m.get("slug") == slug), -1)
+    if idx < 0:
+        return jsonify({"error": "해당 규정을 찾을 수 없습니다."}), 404
+    cur = man[idx]
+    if not cur.get("uploaded_at"):
+        return jsonify({"error": "업로드로 등록된 규정만 되돌릴 수 있습니다."}), 400
+
+    base = f"regulations/{slug}"
+    now_files = [f.get("name") for f in _gh_dir(base) if f.get("type") == "file"]
+    history = list(cur.get("history") or [])
+    files, deletes, warning = {}, [], ""
+
+    if history:                                   # ── 이전 개정본으로 복원 ──
+        h = history.pop(0)
+        prev = dict(h.get("entry") or {})
+        prev.pop("history", None)
+        if history:
+            prev["history"] = history
+        # 이번 개정을 커밋하기 직전 상태(= 이전 개정본)를 git 에서 되살린다
+        ref = _gh_prev_commit(f"{base}/index.html")
+        old_files = [f.get("name") for f in _gh_dir(base, ref)] if ref else []
+        for name in old_files:
+            data = _gh_file(f"{base}/{name}", ref)
+            if data is not None:
+                files[f"{base}/{name}"] = data
+        for name in now_files:                    # 이전에 없던 파일(확장자 변경 등)은 정리
+            if name not in old_files:
+                deletes.append(f"{base}/{name}")
+        if not files:
+            warning = ("이전 개정본 파일을 저장소 이력에서 찾지 못해 등록 정보만 되돌렸습니다. "
+                       "문서 내용은 현재 개정본이 그대로 남아 있습니다.")
+            print(f"[gh-revert] 이전 파일 복원 실패: {base} (ref={ref or '없음'})")
+        man[idx] = prev
+        restored_rev = prev.get("revision", "")
+    else:                                         # ── 신규 등록 → 등록 해제 ──
+        man.pop(idx)
+        deletes = [f"{base}/{n}" for n in now_files]
+        restored_rev = ""
+
+    files["regulations_manifest.json"] = (
+        json.dumps(man, ensure_ascii=False, indent=1) + "\n")
+    title = cur.get("title", slug)
+    msg = (f"내규 되돌리기: {title}"
+           + (f" → {restored_rev}" if restored_rev else " (등록 해제)")
+           + "\n\n업로드 화면(/upload)에서 자동 커밋됨")
+    sha = _gh_commit_files(files, msg, deletes=deletes)
+    print(f"[gh-revert] 완료: {title} → {sha[:7]}")
+    return jsonify({
+        "success": True, "removed": title,
+        "restored": bool(restored_rev), "restored_revision": restored_rev,
+        "files_restored": not warning, "warning": warning,
+        "committed": True, "commit_sha": sha[:7],
+        "commit_url": f"https://github.com/{GITHUB_REPO}/commit/{sha}",
+        "message": "리포지토리에 커밋했습니다. 배포 반영까지 1~2분 걸립니다.",
+    })
+
+
 @app.route("/api/regs/upload/delete", methods=["POST"])
 def reg_upload_delete():
     """
@@ -3370,11 +3482,20 @@ def reg_upload_delete():
     """
     if not _upload_authorized():
         return jsonify({"error": "업로드 토큰이 올바르지 않습니다."}), 401
-    if not _reg_writable():
-        return jsonify({"error": "읽기 전용 환경에서는 되돌릴 수 없습니다."}), 503
     slug = (request.form.get("slug") or (request.json or {}).get("slug") or "").strip()
     if not slug or "/" in slug or "\\" in slug or slug.startswith("."):
         return jsonify({"error": "slug 값이 올바르지 않습니다."}), 400
+
+    # 읽기 전용 배포(서버리스)에서는 업로드와 같은 경로로 GitHub 에 커밋해 되돌린다.
+    if not _reg_writable():
+        if not _gh_enabled():
+            return jsonify({"error": "읽기 전용 환경이고 GitHub 연동도 없어 되돌릴 수 없습니다. "
+                                     "GITHUB_TOKEN·GITHUB_REPO 를 설정하세요."}), 503
+        try:
+            return _gh_revert(slug)
+        except Exception as e:
+            import traceback; traceback.print_exc()
+            return jsonify({"error": f"되돌리기 실패: {e}"}), 502
 
     man = list(_load_reg_manifest())
     idx = next((i for i, m in enumerate(man) if m.get("slug") == slug), -1)
