@@ -1242,48 +1242,23 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
     user_msg = f"질문: {query}"
 
     try:
-        ai_text = ""
-        if provider == "gemini":
-            url = (f"https://generativelanguage.googleapis.com/v1beta/models"
-                   f"/{mdl}:generateContent?key={api_key}")
-            resp = _ai_post_retry(lambda: req_lib.post(url, timeout=25,
-                headers={"Content-Type": "application/json"},
-                json={"contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_msg}"}]}],
-                      "generationConfig": {"maxOutputTokens": 600, "temperature": 0.2}}))
-            if resp.status_code != 200:
-                err, _k = _ai_error(resp)
-                return jsonify({"error": f"AI 오류: {err}"}), 502
-            ai_text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-
-        elif provider in ("claude",):
-            resp = _ai_post_retry(lambda: req_lib.post("https://api.anthropic.com/v1/messages", timeout=25,
-                headers={"Content-Type": "application/json",
-                         "x-api-key": api_key, "anthropic-version": "2023-06-01"},
-                json={"model": mdl, "max_tokens": 600,
-                      "system": system_prompt,
-                      "messages": [{"role": "user", "content": user_msg}]}))
-            if resp.status_code != 200:
-                err, _k = _ai_error(resp)
-                return jsonify({"error": f"AI 오류: {err}"}), 502
-            ai_text = resp.json()["content"][0]["text"]
-
-        elif provider in ("gpt", "openai"):
-            resp = _ai_post_retry(lambda: req_lib.post("https://api.openai.com/v1/chat/completions", timeout=25,
-                headers={"Content-Type": "application/json",
-                         "Authorization": f"Bearer {api_key}"},
-                json={"model": mdl, "max_tokens": 600, "temperature": 0.2,
-                      "messages": [{"role": "system", "content": system_prompt},
-                                   {"role": "user",   "content": user_msg}]}))
-            if resp.status_code != 200:
-                err, _k = _ai_error(resp)
-                return jsonify({"error": f"AI 오류: {err}"}), 502
-            ai_text = resp.json()["choices"][0]["message"]["content"]
-        else:
+        if provider not in ("gemini", "claude", "gpt", "openai", "ollama"):
             return jsonify({"error": f"지원하지 않는 AI 프로바이더: {provider}"}), 400
+        # 공통 생성기 사용 — Gemini 3.x 의 사고 토큰 예산까지 처리해 응답이 잘리지 않게 한다.
+        ai_text, ai_err = _ai_generate(provider, api_key, mdl, system_prompt, user_msg,
+                                       max_tokens=1200, temperature=0.2, json_mode=True)
+        if ai_err:
+            return jsonify({"error": f"AI 오류: {ai_err}"}), 502
 
-        # JSON 파싱 (코드블록 제거 후)
+        # JSON 파싱 (코드블록·앞뒤 설명 제거 후)
         clean = re.sub(r"```(?:json)?|```", "", ai_text).strip()
-        ai = json.loads(clean)
+        try:
+            ai = json.loads(clean)
+        except json.JSONDecodeError:
+            m = re.search(r"\{.*\}", clean, re.S)      # 설명 사이에 낀 JSON 구제
+            if not m:
+                raise
+            ai = json.loads(m.group(0))
 
     except json.JSONDecodeError:
         # AI가 JSON을 제대로 반환 못한 경우 — 키워드 기반 폴백
@@ -1307,9 +1282,15 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
         tokens = re.findall(r"[가-힣]{2,}", query)
         keywords = tokens[:5]
 
-    # laws가 비어있으면 CANDIDATE_LAWS 전체 대상
+    # laws 가 비면 질문 어휘로 후보를 좁힌다.
+    # (예전에는 CANDIDATE_LAWS 앞 6개를 그대로 썼는데, 사내 복무 질문에 특허법·상표법이
+    #  근거로 붙어 답변이 엉뚱해지는 원인이었다.)
     if not laws_to_search:
-        laws_to_search = list(CANDIDATE_LAWS)[:6]
+        picked = []
+        for kw, names in DOMAIN_LAW_MAP.items():
+            if kw in query:
+                picked += [n for n in names if n not in picked]
+        laws_to_search = picked[:4]      # 매칭이 없으면 빈 목록 = 법령 검색 생략
 
     # ── Step-2: 법령별 관련 조문 조회 ─────────────────────────────────────────
     def _fetch_for_law(law_name):
@@ -1401,9 +1382,27 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
             ctx_parts.append(blk); budget -= len(blk)
             sources.append({"type": "law", "label": tag})
 
-    if internal_text:                            # 내규 근거
-        itxt = re.sub(r"\n{3,}", "\n\n", internal_text)[:5000]
-        blk = f"[내규] 사내 규정 검색 결과\n{itxt}"
+    # 의미 검색으로 찾은 내규 조문 — 질문 어휘가 규정 표현과 달라도 근거를 잡아준다.
+    sem_hits = []
+    try:
+        gkey = (api_key if provider == "gemini" else "") or os.environ.get("GEMINI_API_KEY", "")
+        if gkey.strip():
+            sem_hits = [h for h in semantic_search(query, gkey.strip(), top_k=10)
+                        if h["score"] >= _SEM_MIN]
+    except Exception as e:
+        print(f"[scenario] 의미 검색 생략: {e}")
+    for h in sem_hits[:8]:
+        tag = f"{h['title']} 제{h['no']}조" + (f"({h['art_title']})" if h["art_title"] else "")
+        prev = re.sub(r"\s+", " ", h.get("preview") or "")
+        blk = "[내규] " + tag + "\n" + prev
+        if budget - len(blk) < 0:
+            break
+        ctx_parts.append(blk); budget -= len(blk)
+        sources.append({"type": "internal", "label": tag, "slug": h["slug"]})
+
+    if internal_text:                            # 내규 근거(키워드 검색)
+        itxt = re.sub(r"\n{3,}", "\n\n", internal_text)[:max(1500, min(5000, budget))]
+        blk = f"[내규] 사내 규정 키워드 검색 결과\n{itxt}"
         ctx_parts.append(blk)
         sources.append({"type": "internal", "label": "사내 내규 검색 결과"})
 
@@ -1416,13 +1415,19 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
             "1. 자료에 없는 내용은 지어내지 말고, 필요하면 '제공된 자료에서 확인되지 않습니다'라고 밝히세요.\n"
             "2. 근거가 되는 조문을 문장 끝에 [내규명 제N조] 또는 [법령명 제N조] 형태로 표기하세요.\n"
             "3. 사내 내규와 국가법령이 모두 관련되면 '내규 기준'과 '법령 근거'를 나누어 설명하세요.\n"
-            "4. 실무자가 바로 행동할 수 있도록 결론 → 근거 → 절차/유의사항 순으로 쓰세요.\n"
-            "5. 한국어 존댓말, 마크다운(**굵게**, 목록) 사용. 800자 내외로 간결하게.\n"
-            "6. 질문이 자료와 무관하면 억지로 답하지 말고 그 사실을 알리세요."
+            "4. 질문과 관계없는 자료는 언급하지 말고, 질문에 실제로 답하는 조문만 골라 쓰세요.\n"
+            "5. 다음 순서를 모두 채워 완결된 답변을 쓰세요 — "
+            "**결론**(1~2문장) → **근거 조문**(조문별로 무엇을 정하는지) → "
+            "**절차**(실무자가 밟을 단계를 번호 목록으로) → **유의사항**.\n"
+            "6. 한국어 존댓말, 마크다운(**굵게**, 번호·불릿 목록) 사용. "
+            "1,000~1,500자로 충분히 설명하되 같은 말을 반복하지 마세요.\n"
+            "7. 문장을 중간에 끊지 말고 반드시 끝맺으세요.\n"
+            "8. 질문이 자료와 무관하면 억지로 답하지 말고 그 사실을 알린 뒤, "
+            "어떤 규정을 확인하면 좋을지 안내하세요."
         )
         ans_user = f"<자료>\n{ctx}\n</자료>\n\n질문: {query}"
         answer, answer_err = _ai_generate(provider, api_key, mdl, ans_system, ans_user,
-                                          max_tokens=1500, temperature=0.15)
+                                          max_tokens=4000, temperature=0.15)
         if answer_err:
             print(f"[scenario] 답변 생성 실패: {answer_err}")
 
@@ -1594,7 +1599,7 @@ def remove_favorite():
 
 # ── AI 모델 자동 현행화 ─────────────────────────────────────────────────────
 # Gemini는 모델명이 자주 갱신되므로 하드코딩하지 않고 ListModels로 최신을 고른다.
-_AI_MODEL_FALLBACK = {"gemini": "gemini-2.5-flash",
+_AI_MODEL_FALLBACK = {"gemini": "gemini-flash-latest",
                       "claude": "claude-haiku-4-5-20251001",
                       "gpt": "gpt-4.1-mini", "openai": "gpt-4.1-mini"}
 _GEMINI_MODEL_CACHE: dict = {"model": None, "ts": 0.0}
@@ -1604,9 +1609,17 @@ _GEMINI_CACHE_TTL = 6 * 3600          # 6시간
 _GEMINI_PREF_DEFAULT = ""
 
 
+# 텍스트 생성용이 아닌 계열(이미지·음성·로보틱스 등)은 generateContent 를 지원해도 제외한다.
+_GEMINI_SKIP = re.compile(
+    r"(image|nano-banana|tts|audio|native-audio|live|robotics|computer-use|omni|"
+    r"embedding|deep-research|antigravity|gemma|lyria|veo|imagen)")
+
+
 def _gemini_model_score(name: str):
     """모델명에서 (버전, 등급, 안정성) 점수를 뽑아 최신·상위 모델을 고른다."""
     n = name.lower()
+    if _GEMINI_SKIP.search(n):
+        return None
     m = re.search(r"gemini-(\d+)(?:\.(\d+))?", n)
     if not m:
         return None
@@ -1703,25 +1716,69 @@ def ai_models():
                     "cached_at": _GEMINI_MODEL_CACHE["ts"] if provider == "gemini" else 0})
 
 
+def _gemini_thinking_cfg(mdl: str):
+    """모델 세대에 맞는 사고(thinking) 설정.
+
+    Gemini 3.x 는 기본적으로 길게 '생각'하고, 그 토큰이 maxOutputTokens 를 함께 쓴다.
+    설정하지 않으면 답변이 나오기도 전에 예산이 소진돼 본문이 잘린다(finishReason=MAX_TOKENS).
+    """
+    n = (mdl or "").lower()
+    if "gemini-2.5" in n:
+        return {"thinkingBudget": 0}          # 2.5 계열은 예산(int)만 받는다
+    if re.search(r"gemini-(1\.5|2\.0)", n):
+        return None                           # 사고 기능 없음
+    return {"thinkingLevel": "low"}           # 3.x·'-latest' 별칭
+
+
 def _ai_generate(provider: str, api_key: str, mdl: str, system: str, user: str,
-                 max_tokens: int = 1800, temperature: float = 0.2):
+                 max_tokens: int = 1800, temperature: float = 0.2,
+                 json_mode: bool = False):
     """프로바이더 공통 텍스트 생성. 반환: (text, error_message). 실패 시 text=''."""
     try:
         if provider == "gemini":
             url = (f"https://generativelanguage.googleapis.com/v1beta/models"
                    f"/{mdl}:generateContent?key={api_key}")
-            r = _ai_post_retry(lambda: req_lib.post(
-                url, timeout=40, headers={"Content-Type": "application/json"},
-                json={"contents": [{"parts": [{"text": f"{system}\n\n{user}"}]}],
-                      "generationConfig": {"maxOutputTokens": max_tokens,
-                                           "temperature": temperature}}))
+
+            def call(limit, think):
+                cfg = {"maxOutputTokens": limit, "temperature": temperature}
+                if json_mode:
+                    cfg["responseMimeType"] = "application/json"
+                if think:
+                    cfg["thinkingConfig"] = think
+                return _ai_post_retry(lambda: req_lib.post(
+                    url, timeout=60, headers={"Content-Type": "application/json"},
+                    json={"contents": [{"parts": [{"text": f"{system}\n\n{user}"}]}],
+                          "generationConfig": cfg}))
+
+            think = _gemini_thinking_cfg(mdl)
+            # 사고 토큰까지 감안해 넉넉히 잡는다(본문이 잘리는 것보다 낫다)
+            limit = max(max_tokens, 3000)
+            r = call(limit, think)
+            if r.status_code == 400 and think and "thinking" in (r.text or "").lower():
+                r = call(limit, None)           # 사고 설정 미지원 모델 폴백
             if r.status_code != 200:
                 return "", _ai_error(r)[0]
-            cands = r.json().get("candidates") or []
+            data = r.json()
+            cands = data.get("candidates") or []
             if not cands:
                 return "", "AI 응답이 비어 있습니다."
-            parts = cands[0].get("content", {}).get("parts") or []
-            return "".join(p.get("text", "") for p in parts), ""
+
+            def text_of(d):
+                cs = d.get("candidates") or [{}]
+                ps = cs[0].get("content", {}).get("parts") or []
+                return "".join(p.get("text", "") for p in ps)
+
+            txt = text_of(data)
+            # 사고에 예산을 다 써서 본문이 잘렸으면 한 번 더 크게 잡아 재시도
+            if cands[0].get("finishReason") == "MAX_TOKENS":
+                r2 = call(min(limit * 3, 12000), think or {"thinkingLevel": "low"})
+                if r2.status_code == 200:
+                    t2 = text_of(r2.json())
+                    if len(t2) > len(txt):
+                        txt = t2
+            if not txt.strip():
+                return "", "AI가 본문을 생성하지 못했습니다(사고 토큰 초과). 잠시 후 다시 시도하세요."
+            return txt, ""
         if provider == "claude":
             r = _ai_post_retry(lambda: req_lib.post(
                 "https://api.anthropic.com/v1/messages", timeout=40,
@@ -2374,9 +2431,39 @@ REG_MANIFEST_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 # 업로드 토큰(설정 시 업로드에 필수) — 공개 배포본에서 무단 업로드 방지
 REG_UPLOAD_TOKEN = os.environ.get("REG_UPLOAD_TOKEN", "").strip()
 REG_UPLOAD_MAX_MB = int(os.environ.get("REG_UPLOAD_MAX_MB", "40"))
-REG_CATEGORIES = ["정관", "규정", "규칙", "세칙", "예규", "지침", "요령", "매뉴얼", "기타"]
+REG_CATEGORIES = ["정관", "규정", "규칙", "세칙", "예규", "매뉴얼", "기타"]
 _ALLOWED_EXT = {".hwpx", ".hwp", ".docx", ".pdf", ".html", ".htm", ".txt", ".md"}
 _KST = timezone(timedelta(hours=9))
+
+# 규정명 끝말 → 내규 체계상의 구분.
+# 기관 내규는 정관 > 규정 > 규칙 > 세칙 > 예규 순이고,
+# 지침·요령·기준·수칙·계획 등 하위 문서는 모두 예규로 묶는다.
+_REG_CAT_SUFFIX = (
+    ("정관", "정관"),
+    ("규정", "규정"),
+    ("규칙", "규칙"),
+    ("세칙", "세칙"),
+    ("예규", "예규"),
+    ("지침", "예규"), ("요령", "예규"), ("기준", "예규"), ("수칙", "예규"),
+    ("준칙", "예규"), ("규준", "예규"), ("요강", "예규"), ("계획", "예규"),
+    ("매뉴얼", "매뉴얼"), ("편람", "매뉴얼"), ("가이드", "매뉴얼"),
+    ("안내서", "매뉴얼"), ("핸드북", "매뉴얼"),
+)
+
+
+def _guess_reg_category(title: str) -> str:
+    """규정명으로 구분을 추정. 판단이 서지 않으면 '기타'.
+
+    정관은 기관당 1건뿐이므로 이름이 '정관'으로 끝날 때만 인정한다.
+    (예전에는 업로드 폼의 첫 선택지가 정관이라 '보직관리기준'처럼
+     끝말이 목록에 없는 규정이 그대로 정관으로 등록되는 사고가 있었다.)
+    """
+    t = re.sub(r"\s+", "", (title or ""))
+    t = re.sub(r"[(（\[【].*$", "", t)          # 뒤에 붙은 (제정 …)·[별표] 등 제거
+    for suf, cat in _REG_CAT_SUFFIX:
+        if t.endswith(suf):
+            return cat
+    return "기타"
 
 
 def _now_kst() -> str:
@@ -2890,10 +2977,23 @@ def _upload_authorized() -> bool:
 # ── GitHub 직접 커밋 (읽기전용 배포에서 업로드를 반영하는 경로) ────────────────
 # 업로드 → 변환 → 리포지토리에 커밋 → Vercel 자동 배포.
 # regulations/ 를 그대로 단일 출처로 유지하고, 개정 이력이 git 히스토리로 남는다.
-GITHUB_TOKEN  = os.environ.get("GITHUB_TOKEN", "").strip()
-GITHUB_REPO   = os.environ.get("GITHUB_REPO", "").strip()          # 예: owner/repo
-GITHUB_BRANCH = os.environ.get("GITHUB_BRANCH", "main").strip() or "main"
-GITHUB_API    = os.environ.get("GITHUB_API", "https://api.github.com").rstrip("/")
+def _env_clean(name: str, default: str = "") -> str:
+    """환경변수 값 정리 — 붙여넣기 과정에서 딸려오는 따옴표·공백·개행을 털어낸다.
+
+    Vercel 대시보드에 토큰을 붙여넣을 때 따옴표가 함께 들어가면 401 이 난다.
+    """
+    v = (os.environ.get(name, default) or "").strip()
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+        v = v[1:-1].strip()
+    return v
+
+
+GITHUB_TOKEN  = _env_clean("GITHUB_TOKEN")
+GITHUB_REPO   = _env_clean("GITHUB_REPO").strip("/")               # 예: owner/repo
+GITHUB_BRANCH = _env_clean("GITHUB_BRANCH", "main") or "main"
+GITHUB_API    = _env_clean("GITHUB_API", "https://api.github.com").rstrip("/")
+# GitHub 연결 점검 결과 캐시 — 업로드 화면에서 미리 알려주기 위한 용도
+_GH_CHECK: dict = {"ts": 0.0, "ok": False, "error": ""}
 
 
 def _gh_enabled() -> bool:
@@ -2906,6 +3006,31 @@ def _gh_headers() -> dict:
             "X-GitHub-Api-Version": "2022-11-28"}
 
 
+def _gh_hint(status: int, detail: str, path: str = "") -> str:
+    """GitHub 오류를 담당자가 바로 조치할 수 있는 안내로 바꾼다."""
+    d = (detail or "").lower()
+    if status == 401:
+        return ("GITHUB_TOKEN 이 유효하지 않습니다(만료·폐기되었거나 값이 잘못 입력됨). "
+                "GitHub → Settings → Developer settings 에서 토큰을 새로 발급한 뒤 "
+                "Vercel 환경변수 GITHUB_TOKEN 을 교체하고 재배포하세요. "
+                "값에 따옴표·공백·줄바꿈이 섞이지 않았는지도 확인해주세요.")
+    if status == 403:
+        if "rate limit" in d:
+            return "GitHub API 호출 한도를 초과했습니다. 잠시 후 다시 시도하세요."
+        return (f"토큰에 저장소({GITHUB_REPO}) 쓰기 권한이 없습니다. "
+                "Fine-grained 토큰이면 해당 저장소를 Repository access 에 포함하고 "
+                "Contents 권한을 Read and write 로 설정하세요.")
+    if status == 404:
+        return (f"저장소나 브랜치를 찾을 수 없습니다(GITHUB_REPO={GITHUB_REPO or '미설정'}, "
+                f"GITHUB_BRANCH={GITHUB_BRANCH}). 값이 'owner/repo' 형식인지, "
+                "브랜치 이름이 맞는지, 비공개 저장소라면 토큰 권한 범위에 포함됐는지 확인하세요.")
+    if status == 409:
+        return "다른 커밋과 충돌했습니다. 잠시 후 다시 시도하세요."
+    if status == 422:
+        return f"GitHub 가 요청을 거부했습니다: {detail}"
+    return f"GitHub 오류({status}): {detail}"
+
+
 def _gh(method: str, path: str, **kw):
     url = f"{GITHUB_API}/repos/{GITHUB_REPO}{path}"
     r = _SESSION.request(method, url, headers=_gh_headers(), timeout=30, **kw)
@@ -2915,8 +3040,26 @@ def _gh(method: str, path: str, **kw):
             detail = (r.json() or {}).get("message", "")
         except Exception:
             detail = (r.text or "")[:160]
-        raise RuntimeError(f"GitHub {method} {path} 실패({r.status_code}): {detail}")
+        print(f"[gh] {method} {path} → {r.status_code} {detail}")
+        raise RuntimeError(_gh_hint(r.status_code, detail, path))
     return r.json() if r.content else {}
+
+
+def _gh_check(force: bool = False) -> dict:
+    """토큰·저장소·브랜치가 실제로 쓸 수 있는 상태인지 확인(5분 캐시).
+
+    업로드를 끝까지 진행한 뒤에야 401 을 만나는 일이 없도록 화면에서 미리 알린다.
+    """
+    if not _gh_enabled():
+        return {"ok": False, "error": ""}
+    if not force and time.time() - _GH_CHECK["ts"] < 300:
+        return {"ok": _GH_CHECK["ok"], "error": _GH_CHECK["error"]}
+    try:
+        _gh("GET", f"/git/ref/heads/{GITHUB_BRANCH}")
+        _GH_CHECK.update({"ts": time.time(), "ok": True, "error": ""})
+    except Exception as e:
+        _GH_CHECK.update({"ts": time.time(), "ok": False, "error": str(e)})
+    return {"ok": _GH_CHECK["ok"], "error": _GH_CHECK["error"]}
 
 
 def _gh_commit_files(files: dict, message: str, deletes=None):
@@ -2963,6 +3106,54 @@ def _gh_get_manifest():
     except Exception as e:
         print(f"[gh] manifest 조회 실패, 로컬 사용: {e}")
         return list(_load_reg_manifest())
+
+
+def _gh_dir(path: str, ref: str = ""):
+    """저장소 디렉터리 목록. 없으면 []."""
+    try:
+        d = _gh("GET", f"/contents/{path}", params={"ref": ref or GITHUB_BRANCH})
+        return d if isinstance(d, list) else []
+    except Exception:
+        return []
+
+
+def _gh_file(path: str, ref: str = ""):
+    """저장소 파일 내용(bytes). 없으면 None."""
+    try:
+        d = _gh("GET", f"/contents/{path}", params={"ref": ref or GITHUB_BRANCH})
+        if isinstance(d, dict) and d.get("content"):
+            return base64.b64decode(d["content"])
+        # 1MB 초과 파일은 content 가 비므로 blob 으로 받는다
+        if isinstance(d, dict) and d.get("sha"):
+            b = _gh("GET", f"/git/blobs/{d['sha']}")
+            return base64.b64decode(b.get("content", "") or "")
+    except Exception:
+        pass
+    return None
+
+
+def _gh_prev_commit(path: str) -> str:
+    """이 경로에 개정본이 올라오기 '직전' 상태의 커밋 sha. 없으면 ''.
+
+    업로드 화면이 만든 커밋('내규 등록/개정: …')을 먼저 찾아 그 부모를 쓴다.
+    그 뒤에 다른 수정 커밋이 끼어 있어도 개정 이전 원본을 정확히 되살리기 위함이다.
+    """
+    try:
+        cs = _gh("GET", "/commits", params={"path": path, "sha": GITHUB_BRANCH,
+                                            "per_page": 10})
+        if not isinstance(cs, list) or not cs:
+            return ""
+        for c in cs:
+            msg = ((c.get("commit") or {}).get("message") or "")
+            if msg.startswith("내규 등록:") or msg.startswith("내규 개정:"):
+                parents = c.get("parents") or []
+                if parents:
+                    return parents[0].get("sha", "")
+                break
+        return cs[1].get("sha", "") if len(cs) >= 2 else ""
+    except Exception as e:
+        print(f"[gh] 이전 커밋 조회 실패({path}): {e}")
+    return ""
 
 
 def _merge_manifest(man: list, entry: dict):
@@ -3014,11 +3205,15 @@ def upload_page():
 def reg_upload_status():
     """업로드 가능 여부·카테고리·업로드 이력."""
     ups = _uploaded_regs()
+    chk = _gh_check(force=bool(request.args.get("recheck")))
     return jsonify({
         "success": True,
         "writable": _reg_writable(),
         "github": _gh_enabled(),
         "github_repo": GITHUB_REPO if _gh_enabled() else "",
+        "github_branch": GITHUB_BRANCH if _gh_enabled() else "",
+        "github_ok": chk["ok"],
+        "github_error": chk["error"],
         "token_required": bool(REG_UPLOAD_TOKEN),
         "max_mb": REG_UPLOAD_MAX_MB,
         "categories": REG_CATEGORIES,
@@ -3080,10 +3275,22 @@ def reg_upload():
     if not title:
         return jsonify({"error": "규정명을 입력해주세요."}), 400
 
+    # 구분 결정: 개정판이면 기존 등록 구분을 잇고, 없으면 규정명으로 추정한다.
+    # 사람이 고른 값이라도 이름과 어긋나는 '정관'은 받지 않는다(정관은 기관당 1건).
     category = (request.form.get("category") or "").strip()
-    if not category:
-        category = next((c for c in ("정관", "세칙", "예규", "지침", "요령", "매뉴얼",
-                                     "규칙", "규정") if title.endswith(c)), "기타")
+    guessed = _guess_reg_category(title)
+    prev_cat = ""
+    for _m in (_load_reg_manifest() or []):
+        if _norm_key(_m.get("title") or "") == _norm_key(title):
+            prev_cat = (_m.get("category") or "").strip()
+            break
+    if category in ("", "자동", "자동 분류"):
+        category = prev_cat or guessed
+    if category == "정관" and guessed != "정관":
+        print(f"[upload] '{title}' 구분 정관 → {prev_cat or guessed} 로 교정")
+        category = prev_cat if prev_cat and prev_cat != "정관" else guessed
+    if category not in REG_CATEGORIES:
+        category = guessed
 
     meta = {
         "category": category,
@@ -3202,6 +3409,70 @@ def reg_upload():
                     "replaced": bool(entry.get("history"))})
 
 
+def _gh_revert(slug: str):
+    """GitHub 커밋으로 개정 되돌리기.
+
+    이전 개정이 있으면 그 개정본을 올리기 직전 커밋에서 파일을 되살리고,
+    신규 등록이었으면 폴더 파일을 지운다. manifest 와 함께 한 커밋으로 반영한다.
+    """
+    man = _gh_get_manifest()
+    idx = next((i for i, m in enumerate(man) if m.get("slug") == slug), -1)
+    if idx < 0:
+        return jsonify({"error": "해당 규정을 찾을 수 없습니다."}), 404
+    cur = man[idx]
+    if not cur.get("uploaded_at"):
+        return jsonify({"error": "업로드로 등록된 규정만 되돌릴 수 있습니다."}), 400
+
+    base = f"regulations/{slug}"
+    now_files = [f.get("name") for f in _gh_dir(base) if f.get("type") == "file"]
+    history = list(cur.get("history") or [])
+    files, deletes, warning = {}, [], ""
+
+    if history:                                   # ── 이전 개정본으로 복원 ──
+        h = history.pop(0)
+        prev = dict(h.get("entry") or {})
+        prev.pop("history", None)
+        if history:
+            prev["history"] = history
+        # 이번 개정을 커밋하기 직전 상태(= 이전 개정본)를 git 에서 되살린다
+        ref = _gh_prev_commit(f"{base}/index.html")
+        old_files = [f.get("name") for f in _gh_dir(base, ref)] if ref else []
+        for name in old_files:
+            data = _gh_file(f"{base}/{name}", ref)
+            if data is not None:
+                files[f"{base}/{name}"] = data
+        for name in now_files:                    # 이전에 없던 파일(확장자 변경 등)은 정리
+            if name not in old_files:
+                deletes.append(f"{base}/{name}")
+        if not files:
+            warning = ("이전 개정본 파일을 저장소 이력에서 찾지 못해 등록 정보만 되돌렸습니다. "
+                       "문서 내용은 현재 개정본이 그대로 남아 있습니다.")
+            print(f"[gh-revert] 이전 파일 복원 실패: {base} (ref={ref or '없음'})")
+        man[idx] = prev
+        restored_rev = prev.get("revision", "")
+    else:                                         # ── 신규 등록 → 등록 해제 ──
+        man.pop(idx)
+        deletes = [f"{base}/{n}" for n in now_files]
+        restored_rev = ""
+
+    files["regulations_manifest.json"] = (
+        json.dumps(man, ensure_ascii=False, indent=1) + "\n")
+    title = cur.get("title", slug)
+    msg = (f"내규 되돌리기: {title}"
+           + (f" → {restored_rev}" if restored_rev else " (등록 해제)")
+           + "\n\n업로드 화면(/upload)에서 자동 커밋됨")
+    sha = _gh_commit_files(files, msg, deletes=deletes)
+    print(f"[gh-revert] 완료: {title} → {sha[:7]}")
+    return jsonify({
+        "success": True, "removed": title,
+        "restored": bool(restored_rev), "restored_revision": restored_rev,
+        "files_restored": not warning, "warning": warning,
+        "committed": True, "commit_sha": sha[:7],
+        "commit_url": f"https://github.com/{GITHUB_REPO}/commit/{sha}",
+        "message": "리포지토리에 커밋했습니다. 배포 반영까지 1~2분 걸립니다.",
+    })
+
+
 @app.route("/api/regs/upload/delete", methods=["POST"])
 def reg_upload_delete():
     """
@@ -3211,11 +3482,20 @@ def reg_upload_delete():
     """
     if not _upload_authorized():
         return jsonify({"error": "업로드 토큰이 올바르지 않습니다."}), 401
-    if not _reg_writable():
-        return jsonify({"error": "읽기 전용 환경에서는 되돌릴 수 없습니다."}), 503
     slug = (request.form.get("slug") or (request.json or {}).get("slug") or "").strip()
     if not slug or "/" in slug or "\\" in slug or slug.startswith("."):
         return jsonify({"error": "slug 값이 올바르지 않습니다."}), 400
+
+    # 읽기 전용 배포(서버리스)에서는 업로드와 같은 경로로 GitHub 에 커밋해 되돌린다.
+    if not _reg_writable():
+        if not _gh_enabled():
+            return jsonify({"error": "읽기 전용 환경이고 GitHub 연동도 없어 되돌릴 수 없습니다. "
+                                     "GITHUB_TOKEN·GITHUB_REPO 를 설정하세요."}), 503
+        try:
+            return _gh_revert(slug)
+        except Exception as e:
+            import traceback; traceback.print_exc()
+            return jsonify({"error": f"되돌리기 실패: {e}"}), 502
 
     man = list(_load_reg_manifest())
     idx = next((i for i, m in enumerate(man) if m.get("slug") == slug), -1)
@@ -3264,6 +3544,8 @@ _VEC_BIN = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 _VEC_META = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                          "regulations_vectors.json")
 _VEC_CACHE: dict = {"loaded": False, "meta": None, "mat": None, "np": None}
+# 코사인 하한. 관련 없는 조문은 대체로 0.5 아래에 몰려 있어 노이즈를 걸러낸다.
+_SEM_MIN = float(os.environ.get("SEMANTIC_MIN_SCORE", "0.55"))
 
 
 def _vec_load():
@@ -3296,15 +3578,20 @@ def _vec_load():
     return _VEC_CACHE
 
 
-def _embed_query(text: str, api_key: str, model: str):
-    """질의 임베딩. 실패 시 None."""
+def _embed_query(text: str, api_key: str, model: str, dim: int = 0):
+    """질의 임베딩. 실패 시 None.
+
+    문서 벡터를 MRL 로 축소해 저장했으면 질의도 같은 차원으로 뽑아야 한다.
+    """
     try:
         url = (f"https://generativelanguage.googleapis.com/v1beta/models"
                f"/{model}:embedContent?key={api_key}")
-        r = _SESSION.post(url, timeout=15, json={
-            "model": f"models/{model}",
-            "content": {"parts": [{"text": text}]},
-            "taskType": "RETRIEVAL_QUERY"})
+        body = {"model": f"models/{model}",
+                "content": {"parts": [{"text": text}]},
+                "taskType": "RETRIEVAL_QUERY"}
+        if dim:
+            body["outputDimensionality"] = dim
+        r = _SESSION.post(url, timeout=15, json=body)
         if r.status_code != 200:
             print(f"[vec] 질의 임베딩 실패({r.status_code})")
             return None
@@ -3320,8 +3607,12 @@ def semantic_search(query: str, api_key: str, top_k: int = 20):
     if c["mat"] is None or not api_key:
         return []
     np = c["np"]
-    qv = _embed_query(query, api_key, c["meta"].get("model", "text-embedding-004"))
-    if not qv:
+    qv = _embed_query(query, api_key,
+                      c["meta"].get("model", "gemini-embedding-001"),
+                      dim=int(c["meta"].get("dim") or 0))
+    if not qv or len(qv) != c["mat"].shape[1]:
+        if qv:
+            print(f"[vec] 질의 차원 불일치 {len(qv)} != {c['mat'].shape[1]}")
         return []
     q = np.asarray(qv, dtype=np.float32)
     n = float(np.linalg.norm(q)) or 1.0
@@ -3343,7 +3634,8 @@ def _semantic_for_search(query: str, top_k: int = 18):
         return [{"title": h["title"], "slug": h["slug"], "no": h["no"],
                  "art_title": h["art_title"], "preview": h["preview"],
                  "score": round(h["score"], 4)}
-                for h in semantic_search(query, key, top_k=top_k)]
+                for h in semantic_search(query, key, top_k=top_k)
+                if h["score"] >= _SEM_MIN]
     except Exception as e:
         print(f"[internal-search] 의미 검색 생략: {e}")
         return []
@@ -3381,6 +3673,8 @@ def internal_semantic():
     return jsonify({"success": True, "available": True, "query": q,
                     "count": len(out), "regs": out,
                     "index": {"chunks": c["meta"]["count"],
+                              "total_chunks": c["meta"].get("total_chunks"),
+                              "complete": c["meta"].get("complete", True),
                               "model": c["meta"].get("model"),
                               "built_at": c["meta"].get("built_at")}})
 

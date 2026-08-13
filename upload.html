@@ -47,6 +47,9 @@ a{color:var(--g);}
 .banner.warn{background:#fffbeb;color:#92400e;border:1px solid #fcd34d;}
 .banner.err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;}
 .banner b{font-weight:700;}
+.banner .muted{opacity:.75;font-size:11.5px;}
+.banner .lnk{margin-top:6px;background:none;border:1px solid currentColor;color:inherit;
+  border-radius:6px;padding:2px 10px;font-size:11.5px;cursor:pointer;}
 .banner code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px;font-size:11.5px;}
 
 /* 드롭존 */
@@ -164,6 +167,7 @@ a{color:var(--g);}
       <div class="f">
         <label for="category">규정 구분</label>
         <select id="category"></select>
+        <div class="hint" id="catHint">규정명에서 자동으로 판단합니다. 다르면 직접 고르세요.</div>
       </div>
       <div class="f">
         <label for="revision">개정 구분</label>
@@ -278,13 +282,45 @@ function autoFill(fname){
   guessCategory();
   checkExisting();
 }
+/* 규정명 끝말 → 구분. 서버(_REG_CAT_SUFFIX)와 같은 기준을 쓴다.
+   지침·요령·기준 등 하위 문서는 예규로 묶고, 정관은 이름이 '정관'일 때만 인정한다. */
+const CAT_SUFFIX=[['정관','정관'],['규정','규정'],['규칙','규칙'],['세칙','세칙'],['예규','예규'],
+  ['지침','예규'],['요령','예규'],['기준','예규'],['수칙','예규'],['준칙','예규'],
+  ['규준','예규'],['요강','예규'],['계획','예규'],
+  ['매뉴얼','매뉴얼'],['편람','매뉴얼'],['가이드','매뉴얼'],['안내서','매뉴얼'],['핸드북','매뉴얼']];
+/* 받침 유무에 따라 '로 / 으로' (ㄹ 받침은 '로') */
+function _ro(w){
+  const c=String(w||'').slice(-1).charCodeAt(0)-0xAC00;
+  if(c<0||c>11171) return '로';
+  const jong=c%28;
+  return (jong===0||jong===8)?'로':'으로';
+}
+function catFromTitle(title){
+  const t=String(title||'').replace(/\s+/g,'').replace(/[(（\[【].*$/,'');
+  const hit=CAT_SUFFIX.find(([suf])=>t.endsWith(suf));
+  return hit?hit[1]:'';
+}
 function guessCategory(){
   const sel=document.getElementById('category');
-  if(sel.dataset.touched==='1') return;
+  const hint=document.getElementById('catHint');
+  if(sel.dataset.touched==='1'){
+    if(hint) hint.textContent='직접 선택한 구분으로 등록됩니다.';
+    return;
+  }
   const title=document.getElementById('title').value.trim();
-  const cats=(_status&&_status.categories)||[];
-  const hit=cats.find(c=>c!=='기타'&&title.endsWith(c));
-  if(hit) sel.value=hit;
+  // 이미 등록된 규정의 개정판이면 기존 구분을 잇는다
+  const key=title.replace(/\s+/g,'').toLowerCase();
+  const prev=_names.find(n=>n.title.replace(/\s+/g,'').toLowerCase()===key);
+  const cat=(prev&&prev.category)||catFromTitle(title);
+  if(cat && [...sel.options].some(o=>o.value===cat)){
+    sel.value=cat;
+    if(hint) hint.textContent=prev
+      ? `기존 등록 구분(${cat})을 그대로 사용합니다.`
+      : `규정명을 보고 '${cat}'${_ro(cat)} 판단했습니다. 다르면 직접 고르세요.`;
+  }else{
+    sel.value='기타';
+    if(hint) hint.textContent='규정명으로 구분을 판단하지 못했습니다. 직접 골라주세요.';
+  }
 }
 
 /* 기존 규정명과 일치하면 '개정판 교체' 안내 */
@@ -306,9 +342,9 @@ function checkExisting(){
 document.getElementById('category').addEventListener('change',function(){this.dataset.touched='1';});
 
 /* ── 상태 조회 ── */
-async function loadStatus(){
+async function loadStatus(recheck){
   try{
-    const r=await fetch('/api/regs/upload/status');
+    const r=await fetch('/api/regs/upload/status'+(recheck?'?recheck=1':''));
     const d=await r.json();
     _status=d;
     // 카테고리
@@ -323,7 +359,18 @@ async function loadStatus(){
 
     // 저장 가능 여부 배너
     const b=document.getElementById('statusBanner');
-    if(d.github){
+    if(d.github && d.github_ok===false){
+      // 토큰·권한 문제를 업로드 전에 알린다(끝까지 진행한 뒤 실패하지 않도록)
+      b.innerHTML=`<div class="banner err"><span>⛔</span><div>
+        <b>GitHub 저장소에 연결할 수 없어 지금은 등록할 수 없습니다.</b><br>
+        ${esc(d.github_error||'원인을 확인할 수 없습니다.')}<br>
+        <span class="muted">저장소 <code>${esc(d.github_repo)}</code> · 브랜치
+        <code>${esc(d.github_branch||'main')}</code></span><br>
+        <button type="button" class="lnk" onclick="loadStatus(1)">다시 확인</button>
+      </div></div>`;
+      document.getElementById('submitBtn').disabled=true;
+    }else if(d.github){
+      document.getElementById('submitBtn').disabled=false;
       b.innerHTML=`<div class="banner ok"><span>✅</span><div>
         업로드하면 <b>자동으로 저장·배포</b>됩니다(<code>${esc(d.github_repo)}</code>에 커밋).
         현재 등록된 내규 <b>${d.total}건</b>.
@@ -496,6 +543,10 @@ async function removeUpload(slugEnc,title){
       + (d.restored
           ? `<p style="margin:0;">이전 개정본 <b>${esc(d.restored_revision||'')}</b>으로 복원했습니다.</p>`
           : `<p style="margin:0;">등록을 해제하고 저장된 파일을 삭제했습니다.</p>`)
+      + (d.committed
+          ? `<p style="margin:8px 0 0;">리포지토리에 커밋했습니다 —
+             <a href="${esc(d.commit_url||'#')}" target="_blank"><code>${esc(d.commit_sha||'')}</code></a>.
+             배포 반영까지 <b>1~2분</b> 걸립니다.</p>` : '')
       + (d.warning?`<p style="margin:8px 0 0;color:#92400e;">⚠️ ${esc(d.warning)}</p>`:''));
     loadStatus();
   }catch(e){ showResult(false,'❌ '+esc(e.message)); }
@@ -503,7 +554,7 @@ async function removeUpload(slugEnc,title){
 
 function resetFields(){
   ['title','revision','effective','department','note'].forEach(id=>document.getElementById(id).value='');
-  const sel=document.getElementById('category'); sel.dataset.touched=''; sel.selectedIndex=0;
+  const sel=document.getElementById('category'); sel.dataset.touched=''; sel.value='기타';
   checkExisting();
 }
 function resetForm(){ clearFile(); resetFields(); hideResult(); }

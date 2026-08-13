@@ -218,6 +218,9 @@ body.dark *::-webkit-scrollbar-thumb{background:rgba(148,163,184,.28);background
    pre-wrap + 공백 들여쓰기는 줄이 넘어갈 때 두 번째 줄이 왼쪽 끝으로 붙어
    항·호·목 구분이 풀려 보인다. 번호와 본문을 분리한 flex 행으로 정렬을 유지한다. */
 .art-lines{display:flex;flex-direction:column;gap:3px;white-space:normal;}
+.art-tblwrap{margin:8px 0;}
+.art-tblwrap .rf-table{font-size:12px;}
+.art-tblwrap .rf-table th,.art-tblwrap .rf-table td{padding:4px 7px;white-space:normal;}
 .art-l{display:flex;align-items:flex-start;gap:.35em;}
 .art-l-no{flex-shrink:0;font-weight:600;color:var(--gd);font-variant-numeric:tabular-nums;}
 .art-l-tx{flex:1;min-width:0;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;}
@@ -452,8 +455,12 @@ body.dark .rf-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .scen-answer-b{font-size:13.5px;line-height:1.9;color:var(--tx);word-break:keep-all;overflow-wrap:anywhere;}
 .scen-answer-b p{margin:0 0 8px;}
 .scen-answer-b strong{color:var(--gd);}
-.scen-ul{margin:4px 0 10px;padding-left:20px;}
-.scen-ul li{margin:3px 0;}
+.scen-ul,.scen-ol{margin:4px 0 10px;padding-left:22px;}
+.scen-ul li,.scen-ol li{margin:3px 0;}
+.scen-ol{list-style:decimal;}
+.scen-hr{border:0;border-top:1px solid var(--bd);margin:12px 0;}
+.scen-h{font-weight:800;color:var(--gd);margin:12px 0 4px;font-size:14px;}
+.scen-answer-b em{font-style:normal;color:var(--mu);}
 .scen-cite{color:var(--gd);background:var(--gl);border-radius:4px;padding:0 4px;font-size:12px;font-weight:700;white-space:nowrap;}
 .scen-src{margin-top:10px;padding-top:9px;border-top:1px dashed var(--bd);font-size:11.5px;color:var(--mu);
   display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
@@ -1284,11 +1291,17 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
         <div class="ai-field">
           <div class="ai-label">모델 선택</div>
           <select class="ai-select" id="model-gemini">
-            <option value="gemini-2.5-flash">Gemini 2.5 Flash (권장)</option>
-            <option value="gemini-2.5-pro">Gemini 2.5 Pro (고성능)</option>
-            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-            <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite (최경량)</option>
+            <option value="gemini-flash-latest">최신 Flash (자동 현행화·권장)</option>
+            <option value="gemini-3.6-flash">Gemini 3.6 Flash</option>
+            <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
+            <option value="gemini-pro-latest">최신 Pro (자동 현행화·고성능)</option>
+            <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
+            <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (경량)</option>
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash (이전 세대)</option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro (이전 세대)</option>
           </select>
+          <div class="ai-hint">‘자동 현행화’를 고르면 구글이 최신 모델로 알아서 연결합니다.
+            Pro 계열은 무료 키에서 한도가 매우 낮아 429가 날 수 있으니 Flash를 권장합니다.</div>
         </div>
       </div>
 
@@ -2755,16 +2768,26 @@ async function doSearchScenario(q){
 function mdToHtml(md){
   let h=escHtml(String(md||''));
   h=h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  h=h.replace(/(^|[^*])\*(?!\s)([^*\n]+?)\*(?!\*)/g,'$1<em>$2</em>');
   h=h.replace(/\[([^\[\]]{2,60}?제\s*\d+[^\[\]]{0,20})\]/g,'<span class="scen-cite">[$1]</span>');
-  const lines=h.split('\n'); let out='', inUl=false;
+  const lines=h.split('\n'); let out='', list='';
+  const closeList=()=>{ if(list){ out+=`</${list}>`; list=''; } };
   for(const raw of lines){
     const t=raw.trim();
-    const li=t.match(/^(?:[-*·]|\d+\.)\s+(.*)$/);
-    if(li){ if(!inUl){ out+='<ul class="scen-ul">'; inUl=true; } out+=`<li>${li[1]}</li>`; continue; }
-    if(inUl){ out+='</ul>'; inUl=false; }
+    if(/^(-{3,}|\*{3,}|_{3,})$/.test(t)){ closeList(); out+='<hr class="scen-hr">'; continue; }
+    const hd=t.match(/^(#{1,6})\s+(.*)$/);
+    if(hd){ closeList(); out+=`<div class="scen-h">${hd[2]}</div>`; continue; }
+    const ol=t.match(/^\d+[.)]\s+(.*)$/);
+    const ul=t.match(/^(?:[-*·•])\s+(.*)$/);
+    if(ol||ul){
+      const want=ol?'ol':'ul';
+      if(list!==want){ closeList(); out+=`<${want} class="scen-${want}">`; list=want; }
+      out+=`<li>${(ol||ul)[1]}</li>`; continue;
+    }
+    closeList();
     if(t) out+=`<p>${t}</p>`;
   }
-  if(inUl) out+='</ul>';
+  closeList();
   return out||`<p>${h}</p>`;
 }
 function renderScenarioResults(d){
@@ -3567,11 +3590,48 @@ function parseArtLines(text){
 function artLinesHtml(items, transform){
   if(!items || !items.length) return '';
   const f = transform || (s=>s);
-  return `<div class="art-lines">` + items.map(it=>{
+  const one=it=>{
     const d=Math.max(0,Math.min(4, it.depth|0));
     const no=it.no?`<span class="art-l-no">${f(escHtml(it.no))}</span>`:'';
     return `<div class="art-l art-l-d${d}">${no}<span class="art-l-tx">${f(escHtml(it.text||''))}</span></div>`;
-  }).join('') + `</div>`;
+  };
+  // 별표 표가 "셀 | 셀 | 셀" 한 줄로 눌려 들어오는 경우가 있어 다시 표로 세운다.
+  const out=[]; let i=0;
+  while(i<items.length){
+    const run=[];
+    while(i+run.length<items.length && _pipeCells(items[i+run.length])) run.push(items[i+run.length]);
+    if(run.length>=2){ out.push(_pipeTableHtml(run, f)); i+=run.length; }
+    else { out.push(one(items[i])); i++; }
+  }
+  return `<div class="art-lines">` + out.join('') + `</div>`;
+}
+
+// 표의 한 행으로 볼 수 있는 줄인가 — 번호 항목이 아니고 '|' 로 2칸 이상 나뉜 줄
+function _pipeCells(it){
+  if(!it || it.no) return null;
+  const t=String(it.text||'');
+  if(t.indexOf('|')<0) return null;
+  const cells=t.split('|').map(s=>s.trim());
+  if(cells.length<2) return null;
+  if(cells.every(c=>!c)) return null;                 // 구분선만 있는 줄
+  if(cells.some(c=>c.length>60)) return null;         // 본문 문장에 우연히 섞인 '|'
+  return cells;
+}
+
+function _pipeTableHtml(run, f){
+  const rows=run.map(_pipeCells);
+  const cols=Math.max(...rows.map(r=>r.length));
+  // 첫 행에 빈 칸이 없고 아래 행이 여러 개면 머리글로 본다
+  const head = rows.length>2 && rows[0].every(c=>c) && rows[0].length===cols;
+  const cell=(c,tag)=>`<${tag}>${f(escHtml(c))}</${tag}>`;
+  const tr=(r,tag)=>{
+    const cs=r.slice(); while(cs.length<cols) cs.push('');
+    return `<tr>${cs.map(c=>cell(c,tag)).join('')}</tr>`;
+  };
+  const body=rows.slice(head?1:0).map(r=>tr(r,'td')).join('');
+  return `<div class="rf-tablewrap art-tblwrap"><table class="rf-table">`
+       + (head?`<thead>${tr(rows[0],'th')}</thead>`:'')
+       + `<tbody>${body}</tbody></table></div>`;
 }
 
 // 조문 본문 HTML — 서버 구조(조문구조) 우선, 없으면 평문 파싱
@@ -3989,10 +4049,12 @@ function setProv(prov){
 
 // 구형 모델 ID → 현행 모델 ID 마이그레이션 맵
 const _MODEL_MIGRATE = {
-  // Gemini 구형
-  'gemini-1.5-pro':            'gemini-2.5-pro',
-  'gemini-1.5-flash':          'gemini-2.5-flash',
-  'gemini-2.0-flash-exp':      'gemini-2.0-flash',
+  // Gemini 구형 — 3.x 세대로 올린다(‘-latest’ 별칭은 구글이 알아서 최신으로 연결)
+  'gemini-1.5-pro':            'gemini-pro-latest',
+  'gemini-1.5-flash':          'gemini-flash-latest',
+  'gemini-2.0-flash':          'gemini-flash-latest',
+  'gemini-2.0-flash-exp':      'gemini-flash-latest',
+  'gemini-2.0-flash-lite':     'gemini-3.5-flash-lite',
   // GPT 구형
   'gpt-4-turbo':               'gpt-4.1',
   'gpt-4-turbo-preview':       'gpt-4.1',
@@ -4003,9 +4065,32 @@ const _MODEL_MIGRATE = {
   'claude-3-5-haiku-20241022': 'claude-haiku-4-5-20251001',
 };
 
+// 예전 기본값으로 저장된 모델을 새 기본값으로 한 번만 올린다(직접 고른 값은 이후 유지).
+const _MODEL_DEFAULT_BUMP_VER = 2;
+const _MODEL_DEFAULT_BUMP = {
+  'model_gemini': {'gemini-2.5-flash':'gemini-flash-latest',
+                   'gemini-2.5-pro':'gemini-pro-latest'},
+};
+
+// 저장된 설정을 읽으면서 필요하면 모델을 현행화(모달을 열지 않아도 상태표시가 맞도록 로드시 실행)
+function migrateAiSettings(){
+  let s={};
+  try{ s=JSON.parse(localStorage.getItem('aiSettings')||'{}'); }catch{ return {}; }
+  if((s.mver|0) >= _MODEL_DEFAULT_BUMP_VER) return s;
+  let changed=false;
+  Object.entries(_MODEL_DEFAULT_BUMP).forEach(([k,map])=>{
+    if(s[k] && map[s[k]]){ s[k]=map[s[k]]; changed=true; }
+  });
+  s.mver=_MODEL_DEFAULT_BUMP_VER;
+  if(changed || s.provider){
+    try{ localStorage.setItem('aiSettings',JSON.stringify(s)); }catch{}
+  }
+  return s;
+}
+
 function loadAiSettings(){
   try{
-    const s=JSON.parse(localStorage.getItem('aiSettings')||'{}');
+    const s=migrateAiSettings();
     if(s.provider) setProv(s.provider);
     ['claude','gpt','gemini','ollama'].forEach(p=>{
       const kEl=document.getElementById('key-'+p);
@@ -4028,7 +4113,7 @@ function loadAiSettings(){
 }
 
 function saveAiSettings(){
-  const s={provider:currentProv};
+  const s={provider:currentProv, mver:_MODEL_DEFAULT_BUMP_VER};
   ['claude','gpt','gemini','ollama'].forEach(p=>{
     const kEl=document.getElementById('key-'+p);
     const mEl=document.getElementById('model-'+p);
@@ -6156,7 +6241,7 @@ loadFavs();
 renderAgencyTabs();
 validateKeywords();
 setMode('internal');  // 기본: 내규 검색 (온보딩 패널 포함 초기화)
-try{ updateAiStatusUI(getAiSettings()); }catch{}
+try{ updateAiStatusUI(migrateAiSettings()); }catch{}
 
 // URL 쿼리로 진입한 검색 (?q=규정명&mode=internal|law|scenario) — 업로드 페이지에서 바로 열기
 try{
