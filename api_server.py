@@ -2977,10 +2977,23 @@ def _upload_authorized() -> bool:
 # ── GitHub 직접 커밋 (읽기전용 배포에서 업로드를 반영하는 경로) ────────────────
 # 업로드 → 변환 → 리포지토리에 커밋 → Vercel 자동 배포.
 # regulations/ 를 그대로 단일 출처로 유지하고, 개정 이력이 git 히스토리로 남는다.
-GITHUB_TOKEN  = os.environ.get("GITHUB_TOKEN", "").strip()
-GITHUB_REPO   = os.environ.get("GITHUB_REPO", "").strip()          # 예: owner/repo
-GITHUB_BRANCH = os.environ.get("GITHUB_BRANCH", "main").strip() or "main"
-GITHUB_API    = os.environ.get("GITHUB_API", "https://api.github.com").rstrip("/")
+def _env_clean(name: str, default: str = "") -> str:
+    """환경변수 값 정리 — 붙여넣기 과정에서 딸려오는 따옴표·공백·개행을 털어낸다.
+
+    Vercel 대시보드에 토큰을 붙여넣을 때 따옴표가 함께 들어가면 401 이 난다.
+    """
+    v = (os.environ.get(name, default) or "").strip()
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+        v = v[1:-1].strip()
+    return v
+
+
+GITHUB_TOKEN  = _env_clean("GITHUB_TOKEN")
+GITHUB_REPO   = _env_clean("GITHUB_REPO").strip("/")               # 예: owner/repo
+GITHUB_BRANCH = _env_clean("GITHUB_BRANCH", "main") or "main"
+GITHUB_API    = _env_clean("GITHUB_API", "https://api.github.com").rstrip("/")
+# GitHub 연결 점검 결과 캐시 — 업로드 화면에서 미리 알려주기 위한 용도
+_GH_CHECK: dict = {"ts": 0.0, "ok": False, "error": ""}
 
 
 def _gh_enabled() -> bool:
@@ -2993,6 +3006,31 @@ def _gh_headers() -> dict:
             "X-GitHub-Api-Version": "2022-11-28"}
 
 
+def _gh_hint(status: int, detail: str, path: str = "") -> str:
+    """GitHub 오류를 담당자가 바로 조치할 수 있는 안내로 바꾼다."""
+    d = (detail or "").lower()
+    if status == 401:
+        return ("GITHUB_TOKEN 이 유효하지 않습니다(만료·폐기되었거나 값이 잘못 입력됨). "
+                "GitHub → Settings → Developer settings 에서 토큰을 새로 발급한 뒤 "
+                "Vercel 환경변수 GITHUB_TOKEN 을 교체하고 재배포하세요. "
+                "값에 따옴표·공백·줄바꿈이 섞이지 않았는지도 확인해주세요.")
+    if status == 403:
+        if "rate limit" in d:
+            return "GitHub API 호출 한도를 초과했습니다. 잠시 후 다시 시도하세요."
+        return (f"토큰에 저장소({GITHUB_REPO}) 쓰기 권한이 없습니다. "
+                "Fine-grained 토큰이면 해당 저장소를 Repository access 에 포함하고 "
+                "Contents 권한을 Read and write 로 설정하세요.")
+    if status == 404:
+        return (f"저장소나 브랜치를 찾을 수 없습니다(GITHUB_REPO={GITHUB_REPO or '미설정'}, "
+                f"GITHUB_BRANCH={GITHUB_BRANCH}). 값이 'owner/repo' 형식인지, "
+                "브랜치 이름이 맞는지, 비공개 저장소라면 토큰 권한 범위에 포함됐는지 확인하세요.")
+    if status == 409:
+        return "다른 커밋과 충돌했습니다. 잠시 후 다시 시도하세요."
+    if status == 422:
+        return f"GitHub 가 요청을 거부했습니다: {detail}"
+    return f"GitHub 오류({status}): {detail}"
+
+
 def _gh(method: str, path: str, **kw):
     url = f"{GITHUB_API}/repos/{GITHUB_REPO}{path}"
     r = _SESSION.request(method, url, headers=_gh_headers(), timeout=30, **kw)
@@ -3002,8 +3040,26 @@ def _gh(method: str, path: str, **kw):
             detail = (r.json() or {}).get("message", "")
         except Exception:
             detail = (r.text or "")[:160]
-        raise RuntimeError(f"GitHub {method} {path} 실패({r.status_code}): {detail}")
+        print(f"[gh] {method} {path} → {r.status_code} {detail}")
+        raise RuntimeError(_gh_hint(r.status_code, detail, path))
     return r.json() if r.content else {}
+
+
+def _gh_check(force: bool = False) -> dict:
+    """토큰·저장소·브랜치가 실제로 쓸 수 있는 상태인지 확인(5분 캐시).
+
+    업로드를 끝까지 진행한 뒤에야 401 을 만나는 일이 없도록 화면에서 미리 알린다.
+    """
+    if not _gh_enabled():
+        return {"ok": False, "error": ""}
+    if not force and time.time() - _GH_CHECK["ts"] < 300:
+        return {"ok": _GH_CHECK["ok"], "error": _GH_CHECK["error"]}
+    try:
+        _gh("GET", f"/git/ref/heads/{GITHUB_BRANCH}")
+        _GH_CHECK.update({"ts": time.time(), "ok": True, "error": ""})
+    except Exception as e:
+        _GH_CHECK.update({"ts": time.time(), "ok": False, "error": str(e)})
+    return {"ok": _GH_CHECK["ok"], "error": _GH_CHECK["error"]}
 
 
 def _gh_commit_files(files: dict, message: str, deletes=None):
@@ -3101,11 +3157,15 @@ def upload_page():
 def reg_upload_status():
     """업로드 가능 여부·카테고리·업로드 이력."""
     ups = _uploaded_regs()
+    chk = _gh_check(force=bool(request.args.get("recheck")))
     return jsonify({
         "success": True,
         "writable": _reg_writable(),
         "github": _gh_enabled(),
         "github_repo": GITHUB_REPO if _gh_enabled() else "",
+        "github_branch": GITHUB_BRANCH if _gh_enabled() else "",
+        "github_ok": chk["ok"],
+        "github_error": chk["error"],
         "token_required": bool(REG_UPLOAD_TOKEN),
         "max_mb": REG_UPLOAD_MAX_MB,
         "categories": REG_CATEGORIES,
