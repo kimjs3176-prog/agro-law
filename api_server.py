@@ -1412,9 +1412,12 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
 
     # 의미 검색으로 찾은 내규 조문 — 질문 어휘가 규정 표현과 달라도 근거를 잡아준다.
     sem_hits = []
+    emb_available = False   # 내규 의미검색(임베딩)이 실제로 수행됐는지
     try:
+        # 채팅 프로바이더와 무관하게 임베딩엔 Gemini 키를 쓴다(사용자 키→서버 키 폴백).
         gkey = (api_key if provider == "gemini" else "") or os.environ.get("GEMINI_API_KEY", "")
-        if gkey.strip():
+        emb_available = bool(gkey.strip())
+        if emb_available:
             sem_hits = [h for h in semantic_search(query, gkey.strip(), top_k=10)
                         if h["score"] >= _SEM_MIN]
     except Exception as e:
@@ -1475,6 +1478,8 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
         "internal_text":   internal_text,
         "internal_structured": internal_struct,
         "internal_error":  internal_err,
+        # 내규 의미검색(임베딩) 수행 여부 — false면 UI가 '내규 근거 일부 미반영'을 안내.
+        "internal_semantic": emb_available,
     })
 
 
