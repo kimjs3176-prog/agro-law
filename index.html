@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>KOAT 내규&국가법령 종합 검색 서비스</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.min.css">
 <style>:root{
   /* Toss 팔레트 */
   --g:#3182f6;--gd:#1a6fe8;--gl:#eef3fe;--gp:#0f4fa8;
@@ -15,9 +16,11 @@
   --blue:#3182f6;--blue-l:#eef3fe;--amber:#f5a623;--amber-l:#fff8ec;
   --red:#f04452;--red-l:#fff0f1;
   --font:'Pretendard Variable',Pretendard,'Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+  /* 다크모드 대응 색상 토큰(오류 문구·검색어 하이라이트) */
+  --err-fg:#991b1b;--err-bg:#fef2f2;
+  --mark-bg:#bbf7d0;--mark-fg:#14532d;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.min.css');
 body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 /* 상단바 — Toss blur topbar */
 .topbar{background:rgba(255,255,255,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.06);padding:0 24px;display:flex;align-items:center;height:60px;gap:10px;position:sticky;top:0;z-index:200;box-shadow:0 1px 0 rgba(0,0,0,.04);}
@@ -240,6 +243,8 @@ body.dark .art-l.hang-hl{background:rgba(250,204,21,.18);}
 
 /* ── 조문 검색결과 하이라이트 강화 ── */
 .art-body mark,.fp-art-body mark,.ref-art-body mark{background:#fef08a;color:inherit;border-radius:2px;padding:0 1px;font-weight:600;}
+/* 다크모드: 밝은 노랑/초록 하이라이트 위 텍스트가 밝은색으로 상속돼 안 보이는 문제 방지 */
+body.dark mark{color:#1f2937;}
 .art-match-count{font-size:10px;color:var(--g);background:var(--gl);padding:1px 6px;border-radius:10px;margin-left:6px;}
 
 /* ── 관련 판례·자치법규(조례) 연계 ── */
@@ -764,7 +769,7 @@ body.dark .scenario-caution{background:#451a03;border-color:#b45309;color:#fde68
 .export-btn{padding:5px 11px;border:1px solid var(--bd);border-radius:var(--rs);font-size:12px;cursor:pointer;background:transparent;color:var(--mu);transition:.15s;white-space:nowrap;}
 .export-btn:hover{border-color:var(--g);color:var(--g);background:var(--gl);}
 /* ── 다크모드 ── */
-body.dark{--bg:#0f1117;--sf:#1c1f27;--bd:rgba(255,255,255,.06);--tx:#e2e4e9;--mu:#8b95a1;--ht:#5a636e;}
+body.dark{--bg:#0f1117;--sf:#1c1f27;--bd:rgba(255,255,255,.06);--tx:#e2e4e9;--mu:#8b95a1;--ht:#5a636e;--err-fg:#fca5a5;--err-bg:#3a1d1d;--mark-bg:#065f46;--mark-fg:#a7f3d0;}
 body.dark .topbar{background:rgba(28,31,39,.88);border-bottom-color:rgba(255,255,255,.06);}
 body.dark .spanel,body.dark .card,body.dark .mbox{background:#1c1f27;box-shadow:0 2px 12px rgba(0,0,0,.3);}
 body.dark .card-body{background:#161920;}
@@ -1062,11 +1067,11 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 <body>
 <!-- 자주 찾는 법령 편집 모달 -->
 <!-- 기관·법령 편집 모달 -->
-<div class="kw-modal-bg" id="kwModalBg" onclick="if(event.target===this)closeKwEditor()">
+<div class="kw-modal-bg" id="kwModalBg" role="dialog" aria-modal="true" aria-label="기관 및 법령 편집" onclick="if(event.target===this)closeKwEditor()">
   <div class="kw-modal" style="width:min(680px,97vw);">
     <div class="kw-hd">
       <span style="font-size:15px;font-weight:700;flex:1;">⚙ 기관 및 법령 편집</span>
-      <button class="fp-close" onclick="closeKwEditor()">✕</button>
+      <button class="fp-close" aria-label="닫기" onclick="closeKwEditor()">✕</button>
     </div>
     <div class="kw-body" style="display:grid;grid-template-columns:220px 1fr;gap:0;min-height:360px;padding:0;">
       <!-- 왼쪽: 기관 목록 -->
@@ -1108,7 +1113,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 <div class="term-tooltip" id="termTooltip"><div class="tt-word" id="ttWord"></div><div id="ttDesc"></div></div>
 
 <!-- ① diff 뷰 모달 -->
-<div class="diff-panel" id="diffPanel" onclick="if(event.target===this)closeDiff()">
+<div class="diff-panel" id="diffPanel" role="dialog" aria-modal="true" aria-label="조문 변경 비교" onclick="if(event.target===this)closeDiff()">
   <div class="diff-box">
     <div class="diff-hd">
       <span class="diff-title" id="diffTitle">조문 변경 비교</span>
@@ -1128,11 +1133,11 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 </div>
 
 <!-- ② 컬렉션 모달 -->
-<div class="coll-modal-bg" id="collModalBg" onclick="if(event.target===this)closeCollModal()">
+<div class="coll-modal-bg" id="collModalBg" role="dialog" aria-modal="true" aria-label="업무별 법령 컬렉션" onclick="if(event.target===this)closeCollModal()">
   <div class="coll-modal">
     <div class="coll-hd">
       <span style="font-size:15px;font-weight:600;flex:1;">📁 업무별 법령 컬렉션</span>
-      <button class="fp-close" onclick="closeCollModal()">✕</button>
+      <button class="fp-close" aria-label="닫기" onclick="closeCollModal()">✕</button>
     </div>
     <div class="coll-body" id="collBody"></div>
     <div style="padding:12px 18px;border-top:1px solid var(--bd);">
@@ -1146,7 +1151,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 </div>
 
 <!-- ③ 네트워크 그래프 패널 -->
-<div class="net-panel" id="netPanel">
+<div class="net-panel" id="netPanel" role="dialog" aria-modal="true" aria-label="법령 관계 네트워크">
   <div class="net-hd">
     <span style="font-size:15px;font-weight:600;">🕸 법령 관계 네트워크</span>
     <select id="netCenter" style="padding:6px 10px;border:1px solid var(--bd);border-radius:var(--rs);font-size:13px;background:var(--sf);color:var(--tx);" onchange="buildNetwork()"></select>
@@ -1199,7 +1204,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 <div class="net-tooltip" id="netTooltip"></div>
 
 <!-- 법령 비교 패널 -->
-<div class="cmp-panel" id="cmpPanel">
+<div class="cmp-panel" id="cmpPanel" role="dialog" aria-modal="true" aria-label="법령 비교">
   <div class="cmp-header">
     <span class="cmp-title">⚖ 법령 비교</span>
     <button class="fp-tbtn" onclick="closeCmp()">✕ 닫기</button>
@@ -1225,11 +1230,11 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 </div>
 
 <!-- AI 설정 모달 -->
-<div class="ai-modal-bg" id="aiModalBg" onclick="if(event.target===this)closeAiModal()">
+<div class="ai-modal-bg" id="aiModalBg" role="dialog" aria-modal="true" aria-label="AI 해석 모델 설정" onclick="if(event.target===this)closeAiModal()">
   <div class="ai-modal">
     <div class="ai-modal-hd">
       <span class="ai-modal-title">✦ AI 해석 모델 설정</span>
-      <button class="ai-modal-close" onclick="closeAiModal()">✕</button>
+      <button class="ai-modal-close" aria-label="닫기" onclick="closeAiModal()">✕</button>
     </div>
     <div class="ai-modal-body">
       <div class="ai-status-row">
@@ -1334,17 +1339,17 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     <span class="fp-title" id="origPdfTitle">원본</span>
     <a class="fp-tbtn" id="origPdfExt" href="#" target="_blank" rel="noopener">↗ 새 창</a>
     <a class="fp-tbtn" id="origPdfDl" href="#" download>⬇ 저장</a>
-    <button class="fp-close" onclick="closeOriginalPdf()">✕</button>
+    <button class="fp-close" aria-label="닫기" onclick="closeOriginalPdf()">✕</button>
   </div>
   <iframe id="origPdfFrame" title="원본 PDF" src="about:blank"></iframe>
 </div>
 
-<div class="fullpanel" id="fullpanel">
+<div class="fullpanel" id="fullpanel" role="dialog" aria-modal="true" aria-label="법령 전문">
   <!-- 좌측: 현재 법령 -->
   <div class="fp-left" id="fpLeft">
     <div class="fp-header">
       <span class="fp-title" id="fpTitle">법령 전문</span>
-      <button class="fav-btn law-only" id="fpFavBtn" onclick="toggleFavFromPanel()" title="즐겨찾기">☆</button>
+      <button class="fav-btn law-only" id="fpFavBtn" onclick="toggleFavFromPanel()" title="즐겨찾기" aria-label="즐겨찾기">☆</button>
       <a id="fpExtLink" href="#" target="_blank" class="fp-tbtn law-only">↗ 법제처</a>
       <button class="fp-tbtn law-only" onclick="openCmpFromPanel()">⚖ 비교</button>
       <button class="fp-tbtn law-only" id="fpAmendBtn" onclick="fpShowAmendments()">🔴 최근 개정</button>
@@ -1353,7 +1358,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <button class="fp-tbtn law-only" onclick="fpPrint()">🖨 인쇄</button>
       <button class="fp-tbtn int-orig" id="fpOrigBtn" onclick="openOriginalPdf()" style="display:none;" title="원본 서식 그대로 보기(PDF)">📄 원본 보기</button>
       <a class="fp-tbtn int-orig" id="fpOrigDl" href="#" target="_blank" rel="noopener" style="display:none;" title="원본 PDF 다운로드">⬇ PDF</a>
-      <button class="fp-close" onclick="closePanel()">✕</button>
+      <button class="fp-close" aria-label="닫기" onclick="closePanel()">✕</button>
     </div>
     <div class="fp-toolbar">
       <input class="fp-finput" id="fpFilter" placeholder="조문번호(예: 2) 또는 키워드 검색" oninput="fpFilterArts()">
@@ -1367,7 +1372,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <div class="reflist-hd">
         <span class="reflist-title">🔗 준용·참조 법령 목록</span>
         <span id="refListCount" style="font-size:11px;color:var(--ht);"></span>
-        <button class="fp-close" style="width:22px;height:22px;font-size:12px;" onclick="toggleRefList()">✕</button>
+        <button class="fp-close" aria-label="닫기" style="width:22px;height:22px;font-size:12px;" onclick="toggleRefList()">✕</button>
       </div>
       <div class="reflist-body" id="refListBody">
         <div style="font-size:12px;color:var(--ht);padding:10px;">조문을 불러온 후 표시됩니다.</div>
@@ -1389,7 +1394,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <button class="fp-tbtn" onclick="toggleCompareMode()" id="compareModeBtn" title="비교 모드 (좌우 나란히)">⚖ 비교</button>
       <a id="fpRightExtLink" href="#" target="_blank" class="fp-tbtn" style="flex-shrink:0;">↗</a>
       <input class="fp-finput" id="fpRightFilter" placeholder="조문 검색" oninput="fpRightFilterFn()" style="width:110px;flex-shrink:0;">
-      <button class="fp-close" onclick="closeRefPanel()" title="닫기">✕</button>
+      <button class="fp-close" aria-label="닫기" onclick="closeRefPanel()" title="닫기">✕</button>
     </div>
     <div class="fp-right-body" id="fpRightBody">
       <div class="fp-loading">준용 법령을 불러오는 중...</div>
@@ -1402,7 +1407,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 <aside class="internal-tree" id="internalTree">
   <div class="it-head">
     <span class="it-title">📚 내규 목록</span>
-    <button class="fp-close" onclick="closeInternalTree()" title="닫기">✕</button>
+    <button class="fp-close" aria-label="닫기" onclick="closeInternalTree()" title="닫기">✕</button>
   </div>
   <div class="it-search">
     <input id="itFilter" placeholder="규정명 필터…" oninput="filterInternalTree()">
@@ -1416,7 +1421,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 
 <!-- 상단바 -->
 <div class="topbar">
-  <button class="tree-toggle" onclick="openInternalTree()" title="내규 전체 목록">📚</button>
+  <button class="tree-toggle" onclick="openInternalTree()" title="내규 전체 목록" aria-label="내규 전체 목록 열기">📚</button>
   <div class="logo" style="font-size:11px;font-weight:900;letter-spacing:-.5px;">KOAT</div>
   <div>
     <span class="brand"><span class="brand-full">KOAT 내규&국가법령 종합 검색</span><span class="brand-short">KOAT 종합검색</span></span>
@@ -1424,7 +1429,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     <span class="brand-sub">국가법령정보 + 사규(내규) MCP 연동</span>
   </div>
   <span class="apibadge" id="badge">● 확인 중</span>
-  <button class="dark-btn hide-mobile" id="darkBtn" onclick="toggleDark()" title="다크모드">🌙</button>
+  <button class="dark-btn hide-mobile" id="darkBtn" onclick="toggleDark()" title="다크모드" aria-label="다크 모드 전환">🌙</button>
   <button class="settings-btn hide-mobile" onclick="openStatPanel()"><span class="sb-icon">📊</span><span class="sb-label"> 통계</span></button>
   <button class="settings-btn hide-mobile" onclick="openCollModal()"><span class="sb-icon">📁</span><span class="sb-label"> 컬렉션</span></button>
   <button class="settings-btn" onclick="openNetPanel()"><span class="sb-icon">🕸</span><span class="sb-label"> 관계도</span></button>
@@ -1436,7 +1441,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 <div class="stat-panel" id="statPanel">
   <div class="stat-hd">
     <span class="stat-title">📊 검색 통계</span>
-    <button class="fp-close" onclick="closeStatPanel()">✕</button>
+    <button class="fp-close" aria-label="닫기" onclick="closeStatPanel()">✕</button>
   </div>
   <div class="stat-body" id="statBody">
     <div class="stat-empty">검색 기록이 없습니다.<br>법령을 검색하면 통계가 쌓입니다.</div>
@@ -1457,7 +1462,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
     <!-- 검색창 -->
     <div class="srow">
-      <input id="q" class="sinput" style="padding-left:40px;" placeholder="🔍  내규 검색 (예: 직무발명, 여비)" onkeydown="if(event.key==='Enter')doSearch()">
+      <input id="q" class="sinput" style="padding-left:40px;" aria-label="검색어 입력" placeholder="🔍  내규 검색 (예: 직무발명, 여비)" onkeydown="if(event.key==='Enter')doSearch()">
       <button id="sbtn" class="sbtn" onclick="doSearch()">검색</button>
     </div>
     <!-- 내규 카테고리 바로가기 (내규·통합 모드일 때 표시) -->
@@ -1505,13 +1510,13 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </select>
     <select id="typeSel" onchange="applyFilter()"><option value="">유형 전체</option></select>
     <span class="rcount" id="rcount"></span>
-    <button class="export-btn" onclick="exportCSV()" title="검색 결과를 CSV로 저장">⬇ CSV 저장</button>
+    <button class="export-btn" onclick="exportCSV()" title="검색 결과를 CSV로 저장" aria-label="CSV 내려받기">⬇ CSV 저장</button>
     <button class="export-btn" onclick="openCmpPanel()" title="두 법령 나란히 비교">⚖ 법령 비교</button>
   </div>
 
 
   <!-- 검색 상태 메시지 -->
-  <div id="status" style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mu);margin-bottom:8px;min-height:20px;"></div>
+  <div id="status" role="status" aria-live="polite" style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mu);margin-bottom:8px;min-height:20px;"></div>
 
   <!-- 결과 필터(카드 뷰) -->
   <div id="resFilter" class="res-filter" style="display:none;"></div>
@@ -1638,6 +1643,10 @@ function _cacheSet(key, data) {
   if (_searchCache.size > 50) _searchCache.clear(); // 메모리 누수 방지
   _searchCache.set(key, { data, ts: Date.now() });
 }
+
+// ── 검색 경쟁 상태 방지: 사용자 검색마다 시퀀스를 증가시키고,
+//    DOM에 결과를 쓰기 전에 최신 시퀀스인지 확인한다(오래된 응답이 최신 결과를 덮어쓰지 못하게) ──
+let _searchSeq = 0;
 
 
 let agency='all', mode='internal', allLaws=[], filtered=[], page=1, fpArts=[];
@@ -1808,6 +1817,7 @@ async function doSearch(){
   const q = document.getElementById('q').value.trim();
   if(!q) return;
 
+  const _mySeq = ++_searchSeq;   // 이 검색의 고유 시퀀스(경쟁 상태 방지)
   const sbtn = document.getElementById('sbtn');
   sbtn.disabled = true;
   clearResults();
@@ -1816,18 +1826,19 @@ async function doSearch(){
   try{
     // 시나리오 모드
     if(mode === 'scenario'){
-      await doSearchScenario(q);
+      await doSearchScenario(q, _mySeq);
       return;
     }
     // 내규(사규) 모드 — 규정 단위 카드 + 매칭 조문 + 관련 법령 교차
     if(mode === 'internal'){
-      await doSearchInternal(q);
+      await doSearchInternal(q, _mySeq);
       return;
     }
     // 법령 모드 — 규정(법령) 단위 카드 + 매칭 조문 + 관련 내규 교차
-    await doSearchLaw(q);
+    await doSearchLaw(q, _mySeq);
 
   }catch(e){
+    if(_mySeq !== _searchSeq) return;   // 더 새로운 검색이 시작됐으면 무시
     setStatus('서버 연결 실패');
     renderEmpty(`서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small><br>
       <button class="abtn" style="margin-top:8px" onclick="doSearch()">🔄 다시 시도</button>`);
@@ -1839,7 +1850,8 @@ async function doSearch(){
 
 // ── 법령명 검색 (단독·통합 모드 공용) ──
 // ── 법령 모드: 키워드 → 규정(법령) 단위 카드 + 매칭 조문 + 관련 내규 교차 ──
-async function doSearchLaw(q){
+async function doSearchLaw(q, _mySeq){
+  if(_mySeq==null) _mySeq = _searchSeq;   // 직접 호출 대비
   setStatus(`"${q}" 법령 검색 중...`, true);
   addRecent(q);
   // 교차: 관련 내규 병렬 조회
@@ -1850,9 +1862,12 @@ async function doSearchLaw(q){
   // 클라이언트 캐시(5분) — 동일 검색 즉시 응답
   const cached = _cacheGet(`article:${q}`);
   if(cached){
+    if(_mySeq !== _searchSeq) return;
     setStatus(`법령 ${cached.length}건(캐시) · "${escHtml(q)}" 매칭 조문`);
     renderRegCards(cached, q, 'law');
-    renderCrossPanel(await crossPromise, q, 'law');
+    const cx = await crossPromise;
+    if(_mySeq !== _searchSeq) return;
+    renderCrossPanel(cx, q, 'law');
     return;
   }
   document.getElementById('results').innerHTML = [1,2,3].map(()=>'<div class="skeleton"></div>').join('');
@@ -1863,6 +1878,7 @@ async function doSearchLaw(q){
     .then(r=>r.json()).catch(()=>null);
   fetch(`/api/search/article?query=${encodeURIComponent(q)}&display=20&scope=priority`)
     .then(r=>r.json()).then(p=>{
+      if(_mySeq !== _searchSeq) return;
       if(_shown || !p || !p.success || !p.laws?.length) return;
       _shown=true;
       setStatus(`법령 ${p.laws.length}건 우선 표시 · 나머지 조회 중...`, true);
@@ -1870,6 +1886,7 @@ async function doSearchLaw(q){
     }).catch(()=>{});
   try{
     const d = await fullPromise;
+    if(_mySeq !== _searchSeq) return;
     if(!d){ throw new Error('network'); }
     if(d.error){ setStatus(`오류: ${escHtml(d.error)}`); renderEmpty(d.error); }
     else if(!d.success || !d.laws?.length){
@@ -1885,9 +1902,11 @@ async function doSearchLaw(q){
       setStatus(`법령 ${d.laws.length}건 · "${escHtml(q)}" 매칭 조문 표시${tnote}`);
       renderRegCards(d.laws, q, 'law');
     }
-  }catch(e){ setStatus('서버 연결 실패'); renderEmpty('서버에 연결할 수 없습니다'); }
+  }catch(e){ if(_mySeq!==_searchSeq) return; setStatus('서버 연결 실패'); renderEmpty('서버에 연결할 수 없습니다'); }
   // 관련 내규 교차 렌더
-  renderCrossPanel(await crossPromise, q, 'law');
+  const _cx = await crossPromise;
+  if(_mySeq !== _searchSeq) return;
+  renderCrossPanel(_cx, q, 'law');
 }
 
 // ── 규정(법령/내규) 단위 카드 렌더 (공용) ──
@@ -2721,7 +2740,8 @@ const SCENARIO_BASIS_COLOR = {
   '일반':           '#374151',
 };
 
-async function doSearchScenario(q){
+async function doSearchScenario(q, _mySeq){
+  if(_mySeq==null) _mySeq = _searchSeq;   // 직접 호출 대비
   setStatus('✦ AI가 시나리오를 분석하고 있습니다...', true);
   document.getElementById('results').innerHTML =
     `<div style="padding:28px;text-align:center;">
@@ -2743,10 +2763,11 @@ async function doSearchScenario(q){
       body: JSON.stringify({query: q, ...aiPayload})
     });
     const d = await r.json();
+    if(_mySeq !== _searchSeq) return;   // 더 새로운 검색이 시작됐으면 무시
     if(d.error){
       setStatus(`오류: ${d.error}`);
       const needKey = /활성화되지 않았|API ?키|api_key|키가 (없|필요)|키를 입력|AI ?키/i.test(d.error||'');
-      renderEmpty(`<span style="color:#991b1b;">⚠ ${escHtml(d.error)}</span>`+
+      renderEmpty(`<span style="color:var(--err-fg);">⚠ ${escHtml(d.error)}</span>`+
         (needKey?`<br><button class="abtn primary" style="margin-top:10px;" onclick="openAiModal()">✦ AI 설정에서 키 입력</button>`:''));
       return;
     }
@@ -2759,6 +2780,7 @@ async function doSearchScenario(q){
     setStatus(`✦ AI 시나리오 분석 완료 · ${lawCnt}개 관련 법령`);
     renderScenarioResults(d);
   }catch(e){
+    if(_mySeq !== _searchSeq) return;
     setStatus('서버 연결 실패');
     renderEmpty('서버에 연결할 수 없습니다.');
   }
@@ -2801,7 +2823,7 @@ function renderScenarioResults(d){
     let h = escHtml(txt);
     kwL.forEach(k => {
       h = h.replace(new RegExp(escRegex(escHtml(k)),'gi'),
-        m => `<mark style="background:#bbf7d0;border-radius:2px;padding:0 1px;">${m}</mark>`);
+        m => `<mark style="background:var(--mark-bg);color:var(--mark-fg);border-radius:2px;padding:0 1px;">${m}</mark>`);
     });
     return h;
   }
@@ -3069,12 +3091,13 @@ function parseInternalGrouped(text, kw){
   }));
 }
 
-async function doSearchInternal(q){
+async function doSearchInternal(q, _mySeq){
+  if(_mySeq==null) _mySeq = _searchSeq;   // 직접 호출 대비
   setStatus(`"${q}" 내규 검색 중...`,true);
   addRecent(q);
   // 클라이언트 캐시(5분) — 동일 검색 즉시 응답
   const cached=_cacheGet(`internal:${q}`);
-  if(cached){ renderInternalResults(cached, q); setStatus(`내규 검색(캐시) · "${escHtml(q)}"`); return; }
+  if(cached){ if(_mySeq!==_searchSeq) return; renderInternalResults(cached, q); setStatus(`내규 검색(캐시) · "${escHtml(q)}"`); return; }
   document.getElementById('results').innerHTML=[1,2].map(()=>'<div class="skeleton"></div>').join('');
   // 교차: 관련 법령 (내규 검색과 동시)
   document.getElementById('internalResults').innerHTML =
@@ -3082,6 +3105,7 @@ async function doSearchInternal(q){
   try{
     const r=await fetch(`/api/internal/search?query=${encodeURIComponent(q)}`);
     const d=await r.json();
+    if(_mySeq !== _searchSeq) return;   // 더 새로운 검색이 시작됐으면 무시
     if(d.error){ setStatus(`오류: ${escHtml(d.error)}`); renderInternalError(d.error);
       document.getElementById('internalResults').innerHTML='';updateSplitLayout(); return; }
     if(d.success) _cacheSet(`internal:${q}`, d);
@@ -3096,7 +3120,7 @@ async function doSearchInternal(q){
     }
     if(!hasText && !hasStruct){ document.getElementById('results').innerHTML=''; }
     renderInternalResults(d, q);
-  }catch(e){ setStatus('서버 연결 실패'); renderInternalError('서버에 연결할 수 없습니다.');
+  }catch(e){ if(_mySeq!==_searchSeq) return; setStatus('서버 연결 실패'); renderInternalError('서버에 연결할 수 없습니다.');
     document.getElementById('internalResults').innerHTML='';updateSplitLayout(); }
 }
 
@@ -3292,18 +3316,29 @@ function renderBasisResults(laws, basisType, keywords){
 }
 
 // ── 최근 검색어 ──
+// ── 최근 검색: 클라이언트 localStorage 저장(서버 메모리 대신) ──
+const _RECENT_KEY = 'koat_recent';
+function getRecent(){
+  try{ const a = JSON.parse(localStorage.getItem(_RECENT_KEY)||'[]'); return Array.isArray(a)?a:[]; }
+  catch{ return []; }
+}
 function addRecent(q){
-  fetch(`/api/recent/add?q=${encodeURIComponent(q)}`).then(()=>loadRecent());
+  q = String(q||'').trim();
+  if(!q) return;
+  let a = getRecent().filter(x => x !== q);   // 중복 제거
+  a.unshift(q);                                // 최신을 앞으로
+  if(a.length > 10) a.length = 10;             // 최대 10개
+  try{ localStorage.setItem(_RECENT_KEY, JSON.stringify(a)); }catch{}
+  loadRecent();
 }
 async function loadRecent(){
-  try{
-    const d=await (await fetch('/api/recent')).json();
-    const row=document.getElementById('recentRow');
-    if(!d.recent||!d.recent.length){row.style.display='none';return;}
-    row.style.display='flex';
-    document.getElementById('recentChips').innerHTML=
-      d.recent.map(r=>`<button class="rec-chip" onclick="quick('${argAttr(r)}')"> ${escHtml(r)}</button>`).join('');
-  }catch{}
+  const rec = getRecent();
+  const row = document.getElementById('recentRow');
+  if(!row) return;
+  if(!rec.length){ row.style.display='none'; return; }
+  row.style.display='flex';
+  document.getElementById('recentChips').innerHTML=
+    rec.map(r=>`<button class="rec-chip" onclick="quick('${argAttr(r)}')"> ${escHtml(r)}</button>`).join('');
 }
 
 // ── 필터 ──
@@ -3449,11 +3484,11 @@ async function toggleArtCard(i, lawName, lawUrl){
   try{
     const r=await fetch(`/api/law/articles?name=${encodeURIComponent(lawName)}`);
     const d=await r.json();
-    if(d.error){body.innerHTML=`<div style="padding:14px;color:#991b1b;font-size:13px;">${d.error}</div>`;body.dataset.loaded='1';return;}
+    if(d.error){body.innerHTML=`<div style="padding:14px;color:var(--err-fg);font-size:13px;">${d.error}</div>`;body.dataset.loaded='1';return;}
     body.innerHTML=renderInlineArticles(d.articles||[], lawName, lawUrl, kw);
     body.dataset.loaded='1';
   }catch{
-    body.innerHTML=`<div style="padding:14px;color:#991b1b;font-size:13px;">조문 조회 중 오류가 발생했습니다.</div>`;
+    body.innerHTML=`<div style="padding:14px;color:var(--err-fg);font-size:13px;">조문 조회 중 오류가 발생했습니다.</div>`;
     body.dataset.loaded='1';
   }
 }
@@ -3836,48 +3871,50 @@ async function checkStatus(){
 let favMode = false;
 let currentPanelLaw = {name:'', url:''};
 
-async function loadFavs(){
+// ── 즐겨찾기: 클라이언트 localStorage 저장(서버 메모리 대신) ──
+const _FAV_KEY = 'koat_favorites';
+function getFavs(){
   try{
-    const d=await (await fetch('/api/favorites')).json();
-    const cnt=d.favorites?.length||0;
-    document.getElementById('favCount').textContent=cnt?`(${cnt})`:'';
-    return d.favorites||[];
-  }catch{return [];}
-}
-
-async function toggleFav(name, org, type, url){
-  const r=await fetch(`/api/favorites/toggle?name=${encodeURIComponent(name)}&org=${encodeURIComponent(org)}&type=${encodeURIComponent(type)}&url=${encodeURIComponent(url)}`);
-  const d=await r.json();
-  // localStorage에도 이중 저장 (서버 재시작 후에도 유지)
-  const localFavs = getLocalFavs();
-  if(d.added){
-    if(!localFavs.find(f=>f.name===name)) localFavs.push({name,org,type,url});
-  } else {
-    const idx=localFavs.findIndex(f=>f.name===name);
-    if(idx>=0) localFavs.splice(idx,1);
-  }
-  localStorage.setItem('localFavorites', JSON.stringify(localFavs));
-  await loadFavs();
-  return d.added;
-}
-
-function getLocalFavs(){
-  try{ return JSON.parse(localStorage.getItem('localFavorites')||'[]'); }catch{ return []; }
-}
-
-// 서버 재시작 후 localStorage 즐겨찾기를 서버에 복원
-async function syncLocalFavsToServer(){
-  try{
-    const d = await (await fetch('/api/favorites')).json();
-    const serverNames = new Set((d.favorites||[]).map(f=>f.name));
-    const localFavs = getLocalFavs();
-    for(const f of localFavs){
-      if(!serverNames.has(f.name)){
-        await fetch(`/api/favorites/toggle?name=${encodeURIComponent(f.name)}&org=${encodeURIComponent(f.org||'')}&type=${encodeURIComponent(f.type||'법률')}&url=${encodeURIComponent(f.url||'')}`);
-      }
+    let arr = JSON.parse(localStorage.getItem(_FAV_KEY)||'null');
+    if(!Array.isArray(arr)){
+      // 구버전(localFavorites) 데이터 마이그레이션
+      let old = [];
+      try{ old = JSON.parse(localStorage.getItem('localFavorites')||'[]'); }catch{}
+      arr = Array.isArray(old) ? old : [];
+      try{ localStorage.setItem(_FAV_KEY, JSON.stringify(arr)); }catch{}
     }
-  }catch{}
+    return arr;
+  }catch{ return []; }
 }
+function _saveFavs(arr){ try{ localStorage.setItem(_FAV_KEY, JSON.stringify(arr)); }catch{} }
+// 기존 호출부 호환용 별칭
+function getLocalFavs(){ return getFavs(); }
+
+async function loadFavs(){
+  const favs = getFavs();
+  const el = document.getElementById('favCount');
+  if(el) el.textContent = favs.length ? `(${favs.length})` : '';
+  return favs;
+}
+
+// 이름 기준: 있으면 제거, 없으면 추가(최신 앞, 최대 30개)
+async function toggleFav(name, org, type, url){
+  const arr = getFavs();
+  const idx = arr.findIndex(f => f.name === name);
+  let added;
+  if(idx >= 0){ arr.splice(idx, 1); added = false; }
+  else {
+    arr.unshift({name, org: org||'', type: type||'법률', url: url||''});
+    if(arr.length > 30) arr.length = 30;
+    added = true;
+  }
+  _saveFavs(arr);
+  await loadFavs();
+  return added;
+}
+
+// 서버 의존 제거 — localStorage 마이그레이션만 보장(하위 호환용 no-op)
+async function syncLocalFavsToServer(){ getFavs(); }
 
 async function toggleFavFromPanel(){
   const {name, url, org, type} = currentPanelLaw;
@@ -3933,7 +3970,8 @@ async function renderFavList(){
 function toggleCard2(id){document.getElementById(id).classList.toggle('open');}
 
 async function removeFav(name){
-  await fetch(`/api/favorites/remove?name=${encodeURIComponent(name)}`);
+  const arr = getFavs().filter(f => f.name !== name);
+  _saveFavs(arr);
   await loadFavs();
   await renderFavList();
 }
@@ -4328,7 +4366,7 @@ async function aiInterpretByIdx(btnEl, isRetry=false){
     const d=await r.json();
     box.className='ai-box';
     if(d.error){
-      box.innerHTML=`<p style="color:#991b1b;">⚠ ${escHtml(d.error)}</p>`;
+      box.innerHTML=`<p style="color:var(--err-fg);">⚠ ${escHtml(d.error)}</p>`;
     } else {
       const mdHtml = renderAiMarkdown(d.result||'해석을 가져오지 못했습니다.');
       const rawText = d.result||'';
@@ -4342,7 +4380,7 @@ async function aiInterpretByIdx(btnEl, isRetry=false){
     }
   }catch(e){
     box.className='ai-box';
-    box.innerHTML=`<p style="color:#991b1b;">⚠ AI 연결 오류가 발생했습니다.</p>`;
+    box.innerHTML=`<p style="color:var(--err-fg);">⚠ AI 연결 오류가 발생했습니다.</p>`;
   }
   if(origBtn){ origBtn.disabled=false; origBtn.textContent='✦ AI 해석'; }
 }
@@ -4574,7 +4612,7 @@ async function loadCmpLaw(col){
     }).join('');
   }catch{
     titleEl.textContent=q;
-    bodyEl.innerHTML='<div style="padding:20px;text-align:center;color:#991b1b;font-size:13px;">조회 중 오류가 발생했습니다.</div>';
+    bodyEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--err-fg);font-size:13px;">조회 중 오류가 발생했습니다.</div>';
   }
 }
 
@@ -4669,6 +4707,8 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(document.getElementById('origPdfPanel')?.classList.contains('open')){ closeOriginalPdf(); return; }
       if(document.getElementById('aiModalBg')?.classList.contains('show')){ closeAiModal(); return; }
       if(document.getElementById('diffPanel')?.classList.contains('show')){ closeDiff(); return; }
+      if(document.getElementById('netPanel')?.classList.contains('show')){ closeNetPanel(); return; }
+      if(document.getElementById('cmpPanel')?.classList.contains('show')){ closeCmp(); return; }
       if(document.getElementById('collModalBg')?.classList.contains('show')){ closeCollModal(); return; }
       if(document.getElementById('kwModalBg')?.classList.contains('show')){ closeKwEditor(); return; }
       if(document.getElementById('internalTree')?.classList.contains('open')){ closeInternalTree(); return; }
