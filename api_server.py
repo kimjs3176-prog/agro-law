@@ -1241,12 +1241,14 @@ def scenario_search():
     mdl = model or _default_model_for(provider, api_key)
 
     # ── AI Step-1: 의도 분석 → JSON ──────────────────────────────────────────
+    # 정식 법령명으로 표기해야 AI가 그대로 echo → MST 조회가 정확히 매칭된다.
+    # (CANDIDATE_LAWS·DOMAIN_LAW_MAP 의 표기와 일치시킬 것)
     AVAILABLE_LAWS = (
         "농지법, 종자산업법, 농약관리법, 비료관리법, 가축전염병예방법, "
-        "식물방역법, 농업재해보험법, 농촌진흥법, 농어업재해대책법, "
-        "특허법, 실용신안법, 디자인보호법, 상표법, 식물신품종보호법, "
+        "식물방역법, 농어업재해보험법, 농촌진흥법, 농어업재해대책법, "
+        "특허법, 실용신안법, 디자인보호법, 상표법, 식물신품종 보호법, "
         "부정경쟁방지 및 영업비밀보호에 관한 법률, "
-        "기술이전 및 사업화 촉진에 관한 법률"
+        "기술의 이전 및 사업화 촉진에 관한 법률"
     )
     system_prompt = f"""당신은 대한민국 농업·지식재산 법령 전문가 AI입니다.
 사용자의 실무 질문을 분석하여 JSON만 반환하세요 (코드블록·설명 없이 JSON 텍스트만).
@@ -1967,19 +1969,13 @@ def ai_interpret():
 
         # ── Google Gemini ──────────────────────────────────────────────────────
         elif provider == "gemini":
+            # 2.5/3.x 사고(thinking) 모델은 사고 토큰이 출력 예산을 잠식해
+            # parts 가 비어 오는 경우가 있다. 이를 처리하는 공통 헬퍼로 통일한다.
             mdl = model or _default_model_for("gemini", api_key)
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{mdl}:generateContent?key={api_key}"
-            resp = _ai_post_retry(lambda: req_lib.post(
-                url,
-                json={"contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_msg}"}]}],
-                      "generationConfig": {"maxOutputTokens": 1500}},
-                headers={"Content-Type": "application/json"},
-                timeout=30,
-            ))
-            if resp.status_code != 200:
-                user, kind = _ai_error(resp)
-                return jsonify({"error": user, "kind": kind}), resp.status_code
-            text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+            text, err = _ai_generate("gemini", api_key, mdl,
+                                     system_prompt, user_msg, max_tokens=1500)
+            if err or not text:
+                return jsonify({"error": err or "AI 응답이 비어 있습니다."}), 502
             return jsonify({"result": text})
 
         # ── Ollama (로컬) ──────────────────────────────────────────────────────
