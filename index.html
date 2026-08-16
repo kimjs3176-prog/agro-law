@@ -2819,10 +2819,11 @@ function renderScenarioResults(d){
   const bColor    = SCENARIO_BASIS_COLOR[d.basis_type] || '#374151';
   const kwL       = keywords.map(k => k.toLowerCase());
 
+  const _kwRe = kwL.map(k => new RegExp(escRegex(escHtml(k)),'gi'));  // 렌더당 1회 컴파일
   function highlightKws(txt){
     let h = escHtml(txt);
-    kwL.forEach(k => {
-      h = h.replace(new RegExp(escRegex(escHtml(k)),'gi'),
+    _kwRe.forEach(re => {
+      h = h.replace(re,
         m => `<mark style="background:var(--mark-bg);color:var(--mark-fg);border-radius:2px;padding:0 1px;">${m}</mark>`);
     });
     return h;
@@ -3257,10 +3258,11 @@ function renderBasisResults(laws, basisType, keywords){
   const color = BASIS_TYPE_COLOR[basisType] || '#374151';
   const kwL = keywords.map(k=>k.toLowerCase());
 
+  const _kwRe = kwL.map(k => new RegExp(escRegex(escHtml(k)),'gi'));  // 렌더당 1회 컴파일
   function highlightKws(txt){
     let h = escHtml(txt);
-    kwL.forEach(k=>{
-      h = h.replace(new RegExp(escRegex(escHtml(k)),'gi'),
+    _kwRe.forEach(re=>{
+      h = h.replace(re,
         m=>`<mark style="background:#fef08a;border-radius:2px;padding:0 1px;">${m}</mark>`);
     });
     return h;
@@ -3772,19 +3774,19 @@ function escRegex(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
 // 텍스트 노드에만 키워드 하이라이트 적용 (span/mark 태그 속성 보호)
 function highlightTextOnly(html, kw){
   if(!kw) return html;
-  const esc = escRegex(escHtml(kw));
+  const re = new RegExp(escRegex(escHtml(kw)),'gi');   // 정규식 1회만 컴파일
   return html.split(/(<[^>]*>)/g).map((p,i)=>
-    i%2===1 ? p : p.replace(new RegExp(esc,'gi'), m=>`<mark>${m}</mark>`)
+    i%2===1 ? p : p.replace(re, m=>`<mark>${m}</mark>`)
   ).join('');
 }
 // 복수 키워드 태그 안전 하이라이트 (태그 내부 attribute를 건드리지 않음)
 function highlightKwsSafe(html, kws){
   if(!kws || !kws.length) return html;
+  const res = kws.map(k => new RegExp(escRegex(escHtml(k)), 'gi')); // 부분마다 재컴파일하지 않음
   return html.split(/(<[^>]*>)/g).map((p, i) => {
     if(i % 2 === 1) return p; // 태그 파트는 건드리지 않음
-    kws.forEach(k => {
-      const esc = escRegex(escHtml(k));
-      p = p.replace(new RegExp(esc, 'gi'),
+    res.forEach(re => {
+      p = p.replace(re,
         m => `<mark style="background:#fef08a;border-radius:2px;padding:0 1px;">${m}</mark>`);
     });
     return p;
