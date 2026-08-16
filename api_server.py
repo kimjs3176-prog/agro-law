@@ -18,7 +18,21 @@ from urllib3.util.retry import Retry
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
-CORS(app)
+# CORS는 교차 출처(다른 웹사이트) 호출에만 적용된다. 이 앱의 프론트엔드는
+# 동일 출처(/api/... 상대경로)라 아래 제한과 무관하게 항상 동작한다.
+# 열린 CORS를 두면 임의의 외부 사이트가 브라우저에서 서버의 AI 키를 대신
+# 소모할 수 있으므로, 허용 출처를 이 서비스 도메인·로컬 개발로 제한한다.
+# 커스텀 도메인 등은 ALLOWED_ORIGINS(쉼표 구분)로 추가할 수 있다.
+_origins_env = os.environ.get("ALLOWED_ORIGINS", "").strip()
+if _origins_env:
+    _cors_origins = [o.strip() for o in _origins_env.split(",") if o.strip()]
+else:
+    _cors_origins = [
+        re.compile(r"^https://agro-law[\w.-]*\.vercel\.app$"),
+        re.compile(r"^http://localhost(:\d+)?$"),
+        re.compile(r"^http://127\.0\.0\.1(:\d+)?$"),
+    ]
+CORS(app, origins=_cors_origins)
 
 OC   = os.environ.get("LAW_OC", "tjsl0919")
 BASE = "https://www.law.go.kr/DRF"
@@ -36,7 +50,7 @@ HEADERS = {
 }
 
 # ── 재시도 정책이 적용된 requests 세션 ────────────────────────────────────────
-def _make_session() -> req_lib.Session:
+def _make_session(verify: bool = True) -> req_lib.Session:
     retry = Retry(
         total=4,                              # 최대 4회 재시도
         backoff_factor=0.8,                   # 0.8→1.6→3.2→6.4s
@@ -55,10 +69,14 @@ def _make_session() -> req_lib.Session:
     s.mount("https://", adapter)
     s.mount("http://",  adapter)
     s.headers.update(HEADERS)
-    s.verify = False
+    s.verify = verify
     return s
 
-_SESSION = _make_session()   # 프로세스 내 전역 재사용
+# 기본 세션은 TLS 인증서를 검증한다(GitHub 토큰·Google API 키 전송에 사용).
+_SESSION = _make_session()
+# 법제처(law.go.kr)는 인증서 체인 문제가 있어 이 호출에만 검증을 끈다.
+# 민감한 토큰을 보내는 GitHub/Google 세션과 분리해 노출을 막는다.
+_LAW_SESSION = _make_session(verify=False)
 
 # ── 최근 검색어 (서버 메모리) ─────────────────────────────────────────────────
 recent_searches = []
@@ -90,7 +108,7 @@ def _law_get_json(params: dict, timeout=None) -> dict:
     last_err = None
     for attempt in range(3):
         try:
-            r = _SESSION.get(
+            r = _LAW_SESSION.get(
                 f"{BASE}/lawSearch.do",
                 params={**params, "OC": OC, "type": "JSON"},
                 timeout=timeout,
@@ -100,8 +118,9 @@ def _law_get_json(params: dict, timeout=None) -> dict:
         except (req_lib.exceptions.ConnectionError,
                 req_lib.exceptions.ChunkedEncodingError) as e:
             last_err = e
-            import time; time.sleep(1.5 * (attempt + 1))
-            _SESSION.close()   # 세션 재연결 유도
+            # 공유 세션을 close() 하면 동시 실행 중인 다른 워커 스레드의 연결이
+            # 끊긴다. 재시도는 풀에서 새 연결을 자동으로 받으므로 sleep만 한다.
+            time.sleep(1.5 * (attempt + 1))
             continue
     raise last_err
 
@@ -110,7 +129,7 @@ def _law_get_xml(endpoint: str, params: dict, timeout=None) -> ET.Element:
     last_err = None
     for attempt in range(3):
         try:
-            r = _SESSION.get(
+            r = _LAW_SESSION.get(
                 f"{BASE}/{endpoint}",
                 params={**params, "OC": OC, "type": "XML"},
                 timeout=timeout,
@@ -124,7 +143,7 @@ def _law_get_xml(endpoint: str, params: dict, timeout=None) -> ET.Element:
         except (req_lib.exceptions.ConnectionError,
                 req_lib.exceptions.ChunkedEncodingError) as e:
             last_err = e
-            import time; time.sleep(1.5 * (attempt + 1))
+            time.sleep(1.5 * (attempt + 1))
             continue
     raise last_err
 
@@ -2967,11 +2986,23 @@ def _upsert_manifest(entry: dict, backup_name: str = "") -> dict:
     return entry
 
 
-def _upload_authorized() -> bool:
+def _upload_authorized() -> tuple[bool, str]:
+    """업로드 허용 여부와 거부 사유를 반환한다.
+
+    fail-closed 원칙: 업로드가 리포지토리에 그대로 커밋·배포되는 환경
+    (_gh_enabled)에서 REG_UPLOAD_TOKEN 이 설정돼 있지 않으면 익명 업로드가
+    저장소를 오염시킬 수 있으므로 거부한다. 토큰이 설정된 경우에는 일치해야
+    한다. 로컬 쓰기 전용(비-GitHub) 개발 환경에서는 토큰 없이도 허용한다.
+    """
     if not REG_UPLOAD_TOKEN:
-        return True
+        if _gh_enabled():
+            return (False, "이 서버는 업로드가 리포지토리에 자동 커밋되므로 "
+                           "REG_UPLOAD_TOKEN 설정이 필요합니다. 관리자에게 문의하세요.")
+        return (True, "")
     tok = (request.form.get("token") or request.headers.get("X-Upload-Token") or "").strip()
-    return tok == REG_UPLOAD_TOKEN
+    if tok == REG_UPLOAD_TOKEN:
+        return (True, "")
+    return (False, "업로드 토큰이 올바르지 않습니다.")
 
 
 # ── GitHub 직접 커밋 (읽기전용 배포에서 업로드를 반영하는 경로) ────────────────
@@ -3245,8 +3276,9 @@ def reg_names_for_upload():
 @app.route("/api/regs/upload", methods=["POST"])
 def reg_upload():
     """개정 내규 업로드 — 변환·저장·manifest 등록."""
-    if not _upload_authorized():
-        return jsonify({"error": "업로드 토큰이 올바르지 않습니다."}), 401
+    _ok, _why = _upload_authorized()
+    if not _ok:
+        return jsonify({"error": _why}), 401
 
     f = request.files.get("file")
     if not f or not f.filename:
@@ -3480,8 +3512,9 @@ def reg_upload_delete():
       · 이전 개정이 있으면 그 개정본(파일·manifest 항목)으로 복원한다
       · 이전 개정이 없으면(신규 등록) 등록을 해제하고 파일을 삭제한다
     """
-    if not _upload_authorized():
-        return jsonify({"error": "업로드 토큰이 올바르지 않습니다."}), 401
+    _ok, _why = _upload_authorized()
+    if not _ok:
+        return jsonify({"error": _why}), 401
     slug = (request.form.get("slug") or (request.json or {}).get("slug") or "").strip()
     if not slug or "/" in slug or "\\" in slug or slug.startswith("."):
         return jsonify({"error": "slug 값이 올바르지 않습니다."}), 400

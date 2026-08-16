@@ -1664,7 +1664,7 @@ function renderChips(){
   const validKws = kws.filter(k => !window._validKws || window._validKws.has(k));
   const editBtn = `<button class="chip" style="border-color:#9ca3af;color:#6b7280;" onclick="openKwEditor()">✏ 편집</button>`;
   document.getElementById('chips').innerHTML = validKws.length
-    ? validKws.map(k=>`<button class="chip" onclick="quick('${k.replace(/'/g,"\\'")}')"> ${k}</button>`).join('') + editBtn
+    ? validKws.map(k=>`<button class="chip" onclick="quick('${argAttr(k)}')"> ${escHtml(k)}</button>`).join('') + editBtn
     : editBtn;
 }
 
@@ -1675,7 +1675,7 @@ function renderAgencyInfo(){
   const prof = AGENCY_PROFILES[agency];
   // 법령 모드에서만 표시(전체/즐겨찾기 제외)
   if(!prof || favMode || mode!=='law'){ el.style.display='none'; el.innerHTML=''; return; }
-  const q = s => s.replace(/'/g,"\\'");
+  const q = s => argAttr(s);
   const regChips = (prof.regs||[]).length
     ? `<div class="agc-block">
          <div class="agc-blabel">핵심 규정·행정규칙</div>
@@ -1687,7 +1687,7 @@ function renderAgencyInfo(){
   el.innerHTML = `
     <div class="agc-head">
       <span class="agc-name">${escHtml(prof.name)} 특화</span>
-      <a class="agc-home" href="${escHtml(prof.home)}" target="_blank" rel="noopener noreferrer">↗ ${escHtml(prof.homeLabel||'홈페이지')}</a>
+      <a class="agc-home" href="${escHtml(safeUrl(prof.home))}" target="_blank" rel="noopener noreferrer">↗ ${escHtml(prof.homeLabel||'홈페이지')}</a>
     </div>
     <div class="agc-desc">${escHtml(prof.desc)}</div>
     ${regChips}
@@ -1917,7 +1917,7 @@ function buildResultFilter(kind){
   const label = kind==='internal' ? '분류' : '법령 유형';
   bar.innerHTML=`<span class="rf-label">${label}</span>`+
     `<button class="rf-chip${_resFilter?'':' on'}" onclick="applyResultFilter('')">전체<span class="n">${cards.length}</span></button>`+
-    keys.map(k=>`<button class="rf-chip${_resFilter===k?' on':''}" onclick="applyResultFilter('${k.replace(/'/g,"\\'")}')">${escHtml(k)}<span class="n">${cnt[k]}</span></button>`).join('');
+    keys.map(k=>`<button class="rf-chip${_resFilter===k?' on':''}" onclick="applyResultFilter('${argAttr(k)}')">${escHtml(k)}<span class="n">${cnt[k]}</span></button>`).join('');
   bar.style.display='flex';
 }
 function applyResultFilter(type){
@@ -1999,10 +1999,10 @@ function buildRegCards(items, kw, kind){
     const moreNote = (cnt > arts.length)
       ? `<div class="reg-more">총 ${cnt}개 매칭 중 상위 ${arts.length}개 표시 · <b>전문 →</b>에서 전체 확인</div>` : '';
     const enc=encodeURIComponent(name);
-    const orgEsc=(org||'').replace(/'/g,"\\'"), typeEsc=(type||'').replace(/'/g,"\\'");
+    const orgEsc=argAttr(org||''), typeEsc=argAttr(type||''), urlEsc=argAttr(url||'');
     const dtArgs = kind==='internal'
       ? `decodeURIComponent('${enc}'),'internal'`
-      : `decodeURIComponent('${enc}'),'law','${url}','${orgEsc}','${typeEsc}'`;
+      : `decodeURIComponent('${enc}'),'law','${urlEsc}','${orgEsc}','${typeEsc}'`;
     const fullBtn  = `<button class="abtn primary reg-full-btn" onclick="openPrimaryDoc(${dtArgs})">📄 전문 →</button>`;
     const splitBtn = `<button class="abtn reg-split-btn" title="왼쪽/오른쪽 분할 화면으로 나란히 보기" onclick="openDocSplit(${dtArgs})">⊞ 나란히</button>`;
     // 내규 개정이력·최신 개정일 메타
@@ -2283,7 +2283,7 @@ function buildApxIndex(container){
     const lab=el.getAttribute('data-apx')||'서식';
     const meta=(el.querySelector('.rf-apx-cap')||el.querySelector('.rf-apx-meta')||{}).textContent||'';
     const t=meta?`${lab} · ${meta.slice(0,24)}`:lab;
-    const L=lab.replace(/'/g,"\\'");
+    const L=argAttr(lab);
     return `<button class="apx-chip" onclick="openAnnexOriginal('${L}','${el.id}')" title="${escHtml(meta||lab)} — 원본 서식 보기">${escHtml(t)}</button>`;
   }).join('');
   const box=document.createElement('div');
@@ -2350,7 +2350,7 @@ function linkifyApxRefs(container){
     node.innerHTML=node.innerHTML.replace(re,(full,lab)=>{
       const k=lab.replace(/\s+/g,'');
       const id=map[k]||'';
-      const L=k.replace(/'/g,"\\'");
+      const L=argAttr(k);
       // 원본이 있으면 원본 서식으로, 없으면 본문 내 서식 블록으로 이동
       return `<span class="apx-ref" title="원본 서식 보기" onclick="openAnnexOriginal('${L}','${id}')">${full}</span>`;
     });
@@ -2807,7 +2807,8 @@ function renderScenarioResults(d){
   }
 
   // AI 안내 카드
-  const guidanceMd = (d.guidance||'').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  // d.guidance 는 LLM 출력(질의로 유도 가능)이므로 반드시 이스케이프 후 굵게 처리.
+  const guidanceMd = escHtml(d.guidance||'').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
   const stepsHtml  = steps.length
     ? `<ul class="scenario-steps">${steps.map((s,i)=>
         `<li class="scenario-step"><span class="scenario-step-num">${i+1}</span><span>${escHtml(s)}</span></li>`
@@ -2915,8 +2916,8 @@ function renderScenarioResults(d){
       </div>
       <div class="card-body" style="display:none;" id="scrb${i}">
         <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-          <button class="abtn primary" onclick="openFullPanel('${name.replace(/'/g,"\\'")}','${lawUrl}')">📄 전문 보기</button>
-          <a class="abtn" href="${lawUrl}" target="_blank">↗ 법제처</a>
+          <button class="abtn primary" onclick="openFullPanel('${argAttr(name)}','${argAttr(lawUrl)}')">📄 전문 보기</button>
+          <a class="abtn" href="${escAttr(safeUrl(lawUrl))}" target="_blank">↗ 법제처</a>
         </div>
         <div class="art-wrap">${artHtml}</div>
       </div>
@@ -3167,7 +3168,7 @@ function renderInternalResults(d, q){
   if(nm.length){
     const bodyNames=new Set(items.map(it=>_rnorm(it.name)));
     const chips=nm.map(x=>{
-      const e=x.title.replace(/'/g,"\\'");
+      const e=argAttr(x.title);
       const cat=x.category?`<span class="cat">${escHtml(x.category)}</span>`:'';
       const dot=bodyNames.has(_rnorm(x.title))?' ·':'';
       return `<button class="nm-chip" onclick="openInternalPanel('${e}')" title="${escHtml(x.title)}${x.revision?' · '+escHtml(x.revision):''}">`+
@@ -3270,8 +3271,8 @@ function renderBasisResults(laws, basisType, keywords){
       </div>
       <div class="card-body" style="display:none;" id="brb${i}">
         <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-          <button class="abtn primary" onclick="openFullPanel('${name.replace(/'/g,"\\'")}','${lawUrl}')">📄 전문 보기</button>
-          <a class="abtn" href="${lawUrl}" target="_blank">↗ 법제처</a>
+          <button class="abtn primary" onclick="openFullPanel('${argAttr(name)}','${argAttr(lawUrl)}')">📄 전문 보기</button>
+          <a class="abtn" href="${escAttr(safeUrl(lawUrl))}" target="_blank">↗ 법제처</a>
         </div>
         <div class="art-wrap">${artHtml}</div>
       </div>
@@ -3301,7 +3302,7 @@ async function loadRecent(){
     if(!d.recent||!d.recent.length){row.style.display='none';return;}
     row.style.display='flex';
     document.getElementById('recentChips').innerHTML=
-      d.recent.map(r=>`<button class="rec-chip" onclick="quick('${r.replace(/'/g,"\\\\'")}')"> ${r}</button>`).join('');
+      d.recent.map(r=>`<button class="rec-chip" onclick="quick('${argAttr(r)}')"> ${escHtml(r)}</button>`).join('');
   }catch{}
 }
 
@@ -3387,8 +3388,8 @@ function renderPage(){
           ${no?`<div class="mbox"><div class="mlbl">법령번호</div><div class="mval">${no}</div></div>`:''}
         </div>
         <div class="actions">
-          <button class="abtn primary" onclick="openFullPanel('${name.replace(/'/g,"\\'")}','${lawUrl}','${org.replace(/'/g,"\\'")}','${type}')">📄 조문 전문</button>
-          <a class="abtn" href="${lawUrl}" target="_blank">↗ 법제처</a>
+          <button class="abtn primary" onclick="openFullPanel('${argAttr(name)}','${argAttr(lawUrl)}','${argAttr(org)}','${argAttr(type)}')">📄 조문 전문</button>
+          <a class="abtn" href="${escAttr(safeUrl(lawUrl))}" target="_blank">↗ 법제처</a>
           ${makeFavBtnHtml(name,org,type,lawUrl)}
           ${makeCollBtnHtml(name,org,lawUrl)}
         </div>
@@ -3423,7 +3424,7 @@ function renderArticleLawList(laws, artKw=''){
     const kwAttr=artKw?` data-kw="${escHtml(artKw)}"` : '';
     return `
     <div class="card" id="alc${i}">
-      <div class="card-head" onclick="toggleArtCard(${i},'${name.replace(/'/g,"\\\\'")}','${lawUrl}')">
+      <div class="card-head" onclick="toggleArtCard(${i},'${argAttr(name)}','${argAttr(lawUrl)}')">
         <span class="ltype">${type}</span>
         <span class="lname">${name}</span>
         <span class="lorg">${org}</span>
@@ -3458,7 +3459,7 @@ async function toggleArtCard(i, lawName, lawUrl){
 }
 
 function renderInlineArticles(arts, lawName, lawUrl, kw=''){
-  if(!arts.length) return `<div style="padding:14px;font-size:13px;color:var(--ht);">조문 정보를 가져오지 못했습니다. <a href="${lawUrl}" target="_blank" style="color:var(--g);">법제처에서 직접 확인 →</a></div>`;
+  if(!arts.length) return `<div style="padding:14px;font-size:13px;color:var(--ht);">조문 정보를 가져오지 못했습니다. <a href="${escAttr(safeUrl(lawUrl))}" target="_blank" style="color:var(--g);">법제처에서 직접 확인 →</a></div>`;
   const id='ia'+Date.now();
   const kwL = kw.toLowerCase();
   const abbrevMap = extractLawAbbrevs(arts, lawName); // 인라인 카드용 약칭 맵
@@ -3485,7 +3486,7 @@ function renderInlineArticles(arts, lawName, lawUrl, kw=''){
       <input class="art-finput" placeholder="조문번호(예: 1) 또는 키워드 필터" value="${escHtml(kw)}"
         oninput="filterInlineArts('${id}',${arts.length},this.value)">
       <span class="art-cnt" id="${id}cnt">${filtered_flag?`관련 ${displayArts.length}/${arts.length}개`:`전체 ${arts.length}개 조문`}</span>
-      <a class="abtn primary" href="${lawUrl}" target="_blank" style="padding:6px 10px;font-size:12px;white-space:nowrap;">↗ 전문</a>
+      <a class="abtn primary" href="${escAttr(safeUrl(lawUrl))}" target="_blank" style="padding:6px 10px;font-size:12px;white-space:nowrap;">↗ 전문</a>
     </div>
     <div id="${id}list">`+
     displayArts.map((a,i)=>{
@@ -3549,6 +3550,26 @@ function toggleArt(id){
 function escHtml(s){
   if(typeof s!=='string') return '';
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+// ── 속성 컨텍스트 XSS 방지 헬퍼 ──────────────────────────────────────────────
+// HTML 속성값 이스케이프(따옴표 포함).
+function escAttr(s){
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')
+    .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+// 인라인 핸들러(onclick 등)의 JS 문자열 인자 안전화. 반드시 argAttr()로 감싼다.
+function jsStr(s){
+  return String(s==null?'':s)
+    .replace(/\\/g,'\\\\').replace(/'/g,"\\'")
+    .replace(/</g,'\\x3C').replace(/\r/g,'\\r').replace(/\n/g,'\\n');
+}
+// onclick='f("...")' 인자 하나를 안전하게: JS문자열화 후 속성 이스케이프.
+function argAttr(v){ return escAttr(jsStr(v)); }
+// href/src 용: http/https 만 허용(javascript: 등 차단).
+function safeUrl(u){
+  u=String(u==null?'':u).trim();
+  return /^https?:\/\//i.test(u) ? u : '#';
 }
 
 // ── 조문 계층 렌더링 ────────────────────────────────────────────────────────
@@ -3897,13 +3918,13 @@ async function renderFavList(){
         <span class="ltype">${f.type||'법률'}</span>
         <span class="lname">${f.name}</span>
         <span class="lorg">${f.org||''}</span>
-        <button class="fav-btn active" onclick="event.stopPropagation();removeFav('${f.name.replace(/'/g,"\\\\'")}');renderFavList();" title="즐겨찾기 제거" style="margin-left:auto;">★</button>
+        <button class="fav-btn active" onclick="event.stopPropagation();removeFav('${argAttr(f.name)}');renderFavList();" title="즐겨찾기 제거" style="margin-left:auto;">★</button>
         <span class="arrow" style="font-size:11px;color:var(--ht);margin-left:4px;">▼</span>
       </div>
       <div class="card-body">
         <div class="actions">
-          <button class="abtn primary" onclick="openFullPanel('${f.name.replace(/'/g,"\\\\'")}','${f.url}')">📄 조문 전문 보기</button>
-          <a class="abtn" href="${f.url}" target="_blank">↗ 법제처</a>
+          <button class="abtn primary" onclick="openFullPanel('${argAttr(f.name)}','${argAttr(f.url)}')">📄 조문 전문 보기</button>
+          <a class="abtn" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ 법제처</a>
         </div>
       </div>
     </div>`).join('');
@@ -3927,7 +3948,7 @@ async function updateFavBtn(panelName){
 // ── 법령카드에 즐겨찾기 버튼 포함 렌더 ────────────────────────────────────────
 // renderPage 에서 카드 액션에 즐겨찾기 버튼 추가
 function makeFavBtnHtml(name, org, type, lawUrl){
-  return `<button class="abtn" onclick="cardFavToggle(this,'${name.replace(/'/g,"\\\\'")}','${(org||'').replace(/'/g,"\\\\'")}','${type}','${lawUrl}')">☆ 즐겨찾기</button>`;
+  return `<button class="abtn" onclick="cardFavToggle(this,'${argAttr(name)}','${argAttr(org||'')}','${argAttr(type)}','${argAttr(lawUrl)}')">☆ 즐겨찾기</button>`;
 }
 async function cardFavToggle(el, name, org, type, url){
   const added = await toggleFav(name, org, type, url);
@@ -4072,11 +4093,25 @@ const _MODEL_DEFAULT_BUMP = {
                    'gemini-2.5-pro':'gemini-pro-latest'},
 };
 
-// 저장된 설정을 읽으면서 필요하면 모델을 현행화(모달을 열지 않아도 상태표시가 맞도록 로드시 실행)
+// ── AI 설정 저장 ────────────────────────────────────────────────────────────
+// API 키(시크릿)는 sessionStorage 에만 저장한다(탭을 닫으면 삭제됨). provider/
+// model 등 비밀이 아닌 설정만 localStorage 에 유지해 편의를 지킨다. 키를
+// localStorage 에 평문으로 오래 두면 XSS 등으로 탈취될 위험이 커지므로 분리한다.
+const _AI_KEY_FIELDS=['key_claude','key_gpt','key_gemini','key_ollama'];
+function _readAiKeys(){ try{return JSON.parse(sessionStorage.getItem('aiKeys')||'{}');}catch{return {};} }
+function _readAiPrefs(){ try{return JSON.parse(localStorage.getItem('aiSettings')||'{}');}catch{return {};} }
+
+// 저장된 설정을 읽으면서 필요하면 모델을 현행화 + 레거시(로컬 저장) 키를 세션으로 이전
 function migrateAiSettings(){
-  let s={};
-  try{ s=JSON.parse(localStorage.getItem('aiSettings')||'{}'); }catch{ return {}; }
-  if((s.mver|0) >= _MODEL_DEFAULT_BUMP_VER) return s;
+  let s=_readAiPrefs();
+  // 레거시: 이전 버전은 키를 localStorage 에 함께 저장했다 → 세션 저장소로 옮기고 제거
+  const legacy={}; let hadLegacy=false;
+  _AI_KEY_FIELDS.forEach(k=>{ if(s[k]){ legacy[k]=s[k]; delete s[k]; hadLegacy=true; } });
+  if(hadLegacy){
+    try{ sessionStorage.setItem('aiKeys',JSON.stringify({...legacy,..._readAiKeys()})); }catch{}
+    try{ localStorage.setItem('aiSettings',JSON.stringify(s)); }catch{}
+  }
+  if((s.mver|0) >= _MODEL_DEFAULT_BUMP_VER) return {...s,..._readAiKeys()};
   let changed=false;
   Object.entries(_MODEL_DEFAULT_BUMP).forEach(([k,map])=>{
     if(s[k] && map[s[k]]){ s[k]=map[s[k]]; changed=true; }
@@ -4085,7 +4120,7 @@ function migrateAiSettings(){
   if(changed || s.provider){
     try{ localStorage.setItem('aiSettings',JSON.stringify(s)); }catch{}
   }
-  return s;
+  return {...s,..._readAiKeys()};
 }
 
 function loadAiSettings(){
@@ -4113,20 +4148,22 @@ function loadAiSettings(){
 }
 
 function saveAiSettings(){
-  const s={provider:currentProv, mver:_MODEL_DEFAULT_BUMP_VER};
+  const prefs={provider:currentProv, mver:_MODEL_DEFAULT_BUMP_VER};
+  const keys={};
   ['claude','gpt','gemini','ollama'].forEach(p=>{
     const kEl=document.getElementById('key-'+p);
     const mEl=document.getElementById('model-'+p);
-    if(kEl) s['key_'+p]=kEl.value.trim();
-    if(mEl) s['model_'+p]=mEl.value.trim();
+    if(kEl){ const v=kEl.value.trim(); if(v) keys['key_'+p]=v; }
+    if(mEl) prefs['model_'+p]=mEl.value.trim();
   });
-  localStorage.setItem('aiSettings',JSON.stringify(s));
-  updateAiStatusUI(s);
+  try{ localStorage.setItem('aiSettings',JSON.stringify(prefs)); }catch{}
+  try{ sessionStorage.setItem('aiKeys',JSON.stringify(keys)); }catch{}
+  updateAiStatusUI({...prefs,...keys});
   closeAiModal();
 }
 
 function getAiSettings(){
-  try{return JSON.parse(localStorage.getItem('aiSettings')||'{}')}catch{return {};}
+  return {..._readAiPrefs(),..._readAiKeys()};
 }
 
 function updateAiStatusUI(s){
@@ -4420,8 +4457,8 @@ async function openFullPanel(lawName, lawUrl, org, type){
             <div style="font-size:20px;margin-bottom:8px;">⚠️</div>
             <div style="margin-bottom:12px;">${escHtml(d.error)}</div>
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-              <button class="fp-tbtn" onclick="openFullPanel(decodeURIComponent('${encodeURIComponent(lawName)}'),'${lawUrl}','${(org||'').replace(/'/g,"\\'")}','${type||'법률'}')">🔄 다시 시도</button>
-              <a class="fp-tbtn" href="${lawUrl}" target="_blank">↗ 법제처에서 직접 보기</a>
+              <button class="fp-tbtn" onclick="openFullPanel(decodeURIComponent('${encodeURIComponent(lawName)}'),'${argAttr(lawUrl)}','${argAttr(org||'')}','${argAttr(type||'법률')}')">🔄 다시 시도</button>
+              <a class="fp-tbtn" href="${escAttr(safeUrl(lawUrl))}" target="_blank">↗ 법제처에서 직접 보기</a>
             </div>
           </div>`;
         return;
@@ -4440,8 +4477,8 @@ async function openFullPanel(lawName, lawUrl, org, type){
             ?'응답 시간이 초과됐습니다.<br>법령 데이터가 많거나 서버가 바쁜 상태입니다.'
             :'서버 연결에 실패했습니다.'}</div>
           <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-            <button class="fp-tbtn" onclick="openFullPanel(decodeURIComponent('${encodeURIComponent(lawName)}'),'${lawUrl}','${(org||'').replace(/'/g,"\\'")}','${type||'법률'}')">🔄 다시 시도</button>
-            <a class="fp-tbtn" href="${lawUrl}" target="_blank">↗ 법제처에서 직접 보기</a>
+            <button class="fp-tbtn" onclick="openFullPanel(decodeURIComponent('${encodeURIComponent(lawName)}'),'${argAttr(lawUrl)}','${argAttr(org||'')}','${argAttr(type||'법률')}')">🔄 다시 시도</button>
+            <a class="fp-tbtn" href="${escAttr(safeUrl(lawUrl))}" target="_blank">↗ 법제처에서 직접 보기</a>
           </div>
         </div>`;
     }
@@ -5297,14 +5334,14 @@ function renderActiveRefTab(){
       <div style="font-size:11px;font-weight:600;color:var(--mu);margin-bottom:4px;">↪ 이 법령이 준용하는 법령</div>
       ${chainRefs.slice(0,5).map(c=>`
         <div class="ref-chain-row"
-             onclick="openRefAuto('${c.name.replace(/'/g,"\\'")}')"
-             onmouseenter="showRefPreview(event,'${c.name.replace(/'/g,"\\'")}',${JSON.stringify(c.name)})"
+             onclick="openRefAuto('${argAttr(c.name)}')"
+             onmouseenter="showRefPreview(event,'${argAttr(c.name)}',${JSON.stringify(c.name)})"
              onmouseleave="hideRefPreview()">
           <span class="ref-chain-arrow">→</span>
           <span class="ref-chain-name">「${escHtml(c.name)}」</span>
           <span class="ref-chain-cnt">${c.count}건</span>
           <button class="fp-tbtn" style="font-size:10px;padding:2px 7px;"
-            onclick="event.stopPropagation();openRefInCompare('${c.name.replace(/'/g,"\\'")}')">⚖</button>
+            onclick="event.stopPropagation();openRefInCompare('${argAttr(c.name)}')">⚖</button>
         </div>`).join('')}
     </div>`;
   }
@@ -5748,7 +5785,7 @@ async function fpShowRelated(){
         ? [it.court, it.case_no, it.date].filter(Boolean).join(' · ')
         : [it.org, it.kind, it.date].filter(Boolean).join(' · ');
       const href   = it.url || '#';
-      return `<a class="rel-item" href="${escHtml(href)}" target="_blank" rel="noopener noreferrer">
+      return `<a class="rel-item" href="${escHtml(safeUrl(href))}" target="_blank" rel="noopener noreferrer">
         <div class="rel-item-main">
           <span class="rel-badge ${isPrec?'prec':'ordin'}">${isPrec?'판례':'조례'}</span>
           <span class="rel-title">${escHtml(title)}</span>
@@ -5978,7 +6015,7 @@ function buildRefList(){
 
   body.innerHTML = laws.map(([name, arts]) => `
     <div class="reflist-law">
-      <div class="reflist-law-name" onclick="openRefAuto('${name.replace(/'/g,"\\'")}', [${arts.map(a=>`'${a.artNo}'`).join(',')}])" data-reflaw="${escHtml(name)}">
+      <div class="reflist-law-name" onclick="openRefAuto('${argAttr(name)}', [${arts.map(a=>`'${argAttr(a.artNo)}'`).join(',')}])" data-reflaw="${escHtml(name)}">
         <span style="font-size:14px;">📋</span>
         <span style="flex:1;">「${escHtml(name)}」</span>
         <span class="reflist-cnt">${arts.length}개 조문</span>
@@ -6409,7 +6446,7 @@ function removeLawFromColl(ci, li){
 
 // renderPage에서 컬렉션 추가 버튼 포함
 function makeCollBtnHtml(name, org, url){
-  return `<button class="abtn" onclick="addLawToCollection('${name.replace(/'/g,"\\\\'")}','${(org||'').replace(/'/g,"\\\\'")}','${url}')">📁 컬렉션</button>`;
+  return `<button class="abtn" onclick="addLawToCollection('${argAttr(name)}','${argAttr(org||'')}','${argAttr(url)}')">📁 컬렉션</button>`;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -6542,7 +6579,7 @@ async function buildNetwork(){
     const col = colors[n.type]||'#6b7280';
     const r   = n.type==='center'?34:26;
     const label = n.name.length>8 ? n.name.slice(0,7)+'…' : n.name;
-    const safeN = n.name.replace(/'/g,"\\'");
+    const safeN = argAttr(n.name);
     return `<g class="net-node" transform="translate(${n.x},${n.y})"
         onmouseenter="showNetTooltip(event,'${safeN}',${n.artCount},${n.refs.length})"
         onmouseleave="hideNetTooltip()"
