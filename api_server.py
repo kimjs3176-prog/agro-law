@@ -2937,6 +2937,14 @@ def _uploaded_regs() -> list:
     return [m for m in _load_reg_manifest() if m.get("uploaded_at") or m.get("history")]
 
 
+def _item_title(it) -> str:
+    """구조화 검색 항목에서 규정명 추출(키 이름이 여러 형태)."""
+    if isinstance(it, dict):
+        return str(it.get("title") or it.get("name")
+                   or it.get("제목") or it.get("규정명") or "")
+    return ""
+
+
 def _merge_local_hits(resp: dict, local_hits: list) -> dict:
     """업로드된 내규 검색 결과를 MCP 응답에 병합(업로드분을 앞쪽에 노출)."""
     if not local_hits:
@@ -2972,6 +2980,79 @@ def _local_reg_search(query: str, limit: int = 20) -> list:
         if len(hits) >= limit:
             break
     return hits
+
+
+# ── 번들된 규정 HTML 본문 인덱스 ──────────────────────────────────────────────
+# regulations/<slug>/index.html 은 123건 전체가 있으나(의미검색 인덱스의 원천),
+# 키워드 검색·전문 열람은 그동안 text.txt(업로드분)나 외부 MCP 에만 의존했다.
+# 아래 헬퍼로 번들 HTML 본문을 검색·열람에 활용해 MCP 하드의존을 없앤다.
+_REG_BODY_CACHE: dict = {}   # slug -> (mtime, 평문)
+
+
+def _reg_body_text(slug: str) -> str:
+    """규정 본문 평문. 업로드분 text.txt 우선, 없으면 번들 index.html 에서 추출."""
+    if not slug:
+        return ""
+    t = _local_reg_text(slug)                       # 업로드분(text.txt)
+    if t:
+        return t
+    path = os.path.join(REG_DIR, slug, "index.html")
+    try:
+        mtime = os.path.getmtime(path)
+    except OSError:
+        return ""
+    cached = _REG_BODY_CACHE.get(slug)
+    if cached and cached[0] == mtime:
+        return cached[1]
+    try:
+        import reg_chunks                            # stdlib 만 사용(지연 임포트)
+        with open(path, encoding="utf-8", errors="replace") as f:
+            body = reg_chunks.html_to_text(f.read())
+    except Exception as e:
+        print(f"[reg] 본문 추출 실패({slug}): {e}")
+        return ""
+    _REG_BODY_CACHE[slug] = (mtime, body)
+    return body
+
+
+def _catalog_reg_hits(query: str, exclude_titles=None, limit: int = 12) -> list:
+    """번들 규정 HTML 전체에서 키워드 검색. MCP 가 못 준(또는 없을 때의) 규정을
+    보완하기 위한 용도. exclude_titles(정규화된 규정명 set)는 건너뛴다."""
+    q = (query or "").strip()
+    if not q:
+        return []
+    qL = q.lower()
+    exclude = exclude_titles or set()
+    title_hits, body_hits = [], []
+    for m in _load_reg_manifest():
+        slug, title = m.get("slug", ""), m.get("title", "")
+        if not slug or _norm_key(title) in exclude:
+            continue
+        name_match = qL in _norm_key(title) or qL in title.lower()
+        body = _reg_body_text(slug)
+        if not body:
+            continue
+        if not name_match and qL not in body.lower():
+            continue
+        item = {"title": title, "content": body[:20000], "source": "local",
+                "revision": m.get("revision", ""), "category": m.get("category", "")}
+        (title_hits if name_match else body_hits).append(item)
+        if len(title_hits) + len(body_hits) >= limit:
+            break
+    return (title_hits + body_hits)[:limit]
+
+
+def _local_only_search(query: str, local_hits: list, mcp_error: str = "") -> dict:
+    """MCP 미설정/실패 시 번들 규정 본문만으로 검색 응답을 구성한다."""
+    cat = _catalog_reg_hits(query, {_norm_key(h["title"]) for h in local_hits})
+    resp = {"success": True, "query": query, "tool": "local-html",
+            "text": "", "structured": local_hits + cat,
+            "local_count": len(local_hits),
+            "name_matches": _name_match_regs(query),
+            "semantic": _semantic_for_search(query)}
+    if mcp_error:
+        resp["mcp_error"] = mcp_error
+    return resp
 
 
 REG_BACKUP_DIR = os.path.join(REG_DIR, ".backup")
@@ -4075,12 +4156,8 @@ def internal_search():
     local_hits = _local_reg_search(query)
 
     if not SAGYU_MCP_URL:
-        if local_hits:
-            return jsonify({"success": True, "query": query, "tool": "local-upload",
-                            "text": "", "structured": local_hits,
-                            "local_count": len(local_hits),
-                            "name_matches": _name_match_regs(query)})
-        return jsonify({"error": "사규 MCP 서버가 설정되지 않았습니다(SAGYU_MCP_URL)."}), 503
+        # MCP 미설정이어도 번들된 규정 본문으로 자체 검색한다(외부 하드의존 제거).
+        return jsonify(_local_only_search(query, local_hits))
     try:
         cli = _McpClient(SAGYU_MCP_URL)
         cli.initialize()
@@ -4108,27 +4185,23 @@ def internal_search():
             # 의미 검색(임베딩) — 어휘가 달라 키워드로 못 찾는 조문을 보완
             "semantic": _semantic_for_search(query),
         }
-        return jsonify(_merge_local_hits(resp, local_hits))
+        merged = _merge_local_hits(resp, local_hits)
+        # MCP·로컬·명칭검색에 없는 규정을 번들 본문으로 보강(결과 뒤에 덧붙임 —
+        # MCP 순위는 유지). MCP 가 놓친 규정의 커버리지만 채운다.
+        present = {_norm_key(_item_title(it)) for it in (merged.get("structured") or [])}
+        present |= {_norm_key(h.get("title", "")) for h in (merged.get("name_matches") or [])}
+        cat = _catalog_reg_hits(query, present)
+        if cat:
+            merged["structured"] = (merged.get("structured") or []) + cat
+        return jsonify(merged)
     except (req_lib.exceptions.Timeout,
             req_lib.exceptions.ConnectionError) as e:
-        # MCP 서버가 죽어도 업로드된 개정 내규는 계속 조회되도록 한다
-        if local_hits:
-            return jsonify(_merge_local_hits(
-                {"success": True, "query": query, "tool": "local-upload",
-                 "text": "", "structured": None,
-                 "mcp_error": f"사규 MCP 서버 연결 실패: {e}",
-                 "name_matches": _name_match_regs(query)}, local_hits))
-        if isinstance(e, req_lib.exceptions.Timeout):
-            return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
-        return jsonify({"error": f"사규 MCP 서버에 연결할 수 없습니다: {e}"}), 502
+        # MCP 서버가 죽어도 번들된 규정 본문으로 계속 검색되도록 한다
+        return jsonify(_local_only_search(
+            query, local_hits, f"사규 MCP 서버 연결 실패: {e}"))
     except Exception as e:
         import traceback; traceback.print_exc()
-        if local_hits:
-            return jsonify(_merge_local_hits(
-                {"success": True, "query": query, "tool": "local-upload",
-                 "text": "", "structured": None, "mcp_error": str(e),
-                 "name_matches": _name_match_regs(query)}, local_hits))
-        return jsonify({"error": f"내규 검색 오류: {e}"}), 500
+        return jsonify(_local_only_search(query, local_hits, str(e)))
 
 
 @app.route("/api/internal/doc")
@@ -4149,7 +4222,22 @@ def internal_doc():
                         "source": "upload", "revision": m_local.get("revision", ""),
                         "uploaded_at": m_local.get("uploaded_at", "")})
 
+    # 번들된 규정 HTML 본문으로 전문을 구성(오프라인/무MCP 리더 지원).
+    def _local_doc():
+        if not m_local:
+            return None
+        body = _reg_body_text(m_local.get("slug", ""))
+        if not body or len(body) < 40:
+            return None
+        return {"success": True, "name": m_local.get("title", name),
+                "tool": "local-html", "is_full": True,
+                "text": body, "structured": None, "source": "local",
+                "revision": m_local.get("revision", "")}
+
     if not SAGYU_MCP_URL:
+        doc = _local_doc()
+        if doc:
+            return jsonify(doc)
         return jsonify({"error": "사규 MCP 서버가 설정되지 않았습니다(SAGYU_MCP_URL)."}), 503
     try:
         cli = _McpClient(SAGYU_MCP_URL)
@@ -4169,19 +4257,27 @@ def internal_doc():
         text = _mcp_extract_text(result)
         structured = result.get("structuredContent") if isinstance(result, dict) else None
         if isinstance(result, dict) and result.get("isError"):
+            doc = _local_doc()                       # MCP 오류 시 번들 본문으로
+            if doc:
+                return jsonify(doc)
             return jsonify({"error": text or "내규 전문 조회 중 오류가 발생했습니다."}), 502
+        # MCP 가 빈 응답이면 번들 본문으로 보완
+        if not (text or "").strip() and not structured:
+            doc = _local_doc()
+            if doc:
+                return jsonify(doc)
         return jsonify({"success": True, "name": name, "tool": tool.get("name"),
                         "is_full": bool(doc_tool), "text": text, "structured": structured})
     except req_lib.exceptions.Timeout:
-        if local_text:
-            return jsonify({"success": True, "name": name, "tool": "local-upload",
-                            "is_full": True, "text": local_text, "source": "upload"})
+        doc = _local_doc()
+        if doc:
+            return jsonify(doc)
         return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
     except Exception as e:
-        if local_text:
-            return jsonify({"success": True, "name": name, "tool": "local-upload",
-                            "is_full": True, "text": local_text, "source": "upload",
-                            "mcp_error": str(e)})
+        doc = _local_doc()
+        if doc:
+            doc["mcp_error"] = str(e)
+            return jsonify(doc)
         return jsonify({"error": f"내규 전문 조회 오류: {e}"}), 500
 
 
