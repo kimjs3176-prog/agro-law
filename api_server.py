@@ -7,6 +7,13 @@ KOAT 내규&국가법령 종합 검색 서비스
 import os, json, re, time, threading, webbrowser, base64
 import concurrent.futures as _cf
 import xml.etree.ElementTree as ET
+# 신뢰할 수 없는 XML(업로드 파일·외부 법령 XML)의 엔티티 폭탄(billion laughs) 방어.
+# defusedxml 이 있으면 그 파서를 쓰고, 없으면 표준 파서로 폴백한다.
+try:
+    import defusedxml.ElementTree as _DET
+    def _xml_fromstring(s): return _DET.fromstring(s)
+except Exception:
+    def _xml_fromstring(s): return ET.fromstring(s)
 import urllib3
 from urllib.parse import quote
 from flask import Flask, request, jsonify, Response
@@ -139,7 +146,7 @@ def _law_get_xml(endpoint: str, params: dict, timeout=None) -> ET.Element:
             text = re.sub(r"<\?xml[^?]*\?>", "", text, count=1).strip()
             if not text:
                 raise ValueError("빈 XML 응답")
-            return ET.fromstring(text)
+            return _xml_fromstring(text)
         except (req_lib.exceptions.ConnectionError,
                 req_lib.exceptions.ChunkedEncodingError) as e:
             last_err = e
@@ -986,7 +993,7 @@ def search_by_article_keyword():
     try:
         with _cf.ThreadPoolExecutor(max_workers=12) as ex:
             futures = {ex.submit(fetch_and_filter, name): name for name in all_target}
-            for future in _cf.as_completed(futures, timeout=40):
+            for future in _cf.as_completed(futures, timeout=25):
                 try:
                     res = future.result()
                     if res:
@@ -1183,7 +1190,7 @@ def search_legal_basis():
     try:
         with _cf.ThreadPoolExecutor(max_workers=10) as ex:
             futures = {ex.submit(fetch_law, name): name for name in all_target}
-            for future in _cf.as_completed(futures, timeout=45):
+            for future in _cf.as_completed(futures, timeout=25):
                 try:
                     res = future.result()
                     if res:
@@ -1621,6 +1628,9 @@ def remove_favorite():
 _AI_MODEL_FALLBACK = {"gemini": "gemini-flash-latest",
                       "claude": "claude-haiku-4-5-20251001",
                       "gpt": "gpt-4.1-mini", "openai": "gpt-4.1-mini"}
+# 콜드 스타트에서 시나리오/해석 핫패스가 ListModels 왕복을 동기로 기다리지 않도록
+# 즉시 반환할 기본 모델(캐시가 비었을 때 사용).
+GEMINI_DEFAULT_MODEL = os.environ.get("GEMINI_MODEL", "") or "gemini-2.5-flash"
 _GEMINI_MODEL_CACHE: dict = {"model": None, "ts": 0.0}
 _GEMINI_CACHE_TTL = 6 * 3600          # 6시간
 # 선호 Gemini 버전. 기본은 비워 두고 ListModels 기준 '사용 가능한 최신'을 자동 선택한다
@@ -1717,19 +1727,31 @@ def _gemini_latest_model(api_key: str) -> str:
 
 
 def _default_model_for(provider: str, api_key: str = "") -> str:
-    """프로바이더별 기본 모델. Gemini는 실시간 조회로 최신 모델을 사용."""
+    """프로바이더별 기본 모델.
+
+    Gemini 는 캐시에 값이 있으면 그것을, 없으면 상수 기본값을 '즉시' 돌려준다.
+    핫패스(시나리오/해석)에서 콜드 인스턴스가 ListModels 네트워크 왕복을 동기로
+    기다려 플랫폼 504 로 죽는 것을 막기 위함이다. 동적 최신화는 캐시가 채워진
+    뒤(또는 /api/ai/models 명시 호출 시)에만 반영된다.
+    """
     if provider == "gemini":
-        return _gemini_latest_model(api_key)
+        return _GEMINI_MODEL_CACHE.get("model") or GEMINI_DEFAULT_MODEL
     return _AI_MODEL_FALLBACK.get(provider, _AI_MODEL_FALLBACK["gemini"])
 
 
 @app.route("/api/ai/models")
 def ai_models():
-    """현재 선택될 기본 모델 확인용(설정 화면 표시)."""
+    """현재 선택될 기본 모델 확인용(설정 화면 표시).
+
+    이 엔드포인트는 명시 호출이므로 Gemini 는 실시간 ListModels 로 캐시를 채운다.
+    """
     provider = (request.args.get("provider") or "gemini").lower()
     key = (request.args.get("api_key") or
            os.environ.get(f"{provider.upper()}_API_KEY", "")).strip()
-    mdl = _default_model_for(provider, key)
+    if provider == "gemini":
+        mdl = _gemini_latest_model(key)
+    else:
+        mdl = _default_model_for(provider, key)
     return jsonify({"success": True, "provider": provider, "model": mdl,
                     "resolved": provider == "gemini" and bool(key),
                     "cached_at": _GEMINI_MODEL_CACHE["ts"] if provider == "gemini" else 0})
@@ -2615,17 +2637,45 @@ def _xml_blocks(root: ET.Element, para_tag: str, table_tag: str,
     return blocks
 
 
+# 업로드 zip(HWPX/DOCX) 압축 해제 폭탄(zip bomb) 방어용 상한
+_ZIP_ENTRY_MAX = 80 * 1024 * 1024     # 단일 항목 최대 80MB(압축 해제 기준)
+_ZIP_TOTAL_MAX = 200 * 1024 * 1024    # 누적 읽기 최대 200MB
+
+
+class _ZipBudget:
+    """zip 항목의 압축 해제 크기를 검사하며 안전하게 읽는 헬퍼."""
+    def __init__(self, z):
+        self.z = z
+        self.total = 0
+
+    def read(self, name: str) -> bytes:
+        try:
+            size = self.z.getinfo(name).file_size
+        except KeyError:
+            size = 0
+        if size > _ZIP_ENTRY_MAX:
+            raise ValueError("압축 해제 크기 제한 초과")
+        if self.total + size > _ZIP_TOTAL_MAX:
+            raise ValueError("압축 해제 크기 제한 초과")
+        data = self.z.read(name)
+        self.total += len(data)
+        if self.total > _ZIP_TOTAL_MAX:
+            raise ValueError("압축 해제 크기 제한 초과")
+        return data
+
+
 def _hwpx_blocks(raw: bytes) -> list:
     """HWPX(한/글 OWPML, zip) 본문 추출."""
     blocks = []
     with zipfile.ZipFile(_io.BytesIO(raw)) as z:
+        budget = _ZipBudget(z)
         names = [n for n in z.namelist()
                  if re.match(r"Contents/section\d+\.xml$", n, re.I)]
         names.sort(key=lambda n: int(re.search(r"(\d+)", n).group(1)))
         if not names:
             raise ValueError("HWPX 본문(Contents/section*.xml)을 찾을 수 없습니다.")
         for n in names:
-            root = ET.fromstring(z.read(n))
+            root = _xml_fromstring(budget.read(n))
             blocks += _xml_blocks(root, "p", "tbl", "tr", "tc",
                                   {"t"}, {"lineBreak"})
     return blocks
@@ -2634,7 +2684,8 @@ def _hwpx_blocks(raw: bytes) -> list:
 def _docx_blocks(raw: bytes) -> list:
     """DOCX(OOXML) 본문 추출."""
     with zipfile.ZipFile(_io.BytesIO(raw)) as z:
-        root = ET.fromstring(z.read("word/document.xml"))
+        budget = _ZipBudget(z)
+        root = _xml_fromstring(budget.read("word/document.xml"))
     return _xml_blocks(root, "p", "tbl", "tr", "tc", {"t"}, {"br", "cr"})
 
 
@@ -2642,18 +2693,30 @@ def _text_blocks(text: str) -> list:
     return [{"type": "p", "text": l.rstrip()} for l in text.replace("\r\n", "\n").split("\n")]
 
 
-_SCRIPT_RE = re.compile(r"<\s*(script|iframe|object|embed)\b.*?<\s*/\s*\1\s*>",
-                        re.I | re.S)
-_SCRIPT_OPEN_RE = re.compile(r"<\s*/?\s*(script|iframe|object|embed)\b[^>]*>", re.I)
+_SCRIPT_RE = re.compile(
+    r"<\s*(script|iframe|object|embed|applet|style)\b.*?<\s*/\s*\1\s*>",
+    re.I | re.S)
+_SCRIPT_OPEN_RE = re.compile(
+    r"<\s*/?\s*(script|iframe|object|embed|applet|link|meta|base)\b[^>]*>", re.I)
 _ON_ATTR_RE = re.compile(r"\son[a-z]+\s*=\s*(\"[^\"]*\"|'[^']*'|[^\s>]+)", re.I)
-_JS_URL_RE = re.compile(r"(href|src)\s*=\s*(\"|')\s*javascript:[^\"']*(\2)", re.I)
+# srcdoc/formaction 은 스크립트 실행 경로가 되므로 속성째 제거
+_DANGER_ATTR_RE = re.compile(
+    r"\s(srcdoc|formaction)\s*=\s*(\"[^\"]*\"|'[^']*'|[^\s>]+)", re.I)
+_JS_URL_RE = re.compile(
+    r"(href|src)\s*=\s*(\"|')\s*(?:javascript|data|vbscript):[^\"']*(\2)", re.I)
 
 
 def _sanitize_html(html: str) -> str:
-    """업로드된 HTML에서 스크립트·이벤트 핸들러 제거(같은 출처에서 서빙되므로 필수)."""
+    """업로드된 HTML에서 스크립트·이벤트 핸들러 제거(같은 출처에서 서빙되므로 필수).
+
+    이는 심층 방어(defense-in-depth)일 뿐, 실제 신뢰 경계는 업로드 토큰이다.
+    <table>/<tr>/<td>/<span>/<p>/<div>/style="..." 등 규정 서식에 필요한 요소는
+    의도적으로 보존한다.
+    """
     out = _SCRIPT_RE.sub("", html)
     out = _SCRIPT_OPEN_RE.sub("", out)
     out = _ON_ATTR_RE.sub("", out)
+    out = _DANGER_ATTR_RE.sub("", out)
     out = _JS_URL_RE.sub(r"\1=\2#\2", out)
     return out
 
@@ -3072,7 +3135,9 @@ def _gh(method: str, path: str, **kw):
         except Exception:
             detail = (r.text or "")[:160]
         print(f"[gh] {method} {path} → {r.status_code} {detail}")
-        raise RuntimeError(_gh_hint(r.status_code, detail, path))
+        err = RuntimeError(_gh_hint(r.status_code, detail, path))
+        err.status = r.status_code            # 404(정상 미존재)와 그 외 오류 구분용
+        raise err
     return r.json() if r.content else {}
 
 
@@ -3128,15 +3193,27 @@ def _gh_commit_files(files: dict, message: str, deletes=None):
 
 
 def _gh_get_manifest():
-    """리포지토리의 현재 manifest 를 읽어온다(로컬 파일이 낡았을 수 있으므로)."""
+    """리포지토리의 현재 manifest 를 읽어온다(로컬 파일이 낡았을 수 있으므로).
+
+    GitHub 연동이 켜진 상태에서 원격 읽기가 '네트워크/HTTP 오류'로 실패하면,
+    낡은 로컬 manifest 로 커밋해 다른 인스턴스가 추가한 항목을 덮어써 유실시킬
+    위험이 있다. 따라서 그런 경우엔 폴백하지 않고 예외를 올려 커밋을 중단시킨다.
+    저장소에 아직 manifest 가 없는 정상적인 404 는 로컬/빈 목록으로 폴백해도 안전하다.
+    """
+    if not _gh_enabled():
+        return list(_load_reg_manifest())
     try:
         d = _gh("GET", "/contents/regulations_manifest.json",
                 params={"ref": GITHUB_BRANCH})
         raw = base64.b64decode(d.get("content", "") or "")
         return json.loads(raw.decode("utf-8"))
     except Exception as e:
-        print(f"[gh] manifest 조회 실패, 로컬 사용: {e}")
-        return list(_load_reg_manifest())
+        if getattr(e, "status", None) == 404:
+            print(f"[gh] manifest 없음(404), 로컬 사용")
+            return list(_load_reg_manifest())
+        print(f"[gh] manifest 조회 실패(안전을 위해 중단): {e}")
+        raise RuntimeError("저장소 상태를 읽지 못해 안전을 위해 중단했습니다. "
+                           "잠시 후 다시 시도하세요.")
 
 
 def _gh_dir(path: str, ref: str = ""):
@@ -4401,6 +4478,8 @@ def law_check():
 
 @app.route("/api/debug/law")
 def debug_law_xml():
+    if os.environ.get("DEBUG_ENDPOINTS") != "1":
+        return jsonify({"error": "not found"}), 404
     name = request.args.get("name", "").strip()
     mst  = request.args.get("mst", "").strip()
     try:
