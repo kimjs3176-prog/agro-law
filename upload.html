@@ -10,17 +10,23 @@
   --bd:#e5e8ec; --g:#1D9E75; --gd:#158060; --gl:#eafaf3;
   --rs:8px; --rm:12px;
   --font:'Malgun Gothic','맑은 고딕',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --warn-bg:#fffbeb; --warn-tx:#92400e; --warn-bd:#fcd34d;
+  --err-bg:#fef2f2; --err-tx:#991b1b; --err-bd:#fecaca;
+  --done-bg:#eafaf3; --done-tx:#158060;
 }
 body.dark{
   --bg:#161a1f; --sf:#1e232a; --tx:#e8ecf1; --mu:#9aa5b4; --ht:#6b7684;
   --bd:#2c333c; --gl:#14312a;
+  --warn-bg:#2a2310; --warn-tx:#fbbf24; --warn-bd:#78350f;
+  --err-bg:#2a1215; --err-tx:#fca5a5; --err-bd:#7f1d1d;
+  --done-bg:#14312a; --done-tx:#6ee7b7;
 }
 *{box-sizing:border-box;}
 body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--font);font-size:14px;line-height:1.6;}
 a{color:var(--g);}
-.wrap{max-width:960px;margin:0 auto;padding:20px 18px 70px;}
+.wrap{max-width:1060px;margin:0 auto;padding:20px 18px 70px;}
 
-/* 헤더 */
+/* header */
 .hd{display:flex;align-items:center;gap:10px;padding:14px 0 18px;flex-wrap:wrap;}
 .hd-logo{width:36px;height:36px;border-radius:10px;background:var(--g);color:#fff;
   display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
@@ -32,7 +38,17 @@ a{color:var(--g);}
   display:inline-flex;align-items:center;gap:4px;font-family:var(--font);}
 .tbtn:hover{border-color:var(--g);color:var(--g);}
 
-/* 카드 */
+/* tabs */
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--bd);margin-bottom:16px;padding:0;overflow-x:auto;}
+.tab{padding:10px 18px;font-size:13.5px;font-weight:600;color:var(--mu);cursor:pointer;
+  border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;
+  font-family:var(--font);white-space:nowrap;transition:.15s;}
+.tab:hover{color:var(--tx);}
+.tab.active{color:var(--g);border-bottom-color:var(--g);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* card */
 .card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rm);
   padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
 .card-t{font-size:14px;font-weight:700;margin:0 0 4px;display:flex;align-items:center;gap:7px;}
@@ -40,33 +56,58 @@ a{color:var(--g);}
 .badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;
   background:var(--gl);color:var(--gd);}
 
-/* 상태 배너 */
+/* status banner */
 .banner{display:flex;gap:9px;align-items:flex-start;padding:11px 14px;border-radius:var(--rs);
   font-size:12.5px;line-height:1.55;margin-bottom:14px;}
 .banner.ok{background:var(--gl);color:var(--gd);border:1px solid #a7f3d0;}
-.banner.warn{background:#fffbeb;color:#92400e;border:1px solid #fcd34d;}
-.banner.err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;}
+.banner.warn{background:var(--warn-bg);color:var(--warn-tx);border:1px solid var(--warn-bd);}
+.banner.err{background:var(--err-bg);color:var(--err-tx);border:1px solid var(--err-bd);}
 .banner b{font-weight:700;}
 .banner .muted{opacity:.75;font-size:11.5px;}
 .banner .lnk{margin-top:6px;background:none;border:1px solid currentColor;color:inherit;
-  border-radius:6px;padding:2px 10px;font-size:11.5px;cursor:pointer;}
+  border-radius:6px;padding:2px 10px;font-size:11.5px;cursor:pointer;font-family:var(--font);}
 .banner code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px;font-size:11.5px;}
+body.dark .banner code{background:rgba(255,255,255,.08);}
+body.dark .banner.ok{border-color:#065f46;}
 
-/* 드롭존 */
+/* ---- DASHBOARD ---- */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px;}
+.stat-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rm);padding:16px 18px;
+  box-shadow:0 1px 3px rgba(0,0,0,.04);}
+.stat-label{font-size:12px;color:var(--mu);font-weight:600;margin-bottom:4px;}
+.stat-val{font-size:26px;font-weight:800;color:var(--g);}
+.stat-sub{font-size:11.5px;color:var(--ht);margin-top:2px;}
+.cat-pills{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.cat-pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;
+  background:var(--gl);color:var(--gd);}
+.timeline{display:flex;flex-direction:column;gap:0;}
+.tl-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;
+  border-bottom:1px solid var(--bd);position:relative;}
+.tl-item:last-child{border-bottom:none;}
+.tl-dot{width:8px;height:8px;border-radius:50%;background:var(--g);margin-top:6px;flex-shrink:0;}
+.tl-body{flex:1;min-width:0;}
+.tl-title{font-size:13px;font-weight:600;}
+.tl-meta{font-size:11.5px;color:var(--mu);}
+.tl-cat{font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;
+  background:var(--gl);color:var(--gd);}
+.quick-actions{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;}
+.qa-btn{flex:1;min-width:160px;padding:14px 18px;border:1px solid var(--bd);border-radius:var(--rm);
+  background:var(--sf);cursor:pointer;text-align:left;font-family:var(--font);transition:.15s;}
+.qa-btn:hover{border-color:var(--g);background:var(--gl);}
+.qa-icon{font-size:22px;margin-bottom:6px;}
+.qa-label{font-size:13px;font-weight:700;color:var(--tx);}
+.qa-desc{font-size:11.5px;color:var(--mu);}
+
+/* ---- BATCH UPLOAD ---- */
 .drop{border:2px dashed var(--bd);border-radius:var(--rm);padding:30px 20px;text-align:center;
   cursor:pointer;transition:.15s;background:var(--bg);}
 .drop:hover,.drop.over{border-color:var(--g);background:var(--gl);}
 .drop-i{font-size:30px;line-height:1;margin-bottom:8px;}
 .drop-t{font-size:13.5px;font-weight:600;margin-bottom:4px;}
 .drop-s{font-size:12px;color:var(--mu);}
-.file-row{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--gl);
-  border:1px solid #a7f3d0;border-radius:var(--rs);margin-top:12px;}
-.file-n{font-weight:600;font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.file-sz{font-size:11.5px;color:var(--mu);flex-shrink:0;}
-.file-x{border:none;background:transparent;color:var(--mu);cursor:pointer;font-size:15px;padding:0 2px;}
 
-/* 폼 */
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;margin-top:16px;}
+/* shared fields row */
+.shared-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:14px 0;}
 .f{display:flex;flex-direction:column;gap:5px;}
 .f.full{grid-column:1 / -1;}
 .f label{font-size:12px;font-weight:600;color:var(--mu);}
@@ -76,489 +117,933 @@ a{color:var(--g);}
 .f input:focus,.f select:focus,.f textarea:focus{border-color:var(--g);background:var(--sf);}
 .f textarea{resize:vertical;min-height:64px;}
 .f .hint{font-size:11.5px;color:var(--ht);}
-.actions{display:flex;gap:8px;align-items:center;margin-top:18px;flex-wrap:wrap;}
+
+/* queue table */
+.queue-wrap{overflow-x:auto;margin:14px 0;}
+.queue-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.queue-table th{text-align:left;padding:8px 10px;background:var(--bg);color:var(--mu);
+  font-weight:600;font-size:11.5px;border-bottom:1px solid var(--bd);white-space:nowrap;}
+.queue-table td{padding:8px 10px;border-bottom:1px solid var(--bd);vertical-align:middle;}
+.queue-table tr:hover td{background:var(--bg);}
+.queue-table input,.queue-table select{padding:5px 8px;border:1px solid var(--bd);border-radius:6px;
+  background:var(--bg);color:var(--tx);font-size:12px;font-family:var(--font);outline:none;width:100%;min-width:80px;}
+.queue-table input:focus,.queue-table select:focus{border-color:var(--g);background:var(--sf);}
+.q-fname{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+.q-size{color:var(--mu);font-size:11px;white-space:nowrap;}
+.q-status{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;
+  padding:2px 8px;border-radius:999px;white-space:nowrap;}
+.q-status.pending{background:var(--bg);color:var(--ht);}
+.q-status.uploading{background:var(--gl);color:var(--gd);}
+.q-status.done{background:var(--done-bg);color:var(--done-tx);}
+.q-status.error{background:var(--err-bg);color:var(--err-tx);}
+.q-remove{border:none;background:none;color:var(--mu);cursor:pointer;font-size:14px;padding:2px 4px;}
+.q-remove:hover{color:#dc2626;}
+.q-check{width:16px;height:16px;cursor:pointer;accent-color:var(--g);}
+.q-replace{font-size:10px;color:var(--gd);font-weight:600;}
+
+/* progress bar */
+.progress-wrap{margin:14px 0;display:none;}
+.progress-wrap.show{display:block;}
+.progress-bar{height:6px;background:var(--bd);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--g);border-radius:3px;transition:width .3s;width:0;}
+.progress-text{font-size:12px;color:var(--mu);margin-top:4px;}
+
+/* batch summary */
+.batch-summary{margin-top:14px;padding:14px 16px;border-radius:var(--rs);font-size:13px;display:none;}
+.batch-summary.show{display:block;}
+.batch-summary.ok{background:var(--done-bg);border:1px solid #a7f3d0;}
+body.dark .batch-summary.ok{border-color:#065f46;}
+.batch-summary.mixed{background:var(--warn-bg);border:1px solid var(--warn-bd);}
+.batch-summary h4{margin:0 0 8px;font-size:13.5px;}
+
+/* actions bar */
+.actions{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap;}
 .btn{padding:9px 18px;border:1px solid var(--bd);border-radius:var(--rs);background:var(--sf);
   color:var(--tx);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);}
 .btn:hover{background:var(--bg);}
 .btn.primary{background:var(--g);border-color:var(--g);color:#fff;}
 .btn.primary:hover{background:var(--gd);}
+.btn.danger{background:#dc2626;border-color:#dc2626;color:#fff;}
+.btn.danger:hover{background:#b91c1c;}
 .btn:disabled{opacity:.5;cursor:not-allowed;}
 .spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.45);
   border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px;}
 @keyframes sp{to{transform:rotate(360deg);}}
 
-/* 결과 */
+/* ---- MANAGEMENT ---- */
+.filter-bar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.filter-bar select,.filter-bar input{padding:7px 10px;border:1px solid var(--bd);border-radius:var(--rs);
+  background:var(--bg);color:var(--tx);font-size:12.5px;font-family:var(--font);outline:none;}
+.filter-bar select:focus,.filter-bar input:focus{border-color:var(--g);}
+.filter-search{flex:1;min-width:160px;}
+.mgmt-wrap{overflow-x:auto;}
+.mgmt-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.mgmt-table th{text-align:left;padding:9px 10px;background:var(--bg);color:var(--mu);
+  font-weight:600;font-size:11.5px;border-bottom:1px solid var(--bd);white-space:nowrap;position:sticky;top:0;}
+.mgmt-table td{padding:9px 10px;border-bottom:1px solid var(--bd);vertical-align:middle;}
+.mgmt-table tr:hover td{background:var(--bg);}
+.mgmt-cat{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;
+  background:var(--gl);color:var(--gd);white-space:nowrap;}
+.mgmt-title{font-weight:600;font-size:13px;}
+.mgmt-rev{font-size:11.5px;color:var(--mu);}
+.mgmt-date{font-size:11.5px;color:var(--ht);white-space:nowrap;}
+.mgmt-acts{display:flex;gap:5px;flex-shrink:0;}
+.mgmt-acts a,.mgmt-acts button{padding:4px 9px;font-size:11px;border:1px solid var(--bd);
+  border-radius:6px;background:var(--sf);color:var(--mu);cursor:pointer;text-decoration:none;
+  font-family:var(--font);white-space:nowrap;}
+.mgmt-acts a:hover{border-color:var(--g);color:var(--g);}
+.mgmt-acts button:hover{border-color:#dc2626;color:#dc2626;}
+.no-search{font-size:10px;color:var(--warn-tx);background:var(--warn-bg);border:1px solid var(--warn-bd);
+  padding:1px 5px;border-radius:999px;}
+
+/* bottom action bar for batch operations */
+.bottom-bar{position:sticky;bottom:0;left:0;right:0;background:var(--sf);border-top:1px solid var(--bd);
+  padding:10px 18px;display:none;align-items:center;gap:12px;box-shadow:0 -2px 8px rgba(0,0,0,.08);
+  border-radius:var(--rm) var(--rm) 0 0;z-index:10;}
+.bottom-bar.show{display:flex;}
+.bottom-bar-text{font-size:13px;font-weight:600;flex:1;}
+
+/* confirm dialog overlay */
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);
+  display:none;align-items:center;justify-content:center;z-index:100;}
+.overlay.show{display:flex;}
+.dialog{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rm);
+  padding:22px 24px;max-width:480px;width:90%;max-height:80vh;overflow-y:auto;
+  box-shadow:0 8px 30px rgba(0,0,0,.15);}
+.dialog h3{margin:0 0 10px;font-size:15px;}
+.dialog p{font-size:13px;color:var(--mu);margin:0 0 14px;}
+.dialog .d-list{font-size:12.5px;margin:0 0 14px;max-height:200px;overflow-y:auto;
+  border:1px solid var(--bd);border-radius:var(--rs);padding:8px 12px;}
+.dialog .d-list-item{padding:4px 0;border-bottom:1px solid var(--bd);}
+.dialog .d-list-item:last-child{border-bottom:none;}
+.dialog .d-actions{display:flex;gap:8px;justify-content:flex-end;}
+
+/* result messages */
 .result{margin-top:14px;padding:14px 16px;border-radius:var(--rs);font-size:13px;display:none;}
 .result.show{display:block;}
-.result.ok{background:var(--gl);border:1px solid #a7f3d0;}
-.result.err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;}
+.result.ok{background:var(--done-bg);border:1px solid #a7f3d0;}
+body.dark .result.ok{border-color:#065f46;}
+.result.err{background:var(--err-bg);border:1px solid var(--err-bd);color:var(--err-tx);}
 .result h4{margin:0 0 8px;font-size:13.5px;}
 .result dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:0 0 10px;font-size:12.5px;}
 .result dt{color:var(--mu);font-weight:600;}
 .result dd{margin:0;word-break:break-all;}
 
-/* 업로드 이력 */
-.up-list{display:flex;flex-direction:column;gap:8px;}
-.up-item{display:flex;align-items:center;gap:10px;padding:10px 13px;border:1px solid var(--bd);
-  border-radius:var(--rs);background:var(--bg);flex-wrap:wrap;}
-.up-cat{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;
-  background:var(--gl);color:var(--gd);flex-shrink:0;}
-.up-t{font-size:13px;font-weight:600;}
-.up-r{font-size:11.5px;color:var(--mu);}
-.up-d{font-size:11px;color:var(--ht);margin-left:auto;flex-shrink:0;}
-.up-acts{display:flex;gap:5px;flex-shrink:0;}
-.up-acts a,.up-acts button{padding:4px 9px;font-size:11.5px;border:1px solid var(--bd);
-  border-radius:6px;background:var(--sf);color:var(--mu);cursor:pointer;text-decoration:none;
-  font-family:var(--font);}
-.up-acts a:hover{border-color:var(--g);color:var(--g);}
-.up-acts button:hover{border-color:#dc2626;color:#dc2626;}
-.no-search{font-size:10.5px;color:#92400e;background:#fffbeb;border:1px solid #fcd34d;
-  padding:1px 6px;border-radius:999px;}
 .empty{text-align:center;padding:24px;color:var(--ht);font-size:12.5px;}
 .foot{text-align:center;font-size:11.5px;color:var(--ht);padding:24px 0 0;}
-@media(max-width:640px){ .grid{grid-template-columns:1fr;} .up-d{margin-left:0;} }
+
+/* mobile queue cards */
+@media(max-width:768px){
+  .shared-fields{grid-template-columns:1fr;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .filter-bar{flex-direction:column;align-items:stretch;}
+  .filter-search{min-width:0;}
+  .quick-actions{flex-direction:column;}
+  .qa-btn{min-width:0;}
+  /* queue table as cards */
+  .queue-table thead{display:none;}
+  .queue-table, .queue-table tbody, .queue-table tr, .queue-table td{display:block;width:100%;}
+  .queue-table tr{border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:8px;padding:10px;background:var(--sf);}
+  .queue-table td{border:none;padding:4px 0;}
+  .queue-table td::before{content:attr(data-label);font-size:10.5px;font-weight:600;color:var(--mu);
+    display:block;margin-bottom:2px;}
+  /* mgmt table as cards */
+  .mgmt-table thead{display:none;}
+  .mgmt-table, .mgmt-table tbody, .mgmt-table tr, .mgmt-table td{display:block;width:100%;}
+  .mgmt-table tr{border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:8px;padding:10px;background:var(--sf);}
+  .mgmt-table td{border:none;padding:4px 0;}
+  .mgmt-table td::before{content:attr(data-label);font-size:10.5px;font-weight:600;color:var(--mu);
+    display:block;margin-bottom:2px;}
+  .mgmt-acts{margin-top:6px;}
+}
+@media(max-width:480px){
+  .stats-row{grid-template-columns:1fr;}
+  .tab{padding:8px 12px;font-size:12.5px;}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <div class="hd">
-    <div class="hd-logo">📤</div>
+    <div class="hd-logo">&#x1F4E4;</div>
     <div>
       <div class="hd-t">개정 내규 업로드</div>
-      <div class="hd-s">개정된 사규(내규)를 올리면 내규 조회·전문 화면에 최신본으로 반영됩니다</div>
+      <div class="hd-s">개정된 사규(내규)를 올리면 내규 조회 및 전문 화면에 최신본으로 반영됩니다</div>
     </div>
     <div class="hd-actions">
-      <a class="tbtn" href="/">← 검색으로</a>
-      <button class="tbtn" id="darkBtn" onclick="toggleDark()">🌙</button>
+      <a class="tbtn" href="/">&#x2190; 검색으로</a>
+      <button class="tbtn" id="darkBtn" onclick="toggleDark()">&#x1F319;</button>
     </div>
   </div>
 
   <div id="statusBanner"></div>
 
-  <!-- 업로드 폼 -->
-  <form class="card" id="upForm" onsubmit="return false;">
-    <div class="card-t">① 개정 문서 선택 <span class="badge" id="extBadge">HWPX·DOCX·PDF·HTML·TXT</span></div>
-    <p class="card-d">HWPX·DOCX는 본문을 자동 추출해 <b>조문 단위 검색</b>까지 가능합니다.
-      구버전 HWP·PDF는 원본 열람만 지원합니다.</p>
-
-    <div class="drop" id="drop" tabindex="0"
-         onclick="document.getElementById('file').click()"
-         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('file').click();}">
-      <div class="drop-i">📄</div>
-      <div class="drop-t">파일을 끌어다 놓거나 클릭해서 선택</div>
-      <div class="drop-s" id="dropSub">최대 40MB</div>
-    </div>
-    <input type="file" id="file" style="display:none"
-           accept=".hwpx,.hwp,.docx,.pdf,.html,.htm,.txt,.md" onchange="onPick(this.files)">
-    <div id="fileRow"></div>
-
-    <div class="card-t" style="margin-top:22px;">② 개정 정보</div>
-    <p class="card-d">파일명이 <code>감사규정(2023년도 7월 일부개정).hwpx</code> 형식이면 규정명·개정 구분을 자동으로 채웁니다.</p>
-
-    <div class="grid">
-      <div class="f full">
-        <label for="title">규정명 <span class="req">*</span></label>
-        <input id="title" list="regNames" placeholder="예: 감사규정" autocomplete="off"
-               oninput="checkExisting()">
-        <datalist id="regNames"></datalist>
-        <div class="hint" id="titleHint">이미 등록된 규정명을 그대로 쓰면 개정판으로 교체되고 이전 개정 이력이 남습니다.</div>
-      </div>
-      <div class="f">
-        <label for="category">규정 구분</label>
-        <select id="category"></select>
-        <div class="hint" id="catHint">규정명에서 자동으로 판단합니다. 다르면 직접 고르세요.</div>
-      </div>
-      <div class="f">
-        <label for="revision">개정 구분</label>
-        <input id="revision" placeholder="예: 2026년도 3월 일부개정">
-      </div>
-      <div class="f">
-        <label for="effective">시행일자</label>
-        <input id="effective" type="date">
-      </div>
-      <div class="f">
-        <label for="department">담당 부서</label>
-        <input id="department" placeholder="예: 감사실">
-      </div>
-      <div class="f">
-        <label for="uploader">올린 사람 <span class="req">*</span></label>
-        <input id="uploader" placeholder="예: 홍길동" autocomplete="name" maxlength="40">
-        <div class="hint">업로드 이력과 커밋 기록에 남습니다.</div>
-      </div>
-      <div class="f full">
-        <label for="note">개정 사유·비고</label>
-        <textarea id="note" placeholder="주요 개정 내용이나 참고사항을 적어두면 전문 화면 상단에 표시됩니다."></textarea>
-      </div>
-      <div class="f full" id="tokenField" style="display:none;">
-        <label for="token">업로드 토큰 <span class="req">*</span></label>
-        <input id="token" type="password" placeholder="관리자에게 받은 업로드 토큰">
-        <div class="hint">서버에 <code>REG_UPLOAD_TOKEN</code>이 설정되어 있어 토큰이 필요합니다.</div>
-      </div>
-    </div>
-
-    <div class="actions">
-      <button class="btn primary" id="submitBtn" onclick="doUpload(false)">등록하기</button>
-      <button class="btn" id="zipBtn" onclick="doUpload(true)" title="변환 결과를 ZIP으로 받아 리포지토리에 커밋할 수 있습니다">⬇ 변환 결과 ZIP</button>
-      <button class="btn" onclick="resetForm()">초기화</button>
-    </div>
-
-    <div class="result" id="result"></div>
-  </form>
-
-  <!-- 업로드 이력 -->
-  <div class="card">
-    <div class="card-t">업로드한 개정 내규 <span class="badge" id="upCount">0건</span>
-      <button class="tbtn" style="margin-left:auto;" onclick="loadStatus()">↻ 새로고침</button>
-    </div>
-    <p class="card-d">이 화면에서 올린 규정만 표시됩니다. 되돌리면 등록이 해제되고 파일도 삭제됩니다.</p>
-    <div class="up-list" id="upList"><div class="empty">불러오는 중...</div></div>
+  <!-- Tab navigation -->
+  <div class="tabs" role="tablist">
+    <button class="tab active" role="tab" data-tab="dashboard" onclick="switchTab('dashboard')">&#x1F4CA; 대시보드</button>
+    <button class="tab" role="tab" data-tab="upload" onclick="switchTab('upload')">&#x1F4E4; 일괄 업로드</button>
+    <button class="tab" role="tab" data-tab="manage" onclick="switchTab('manage')">&#x1F5C2;&#xFE0F; 업로드 관리</button>
   </div>
 
-  <div class="foot">KOAT 내규&국가법령 종합 검색 서비스 · 개정 내규 업로드</div>
+  <!-- ============ TAB 1: DASHBOARD ============ -->
+  <div class="tab-panel active" id="panel-dashboard">
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">총 업로드 건수</div>
+        <div class="stat-val" id="dshTotal">-</div>
+        <div class="stat-sub" id="dshTotalSub">불러오는 중...</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">규정 구분별 현황</div>
+        <div class="cat-pills" id="dshCats"><span class="stat-sub">불러오는 중...</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">최근 업로드</div>
+        <div id="dshLatest" style="font-size:13px;font-weight:600;margin-top:4px;">-</div>
+        <div class="stat-sub" id="dshLatestSub"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-t">최근 업로드 타임라인</div>
+      <div class="timeline" id="dshTimeline"><div class="empty">불러오는 중...</div></div>
+    </div>
+
+    <div class="quick-actions">
+      <button class="qa-btn" onclick="switchTab('upload')">
+        <div class="qa-icon">&#x1F4E4;</div>
+        <div class="qa-label">새 규정 업로드</div>
+        <div class="qa-desc">개정된 내규 파일을 일괄 업로드합니다</div>
+      </button>
+      <button class="qa-btn" onclick="switchTab('manage')">
+        <div class="qa-icon">&#x1F5C2;&#xFE0F;</div>
+        <div class="qa-label">규정 관리</div>
+        <div class="qa-desc">업로드된 규정 검색, 필터, 되돌리기</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ TAB 2: BATCH UPLOAD ============ -->
+  <div class="tab-panel" id="panel-upload">
+
+    <div class="card">
+      <div class="card-t">파일 선택 <span class="badge" id="extBadge">HWPX&#xB7;DOCX&#xB7;PDF&#xB7;HTML&#xB7;TXT</span></div>
+      <p class="card-d">여러 파일을 한 번에 끌어다 놓거나 선택할 수 있습니다.
+        HWPX&#xB7;DOCX는 본문을 자동 추출해 <b>조문 단위 검색</b>까지 가능합니다.</p>
+
+      <div class="drop" id="drop" tabindex="0"
+           onclick="document.getElementById('fileInput').click()"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('fileInput').click();}">
+        <div class="drop-i">&#x1F4C4;</div>
+        <div class="drop-t">파일을 끌어다 놓거나 클릭해서 선택</div>
+        <div class="drop-s" id="dropSub">최대 40MB &middot; 여러 파일 선택 가능</div>
+      </div>
+      <input type="file" id="fileInput" style="display:none" multiple
+             accept=".hwpx,.hwp,.docx,.pdf,.html,.htm,.txt,.md" onchange="onPickFiles(this.files)">
+    </div>
+
+    <!-- Shared fields -->
+    <div class="card" id="sharedFieldsCard" style="display:none;">
+      <div class="card-t">공통 정보</div>
+      <p class="card-d">아래 정보는 대기열의 모든 파일에 공통으로 적용됩니다. 개별 파일의 규정명, 개정 구분, 구분은 각 행에서 편집 가능합니다.</p>
+
+      <div class="shared-fields">
+        <div class="f">
+          <label for="bUploader">올린 사람 <span class="req">*</span></label>
+          <input id="bUploader" placeholder="예: 홍길동" autocomplete="name" maxlength="40">
+          <div class="hint">업로드 이력과 커밋 기록에 남습니다.</div>
+        </div>
+        <div class="f">
+          <label for="bDepartment">담당 부서</label>
+          <input id="bDepartment" placeholder="예: 감사실">
+        </div>
+        <div class="f" id="bTokenField" style="display:none;">
+          <label for="bToken">업로드 토큰 <span class="req">*</span></label>
+          <input id="bToken" type="password" placeholder="관리자에게 받은 토큰">
+        </div>
+      </div>
+    </div>
+
+    <!-- Queue -->
+    <div class="card" id="queueCard" style="display:none;">
+      <div class="card-t">업로드 대기열 <span class="badge" id="queueCount">0건</span></div>
+      <p class="card-d">파일명이 <code>규정명(개정구분).hwpx</code> 형식이면 규정명과 개정 구분을 자동으로 채웁니다.</p>
+
+      <div class="queue-wrap">
+        <table class="queue-table">
+          <thead>
+            <tr>
+              <th style="width:30px;"><input type="checkbox" class="q-check" id="qCheckAll" onchange="toggleQueueAll(this.checked)"></th>
+              <th>파일</th>
+              <th style="min-width:140px;">규정명</th>
+              <th style="min-width:100px;">개정 구분</th>
+              <th style="min-width:80px;">규정 구분</th>
+              <th style="width:70px;">상태</th>
+              <th style="width:36px;"></th>
+            </tr>
+          </thead>
+          <tbody id="queueBody"></tbody>
+        </table>
+      </div>
+
+      <datalist id="regNames"></datalist>
+
+      <div class="progress-wrap" id="uploadProgress">
+        <div class="progress-bar"><div class="progress-fill" id="uploadProgressFill"></div></div>
+        <div class="progress-text" id="uploadProgressText"></div>
+      </div>
+
+      <div class="batch-summary" id="batchSummary"></div>
+
+      <div class="actions">
+        <button class="btn primary" id="batchUploadBtn" onclick="doBatchUpload()">전체 업로드</button>
+        <button class="btn" onclick="removeSelectedQueue()">선택 삭제</button>
+        <button class="btn" onclick="clearQueue()">초기화</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TAB 3: MANAGEMENT ============ -->
+  <div class="tab-panel" id="panel-manage">
+
+    <div class="card">
+      <div class="card-t">업로드한 개정 내규
+        <span class="badge" id="mgmtCount">0건</span>
+        <button class="tbtn" style="margin-left:auto;" onclick="loadStatus()">&#x21BB; 새로고침</button>
+      </div>
+      <p class="card-d">이 화면에서 올린 규정만 표시됩니다. 되돌리면 등록이 해제되고 파일도 삭제됩니다.</p>
+
+      <div class="filter-bar">
+        <select id="mgmtCatFilter" onchange="renderManagement()">
+          <option value="">전체 구분</option>
+        </select>
+        <input type="text" class="filter-search" id="mgmtSearch" placeholder="규정명 검색..." oninput="renderManagement()">
+        <select id="mgmtSort" onchange="renderManagement()">
+          <option value="date-desc">최신 업로드 순</option>
+          <option value="date-asc">오래된 순</option>
+          <option value="name-asc">이름 가나다순</option>
+          <option value="name-desc">이름 역순</option>
+        </select>
+      </div>
+
+      <div class="mgmt-wrap">
+        <table class="mgmt-table">
+          <thead>
+            <tr>
+              <th style="width:30px;"><input type="checkbox" class="q-check" id="mgmtCheckAll" onchange="toggleMgmtAll(this.checked)"></th>
+              <th>구분</th>
+              <th>규정명</th>
+              <th>개정 구분</th>
+              <th>올린 사람</th>
+              <th>업로드 일시</th>
+              <th>작업</th>
+            </tr>
+          </thead>
+          <tbody id="mgmtBody"></tbody>
+        </table>
+      </div>
+
+      <div class="result" id="mgmtResult"></div>
+    </div>
+
+    <!-- Bottom action bar -->
+    <div class="bottom-bar" id="mgmtBottomBar">
+      <div class="bottom-bar-text" id="mgmtSelText">선택한 0건</div>
+      <button class="btn danger" onclick="batchRevert()">선택한 항목 되돌리기</button>
+    </div>
+  </div>
+
+  <!-- Confirm dialog overlay -->
+  <div class="overlay" id="confirmOverlay">
+    <div class="dialog" id="confirmDialog"></div>
+  </div>
+
+  <div class="foot">KOAT 내규&amp;국가법령 종합 검색 서비스 &middot; 개정 내규 업로드</div>
 </div>
 
 <script>
-let _picked=null, _status=null;
+/* ── globals ── */
+var _status=null, _names=[], _uploaded=[], _queue=[], _mgmtSelected=new Set(), _uploading=false;
 
+/* ── utilities ── */
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
   .replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtSize(n){return n<1024?n+'B':n<1048576?(n/1024).toFixed(1)+'KB':(n/1048576).toFixed(1)+'MB';}
+function $(id){return document.getElementById(id);}
 
-/* ── 다크모드 (검색 화면과 같은 키 사용) ── */
+/* ── dark mode ── */
 function toggleDark(){
-  const dark=!document.body.classList.contains('dark');
+  var dark=!document.body.classList.contains('dark');
   document.body.classList.toggle('dark',dark);
   localStorage.setItem('dark',dark?'1':'0');
-  document.getElementById('darkBtn').textContent=dark?'☀':'🌙';
+  $('darkBtn').textContent=dark?'\u2600':'\uD83C\uDF19';
 }
 if(localStorage.getItem('dark')==='1'){
   document.body.classList.add('dark');
-  document.getElementById('darkBtn').textContent='☀';
+  $('darkBtn').textContent='\u2600';
 }
 
-/* ── 드래그&드롭 ── */
-const drop=document.getElementById('drop');
-['dragenter','dragover'].forEach(e=>drop.addEventListener(e,ev=>{
-  ev.preventDefault(); drop.classList.add('over');}));
-['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{
-  ev.preventDefault(); drop.classList.remove('over');}));
-drop.addEventListener('drop',ev=>onPick(ev.dataTransfer.files));
+/* ── tabs ── */
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',t.dataset.tab===name);});
+  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.toggle('active',p.id==='panel-'+name);});
+  history.replaceState(null,'','#'+name);
+  if(name==='manage') renderManagement();
+}
+function initTab(){
+  var h=(location.hash||'').replace('#','');
+  if(['dashboard','upload','manage'].indexOf(h)>=0) switchTab(h);
+}
+window.addEventListener('hashchange',initTab);
 
-function onPick(files){
-  if(!files||!files.length) return;
-  const f=files[0];
-  const ext='.'+(f.name.split('.').pop()||'').toLowerCase();
-  const allowed=(_status&&_status.allowed_ext)||['.hwpx','.hwp','.docx','.pdf','.html','.htm','.txt','.md'];
-  if(!allowed.includes(ext)){
-    showResult(false,`지원하지 않는 형식입니다(${esc(ext)}). 가능: ${allowed.join(', ')}`);
-    return;
-  }
-  const maxMb=(_status&&_status.max_mb)||40;
-  if(f.size>maxMb*1024*1024){
-    showResult(false,`파일이 너무 큽니다(최대 ${maxMb}MB).`); return;
-  }
-  _picked=f;
-  document.getElementById('fileRow').innerHTML=
-    `<div class="file-row"><span>📎</span><span class="file-n">${esc(f.name)}</span>
-     <span class="file-sz">${fmtSize(f.size)}</span>
-     <button type="button" class="file-x" onclick="clearFile()" title="선택 해제">✕</button></div>`;
-  autoFill(f.name);
-  hideResult();
-}
-function clearFile(){
-  _picked=null;
-  document.getElementById('file').value='';
-  document.getElementById('fileRow').innerHTML='';
-}
-
-/* 파일명에서 규정명·개정 구분 추출: "감사규정(2023년도 7월 일부개정).hwpx" */
-function autoFill(fname){
-  const stem=fname.replace(/\.[^.]+$/,'');
-  const m=stem.match(/^(.*?)\s*\(([^)]*)\)\s*$/);
-  const t=document.getElementById('title'), r=document.getElementById('revision');
-  if(!t.value.trim()) t.value=(m?m[1]:stem).trim();
-  if(!r.value.trim() && m) r.value=m[2].trim();
-  guessCategory();
-  checkExisting();
-}
-/* 규정명 끝말 → 구분. 서버(_REG_CAT_SUFFIX)와 같은 기준을 쓴다.
-   지침·요령·기준 등 하위 문서는 예규로 묶고, 정관은 이름이 '정관'일 때만 인정한다. */
-const CAT_SUFFIX=[['정관','정관'],['규정','규정'],['규칙','규칙'],['세칙','세칙'],['예규','예규'],
+/* ── category guessing ── */
+var CAT_SUFFIX=[['정관','정관'],['규정','규정'],['규칙','규칙'],['세칙','세칙'],['예규','예규'],
   ['지침','예규'],['요령','예규'],['기준','예규'],['수칙','예규'],['준칙','예규'],
   ['규준','예규'],['요강','예규'],['계획','예규'],
   ['매뉴얼','매뉴얼'],['편람','매뉴얼'],['가이드','매뉴얼'],['안내서','매뉴얼'],['핸드북','매뉴얼']];
-/* 받침 유무에 따라 '로 / 으로' (ㄹ 받침은 '로') */
-function _ro(w){
-  const c=String(w||'').slice(-1).charCodeAt(0)-0xAC00;
-  if(c<0||c>11171) return '로';
-  const jong=c%28;
-  return (jong===0||jong===8)?'로':'으로';
-}
+
 function catFromTitle(title){
-  const t=String(title||'').replace(/\s+/g,'').replace(/[(（\[【].*$/,'');
-  const hit=CAT_SUFFIX.find(([suf])=>t.endsWith(suf));
+  var t=String(title||'').replace(/\s+/g,'').replace(/[(（\[【].*$/,'');
+  var hit=CAT_SUFFIX.find(function(pair){return t.endsWith(pair[0]);});
   return hit?hit[1]:'';
 }
-function guessCategory(){
-  const sel=document.getElementById('category');
-  const hint=document.getElementById('catHint');
-  if(sel.dataset.touched==='1'){
-    if(hint) hint.textContent='직접 선택한 구분으로 등록됩니다.';
-    return;
-  }
-  const title=document.getElementById('title').value.trim();
-  // 이미 등록된 규정의 개정판이면 기존 구분을 잇는다
-  const key=title.replace(/\s+/g,'').toLowerCase();
-  const prev=_names.find(n=>n.title.replace(/\s+/g,'').toLowerCase()===key);
-  const cat=(prev&&prev.category)||catFromTitle(title);
-  if(cat && [...sel.options].some(o=>o.value===cat)){
-    sel.value=cat;
-    if(hint) hint.textContent=prev
-      ? `기존 등록 구분(${cat})을 그대로 사용합니다.`
-      : `규정명을 보고 '${cat}'${_ro(cat)} 판단했습니다. 다르면 직접 고르세요.`;
-  }else{
-    sel.value='기타';
-    if(hint) hint.textContent='규정명으로 구분을 판단하지 못했습니다. 직접 골라주세요.';
-  }
+
+function guessCatForTitle(title){
+  var key=title.replace(/\s+/g,'').toLowerCase();
+  var prev=_names.find(function(n){return n.title.replace(/\s+/g,'').toLowerCase()===key;});
+  return (prev&&prev.category)||catFromTitle(title)||'기타';
 }
 
-/* 기존 규정명과 일치하면 '개정판 교체' 안내 */
-let _names=[];
-function checkExisting(){
-  const t=document.getElementById('title').value.trim().replace(/\s+/g,'').toLowerCase();
-  const hint=document.getElementById('titleHint');
-  const hit=_names.find(n=>n.title.replace(/\s+/g,'').toLowerCase()===t);
-  if(hit){
-    hint.innerHTML=`✔ 등록된 규정입니다 — 현재 <b>${esc(hit.revision||'개정 정보 없음')}</b>. `
-      +`이대로 등록하면 <b>개정판으로 교체</b>되고 이전 개정은 이력으로 남습니다.`;
-    hint.style.color='var(--gd)';
-  }else{
-    hint.textContent='이미 등록된 규정명을 그대로 쓰면 개정판으로 교체되고 이전 개정 이력이 남습니다.';
-    hint.style.color='';
-  }
-  guessCategory();
+function isExisting(title){
+  var key=title.replace(/\s+/g,'').toLowerCase();
+  return _names.find(function(n){return n.title.replace(/\s+/g,'').toLowerCase()===key;})||null;
 }
-document.getElementById('category').addEventListener('change',function(){this.dataset.touched='1';});
 
-/* ── 상태 조회 ── */
+/* parse filename: "감사규정(2023년도 7월 일부개정).hwpx" */
+function parseFilename(fname){
+  var stem=fname.replace(/\.[^.]+$/,'');
+  var m=stem.match(/^(.*?)\s*\(([^)]*)\)\s*$/);
+  return {title:m?m[1].trim():stem.trim(), revision:m?m[2].trim():''};
+}
+
+/* ── status loading ── */
 async function loadStatus(recheck){
   try{
-    const r=await fetch('/api/regs/upload/status'+(recheck?'?recheck=1':''));
-    const d=await r.json();
+    var r=await fetch('/api/regs/upload/status'+(recheck?'?recheck=1':''));
+    var d=await r.json();
     _status=d;
-    // 카테고리
-    const sel=document.getElementById('category');
-    const cur=sel.value;
-    sel.innerHTML=(d.categories||[]).map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
-    if(cur) sel.value=cur;
-    document.getElementById('extBadge').textContent=
-      (d.allowed_ext||[]).map(e=>e.replace('.','').toUpperCase()).join('·');
-    document.getElementById('dropSub').textContent=`최대 ${d.max_mb}MB · ${(d.allowed_ext||[]).join(', ')}`;
-    document.getElementById('tokenField').style.display=d.token_required?'':'none';
+    _uploaded=d.uploaded||[];
 
-    // 저장 가능 여부 배너
-    const b=document.getElementById('statusBanner');
+    /* ext/size badges */
+    $('extBadge').textContent=(d.allowed_ext||[]).map(function(e){return e.replace('.','').toUpperCase();}).join('\xB7');
+    $('dropSub').textContent='최대 '+d.max_mb+'MB \xB7 '+(d.allowed_ext||[]).join(', ')+' \xB7 여러 파일 선택 가능';
+
+    /* token fields */
+    $('bTokenField').style.display=d.token_required?'':'none';
+
+    /* status banner */
+    var b=$('statusBanner');
     if(d.github && d.github_ok===false){
-      // 토큰·권한 문제를 업로드 전에 알린다(끝까지 진행한 뒤 실패하지 않도록)
-      b.innerHTML=`<div class="banner err"><span>⛔</span><div>
-        <b>GitHub 저장소에 연결할 수 없어 지금은 등록할 수 없습니다.</b><br>
-        ${esc(d.github_error||'원인을 확인할 수 없습니다.')}<br>
-        <span class="muted">저장소 <code>${esc(d.github_repo)}</code> · 브랜치
-        <code>${esc(d.github_branch||'main')}</code></span><br>
-        <button type="button" class="lnk" onclick="loadStatus(1)">다시 확인</button>
-      </div></div>`;
-      document.getElementById('submitBtn').disabled=true;
+      b.innerHTML='<div class="banner err"><span>\u26D4</span><div>'
+        +'<b>GitHub 저장소에 연결할 수 없어 지금은 등록할 수 없습니다.</b><br>'
+        +esc(d.github_error||'원인을 확인할 수 없습니다.')+'<br>'
+        +'<span class="muted">저장소 <code>'+esc(d.github_repo)+'</code> \xB7 브랜치 '
+        +'<code>'+esc(d.github_branch||'main')+'</code></span><br>'
+        +'<button type="button" class="lnk" onclick="loadStatus(1)">다시 확인</button>'
+        +'</div></div>';
     }else if(d.github){
-      document.getElementById('submitBtn').disabled=false;
-      b.innerHTML=`<div class="banner ok"><span>✅</span><div>
-        업로드하면 <b>자동으로 저장·배포</b>됩니다(<code>${esc(d.github_repo)}</code>에 커밋).
-        현재 등록된 내규 <b>${d.total}건</b>.
-        반영까지 <b>1~2분</b> 정도 걸립니다.</div></div>`;
+      b.innerHTML='<div class="banner ok"><span>\u2705</span><div>'
+        +'업로드하면 <b>자동으로 저장 및 배포</b>됩니다(<code>'+esc(d.github_repo)+'</code>에 커밋). '
+        +'현재 등록된 내규 <b>'+d.total+'건</b>. '
+        +'반영까지 <b>1~2분</b> 정도 걸립니다.</div></div>';
     }else if(d.writable){
-      b.innerHTML=`<div class="banner ok"><span>✅</span><div>
-        업로드하면 <b>즉시 반영</b>됩니다. 현재 등록된 내규 <b>${d.total}건</b>.
-        배포본(Vercel)에도 반영하려면 <code>regulations/</code>와
-        <code>regulations_manifest.json</code> 변경분을 커밋·푸시하세요.</div></div>`;
+      b.innerHTML='<div class="banner ok"><span>\u2705</span><div>'
+        +'업로드하면 <b>즉시 반영</b>됩니다. 현재 등록된 내규 <b>'+d.total+'건</b>. '
+        +'배포본(Vercel)에도 반영하려면 <code>regulations/</code>와 '
+        +'<code>regulations_manifest.json</code> 변경분을 커밋 및 푸시하세요.</div></div>';
     }else{
-      b.innerHTML=`<div class="banner warn"><span>⚠️</span><div>
-        <b>읽기 전용 환경</b>입니다(서버리스 배포). 등록하기를 누르면 저장 대신
-        <b>변환 결과 ZIP</b>이 내려옵니다. ZIP을 리포지토리에 풀고 커밋하면 반영됩니다.
-        바로 저장하려면 로컬에서 <code>python run_local.py</code>로 실행하세요.</div></div>`;
-      document.getElementById('submitBtn').textContent='변환 결과 ZIP 받기';
+      b.innerHTML='<div class="banner warn"><span>\u26A0\uFE0F</span><div>'
+        +'<b>읽기 전용 환경</b>입니다(서버리스 배포). 등록하기를 누르면 저장 대신 '
+        +'<b>변환 결과 ZIP</b>이 내려옵니다. ZIP을 리포지토리에 풀고 커밋하면 반영됩니다. '
+        +'바로 저장하려면 로컬에서 <code>python run_local.py</code>로 실행하세요.</div></div>';
     }
-    renderUploads(d.uploaded||[]);
 
-    const rn=await fetch('/api/regs/names');
-    const dn=await rn.json();
-    _names=(dn.names||[]).filter(n=>n.title);
-    document.getElementById('regNames').innerHTML=
-      _names.map(n=>`<option value="${esc(n.title)}">${esc(n.category||'')}${n.revision?' · '+esc(n.revision):''}</option>`).join('');
+    /* fetch names for datalist */
+    var rn=await fetch('/api/regs/names');
+    var dn=await rn.json();
+    _names=(dn.names||[]).filter(function(n){return n.title;});
+    $('regNames').innerHTML=_names.map(function(n){
+      return '<option value="'+esc(n.title)+'">'+esc(n.category||'')+
+        (n.revision?' \xB7 '+esc(n.revision):'')+'</option>';
+    }).join('');
+
+    /* category filter in management */
+    var cats=d.categories||[];
+    var catSel=$('mgmtCatFilter');
+    var curV=catSel.value;
+    catSel.innerHTML='<option value="">전체 구분</option>'+
+      cats.map(function(c){return '<option value="'+esc(c)+'">'+esc(c)+'</option>';}).join('');
+    if(curV) catSel.value=curV;
+
+    /* render dashboard */
+    renderDashboard();
+    /* render management */
+    renderManagement();
+    /* re-render queue categories */
+    renderQueueCategories(cats);
+
   }catch(e){
-    document.getElementById('statusBanner').innerHTML=
-      `<div class="banner err"><span>⚠️</span><div>서버 상태를 확인할 수 없습니다: ${esc(e.message)}</div></div>`;
+    $('statusBanner').innerHTML=
+      '<div class="banner err"><span>\u26A0\uFE0F</span><div>서버 상태를 확인할 수 없습니다: '+esc(e.message)+'</div></div>';
   }
 }
 
-function renderUploads(list){
-  document.getElementById('upCount').textContent=list.length+'건';
-  const el=document.getElementById('upList');
+function renderQueueCategories(cats){
+  /* update category selects in queue if any */
+  document.querySelectorAll('.q-cat-sel').forEach(function(sel){
+    var cur=sel.value;
+    sel.innerHTML=cats.map(function(c){return '<option value="'+esc(c)+'">'+esc(c)+'</option>';}).join('');
+    if(cur) sel.value=cur;
+  });
+}
+
+/* ── dashboard rendering ── */
+function renderDashboard(){
+  var up=_uploaded;
+  $('dshTotal').textContent=up.length;
+  $('dshTotalSub').textContent=(_status&&_status.total?'전체 등록 내규 '+_status.total+'건':'');
+
+  /* category breakdown */
+  var catMap={};
+  up.forEach(function(u){var c=u.category||'기타'; catMap[c]=(catMap[c]||0)+1;});
+  var catHtml='';
+  for(var c in catMap){
+    catHtml+='<span class="cat-pill">'+esc(c)+' '+catMap[c]+'</span>';
+  }
+  $('dshCats').innerHTML=catHtml||'<span class="stat-sub">아직 업로드 없음</span>';
+
+  /* latest */
+  if(up.length>0){
+    var latest=up[0];
+    $('dshLatest').textContent=latest.title;
+    $('dshLatestSub').textContent=(latest.uploaded_at||'')+(latest.uploader?' \xB7 '+latest.uploader:'');
+  }else{
+    $('dshLatest').textContent='-';
+    $('dshLatestSub').textContent='아직 업로드 없음';
+  }
+
+  /* timeline (last 5) */
+  var tl=$('dshTimeline');
+  var recent=up.slice(0,5);
+  if(!recent.length){
+    tl.innerHTML='<div class="empty">아직 업로드한 개정 내규가 없습니다.</div>'; return;
+  }
+  tl.innerHTML=recent.map(function(u){
+    return '<div class="tl-item">'
+      +'<div class="tl-dot"></div>'
+      +'<div class="tl-body">'
+      +'<div class="tl-title">'+esc(u.title)
+      +(isExisting(u.title)?' <span class="tl-cat">'+esc(u.category||'기타')+'</span>':' <span class="tl-cat">'+esc(u.category||'기타')+'</span>')
+      +'</div>'
+      +'<div class="tl-meta">'
+      +esc(u.revision||'')+(u.uploader?' \xB7 '+esc(u.uploader):'')
+      +' \xB7 '+esc(u.uploaded_at||'')
+      +(u.searchable?'':' <span class="no-search">본문 검색 불가</span>')
+      +'</div></div></div>';
+  }).join('');
+}
+
+/* ── BATCH UPLOAD: file picking ── */
+var drop=$('drop');
+['dragenter','dragover'].forEach(function(e){drop.addEventListener(e,function(ev){
+  ev.preventDefault(); drop.classList.add('over');});});
+['dragleave','drop'].forEach(function(e){drop.addEventListener(e,function(ev){
+  ev.preventDefault(); drop.classList.remove('over');});});
+drop.addEventListener('drop',function(ev){onPickFiles(ev.dataTransfer.files);});
+
+function onPickFiles(fileList){
+  if(!fileList||!fileList.length) return;
+  var allowed=(_status&&_status.allowed_ext)||['.hwpx','.hwp','.docx','.pdf','.html','.htm','.txt','.md'];
+  var maxMb=(_status&&_status.max_mb)||40;
+  var errors=[];
+  for(var i=0;i<fileList.length;i++){
+    var f=fileList[i];
+    var ext='.'+(f.name.split('.').pop()||'').toLowerCase();
+    if(allowed.indexOf(ext)<0){
+      errors.push(esc(f.name)+': 지원하지 않는 형식('+esc(ext)+')');
+      continue;
+    }
+    if(f.size>maxMb*1024*1024){
+      errors.push(esc(f.name)+': 파일이 너무 큼(최대 '+maxMb+'MB)');
+      continue;
+    }
+    var parsed=parseFilename(f.name);
+    _queue.push({
+      file:f,
+      title:parsed.title,
+      revision:parsed.revision,
+      category:guessCatForTitle(parsed.title),
+      department:'',
+      status:'pending',
+      result:null,
+      checked:false
+    });
+  }
+  if(errors.length){
+    alert('일부 파일을 추가할 수 없습니다:\n\n'+errors.join('\n'));
+  }
+  $('fileInput').value='';
+  renderQueue();
+}
+
+function renderQueue(){
+  var show=_queue.length>0;
+  $('sharedFieldsCard').style.display=show?'':'none';
+  $('queueCard').style.display=show?'':'none';
+  $('queueCount').textContent=_queue.length+'건';
+
+  var cats=(_status&&_status.categories)||[];
+  var body=$('queueBody');
+  body.innerHTML=_queue.map(function(q,i){
+    var existing=isExisting(q.title);
+    var statusCls=q.status;
+    var statusLabel={pending:'대기',uploading:'업로드 중...',done:'완료',error:'실패'}[q.status]||q.status;
+    return '<tr data-qi="'+i+'">'
+      +'<td data-label=""><input type="checkbox" class="q-check" '+(q.checked?'checked':'')+' onchange="toggleQueueItem('+i+',this.checked)"></td>'
+      +'<td data-label="파일"><div class="q-fname" title="'+esc(q.file.name)+'">'+esc(q.file.name)+'</div>'
+      +'<div class="q-size">'+fmtSize(q.file.size)+'</div>'
+      +(existing?'<div class="q-replace">\u2714 개정판으로 교체 (현재: '+esc(existing.revision||'정보 없음')+')</div>':'')
+      +'</td>'
+      +'<td data-label="규정명"><input list="regNames" value="'+esc(q.title)+'" '
+      +(q.status!=='pending'?'disabled':'')+' onchange="updateQueueField('+i+',\'title\',this.value)"></td>'
+      +'<td data-label="개정 구분"><input value="'+esc(q.revision)+'" '
+      +(q.status!=='pending'?'disabled':'')+' onchange="updateQueueField('+i+',\'revision\',this.value)"></td>'
+      +'<td data-label="규정 구분"><select class="q-cat-sel" '
+      +(q.status!=='pending'?'disabled':'')+' onchange="updateQueueField('+i+',\'category\',this.value)">'
+      +cats.map(function(c){return '<option value="'+esc(c)+'"'+(q.category===c?' selected':'')+'>'+esc(c)+'</option>';}).join('')
+      +'</select></td>'
+      +'<td data-label="상태"><span class="q-status '+statusCls+'">'+
+      (q.status==='uploading'?'<span class="spin" style="border-color:rgba(0,0,0,.2);border-top-color:var(--gd);width:10px;height:10px;margin-right:3px;"></span>':'')+
+      esc(statusLabel)+'</span>'
+      +(q.status==='error'&&q.result?'<div style="font-size:10px;color:var(--err-tx);margin-top:2px;">'+esc(q.result)+'</div>':'')
+      +'</td>'
+      +'<td data-label=""><button class="q-remove" onclick="removeQueueItem('+i+')" title="제거"'
+      +(q.status==='uploading'?' disabled':'')+'>&#x2715;</button></td>'
+      +'</tr>';
+  }).join('');
+}
+
+function updateQueueField(i,field,val){
+  _queue[i][field]=val;
+  if(field==='title'){
+    _queue[i].category=guessCatForTitle(val);
+    renderQueue();
+  }
+}
+function toggleQueueItem(i,checked){_queue[i].checked=checked;}
+function toggleQueueAll(checked){
+  _queue.forEach(function(q){q.checked=checked;});
+  document.querySelectorAll('#queueBody .q-check').forEach(function(cb){cb.checked=checked;});
+}
+function removeQueueItem(i){
+  _queue.splice(i,1);
+  renderQueue();
+}
+function removeSelectedQueue(){
+  _queue=_queue.filter(function(q){return !q.checked;});
+  $('qCheckAll').checked=false;
+  renderQueue();
+}
+function clearQueue(){
+  _queue=[];
+  $('qCheckAll').checked=false;
+  $('uploadProgress').classList.remove('show');
+  $('batchSummary').className='batch-summary';
+  renderQueue();
+}
+
+/* ── batch upload ── */
+async function doBatchUpload(){
+  if(_uploading) return;
+  var pending=_queue.filter(function(q){return q.status==='pending';});
+  if(!pending.length){alert('업로드할 파일이 없습니다.'); return;}
+  var uploader=$('bUploader').value.trim();
+  if(!uploader){alert('올린 사람을 입력해주세요.'); return;}
+  if(_status&&_status.token_required&&!$('bToken').value){
+    alert('업로드 토큰을 입력해주세요.'); return;
+  }
+  /* validate titles */
+  for(var j=0;j<pending.length;j++){
+    if(!pending[j].title.trim()){
+      alert((j+1)+'번째 파일의 규정명이 비어 있습니다.'); return;
+    }
+  }
+
+  _uploading=true;
+  $('batchUploadBtn').disabled=true;
+  $('batchUploadBtn').innerHTML='<span class="spin"></span>업로드 중...';
+  $('uploadProgress').classList.add('show');
+  $('batchSummary').className='batch-summary';
+
+  var total=pending.length, done=0, successes=0, failures=0;
+  var department=$('bDepartment').value.trim();
+  var token=$('bToken').value;
+
+  for(var k=0;k<_queue.length;k++){
+    if(_queue[k].status!=='pending') continue;
+    _queue[k].status='uploading';
+    renderQueue();
+
+    var fd=new FormData();
+    fd.append('file',_queue[k].file);
+    fd.append('title',_queue[k].title.trim());
+    fd.append('category',_queue[k].category);
+    fd.append('revision',_queue[k].revision.trim());
+    fd.append('department',_queue[k].department.trim()||department);
+    fd.append('uploader',uploader);
+    if(token) fd.append('token',token);
+
+    try{
+      var res=await fetch('/api/regs/upload',{method:'POST',body:fd});
+      var ct=(res.headers.get('Content-Type')||'').toLowerCase();
+      if(ct.indexOf('application/zip')>=0){
+        /* readonly env - ZIP download */
+        var blob=await res.blob();
+        var slug=(_queue[k].title.trim()||'regulation').replace(/\s+/g,'_');
+        var a=document.createElement('a');
+        a.href=URL.createObjectURL(blob); a.download=slug+'.zip';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+        _queue[k].status='done';
+        _queue[k].result='ZIP 다운로드 완료';
+        successes++;
+      }else{
+        var data=await res.json();
+        if(!res.ok||data.error){
+          _queue[k].status='error';
+          _queue[k].result=data.error||('업로드 실패 ('+res.status+')');
+          failures++;
+        }else{
+          _queue[k].status='done';
+          _queue[k].result=data.committed?'커밋 완료':'등록 완료';
+          successes++;
+        }
+      }
+    }catch(err){
+      _queue[k].status='error';
+      _queue[k].result=err.message;
+      failures++;
+    }
+    done++;
+    $('uploadProgressFill').style.width=Math.round(done/total*100)+'%';
+    $('uploadProgressText').textContent=done+'/'+total+' 완료'
+      +(failures?' (실패 '+failures+'건)':'');
+    renderQueue();
+  }
+
+  /* summary */
+  var sm=$('batchSummary');
+  if(failures===0){
+    sm.className='batch-summary show ok';
+    sm.innerHTML='<h4>\u2705 전체 '+successes+'건 업로드 완료</h4>'
+      +'<p style="margin:0;font-size:12.5px;">배포 반영까지 1~2분 걸립니다.</p>';
+  }else{
+    sm.className='batch-summary show mixed';
+    sm.innerHTML='<h4>\u26A0\uFE0F '+successes+'건 성공, '+failures+'건 실패</h4>'
+      +'<p style="margin:0;font-size:12.5px;">실패한 항목은 대기열에서 상태를 확인해주세요.</p>';
+  }
+
+  _uploading=false;
+  $('batchUploadBtn').disabled=false;
+  $('batchUploadBtn').textContent='전체 업로드';
+  loadStatus();
+}
+
+/* ── MANAGEMENT ── */
+function renderManagement(){
+  var list=_uploaded.slice();
+  var catFilter=$('mgmtCatFilter').value;
+  var search=$('mgmtSearch').value.trim().toLowerCase();
+  var sort=$('mgmtSort').value;
+
+  if(catFilter) list=list.filter(function(u){return u.category===catFilter;});
+  if(search) list=list.filter(function(u){return (u.title||'').toLowerCase().indexOf(search)>=0;});
+
+  /* sort */
+  if(sort==='date-asc') list.sort(function(a,b){return (a.uploaded_at||'').localeCompare(b.uploaded_at||'');});
+  else if(sort==='name-asc') list.sort(function(a,b){return (a.title||'').localeCompare(b.title||'');});
+  else if(sort==='name-desc') list.sort(function(a,b){return (b.title||'').localeCompare(a.title||'');});
+  /* default date-desc: API returns newest first */
+
+  $('mgmtCount').textContent=list.length+'건';
+  var body=$('mgmtBody');
   if(!list.length){
-    el.innerHTML='<div class="empty">아직 업로드한 개정 내규가 없습니다.</div>'; return;
+    body.innerHTML='<tr><td colspan="7" class="empty">'
+      +(search||catFilter?'조건에 맞는 규정이 없습니다.':'아직 업로드한 개정 내규가 없습니다.')+'</td></tr>';
+    updateBottomBar();
+    return;
   }
-  el.innerHTML=list.map(u=>`
-    <div class="up-item">
-      <span class="up-cat">${esc(u.category||'기타')}</span>
-      <div style="min-width:0;">
-        <div class="up-t">${esc(u.title)}</div>
-        <div class="up-r">${esc(u.revision||'')}${u.uploader?` · ${esc(u.uploader)}`:''}
-          ${u.searchable?'':'<span class="no-search">본문 검색 불가</span>'}
-          ${(u.history&&u.history.length)?`<span style="color:var(--ht);"> · 이전 개정 ${u.history.length}건</span>`:''}
-        </div>
-      </div>
-      <span class="up-d">${esc(u.uploaded_at||'')}</span>
-      <div class="up-acts">
-        <a href="${esc(u.html||'#')}" target="_blank">전문 보기</a>
-        <a href="/?q=${encodeURIComponent(u.title)}">검색에서 열기</a>
-        <button onclick="removeUpload('${encodeURIComponent(u.slug)}','${esc(u.title).replace(/'/g,"\\'")}')">되돌리기</button>
-      </div>
-    </div>`).join('');
+
+  body.innerHTML=list.map(function(u){
+    var slugEnc=encodeURIComponent(u.slug);
+    var checked=_mgmtSelected.has(u.slug);
+    return '<tr data-slug="'+esc(u.slug)+'">'
+      +'<td data-label=""><input type="checkbox" class="q-check" '+(checked?'checked':'')+' onchange="toggleMgmtItem(\''+esc(u.slug).replace(/'/g,"\\'")+'\',this.checked)"></td>'
+      +'<td data-label="구분"><span class="mgmt-cat">'+esc(u.category||'기타')+'</span></td>'
+      +'<td data-label="규정명"><div class="mgmt-title">'+esc(u.title)+'</div>'
+      +(u.searchable?'':'<span class="no-search">본문 검색 불가</span>')
+      +((u.history&&u.history.length)?'<div style="font-size:10.5px;color:var(--ht);">이전 개정 '+u.history.length+'건</div>':'')
+      +'</td>'
+      +'<td data-label="개정 구분"><span class="mgmt-rev">'+esc(u.revision||'-')+'</span></td>'
+      +'<td data-label="올린 사람"><span class="mgmt-rev">'+esc(u.uploader||'-')+'</span></td>'
+      +'<td data-label="업로드 일시"><span class="mgmt-date">'+esc(u.uploaded_at||'-')+'</span></td>'
+      +'<td data-label="작업"><div class="mgmt-acts">'
+      +'<a href="'+esc(u.html||'#')+'" target="_blank">전문보기</a>'
+      +'<a href="/?q='+encodeURIComponent(u.title)+'">검색</a>'
+      +'<button onclick="removeUpload(\''+slugEnc+'\',\''+esc(u.title).replace(/'/g,"\\'")+'\')">되돌리기</button>'
+      +'</div></td></tr>';
+  }).join('');
+  updateBottomBar();
 }
 
-/* ── 업로드 ── */
-function showResult(ok,html){
-  const r=document.getElementById('result');
+function toggleMgmtItem(slug,checked){
+  if(checked) _mgmtSelected.add(slug);
+  else _mgmtSelected.delete(slug);
+  updateBottomBar();
+}
+function toggleMgmtAll(checked){
+  _mgmtSelected.clear();
+  if(checked){
+    document.querySelectorAll('#mgmtBody tr[data-slug]').forEach(function(tr){
+      _mgmtSelected.add(tr.dataset.slug);
+    });
+  }
+  document.querySelectorAll('#mgmtBody .q-check').forEach(function(cb){cb.checked=checked;});
+  updateBottomBar();
+}
+function updateBottomBar(){
+  var n=_mgmtSelected.size;
+  $('mgmtBottomBar').classList.toggle('show',n>0);
+  $('mgmtSelText').textContent='선택한 '+n+'건';
+}
+
+/* ── single revert ── */
+async function removeUpload(slugEnc,title){
+  if(!confirm('"'+title+'" 업로드를 되돌립니다.\n\n이전 개정본이 있으면 그 버전으로 복원하고,\n신규 등록이었다면 등록을 해제하고 파일을 삭제합니다.\n\n계속할까요?')) return;
+  var fd=new FormData();
+  fd.append('slug',decodeURIComponent(slugEnc));
+  var tok=$('bToken').value;
+  if(tok) fd.append('token',tok);
+  try{
+    var r=await fetch('/api/regs/upload/delete',{method:'POST',body:fd});
+    var d=await r.json();
+    if(!r.ok||d.error){showMgmtResult(false,'\u274C '+esc(d.error||'되돌리기 실패')); return;}
+    var html='<h4>되돌렸습니다 \u2014 '+esc(d.removed||title)+'</h4>';
+    if(d.restored){
+      html+='<p style="margin:0;">이전 개정본 <b>'+esc(d.restored_revision||'')+'</b>(으)로 복원했습니다.</p>';
+    }else{
+      html+='<p style="margin:0;">등록을 해제하고 저장된 파일을 삭제했습니다.</p>';
+    }
+    if(d.committed){
+      html+='<p style="margin:8px 0 0;">리포지토리에 커밋했습니다 \u2014 '
+        +'<a href="'+esc(d.commit_url||'#')+'" target="_blank"><code>'+esc(d.commit_sha||'')+'</code></a>. '
+        +'배포 반영까지 <b>1~2분</b> 걸립니다.</p>';
+    }
+    if(d.warning){
+      html+='<p style="margin:8px 0 0;color:var(--warn-tx);">\u26A0\uFE0F '+esc(d.warning)+'</p>';
+    }
+    showMgmtResult(true,html);
+    _mgmtSelected.delete(decodeURIComponent(slugEnc));
+    loadStatus();
+  }catch(e){showMgmtResult(false,'\u274C '+esc(e.message));}
+}
+
+/* ── batch revert ── */
+async function batchRevert(){
+  var slugs=Array.from(_mgmtSelected);
+  if(!slugs.length) return;
+  var items=slugs.map(function(slug){
+    var u=_uploaded.find(function(x){return x.slug===slug;});
+    return u?u.title:slug;
+  });
+
+  /* show confirm dialog */
+  var dlg=$('confirmDialog');
+  dlg.innerHTML='<h3>선택한 '+slugs.length+'건을 되돌리시겠습니까?</h3>'
+    +'<p>이전 개정본이 있으면 복원하고, 신규 등록이었다면 파일을 삭제합니다.</p>'
+    +'<div class="d-list">'+items.map(function(t){return '<div class="d-list-item">'+esc(t)+'</div>';}).join('')+'</div>'
+    +'<div id="batchRevertProgress" style="display:none;margin-bottom:12px;">'
+    +'<div class="progress-bar"><div class="progress-fill" id="batchRevertFill"></div></div>'
+    +'<div class="progress-text" id="batchRevertText"></div></div>'
+    +'<div class="d-actions">'
+    +'<button class="btn" id="batchRevertCancel" onclick="closeDialog()">취소</button>'
+    +'<button class="btn danger" id="batchRevertConfirm" onclick="doBatchRevert()">되돌리기</button>'
+    +'</div>';
+  $('confirmOverlay').classList.add('show');
+}
+
+function closeDialog(){
+  $('confirmOverlay').classList.remove('show');
+}
+
+async function doBatchRevert(){
+  var slugs=Array.from(_mgmtSelected);
+  $('batchRevertConfirm').disabled=true;
+  $('batchRevertCancel').disabled=true;
+  $('batchRevertConfirm').innerHTML='<span class="spin"></span>처리 중...';
+  $('batchRevertProgress').style.display='block';
+
+  var tok=$('bToken').value;
+  var total=slugs.length, done=0, successes=0, failures=0, results=[];
+
+  for(var i=0;i<slugs.length;i++){
+    var fd=new FormData();
+    fd.append('slug',slugs[i]);
+    if(tok) fd.append('token',tok);
+    try{
+      var r=await fetch('/api/regs/upload/delete',{method:'POST',body:fd});
+      var d=await r.json();
+      if(!r.ok||d.error){
+        failures++;
+        results.push({slug:slugs[i],ok:false,msg:d.error||'실패'});
+      }else{
+        successes++;
+        results.push({slug:slugs[i],ok:true,msg:d.removed||slugs[i]});
+      }
+    }catch(e){
+      failures++;
+      results.push({slug:slugs[i],ok:false,msg:e.message});
+    }
+    done++;
+    $('batchRevertFill').style.width=Math.round(done/total*100)+'%';
+    $('batchRevertText').textContent=done+'/'+total+' 완료';
+  }
+
+  closeDialog();
+  _mgmtSelected.clear();
+
+  if(failures===0){
+    showMgmtResult(true,'<h4>\u2705 '+successes+'건 되돌리기 완료</h4>'
+      +'<p style="margin:0;font-size:12.5px;">배포 반영까지 1~2분 걸립니다.</p>');
+  }else{
+    var failList=results.filter(function(r){return !r.ok;}).map(function(r){return esc(r.msg);}).join(', ');
+    showMgmtResult(false,'<h4>\u26A0\uFE0F '+successes+'건 성공, '+failures+'건 실패</h4>'
+      +'<p style="margin:0;font-size:12.5px;">실패: '+failList+'</p>');
+  }
+  loadStatus();
+}
+
+function showMgmtResult(ok,html){
+  var r=$('mgmtResult');
   r.className='result show '+(ok?'ok':'err');
   r.innerHTML=html;
   r.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
-function hideResult(){document.getElementById('result').className='result';}
 
-function buildForm(asZip){
-  const fd=new FormData();
-  fd.append('file',_picked);
-  fd.append('title',document.getElementById('title').value.trim());
-  fd.append('category',document.getElementById('category').value);
-  fd.append('revision',document.getElementById('revision').value.trim());
-  fd.append('effective_date',document.getElementById('effective').value);
-  fd.append('department',document.getElementById('department').value.trim());
-  fd.append('uploader',document.getElementById('uploader').value.trim());
-  fd.append('note',document.getElementById('note').value.trim());
-  const tok=document.getElementById('token').value;
-  if(tok) fd.append('token',tok);
-  if(asZip) fd.append('as','zip');
-  return fd;
-}
-
-async function doUpload(asZip){
-  if(!_picked){ showResult(false,'먼저 개정 문서 파일을 선택해주세요.'); return; }
-  if(!document.getElementById('title').value.trim()){
-    showResult(false,'규정명을 입력해주세요.'); return;
-  }
-  if(!document.getElementById('uploader').value.trim()){
-    showResult(false,'올린 사람 이름을 입력해주세요.'); return;
-  }
-  if(_status&&_status.token_required&&!document.getElementById('token').value){
-    showResult(false,'업로드 토큰을 입력해주세요.'); return;
-  }
-  const btn=asZip?document.getElementById('zipBtn'):document.getElementById('submitBtn');
-  const label=btn.textContent;
-  btn.disabled=true; btn.innerHTML='<span class="spin"></span>처리 중...';
-  hideResult();
-  try{
-    const res=await fetch('/api/regs/upload'+(asZip?'?as=zip':''),
-      {method:'POST',body:buildForm(asZip)});
-    const ct=(res.headers.get('Content-Type')||'').toLowerCase();
-
-    // 읽기 전용 환경이거나 ZIP 요청 → 파일 다운로드
-    if(ct.includes('application/zip')){
-      const blob=await res.blob();
-      const slug=(document.getElementById('title').value.trim()||'regulation').replace(/\s+/g,'_');
-      const a=document.createElement('a');
-      a.href=URL.createObjectURL(blob); a.download=slug+'.zip';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
-      const warn=decodeURIComponent(res.headers.get('X-Reg-Warning')||'');
-      const ro=res.headers.get('X-Reg-Readonly')==='1';
-      showResult(true,`<h4>✅ 변환 완료 — ZIP을 내려받았습니다</h4>
-        ${ro?'<p style="margin:0 0 8px;">읽기 전용 환경이라 서버에 저장하지 않았습니다.</p>':''}
-        <p style="margin:0 0 8px;">ZIP을 리포지토리 루트에 풀고 <code>manifest_entry.json</code> 내용을
-        <code>regulations_manifest.json</code>에 추가한 뒤 커밋·푸시하면 배포본에 반영됩니다.</p>
-        ${warn?`<p style="margin:0;color:#92400e;">⚠️ ${esc(warn)}</p>`:''}`);
-      return;
-    }
-
-    const d=await res.json();
-    if(!res.ok||d.error){ showResult(false,'❌ '+esc(d.error||('업로드 실패 ('+res.status+')'))); return; }
-
-    const e=d.entry||{};
-    if(d.committed){
-      showResult(true,`<h4>✅ ${esc(e.title)} ${d.replaced?'개정본 등록':'등록'} 완료</h4>
-        <p style="margin:0 0 8px;">리포지토리에 커밋했습니다 —
-          <a href="${esc(d.commit_url||'#')}" target="_blank"><code>${esc(d.commit_sha||'')}</code></a>.
-          <b>배포 반영까지 1~2분</b> 걸립니다. 잠시 후 검색에서 확인하세요.</p>
-        <dl>
-          <dt>개정 구분</dt><dd>${esc(e.revision||'-')}</dd>
-          <dt>규정 구분</dt><dd>${esc(e.category||'-')}</dd>
-          <dt>올린 사람</dt><dd>${esc(e.uploader||'-')}</dd>
-          <dt>본문 검색</dt><dd>${d.searchable?'가능 — 조문 단위 검색에 반영됩니다':'불가 — 원본 열람만 가능합니다'}</dd>
-        </dl>
-        ${d.warning?`<p style="margin:0;color:#92400e;">⚠️ ${esc(d.warning)}</p>`:''}`);
-      clearFile(); resetFields(); loadStatus();
-      return;
-    }
-    showResult(true,`<h4>✅ ${esc(e.title)} 등록 완료${d.replaced?' (개정판으로 교체)':''}</h4>
-      <dl>
-        <dt>개정 구분</dt><dd>${esc(e.revision||'-')}</dd>
-        <dt>규정 구분</dt><dd>${esc(e.category||'-')}</dd>
-        ${e.effective_date?`<dt>시행일자</dt><dd>${esc(e.effective_date)}</dd>`:''}
-        <dt>본문 검색</dt><dd>${d.searchable?'가능 — 내규 검색·전문 조회에 반영됩니다':'불가 — 원본 열람만 가능합니다'}</dd>
-      </dl>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        <a class="tbtn" href="${esc(e.html||'#')}" target="_blank">📄 전문 보기</a>
-        <a class="tbtn" href="/?q=${encodeURIComponent(e.title||'')}">🔍 검색에서 열기</a>
-        ${e.original?`<a class="tbtn" href="${esc(e.original)}" target="_blank">⬇ 원본 파일</a>`:''}
-      </div>
-      ${d.warning?`<p style="margin:10px 0 0;color:#92400e;">⚠️ ${esc(d.warning)}</p>`:''}`);
-    clearFile(); resetFields();
-    loadStatus();
-  }catch(err){
-    showResult(false,'❌ 업로드 중 오류가 발생했습니다: '+esc(err.message));
-  }finally{
-    btn.disabled=false; btn.textContent=label;
-  }
-}
-
-async function removeUpload(slugEnc,title){
-  if(!confirm(`"${title}" 업로드를 되돌립니다.\n\n이전 개정본이 있으면 그 버전으로 복원하고,\n신규 등록이었다면 등록을 해제하고 파일을 삭제합니다.\n\n계속할까요?`)) return;
-  const fd=new FormData();
-  fd.append('slug',decodeURIComponent(slugEnc));
-  const tok=document.getElementById('token').value;
-  if(tok) fd.append('token',tok);
-  try{
-    const r=await fetch('/api/regs/upload/delete',{method:'POST',body:fd});
-    const d=await r.json();
-    if(!r.ok||d.error){ showResult(false,'❌ '+esc(d.error||'되돌리기 실패')); return; }
-    showResult(true,`<h4>되돌렸습니다 — ${esc(d.removed||title)}</h4>`
-      + (d.restored
-          ? `<p style="margin:0;">이전 개정본 <b>${esc(d.restored_revision||'')}</b>으로 복원했습니다.</p>`
-          : `<p style="margin:0;">등록을 해제하고 저장된 파일을 삭제했습니다.</p>`)
-      + (d.committed
-          ? `<p style="margin:8px 0 0;">리포지토리에 커밋했습니다 —
-             <a href="${esc(d.commit_url||'#')}" target="_blank"><code>${esc(d.commit_sha||'')}</code></a>.
-             배포 반영까지 <b>1~2분</b> 걸립니다.</p>` : '')
-      + (d.warning?`<p style="margin:8px 0 0;color:#92400e;">⚠️ ${esc(d.warning)}</p>`:''));
-    loadStatus();
-  }catch(e){ showResult(false,'❌ '+esc(e.message)); }
-}
-
-function resetFields(){
-  ['title','revision','effective','department','note'].forEach(id=>document.getElementById(id).value='');
-  const sel=document.getElementById('category'); sel.dataset.touched=''; sel.value='기타';
-  checkExisting();
-}
-function resetForm(){ clearFile(); resetFields(); hideResult(); }
-
+/* ── init ── */
+initTab();
 loadStatus();
 </script>
 </body>

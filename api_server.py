@@ -7,6 +7,13 @@ KOAT 내규&국가법령 종합 검색 서비스
 import os, json, re, time, threading, webbrowser, base64
 import concurrent.futures as _cf
 import xml.etree.ElementTree as ET
+# 신뢰할 수 없는 XML(업로드 파일·외부 법령 XML)의 엔티티 폭탄(billion laughs) 방어.
+# defusedxml 이 있으면 그 파서를 쓰고, 없으면 표준 파서로 폴백한다.
+try:
+    import defusedxml.ElementTree as _DET
+    def _xml_fromstring(s): return _DET.fromstring(s)
+except Exception:
+    def _xml_fromstring(s): return ET.fromstring(s)
 import urllib3
 from urllib.parse import quote
 from flask import Flask, request, jsonify, Response
@@ -18,7 +25,21 @@ from urllib3.util.retry import Retry
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
-CORS(app)
+# CORS는 교차 출처(다른 웹사이트) 호출에만 적용된다. 이 앱의 프론트엔드는
+# 동일 출처(/api/... 상대경로)라 아래 제한과 무관하게 항상 동작한다.
+# 열린 CORS를 두면 임의의 외부 사이트가 브라우저에서 서버의 AI 키를 대신
+# 소모할 수 있으므로, 허용 출처를 이 서비스 도메인·로컬 개발로 제한한다.
+# 커스텀 도메인 등은 ALLOWED_ORIGINS(쉼표 구분)로 추가할 수 있다.
+_origins_env = os.environ.get("ALLOWED_ORIGINS", "").strip()
+if _origins_env:
+    _cors_origins = [o.strip() for o in _origins_env.split(",") if o.strip()]
+else:
+    _cors_origins = [
+        re.compile(r"^https://agro-law[\w.-]*\.vercel\.app$"),
+        re.compile(r"^http://localhost(:\d+)?$"),
+        re.compile(r"^http://127\.0\.0\.1(:\d+)?$"),
+    ]
+CORS(app, origins=_cors_origins)
 
 OC   = os.environ.get("LAW_OC", "tjsl0919")
 BASE = "https://www.law.go.kr/DRF"
@@ -36,7 +57,7 @@ HEADERS = {
 }
 
 # ── 재시도 정책이 적용된 requests 세션 ────────────────────────────────────────
-def _make_session() -> req_lib.Session:
+def _make_session(verify: bool = True) -> req_lib.Session:
     retry = Retry(
         total=4,                              # 최대 4회 재시도
         backoff_factor=0.8,                   # 0.8→1.6→3.2→6.4s
@@ -55,10 +76,14 @@ def _make_session() -> req_lib.Session:
     s.mount("https://", adapter)
     s.mount("http://",  adapter)
     s.headers.update(HEADERS)
-    s.verify = False
+    s.verify = verify
     return s
 
-_SESSION = _make_session()   # 프로세스 내 전역 재사용
+# 기본 세션은 TLS 인증서를 검증한다(GitHub 토큰·Google API 키 전송에 사용).
+_SESSION = _make_session()
+# 법제처(law.go.kr)는 인증서 체인 문제가 있어 이 호출에만 검증을 끈다.
+# 민감한 토큰을 보내는 GitHub/Google 세션과 분리해 노출을 막는다.
+_LAW_SESSION = _make_session(verify=False)
 
 # ── 최근 검색어 (서버 메모리) ─────────────────────────────────────────────────
 recent_searches = []
@@ -90,7 +115,7 @@ def _law_get_json(params: dict, timeout=None) -> dict:
     last_err = None
     for attempt in range(3):
         try:
-            r = _SESSION.get(
+            r = _LAW_SESSION.get(
                 f"{BASE}/lawSearch.do",
                 params={**params, "OC": OC, "type": "JSON"},
                 timeout=timeout,
@@ -100,8 +125,9 @@ def _law_get_json(params: dict, timeout=None) -> dict:
         except (req_lib.exceptions.ConnectionError,
                 req_lib.exceptions.ChunkedEncodingError) as e:
             last_err = e
-            import time; time.sleep(1.5 * (attempt + 1))
-            _SESSION.close()   # 세션 재연결 유도
+            # 공유 세션을 close() 하면 동시 실행 중인 다른 워커 스레드의 연결이
+            # 끊긴다. 재시도는 풀에서 새 연결을 자동으로 받으므로 sleep만 한다.
+            time.sleep(1.5 * (attempt + 1))
             continue
     raise last_err
 
@@ -110,7 +136,7 @@ def _law_get_xml(endpoint: str, params: dict, timeout=None) -> ET.Element:
     last_err = None
     for attempt in range(3):
         try:
-            r = _SESSION.get(
+            r = _LAW_SESSION.get(
                 f"{BASE}/{endpoint}",
                 params={**params, "OC": OC, "type": "XML"},
                 timeout=timeout,
@@ -120,11 +146,11 @@ def _law_get_xml(endpoint: str, params: dict, timeout=None) -> ET.Element:
             text = re.sub(r"<\?xml[^?]*\?>", "", text, count=1).strip()
             if not text:
                 raise ValueError("빈 XML 응답")
-            return ET.fromstring(text)
+            return _xml_fromstring(text)
         except (req_lib.exceptions.ConnectionError,
                 req_lib.exceptions.ChunkedEncodingError) as e:
             last_err = e
-            import time; time.sleep(1.5 * (attempt + 1))
+            time.sleep(1.5 * (attempt + 1))
             continue
     raise last_err
 
@@ -967,7 +993,7 @@ def search_by_article_keyword():
     try:
         with _cf.ThreadPoolExecutor(max_workers=12) as ex:
             futures = {ex.submit(fetch_and_filter, name): name for name in all_target}
-            for future in _cf.as_completed(futures, timeout=40):
+            for future in _cf.as_completed(futures, timeout=25):
                 try:
                     res = future.result()
                     if res:
@@ -1164,7 +1190,7 @@ def search_legal_basis():
     try:
         with _cf.ThreadPoolExecutor(max_workers=10) as ex:
             futures = {ex.submit(fetch_law, name): name for name in all_target}
-            for future in _cf.as_completed(futures, timeout=45):
+            for future in _cf.as_completed(futures, timeout=25):
                 try:
                     res = future.result()
                     if res:
@@ -1215,12 +1241,14 @@ def scenario_search():
     mdl = model or _default_model_for(provider, api_key)
 
     # ── AI Step-1: 의도 분석 → JSON ──────────────────────────────────────────
+    # 정식 법령명으로 표기해야 AI가 그대로 echo → MST 조회가 정확히 매칭된다.
+    # (CANDIDATE_LAWS·DOMAIN_LAW_MAP 의 표기와 일치시킬 것)
     AVAILABLE_LAWS = (
         "농지법, 종자산업법, 농약관리법, 비료관리법, 가축전염병예방법, "
-        "식물방역법, 농업재해보험법, 농촌진흥법, 농어업재해대책법, "
-        "특허법, 실용신안법, 디자인보호법, 상표법, 식물신품종보호법, "
+        "식물방역법, 농어업재해보험법, 농촌진흥법, 농어업재해대책법, "
+        "특허법, 실용신안법, 디자인보호법, 상표법, 식물신품종 보호법, "
         "부정경쟁방지 및 영업비밀보호에 관한 법률, "
-        "기술이전 및 사업화 촉진에 관한 법률"
+        "기술의 이전 및 사업화 촉진에 관한 법률"
     )
     system_prompt = f"""당신은 대한민국 농업·지식재산 법령 전문가 AI입니다.
 사용자의 실무 질문을 분석하여 JSON만 반환하세요 (코드블록·설명 없이 JSON 텍스트만).
@@ -1384,9 +1412,12 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
 
     # 의미 검색으로 찾은 내규 조문 — 질문 어휘가 규정 표현과 달라도 근거를 잡아준다.
     sem_hits = []
+    emb_available = False   # 내규 의미검색(임베딩)이 실제로 수행됐는지
     try:
+        # 채팅 프로바이더와 무관하게 임베딩엔 Gemini 키를 쓴다(사용자 키→서버 키 폴백).
         gkey = (api_key if provider == "gemini" else "") or os.environ.get("GEMINI_API_KEY", "")
-        if gkey.strip():
+        emb_available = bool(gkey.strip())
+        if emb_available:
             sem_hits = [h for h in semantic_search(query, gkey.strip(), top_k=10)
                         if h["score"] >= _SEM_MIN]
     except Exception as e:
@@ -1447,6 +1478,8 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
         "internal_text":   internal_text,
         "internal_structured": internal_struct,
         "internal_error":  internal_err,
+        # 내규 의미검색(임베딩) 수행 여부 — false면 UI가 '내규 근거 일부 미반영'을 안내.
+        "internal_semantic": emb_available,
     })
 
 
@@ -1602,6 +1635,9 @@ def remove_favorite():
 _AI_MODEL_FALLBACK = {"gemini": "gemini-flash-latest",
                       "claude": "claude-haiku-4-5-20251001",
                       "gpt": "gpt-4.1-mini", "openai": "gpt-4.1-mini"}
+# 콜드 스타트에서 시나리오/해석 핫패스가 ListModels 왕복을 동기로 기다리지 않도록
+# 즉시 반환할 기본 모델(캐시가 비었을 때 사용).
+GEMINI_DEFAULT_MODEL = os.environ.get("GEMINI_MODEL", "") or "gemini-2.5-flash"
 _GEMINI_MODEL_CACHE: dict = {"model": None, "ts": 0.0}
 _GEMINI_CACHE_TTL = 6 * 3600          # 6시간
 # 선호 Gemini 버전. 기본은 비워 두고 ListModels 기준 '사용 가능한 최신'을 자동 선택한다
@@ -1698,19 +1734,31 @@ def _gemini_latest_model(api_key: str) -> str:
 
 
 def _default_model_for(provider: str, api_key: str = "") -> str:
-    """프로바이더별 기본 모델. Gemini는 실시간 조회로 최신 모델을 사용."""
+    """프로바이더별 기본 모델.
+
+    Gemini 는 캐시에 값이 있으면 그것을, 없으면 상수 기본값을 '즉시' 돌려준다.
+    핫패스(시나리오/해석)에서 콜드 인스턴스가 ListModels 네트워크 왕복을 동기로
+    기다려 플랫폼 504 로 죽는 것을 막기 위함이다. 동적 최신화는 캐시가 채워진
+    뒤(또는 /api/ai/models 명시 호출 시)에만 반영된다.
+    """
     if provider == "gemini":
-        return _gemini_latest_model(api_key)
+        return _GEMINI_MODEL_CACHE.get("model") or GEMINI_DEFAULT_MODEL
     return _AI_MODEL_FALLBACK.get(provider, _AI_MODEL_FALLBACK["gemini"])
 
 
 @app.route("/api/ai/models")
 def ai_models():
-    """현재 선택될 기본 모델 확인용(설정 화면 표시)."""
+    """현재 선택될 기본 모델 확인용(설정 화면 표시).
+
+    이 엔드포인트는 명시 호출이므로 Gemini 는 실시간 ListModels 로 캐시를 채운다.
+    """
     provider = (request.args.get("provider") or "gemini").lower()
     key = (request.args.get("api_key") or
            os.environ.get(f"{provider.upper()}_API_KEY", "")).strip()
-    mdl = _default_model_for(provider, key)
+    if provider == "gemini":
+        mdl = _gemini_latest_model(key)
+    else:
+        mdl = _default_model_for(provider, key)
     return jsonify({"success": True, "provider": provider, "model": mdl,
                     "resolved": provider == "gemini" and bool(key),
                     "cached_at": _GEMINI_MODEL_CACHE["ts"] if provider == "gemini" else 0})
@@ -1926,19 +1974,13 @@ def ai_interpret():
 
         # ── Google Gemini ──────────────────────────────────────────────────────
         elif provider == "gemini":
+            # 2.5/3.x 사고(thinking) 모델은 사고 토큰이 출력 예산을 잠식해
+            # parts 가 비어 오는 경우가 있다. 이를 처리하는 공통 헬퍼로 통일한다.
             mdl = model or _default_model_for("gemini", api_key)
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{mdl}:generateContent?key={api_key}"
-            resp = _ai_post_retry(lambda: req_lib.post(
-                url,
-                json={"contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_msg}"}]}],
-                      "generationConfig": {"maxOutputTokens": 1500}},
-                headers={"Content-Type": "application/json"},
-                timeout=30,
-            ))
-            if resp.status_code != 200:
-                user, kind = _ai_error(resp)
-                return jsonify({"error": user, "kind": kind}), resp.status_code
-            text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+            text, err = _ai_generate("gemini", api_key, mdl,
+                                     system_prompt, user_msg, max_tokens=1500)
+            if err or not text:
+                return jsonify({"error": err or "AI 응답이 비어 있습니다."}), 502
             return jsonify({"result": text})
 
         # ── Ollama (로컬) ──────────────────────────────────────────────────────
@@ -2596,17 +2638,45 @@ def _xml_blocks(root: ET.Element, para_tag: str, table_tag: str,
     return blocks
 
 
+# 업로드 zip(HWPX/DOCX) 압축 해제 폭탄(zip bomb) 방어용 상한
+_ZIP_ENTRY_MAX = 80 * 1024 * 1024     # 단일 항목 최대 80MB(압축 해제 기준)
+_ZIP_TOTAL_MAX = 200 * 1024 * 1024    # 누적 읽기 최대 200MB
+
+
+class _ZipBudget:
+    """zip 항목의 압축 해제 크기를 검사하며 안전하게 읽는 헬퍼."""
+    def __init__(self, z):
+        self.z = z
+        self.total = 0
+
+    def read(self, name: str) -> bytes:
+        try:
+            size = self.z.getinfo(name).file_size
+        except KeyError:
+            size = 0
+        if size > _ZIP_ENTRY_MAX:
+            raise ValueError("압축 해제 크기 제한 초과")
+        if self.total + size > _ZIP_TOTAL_MAX:
+            raise ValueError("압축 해제 크기 제한 초과")
+        data = self.z.read(name)
+        self.total += len(data)
+        if self.total > _ZIP_TOTAL_MAX:
+            raise ValueError("압축 해제 크기 제한 초과")
+        return data
+
+
 def _hwpx_blocks(raw: bytes) -> list:
     """HWPX(한/글 OWPML, zip) 본문 추출."""
     blocks = []
     with zipfile.ZipFile(_io.BytesIO(raw)) as z:
+        budget = _ZipBudget(z)
         names = [n for n in z.namelist()
                  if re.match(r"Contents/section\d+\.xml$", n, re.I)]
         names.sort(key=lambda n: int(re.search(r"(\d+)", n).group(1)))
         if not names:
             raise ValueError("HWPX 본문(Contents/section*.xml)을 찾을 수 없습니다.")
         for n in names:
-            root = ET.fromstring(z.read(n))
+            root = _xml_fromstring(budget.read(n))
             blocks += _xml_blocks(root, "p", "tbl", "tr", "tc",
                                   {"t"}, {"lineBreak"})
     return blocks
@@ -2615,7 +2685,8 @@ def _hwpx_blocks(raw: bytes) -> list:
 def _docx_blocks(raw: bytes) -> list:
     """DOCX(OOXML) 본문 추출."""
     with zipfile.ZipFile(_io.BytesIO(raw)) as z:
-        root = ET.fromstring(z.read("word/document.xml"))
+        budget = _ZipBudget(z)
+        root = _xml_fromstring(budget.read("word/document.xml"))
     return _xml_blocks(root, "p", "tbl", "tr", "tc", {"t"}, {"br", "cr"})
 
 
@@ -2623,18 +2694,30 @@ def _text_blocks(text: str) -> list:
     return [{"type": "p", "text": l.rstrip()} for l in text.replace("\r\n", "\n").split("\n")]
 
 
-_SCRIPT_RE = re.compile(r"<\s*(script|iframe|object|embed)\b.*?<\s*/\s*\1\s*>",
-                        re.I | re.S)
-_SCRIPT_OPEN_RE = re.compile(r"<\s*/?\s*(script|iframe|object|embed)\b[^>]*>", re.I)
+_SCRIPT_RE = re.compile(
+    r"<\s*(script|iframe|object|embed|applet|style)\b.*?<\s*/\s*\1\s*>",
+    re.I | re.S)
+_SCRIPT_OPEN_RE = re.compile(
+    r"<\s*/?\s*(script|iframe|object|embed|applet|link|meta|base)\b[^>]*>", re.I)
 _ON_ATTR_RE = re.compile(r"\son[a-z]+\s*=\s*(\"[^\"]*\"|'[^']*'|[^\s>]+)", re.I)
-_JS_URL_RE = re.compile(r"(href|src)\s*=\s*(\"|')\s*javascript:[^\"']*(\2)", re.I)
+# srcdoc/formaction 은 스크립트 실행 경로가 되므로 속성째 제거
+_DANGER_ATTR_RE = re.compile(
+    r"\s(srcdoc|formaction)\s*=\s*(\"[^\"]*\"|'[^']*'|[^\s>]+)", re.I)
+_JS_URL_RE = re.compile(
+    r"(href|src)\s*=\s*(\"|')\s*(?:javascript|data|vbscript):[^\"']*(\2)", re.I)
 
 
 def _sanitize_html(html: str) -> str:
-    """업로드된 HTML에서 스크립트·이벤트 핸들러 제거(같은 출처에서 서빙되므로 필수)."""
+    """업로드된 HTML에서 스크립트·이벤트 핸들러 제거(같은 출처에서 서빙되므로 필수).
+
+    이는 심층 방어(defense-in-depth)일 뿐, 실제 신뢰 경계는 업로드 토큰이다.
+    <table>/<tr>/<td>/<span>/<p>/<div>/style="..." 등 규정 서식에 필요한 요소는
+    의도적으로 보존한다.
+    """
     out = _SCRIPT_RE.sub("", html)
     out = _SCRIPT_OPEN_RE.sub("", out)
     out = _ON_ATTR_RE.sub("", out)
+    out = _DANGER_ATTR_RE.sub("", out)
     out = _JS_URL_RE.sub(r"\1=\2#\2", out)
     return out
 
@@ -2854,6 +2937,14 @@ def _uploaded_regs() -> list:
     return [m for m in _load_reg_manifest() if m.get("uploaded_at") or m.get("history")]
 
 
+def _item_title(it) -> str:
+    """구조화 검색 항목에서 규정명 추출(키 이름이 여러 형태)."""
+    if isinstance(it, dict):
+        return str(it.get("title") or it.get("name")
+                   or it.get("제목") or it.get("규정명") or "")
+    return ""
+
+
 def _merge_local_hits(resp: dict, local_hits: list) -> dict:
     """업로드된 내규 검색 결과를 MCP 응답에 병합(업로드분을 앞쪽에 노출)."""
     if not local_hits:
@@ -2889,6 +2980,79 @@ def _local_reg_search(query: str, limit: int = 20) -> list:
         if len(hits) >= limit:
             break
     return hits
+
+
+# ── 번들된 규정 HTML 본문 인덱스 ──────────────────────────────────────────────
+# regulations/<slug>/index.html 은 123건 전체가 있으나(의미검색 인덱스의 원천),
+# 키워드 검색·전문 열람은 그동안 text.txt(업로드분)나 외부 MCP 에만 의존했다.
+# 아래 헬퍼로 번들 HTML 본문을 검색·열람에 활용해 MCP 하드의존을 없앤다.
+_REG_BODY_CACHE: dict = {}   # slug -> (mtime, 평문)
+
+
+def _reg_body_text(slug: str) -> str:
+    """규정 본문 평문. 업로드분 text.txt 우선, 없으면 번들 index.html 에서 추출."""
+    if not slug:
+        return ""
+    t = _local_reg_text(slug)                       # 업로드분(text.txt)
+    if t:
+        return t
+    path = os.path.join(REG_DIR, slug, "index.html")
+    try:
+        mtime = os.path.getmtime(path)
+    except OSError:
+        return ""
+    cached = _REG_BODY_CACHE.get(slug)
+    if cached and cached[0] == mtime:
+        return cached[1]
+    try:
+        import reg_chunks                            # stdlib 만 사용(지연 임포트)
+        with open(path, encoding="utf-8", errors="replace") as f:
+            body = reg_chunks.html_to_text(f.read())
+    except Exception as e:
+        print(f"[reg] 본문 추출 실패({slug}): {e}")
+        return ""
+    _REG_BODY_CACHE[slug] = (mtime, body)
+    return body
+
+
+def _catalog_reg_hits(query: str, exclude_titles=None, limit: int = 12) -> list:
+    """번들 규정 HTML 전체에서 키워드 검색. MCP 가 못 준(또는 없을 때의) 규정을
+    보완하기 위한 용도. exclude_titles(정규화된 규정명 set)는 건너뛴다."""
+    q = (query or "").strip()
+    if not q:
+        return []
+    qL = q.lower()
+    exclude = exclude_titles or set()
+    title_hits, body_hits = [], []
+    for m in _load_reg_manifest():
+        slug, title = m.get("slug", ""), m.get("title", "")
+        if not slug or _norm_key(title) in exclude:
+            continue
+        name_match = qL in _norm_key(title) or qL in title.lower()
+        body = _reg_body_text(slug)
+        if not body:
+            continue
+        if not name_match and qL not in body.lower():
+            continue
+        item = {"title": title, "content": body[:20000], "source": "local",
+                "revision": m.get("revision", ""), "category": m.get("category", "")}
+        (title_hits if name_match else body_hits).append(item)
+        if len(title_hits) + len(body_hits) >= limit:
+            break
+    return (title_hits + body_hits)[:limit]
+
+
+def _local_only_search(query: str, local_hits: list, mcp_error: str = "") -> dict:
+    """MCP 미설정/실패 시 번들 규정 본문만으로 검색 응답을 구성한다."""
+    cat = _catalog_reg_hits(query, {_norm_key(h["title"]) for h in local_hits})
+    resp = {"success": True, "query": query, "tool": "local-html",
+            "text": "", "structured": local_hits + cat,
+            "local_count": len(local_hits),
+            "name_matches": _name_match_regs(query),
+            "semantic": _semantic_for_search(query)}
+    if mcp_error:
+        resp["mcp_error"] = mcp_error
+    return resp
 
 
 REG_BACKUP_DIR = os.path.join(REG_DIR, ".backup")
@@ -2967,11 +3131,23 @@ def _upsert_manifest(entry: dict, backup_name: str = "") -> dict:
     return entry
 
 
-def _upload_authorized() -> bool:
+def _upload_authorized() -> tuple[bool, str]:
+    """업로드 허용 여부와 거부 사유를 반환한다.
+
+    fail-closed 원칙: 업로드가 리포지토리에 그대로 커밋·배포되는 환경
+    (_gh_enabled)에서 REG_UPLOAD_TOKEN 이 설정돼 있지 않으면 익명 업로드가
+    저장소를 오염시킬 수 있으므로 거부한다. 토큰이 설정된 경우에는 일치해야
+    한다. 로컬 쓰기 전용(비-GitHub) 개발 환경에서는 토큰 없이도 허용한다.
+    """
     if not REG_UPLOAD_TOKEN:
-        return True
+        if _gh_enabled():
+            return (False, "이 서버는 업로드가 리포지토리에 자동 커밋되므로 "
+                           "REG_UPLOAD_TOKEN 설정이 필요합니다. 관리자에게 문의하세요.")
+        return (True, "")
     tok = (request.form.get("token") or request.headers.get("X-Upload-Token") or "").strip()
-    return tok == REG_UPLOAD_TOKEN
+    if tok == REG_UPLOAD_TOKEN:
+        return (True, "")
+    return (False, "업로드 토큰이 올바르지 않습니다.")
 
 
 # ── GitHub 직접 커밋 (읽기전용 배포에서 업로드를 반영하는 경로) ────────────────
@@ -3041,7 +3217,9 @@ def _gh(method: str, path: str, **kw):
         except Exception:
             detail = (r.text or "")[:160]
         print(f"[gh] {method} {path} → {r.status_code} {detail}")
-        raise RuntimeError(_gh_hint(r.status_code, detail, path))
+        err = RuntimeError(_gh_hint(r.status_code, detail, path))
+        err.status = r.status_code            # 404(정상 미존재)와 그 외 오류 구분용
+        raise err
     return r.json() if r.content else {}
 
 
@@ -3097,15 +3275,27 @@ def _gh_commit_files(files: dict, message: str, deletes=None):
 
 
 def _gh_get_manifest():
-    """리포지토리의 현재 manifest 를 읽어온다(로컬 파일이 낡았을 수 있으므로)."""
+    """리포지토리의 현재 manifest 를 읽어온다(로컬 파일이 낡았을 수 있으므로).
+
+    GitHub 연동이 켜진 상태에서 원격 읽기가 '네트워크/HTTP 오류'로 실패하면,
+    낡은 로컬 manifest 로 커밋해 다른 인스턴스가 추가한 항목을 덮어써 유실시킬
+    위험이 있다. 따라서 그런 경우엔 폴백하지 않고 예외를 올려 커밋을 중단시킨다.
+    저장소에 아직 manifest 가 없는 정상적인 404 는 로컬/빈 목록으로 폴백해도 안전하다.
+    """
+    if not _gh_enabled():
+        return list(_load_reg_manifest())
     try:
         d = _gh("GET", "/contents/regulations_manifest.json",
                 params={"ref": GITHUB_BRANCH})
         raw = base64.b64decode(d.get("content", "") or "")
         return json.loads(raw.decode("utf-8"))
     except Exception as e:
-        print(f"[gh] manifest 조회 실패, 로컬 사용: {e}")
-        return list(_load_reg_manifest())
+        if getattr(e, "status", None) == 404:
+            print(f"[gh] manifest 없음(404), 로컬 사용")
+            return list(_load_reg_manifest())
+        print(f"[gh] manifest 조회 실패(안전을 위해 중단): {e}")
+        raise RuntimeError("저장소 상태를 읽지 못해 안전을 위해 중단했습니다. "
+                           "잠시 후 다시 시도하세요.")
 
 
 def _gh_dir(path: str, ref: str = ""):
@@ -3245,8 +3435,9 @@ def reg_names_for_upload():
 @app.route("/api/regs/upload", methods=["POST"])
 def reg_upload():
     """개정 내규 업로드 — 변환·저장·manifest 등록."""
-    if not _upload_authorized():
-        return jsonify({"error": "업로드 토큰이 올바르지 않습니다."}), 401
+    _ok, _why = _upload_authorized()
+    if not _ok:
+        return jsonify({"error": _why}), 401
 
     f = request.files.get("file")
     if not f or not f.filename:
@@ -3480,8 +3671,9 @@ def reg_upload_delete():
       · 이전 개정이 있으면 그 개정본(파일·manifest 항목)으로 복원한다
       · 이전 개정이 없으면(신규 등록) 등록을 해제하고 파일을 삭제한다
     """
-    if not _upload_authorized():
-        return jsonify({"error": "업로드 토큰이 올바르지 않습니다."}), 401
+    _ok, _why = _upload_authorized()
+    if not _ok:
+        return jsonify({"error": _why}), 401
     slug = (request.form.get("slug") or (request.json or {}).get("slug") or "").strip()
     if not slug or "/" in slug or "\\" in slug or slug.startswith("."):
         return jsonify({"error": "slug 값이 올바르지 않습니다."}), 400
@@ -3964,12 +4156,8 @@ def internal_search():
     local_hits = _local_reg_search(query)
 
     if not SAGYU_MCP_URL:
-        if local_hits:
-            return jsonify({"success": True, "query": query, "tool": "local-upload",
-                            "text": "", "structured": local_hits,
-                            "local_count": len(local_hits),
-                            "name_matches": _name_match_regs(query)})
-        return jsonify({"error": "사규 MCP 서버가 설정되지 않았습니다(SAGYU_MCP_URL)."}), 503
+        # MCP 미설정이어도 번들된 규정 본문으로 자체 검색한다(외부 하드의존 제거).
+        return jsonify(_local_only_search(query, local_hits))
     try:
         cli = _McpClient(SAGYU_MCP_URL)
         cli.initialize()
@@ -3997,27 +4185,23 @@ def internal_search():
             # 의미 검색(임베딩) — 어휘가 달라 키워드로 못 찾는 조문을 보완
             "semantic": _semantic_for_search(query),
         }
-        return jsonify(_merge_local_hits(resp, local_hits))
+        merged = _merge_local_hits(resp, local_hits)
+        # MCP·로컬·명칭검색에 없는 규정을 번들 본문으로 보강(결과 뒤에 덧붙임 —
+        # MCP 순위는 유지). MCP 가 놓친 규정의 커버리지만 채운다.
+        present = {_norm_key(_item_title(it)) for it in (merged.get("structured") or [])}
+        present |= {_norm_key(h.get("title", "")) for h in (merged.get("name_matches") or [])}
+        cat = _catalog_reg_hits(query, present)
+        if cat:
+            merged["structured"] = (merged.get("structured") or []) + cat
+        return jsonify(merged)
     except (req_lib.exceptions.Timeout,
             req_lib.exceptions.ConnectionError) as e:
-        # MCP 서버가 죽어도 업로드된 개정 내규는 계속 조회되도록 한다
-        if local_hits:
-            return jsonify(_merge_local_hits(
-                {"success": True, "query": query, "tool": "local-upload",
-                 "text": "", "structured": None,
-                 "mcp_error": f"사규 MCP 서버 연결 실패: {e}",
-                 "name_matches": _name_match_regs(query)}, local_hits))
-        if isinstance(e, req_lib.exceptions.Timeout):
-            return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
-        return jsonify({"error": f"사규 MCP 서버에 연결할 수 없습니다: {e}"}), 502
+        # MCP 서버가 죽어도 번들된 규정 본문으로 계속 검색되도록 한다
+        return jsonify(_local_only_search(
+            query, local_hits, f"사규 MCP 서버 연결 실패: {e}"))
     except Exception as e:
         import traceback; traceback.print_exc()
-        if local_hits:
-            return jsonify(_merge_local_hits(
-                {"success": True, "query": query, "tool": "local-upload",
-                 "text": "", "structured": None, "mcp_error": str(e),
-                 "name_matches": _name_match_regs(query)}, local_hits))
-        return jsonify({"error": f"내규 검색 오류: {e}"}), 500
+        return jsonify(_local_only_search(query, local_hits, str(e)))
 
 
 @app.route("/api/internal/doc")
@@ -4038,7 +4222,22 @@ def internal_doc():
                         "source": "upload", "revision": m_local.get("revision", ""),
                         "uploaded_at": m_local.get("uploaded_at", "")})
 
+    # 번들된 규정 HTML 본문으로 전문을 구성(오프라인/무MCP 리더 지원).
+    def _local_doc():
+        if not m_local:
+            return None
+        body = _reg_body_text(m_local.get("slug", ""))
+        if not body or len(body) < 40:
+            return None
+        return {"success": True, "name": m_local.get("title", name),
+                "tool": "local-html", "is_full": True,
+                "text": body, "structured": None, "source": "local",
+                "revision": m_local.get("revision", "")}
+
     if not SAGYU_MCP_URL:
+        doc = _local_doc()
+        if doc:
+            return jsonify(doc)
         return jsonify({"error": "사규 MCP 서버가 설정되지 않았습니다(SAGYU_MCP_URL)."}), 503
     try:
         cli = _McpClient(SAGYU_MCP_URL)
@@ -4058,19 +4257,27 @@ def internal_doc():
         text = _mcp_extract_text(result)
         structured = result.get("structuredContent") if isinstance(result, dict) else None
         if isinstance(result, dict) and result.get("isError"):
+            doc = _local_doc()                       # MCP 오류 시 번들 본문으로
+            if doc:
+                return jsonify(doc)
             return jsonify({"error": text or "내규 전문 조회 중 오류가 발생했습니다."}), 502
+        # MCP 가 빈 응답이면 번들 본문으로 보완
+        if not (text or "").strip() and not structured:
+            doc = _local_doc()
+            if doc:
+                return jsonify(doc)
         return jsonify({"success": True, "name": name, "tool": tool.get("name"),
                         "is_full": bool(doc_tool), "text": text, "structured": structured})
     except req_lib.exceptions.Timeout:
-        if local_text:
-            return jsonify({"success": True, "name": name, "tool": "local-upload",
-                            "is_full": True, "text": local_text, "source": "upload"})
+        doc = _local_doc()
+        if doc:
+            return jsonify(doc)
         return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
     except Exception as e:
-        if local_text:
-            return jsonify({"success": True, "name": name, "tool": "local-upload",
-                            "is_full": True, "text": local_text, "source": "upload",
-                            "mcp_error": str(e)})
+        doc = _local_doc()
+        if doc:
+            doc["mcp_error"] = str(e)
+            return jsonify(doc)
         return jsonify({"error": f"내규 전문 조회 오류: {e}"}), 500
 
 
@@ -4368,6 +4575,8 @@ def law_check():
 
 @app.route("/api/debug/law")
 def debug_law_xml():
+    if os.environ.get("DEBUG_ENDPOINTS") != "1":
+        return jsonify({"error": "not found"}), 404
     name = request.args.get("name", "").strip()
     mst  = request.args.get("mst", "").strip()
     try:
