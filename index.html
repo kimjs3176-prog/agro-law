@@ -372,7 +372,8 @@ body.dark .reg-badge{background:#12233d;color:#93c5fd;}
 .reg-hist-toggle{cursor:pointer;color:var(--g);font-weight:600;user-select:none;}
 .reg-hist-toggle:hover{text-decoration:underline;}
 .reg-hist-list{flex-basis:100%;display:none;gap:5px;flex-wrap:wrap;margin-top:2px;}
-.reg-hist-chip{font-size:11px;color:var(--mu);background:var(--bg);border:1px solid var(--bd);border-radius:999px;padding:2px 9px;}
+.reg-hist-chip{font-size:11px;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:999px;padding:2px 9px;}
+.reg-hist-date{color:var(--ht);font-weight:400;}
 body.dark .reg-hist-chip{background:#161920;}
 .reg-arts{padding:4px 18px 16px;display:flex;flex-direction:column;gap:8px;}
 .reg-art{border:1px solid var(--bd);border-radius:10px;padding:10px 12px;background:var(--bg);}
@@ -2126,10 +2127,16 @@ function _extractRevInfo(item, arts){
   if(meta){
     const hist=(meta.history||[]).map(h=>h.revision).filter(Boolean);
     const cur=(meta.revision||'').trim();
+    // 상세 이력: 이전 개정본 라벨 + 교체(개정)일. 오래된 순으로 정렬.
+    const detail=(meta.history||[]).map(h=>({
+      rev:(h.revision||'').trim(),
+      date:((h.replaced_at||h.uploaded_at||h.effective_date||'')+'').slice(0,10).replace(/-/g,'.'),
+    })).filter(h=>h.rev).reverse();
     return {
       시행일:(meta.effective_date||'').replace(/-/g,'.'),
       latest: cur,
       history: cur?[...hist].reverse().concat([cur]):hist.slice().reverse(),
+      historyDetail: detail,
       fromMeta:true,
     };
   }
@@ -2154,7 +2161,15 @@ function _buildRevMeta(item, arts, i){
   if(rv.시행일) bits.push(`<span class="reg-rev-item">📅 시행 <b>${escHtml(rv.시행일)}</b></span>`);
   if(rv.latest) bits.push(`<span class="reg-rev-item">🕒 ${rv.fromMeta?'현행':'최근 개정'} <b>${escHtml(rv.latest)}</b></span>`);
   let histBtn='';
-  if(rv.history.length){
+  const detail=rv.historyDetail||[];
+  if(detail.length){
+    // 상세: 이전 개정본 라벨 + 교체(개정)일 표시
+    const list=detail.slice().reverse().map(h=>
+      `<span class="reg-hist-chip">${escHtml(h.rev)}${h.date?` <span class="reg-hist-date">· ${escHtml(h.date)} 개정</span>`:''}</span>`
+    ).join('');
+    histBtn=`<span class="reg-rev-item reg-hist-toggle" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='flex'?'none':'flex'">📜 이전 개정본 ${detail.length}건 ▾</span>
+      <span class="reg-hist-list" style="display:none;">${list}</span>`;
+  } else if(rv.history.length){
     const list=rv.history.slice().reverse().map(dt=>`<span class="reg-hist-chip">${escHtml(dt)}</span>`).join('');
     histBtn=`<span class="reg-rev-item reg-hist-toggle" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='flex'?'none':'flex'">📜 개정이력 ${rv.history.length}건 ▾</span>
       <span class="reg-hist-list" style="display:none;">${list}</span>`;

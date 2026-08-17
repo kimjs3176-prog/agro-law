@@ -3355,7 +3355,11 @@ def _merge_manifest(man: list, entry: dict):
         if _norm_key(m.get("title", "")) == key:
             prev = {k: v for k, v in m.items() if k != "history"}
             hist = list(m.get("history") or [])
-            hist.insert(0, {"entry": prev})
+            # 이력 스키마를 _upsert_manifest 와 통일: 이전 개정 라벨 + 교체 시각 기록.
+            # entry 는 유지(되돌리기 복원에 사용).
+            hist.insert(0, {"revision": prev.get("revision", ""),
+                            "replaced_at": entry.get("uploaded_at", ""),
+                            "entry": prev})
             entry = dict(entry)
             entry["history"] = hist[:20]
             out.append(entry); replaced = True
@@ -3895,11 +3899,13 @@ def internal_names():
         hist = []
         for h in (m.get("history") or [])[:20]:
             e = h.get("entry") or h
-            rv = (e.get("revision") or "").strip()
+            rv = (e.get("revision") or h.get("revision") or "").strip()
             if rv:
                 hist.append({"revision": rv,
                              "effective_date": e.get("effective_date", ""),
-                             "uploaded_at": e.get("uploaded_at", "")})
+                             "uploaded_at": e.get("uploaded_at", ""),
+                             # 이 이전 개정본이 '언제 교체(개정)되었는지'
+                             "replaced_at": h.get("replaced_at", "")})
         items.append({"title": m.get("title", ""), "category": m.get("category", ""),
                       "revision": m.get("revision", ""),
                       "effective_date": m.get("effective_date", ""),
