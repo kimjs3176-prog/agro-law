@@ -2713,6 +2713,16 @@ function formatRuleText(raw){
     else if(/^[○◯ㅇ]/.test(t)) cls='rf-bul';
     else if(/^\*/.test(t)) cls='rf-note';
     else if(/^[-–]\s/.test(t)) cls='rf-dash';
+    // 조 제목과 첫 항(①…)이 한 줄로 붙어 오면 분리한다. 그러지 않으면 첫 항
+    // 전체가 조 제목 스타일(rf-art)로 렌더돼 ②항 이하(rf-hang)와 색이 달라진다.
+    if(cls==='rf-art'){
+      const mHang=t.match(/^(제\s*\d+\s*조(?:의\s*\d+)?\s*(?:\([^)]*\)|（[^）]*）)?)\s*([①-⑳][\s\S]*)$/);
+      if(mHang){
+        html+=`<div class="rf-art">${seg(mHang[1])}</div>`;
+        html+=`<div class="rf-hang">${seg(mHang[2])}</div>`;
+        continue;
+      }
+    }
     html+=`<div class="${cls}">${seg(t)}</div>`;
   }
   return `<div class="rulefmt">${html}</div>`;
