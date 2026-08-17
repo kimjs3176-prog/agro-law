@@ -3049,7 +3049,8 @@ def _local_only_search(query: str, local_hits: list, mcp_error: str = "") -> dic
             "text": "", "structured": local_hits + cat,
             "local_count": len(local_hits),
             "name_matches": _name_match_regs(query),
-            "semantic": _semantic_for_search(query)}
+            "semantic": _semantic_for_search(query),
+            "semantic_available": _semantic_available()}
     if mcp_error:
         resp["mcp_error"] = mcp_error
     return resp
@@ -3833,6 +3834,17 @@ def _semantic_for_search(query: str, top_k: int = 18):
         return []
 
 
+def _semantic_available() -> bool:
+    """의미 검색이 실제로 수행 가능한지(임베딩 키 + 벡터 인덱스 존재)."""
+    key = (request.args.get("api_key") or os.environ.get("GEMINI_API_KEY", "")).strip()
+    if not key:
+        return False
+    try:
+        return _vec_load()["mat"] is not None
+    except Exception:
+        return False
+
+
 @app.route("/api/internal/semantic")
 def internal_semantic():
     """의미 검색 결과(규정 단위로 묶어 반환)."""
@@ -4184,6 +4196,7 @@ def internal_search():
             "name_matches": _name_match_regs(query),
             # 의미 검색(임베딩) — 어휘가 달라 키워드로 못 찾는 조문을 보완
             "semantic": _semantic_for_search(query),
+            "semantic_available": _semantic_available(),
         }
         merged = _merge_local_hits(resp, local_hits)
         # MCP·로컬·명칭검색에 없는 규정을 번들 본문으로 보강(결과 뒤에 덧붙임 —
