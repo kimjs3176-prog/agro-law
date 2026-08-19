@@ -449,6 +449,14 @@ body.dark .rf-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .rf-apx-cap{font-size:13px;font-weight:700;color:var(--tx);padding:9px 12px 3px;}
 .rf-apx-body{padding:6px 10px 10px;}
 .rf-apx-body .rf-tablewrap{margin:6px 0 0;}
+.rf-apx-orig{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;}
+.rf-apx-origbtn{font-size:12.5px;font-weight:700;color:#fff;background:var(--g);border:none;border-radius:8px;padding:7px 13px;cursor:pointer;font-family:var(--font);}
+.rf-apx-origbtn:hover{background:var(--gd);}
+.rf-apx-orignote{font-size:11.5px;color:var(--mu);}
+.rf-apx-fallback{border-top:1px solid var(--bd);}
+.rf-apx-fallback>summary{cursor:pointer;font-size:11.5px;color:var(--ht);padding:7px 12px;list-style:none;user-select:none;}
+.rf-apx-fallback>summary:hover{color:var(--mu);}
+.rf-apx-fallback[open]>summary{color:var(--mu);}
 /* 본문 속 '내규' 참조 (법령 참조와 구분) */
 .law-ref.rule-ref{color:var(--gd);border-bottom-style:solid;}
 .law-ref.rule-ref::before{content:'내규';font-size:9.5px;font-weight:800;background:var(--g);color:#fff;
@@ -2407,7 +2415,16 @@ function jumpApx(id){
 // 별표·별지 원본 보기: 원본 HTML 패널을 열고 해당 별표 위치로 스크롤
 // (MCP 텍스트에서 복원한 표가 아니라 원본 서식 그대로 표시)
 function openAnnexOriginal(label, fallbackId){
-  if(!_origInfo||!_origInfo.html_url){ if(fallbackId) jumpApx(fallbackId); return; }
+  if(!_origInfo||!_origInfo.html_url){
+    // 원본 HTML 이 없으면 복원 표 폴백을 펼쳐 보여준다(빈 화면 방지)
+    if(fallbackId){
+      const el=document.getElementById(fallbackId);
+      const det=el&&el.querySelector('.rf-apx-fallback');
+      if(det) det.open=true;
+      jumpApx(fallbackId);
+    }
+    return;
+  }
   openOriginalPdf();                       // 원본 패널 열기(HTML 우선)
   const fr=document.getElementById('origPdfFrame');
   if(!fr) return;
@@ -2607,8 +2624,16 @@ function formatRuleText(raw){
     }
     const lab=apxLabel(title);
     const anchor='apx-'+(_apxSeq++);
+    // 별표·별지 '서식'은 평문에서 표를 복원하면 셀이 흩어져 의미가 없다.
+    // 원본 서식(원본 HTML)을 그대로 보도록 안내하고, 복원 표는 접어 둔다(폴백).
+    const L=argAttr(lab);
+    const origBtn=`<div class="rf-apx-orig">`+
+      `<button class="rf-apx-origbtn" onclick="openAnnexOriginal('${L}','${anchor}')">📄 원본 서식 보기</button>`+
+      `<span class="rf-apx-orignote">서식은 원본 그대로 확인하세요</span></div>`;
+    const fallback=`<details class="rf-apx-fallback"><summary>텍스트로 복원한 표 보기 (정확도 낮음)</summary>`+
+      `<div class="rf-apx-body">${bodyHtml}</div></details>`;
     return `<div class="rf-appendix" id="${anchor}" data-apx="${escHtml(lab)}">`+
-           `${out}<div class="rf-apx-body">${bodyHtml}</div></div>`;
+           `${out}${origBtn}${fallback}</div>`;
   }
   // ── 제·개정 연혁 블록(구분/시행일/종류/번호가 셀 단위로 흩어진 경우) ──
   const _DATE_RE=/^\d{4}\s*[.\-]\s*\d{1,2}\s*[.\-]\s*\d{1,2}\s*\.?$/;
