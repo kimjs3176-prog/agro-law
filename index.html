@@ -330,6 +330,10 @@ body.dark mark{color:#1f2937;}
 .int-laws-none{color:var(--mu);font-size:12px;font-weight:500;background:var(--bg);border-color:transparent;}
 .int-law-chip{font-size:12px;font-weight:700;color:var(--g);background:var(--sf);border:none;border-radius:999px;padding:5px 12px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);transition:all .15s cubic-bezier(.34,1.56,.64,1);}
 .int-law-chip:hover{background:var(--g);color:#fff;transform:translateY(-1px);}
+.int-law-more{font-size:12px;font-weight:700;color:var(--mu);background:transparent;border:1px dashed var(--bd);border-radius:999px;padding:5px 12px;cursor:pointer;}
+.int-law-more:hover{color:var(--tx);border-color:var(--g);}
+.rf-garbled{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0;padding:12px;border:1px dashed var(--bd);border-radius:10px;background:var(--bg);}
+.rf-garbled-t{font-size:12.5px;color:var(--mu);}
 .int-item{background:var(--sf);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);}
 .int-item-t{font-size:14px;font-weight:700;color:var(--tx);margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--bd);}
 .int-item-b{font-size:13.5px;line-height:1.95;color:var(--tx);white-space:pre-wrap;word-break:break-word;}
@@ -2716,7 +2720,18 @@ function formatRuleText(raw){
       }
       i--;
       // 실제 표(2행 이상 또는 구분선 포함)일 때만 표로 렌더, 아니면 일반 문단
-      if(block.length>=2 || block.some(isSepRow)){ html+=renderTable(block); continue; }
+      if(block.length>=2 || block.some(isSepRow)){
+        // 조직도 등 대부분 빈 셀인 희소 그리드는 표로 복원해도 의미가 없다 → 원본 안내
+        let total=0, filled=0, maxc=0;
+        block.forEach(r=>{ const cs=splitRow(r); maxc=Math.max(maxc,cs.length);
+          cs.forEach(c=>{ total++; if(c.trim()) filled++; }); });
+        if(total && filled/total < 0.35 && maxc>=6 && block.length>=4){
+          html+=`<div class="rf-garbled"><span class="rf-garbled-t">📊 조직도·도표는 텍스트로 정확히 표시하기 어렵습니다.</span>`+
+                `<button class="rf-apx-origbtn" onclick="openOriginalPdf()">📄 원본에서 보기</button></div>`;
+          continue;
+        }
+        html+=renderTable(block); continue;
+      }
       html+=`<div class="rf-p">${seg(block[0])}</div>`; continue;
     }
     // 목차 블록: 점선 리더가 있는 줄을 모아 제목/페이지 목록으로 복원
@@ -3138,14 +3153,19 @@ async function doSearchArticle(q){
 // 내규 본문의 「법령명」·"○○법 제N조"에 마우스를 올리면 조문 미리보기,
 // 클릭하면 해당 법령 전문이 열린다(법령해석 연계).
 function extractLawNamesFromText(text){
-  const names=new Set();
+  const cnt=new Map();
+  const bump=n=>{ n=(n||'').trim(); if(n) cnt.set(n,(cnt.get(n)||0)+1); };
   const re1=/[「｢]([^」｣\n]{2,50}(?:법률|법|시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준))[」｣]/g;
   const re2=/(?<![가-힣])([가-힣]{2,20}(?:법률|법))(?= *제\d+조)/g;
   let m;
-  while((m=re1.exec(text))) names.add(m[1].trim());
-  while((m=re2.exec(text))) names.add(m[1].trim());
-  // 너무 일반적인 단어 제거
-  return [...names].filter(n=>n.length>=2 && !['법','규정','규칙','기준','지침'].includes(n));
+  while((m=re1.exec(text))) bump(m[1]);
+  while((m=re2.exec(text))) bump(m[1]);
+  const bad=new Set(['법','규정','규칙','기준','지침']);
+  // 참조 빈도 높은 법령을 앞에 — 표시 상한 적용 시 핵심 법령이 남도록
+  return [...cnt.entries()]
+    .filter(([n])=>n.length>=2 && !bad.has(n))
+    .sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0]))
+    .map(([n])=>n);
 }
 
 const _intDocCache = {};   // 규정명 → 전문 텍스트 (전문 패널 재조회 방지)
@@ -3459,9 +3479,15 @@ function renderRelatedLaws(text, q){
     el.innerHTML=`<div class="int-uni"><span class="int-badge int-badge-law">⚖ 관련 법령</span><span style="font-size:12.5px;color:var(--mu);">이 내규에서 직접 참조된 법령을 찾지 못했습니다.</span></div>`;
     return;
   }
-  const chips=names.map(n=>`<button class="int-law-chip" title="「${escHtml(n)}」 조문 전문 (왼쪽 내규와 나란히)"
-      onclick="openDocSplit(decodeURIComponent('${encodeURIComponent(n)}'),'law')">「${escHtml(n)}」</button>`).join('');
-  el.innerHTML=`<div class="int-uni"><span class="int-badge int-badge-law">⚖ 관련 법령</span><span style="font-size:12px;color:var(--mu);margin-right:2px;">내규가 참조하는 법령 · 클릭 시 오른쪽에 나란히 열림</span>${chips}</div>`;
+  const mk=n=>`<button class="int-law-chip" title="「${escHtml(n)}」 조문 전문 (왼쪽 내규와 나란히)"
+      onclick="openDocSplit(decodeURIComponent('${encodeURIComponent(n)}'),'law')">「${escHtml(n)}」</button>`;
+  // 참조 법령이 많으면(직제·직무표 등) 화면을 뒤덮으므로 상한 후 '더 보기'로 접는다.
+  const CAP=16;
+  const head=names.slice(0,CAP).map(mk).join('');
+  const rest=names.slice(CAP);
+  const restHtml=rest.length?`<span class="int-law-rest" style="display:none;">${rest.map(mk).join('')}</span>`:'';
+  const moreBtn=rest.length?`<button class="int-law-more" onclick="this.previousElementSibling.style.display='';this.remove();">+${rest.length} 더 보기</button>`:'';
+  el.innerHTML=`<div class="int-uni"><span class="int-badge int-badge-law">⚖ 관련 법령</span><span style="font-size:12px;color:var(--mu);margin-right:2px;">내규가 참조하는 법령 · 클릭 시 오른쪽에 나란히 열림</span>${head}${restHtml}${moreBtn}</div>`;
 }
 
 // ── 업무 근거 찾기 ──
