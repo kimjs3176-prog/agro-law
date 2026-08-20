@@ -2547,7 +2547,7 @@ function formatRuleText(raw){
   }
   // ── 별표·별지 판별/렌더 ──
   // 별표/별지 시작 줄만 헤더로 인정. "기안문 서식"처럼 '서식'으로 끝나는 캡션은 제외.
-  const isApxHeader=s=>/^[\[<（(]?\s*별\s*[표지]/.test(s) || /^[\[<（(]?\s*붙임\s*\d/.test(s);
+  const isApxHeader=s=>/^[\[<（(〔【[]?\s*별\s*[표지]/.test(s) || /^[\[<（(〔【[]?\s*붙임\s*\d/.test(s);
   const isDocHeader=s=>/^제\s*\d+\s*(?:조|장|편|절|관)/.test(s) || /^부\s*칙/.test(s);
   const looksAddr=s=>/(?:특별시|광역시|[가-힣]{2,}도\b|[가-힣]{2,}시\b|[가-힣]{2,}군\b|[가-힣]{2,}구\b)/.test(s)
       || /(?:로|길)\s?\d|번지|\d+\s*층|타워|빌딩|[가-힣]호\b|\d+호\b/.test(s);
@@ -3233,6 +3233,20 @@ function _dedupeArts(arts){
 // 내규 본문을 조문 단위로 분해해 키워드 매칭 조문 추출
 function extractRuleArticles(text, kw){
   if(!text) return [];
+  // 별표·별지·붙임(서식) 블록은 카드 미리보기에서 제외 — 서식 헤더 라인부터 끝까지
+  // 잘라낸다. 단, 조문 본문 속 '[별표 1]과 같이' 같은 '참조 문장'(길다)은 자르지 않는다.
+  {
+    const ls=text.split('\n'); let off=0;
+    for(let i=0;i<ls.length;i++){
+      const t=ls[i].trim();
+      if(/^[\[<（(〔【［]?\s*별\s*[표지]\s*(?:제\s*)?\d/.test(t)){
+        const rest=t.replace(/^[\[<（(〔【［]?\s*별\s*[표지]\s*(?:제\s*)?\d+(?:의\s*\d+)?\s*호?\s*[〕】\]\)>]?/,'').trim();
+        if(rest.length<=25 || /관련|서식/.test(rest.slice(0,25))){ text=text.slice(0,off); break; }
+      }
+      off += ls[i].length+1;
+    }
+  }
+  if(!text.trim()) return [];
   // 줄 시작의 "제N조"에서만 분리 (문장 중간 법령 참조로 잘리는 문제 방지)
   let segs = text.split(/\n\s*(?=제\s*\d+\s*조)/).map(s=>s.trim()).filter(Boolean);
   if(segs.length<=1) segs = text.split(/\n{2,}|\r?\n/).map(s=>s.trim()).filter(Boolean);
