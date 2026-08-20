@@ -3435,17 +3435,26 @@ function renderInternalResults(d, q){
   // 그룹 내에서는 관련도(키워드 본문 매칭 수, 의미검색 점수)순. 직제규정처럼
   // 별표·직무표가 커서 본문 매칭이 많은 규정이 이름 매칭 규정을 앞서지 않게 한다.
   const qn=_rnorm(q);
+  const qL=(q||'').trim().toLowerCase();
   items.forEach(it=>{
     const nk=_rnorm(it.name||'');
     it._nameHit = !!(qn && nk.includes(qn));
     // 키워드(비-의미) 본문 매칭 존재 여부
     it._kwHits = (it.matched_articles||[]).filter(a=>!a._sem).length;
     it._rank = it._exact ? 0 : (it._nameHit ? 1 : (it._kwHits>0 ? 2 : 3));
+    // 관련도 점수: 키워드 출현 빈도를 문서 크기로 정규화(거대 문서 페널티).
+    // 직원채용지침(8만자)처럼 문서가 커서 우연히 포함하는 규정이 상위를 차지하지
+    // 않도록, 실제로 키워드를 자주·집중적으로 다루는 규정을 우선한다.
+    const body=(_intDocCache[it.name]||'').toLowerCase();
+    const occ = (qL && body) ? Math.max(0, body.split(qL).length-1) : it._kwHits;
+    it._rel = occ>0 ? occ/Math.sqrt(Math.max(300, body.length||1)) : 0;
   });
   items.sort((a,b)=>{
     if(a._rank!==b._rank) return a._rank-b._rank;
     if(a._rank===3) return (b._score||0)-(a._score||0);   // 의미검색: 점수순
-    return (b._kwHits||0)-(a._kwHits||0);                  // 이름·본문: 본문 매칭수순
+    // 이름·본문: 빈도 밀도(관련도)순, 동률이면 매칭 조문 수
+    if((b._rel||0)!==(a._rel||0)) return (b._rel||0)-(a._rel||0);
+    return (b._kwHits||0)-(a._kwHits||0);
   });
   renderRegCards(items, q, 'internal');
   // 명칭 검색 결과: 규정명에 검색어가 포함된 내규를 상단에 별도 표시
