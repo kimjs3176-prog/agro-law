@@ -2602,7 +2602,7 @@ function formatRuleText(raw){
     return (best && best.score>=0.75) ? best : null;
   }
   function renderAppendix(title, cells){
-    cells=cells.map(c=>c.trim()).filter(Boolean);
+    cells=cells.map(c=>c.trim()).filter(c=>c && c!=='APXGRID');
     let out=renderApxTitle(title);
     // 캡션: 첫 셀이 서술형(공백 포함·주소 아님)이면 표 제목
     let ci=0, cap='';
@@ -2709,9 +2709,37 @@ function formatRuleText(raw){
     return `<div class="rf-toc-wrap"><div class="rf-toc-h">목차</div>${body}</div>`;
   }
   let html='';
+  // ── 희소 파이프 그리드(조직도 등) 사전 압축 ──────────────────────────────
+  // '| | | 원장 | |' 처럼 대부분 빈 셀인 파이프 줄의 연속은 표로 복원해도
+  // 흩어져 의미가 없으므로, 연속 구간을 하나의 자리표시자(APXGRID)로 치환한다.
+  // 표(별표) 수집·표 복원 이전에 실행해 어떤 경로로 와도 원본 안내로 대체되게 한다.
+  const _pipeCount=s=>(s.match(/\|/g)||[]).length;
+  const _sparsePipe=s=>{ if(_pipeCount(s)<4) return false; const cs=splitRow(s);
+    let f=0; cs.forEach(c=>{ if(c.trim()) f++; }); return cs.length>=6 && f/cs.length<0.4; };
+  (function collapseSparseGrids(){
+    const out=[];
+    for(let i=0;i<merged.length;i++){
+      if(_sparsePipe(merged[i].trim())){
+        let j=i, n=0;
+        while(j<merged.length){
+          const u=merged[j].trim();
+          if(!u){ j++; continue; }
+          if(_sparsePipe(u) || _pipeCount(u)>=15){ n++; j++; } else break;
+        }
+        if(n>=3){ out.push('APXGRID'); i=j-1; continue; }
+      }
+      out.push(merged[i]);
+    }
+    merged.length=0; out.forEach(x=>merged.push(x));
+  })();
   for(let i=0;i<merged.length;i++){
     const t=merged[i].trim();
     if(!t) continue;
+    if(t==='APXGRID'){
+      html+=`<div class="rf-garbled"><span class="rf-garbled-t">📊 조직도·도표는 텍스트로 정확히 표시하기 어렵습니다.</span>`+
+            `<button class="rf-apx-origbtn" onclick="openOriginalPdf()">📄 원본에서 보기</button></div>`;
+      continue;
+    }
     // 표 블록: 연속된 파이프(|) 라인을 모아 <table>로 렌더 (별지 서식 대응)
     if(isTableRow(t)){
       const block=[];
