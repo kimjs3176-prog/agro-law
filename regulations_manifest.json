@@ -712,12 +712,34 @@
  },
  {
   "title": "직제규정 시행세칙",
-  "revision": "2026년도 6월 11일 개정",
+  "revision": "2026년도 7월 13일 개정",
   "category": "세칙",
   "slug": "직제규정_시행세칙",
-  "src": "직제규정 시행세칙(2026년도 6월 11일 개정).hwpx",
+  "src": "직제규정 시행세칙(2026년도 7월 13일 개정).hwpx",
   "html": "/regulations/직제규정_시행세칙/index.html",
-  "pdf": "pdf/직제규정_시행세칙.pdf"
+  "pdf": "pdf/직제규정_시행세칙.pdf",
+  "effective_date": "",
+  "department": "",
+  "note": "",
+  "uploader": "김진선",
+  "uploaded_at": "2026-08-20 09:34",
+  "original": "/regulations/직제규정_시행세칙/original.hwpx",
+  "searchable": true,
+  "history": [
+   {
+    "revision": "2026년도 6월 11일 개정",
+    "replaced_at": "2026-08-20 09:34",
+    "entry": {
+     "title": "직제규정 시행세칙",
+     "revision": "2026년도 6월 11일 개정",
+     "category": "세칙",
+     "slug": "직제규정_시행세칙",
+     "src": "직제규정 시행세칙(2026년도 6월 11일 개정).hwpx",
+     "html": "/regulations/직제규정_시행세칙/index.html",
+     "pdf": "pdf/직제규정_시행세칙.pdf"
+    }
+   }
+  ]
  },
  {
   "title": "치유농업사 자격시험 규칙 시행세칙",
