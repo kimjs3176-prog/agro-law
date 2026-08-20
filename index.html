@@ -3417,6 +3417,22 @@ function renderInternalResults(d, q){
     const c=_catByName.get(k) || (_regMeta.get(k)&&_regMeta.get(k).category) || '';
     if(c) it.category=String(c);
   });
+  // ── 결과 배치: 1) 규정명 매칭  2) 본문 내용 매칭  3) 기타(의미 등) ──
+  // 그룹 내에서는 관련도(키워드 본문 매칭 수, 의미검색 점수)순. 직제규정처럼
+  // 별표·직무표가 커서 본문 매칭이 많은 규정이 이름 매칭 규정을 앞서지 않게 한다.
+  const qn=_rnorm(q);
+  items.forEach(it=>{
+    const nk=_rnorm(it.name||'');
+    it._nameHit = !!(qn && nk.includes(qn));
+    // 키워드(비-의미) 본문 매칭 존재 여부
+    it._kwHits = (it.matched_articles||[]).filter(a=>!a._sem).length;
+    it._rank = it._exact ? 0 : (it._nameHit ? 1 : (it._kwHits>0 ? 2 : 3));
+  });
+  items.sort((a,b)=>{
+    if(a._rank!==b._rank) return a._rank-b._rank;
+    if(a._rank===3) return (b._score||0)-(a._score||0);   // 의미검색: 점수순
+    return (b._kwHits||0)-(a._kwHits||0);                  // 이름·본문: 본문 매칭수순
+  });
   renderRegCards(items, q, 'internal');
   // 명칭 검색 결과: 규정명에 검색어가 포함된 내규를 상단에 별도 표시
   const nm=nmAll;
