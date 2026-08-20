@@ -799,14 +799,34 @@
   "src": "보직관리기준(2026년도 7월 13일 개정).hwpx",
   "html": "/regulations/보직관리기준/index.html",
   "pdf": "pdf/보직관리기준.pdf",
-  "effective_date": "2026-07-13",
+  "effective_date": "",
   "department": "",
   "note": "",
   "uploader": "김진선",
-  "uploaded_at": "2026-08-07 15:04",
+  "uploaded_at": "2026-08-20 09:34",
   "original": "/regulations/보직관리기준/original.hwpx",
   "searchable": true,
   "history": [
+   {
+    "revision": "2026년도 7월 13일 개정",
+    "replaced_at": "2026-08-20 09:34",
+    "entry": {
+     "title": "보직관리기준",
+     "revision": "2026년도 7월 13일 개정",
+     "category": "예규",
+     "slug": "보직관리기준",
+     "src": "보직관리기준(2026년도 7월 13일 개정).hwpx",
+     "html": "/regulations/보직관리기준/index.html",
+     "pdf": "pdf/보직관리기준.pdf",
+     "effective_date": "2026-07-13",
+     "department": "",
+     "note": "",
+     "uploader": "김진선",
+     "uploaded_at": "2026-08-07 15:04",
+     "original": "/regulations/보직관리기준/original.hwpx",
+     "searchable": true
+    }
+   },
    {
     "entry": {
      "title": "보직관리기준",
