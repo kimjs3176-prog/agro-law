@@ -353,6 +353,60 @@ body.dark .int-uni{border-left-color:#7c3aed;}
 .int-badge-law{background:var(--gl)!important;color:var(--gp)!important;}
 body.dark .int-badge-law{background:#12233d!important;color:#93c5fd!important;}
 
+/* ── 다중 창(그리드) 열람 작업공간 ── */
+.ws{margin-top:6px;}
+.ws-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;margin-bottom:12px;
+  background:var(--sf);border:1px solid rgba(0,0,0,.06);border-radius:var(--rs);box-shadow:var(--shadow);}
+.ws-bar-t{font-weight:800;font-size:14px;color:var(--tx);display:flex;align-items:center;gap:6px;}
+.ws-cnt{font-size:12px;font-weight:700;color:var(--g);background:var(--gl);border-radius:999px;padding:1px 9px;}
+.ws-hint{font-size:12px;color:var(--mu);}
+.ws-bar-btn{font-size:12px;font-weight:600;color:var(--mu);background:transparent;border:1px solid rgba(0,0,0,.1);
+  border-radius:8px;padding:5px 11px;cursor:pointer;transition:.12s;}
+.ws-bar-btn:hover{background:var(--bg);color:var(--tx);}
+.ws-grid{display:grid;gap:14px;align-items:start;
+  grid-template-columns:repeat(auto-fit,minmax(min(440px,100%),1fr));}
+.ws-grid.ws-1{grid-template-columns:1fr;}
+.ws-pane{display:flex;flex-direction:column;background:var(--sf);border:1px solid rgba(0,0,0,.07);
+  border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;min-width:0;
+  height:calc(100vh - 210px);min-height:460px;}
+.ws-pane::before{content:'';display:block;height:3px;flex-shrink:0;
+  background:linear-gradient(90deg,var(--g),transparent 80%);opacity:.9;}
+.ws-pane-head{display:flex;align-items:center;gap:8px;padding:10px 12px;
+  border-bottom:1px solid rgba(0,0,0,.06);flex-shrink:0;}
+.ws-badge{font-size:10px;font-weight:800;letter-spacing:.06em;padding:2px 7px;border-radius:6px;flex-shrink:0;}
+.ws-badge-int{color:#0f766e;background:#ccfbf1;}
+.ws-badge-law{color:var(--gp);background:var(--gl);}
+.ws-pane-title{font-weight:700;font-size:14px;color:var(--tx);flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ws-pane-filter{width:118px;flex-shrink:0;font-size:12px;padding:5px 9px;border:1px solid rgba(0,0,0,.12);
+  border-radius:8px;background:var(--bg);color:var(--tx);}
+.ws-pane-filter:focus{outline:none;box-shadow:var(--shadow-focus);border-color:var(--g);}
+.ws-icon{width:28px;height:28px;flex-shrink:0;border:none;background:transparent;border-radius:8px;
+  cursor:pointer;color:var(--mu);font-size:13px;transition:.12s;}
+.ws-icon:hover{background:var(--bg);color:var(--tx);}
+.ws-pane-body{flex:1;overflow:auto;padding:14px 16px 28px;}
+.ws-doc{font-size:14px;line-height:1.7;color:var(--tx);}
+.ws-art{padding:10px 0;border-bottom:1px solid rgba(0,0,0,.05);}
+.ws-art-t{font-weight:700;font-size:13.5px;color:var(--tx);margin-bottom:5px;
+  display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;}
+.ws-art-no{color:var(--g);font-weight:800;flex-shrink:0;}
+.ws-art-b{font-size:13.5px;line-height:1.72;color:#333;}
+.ws-art-h2{font-size:12px;font-weight:800;color:var(--mu);letter-spacing:.02em;
+  margin:14px 0 6px;padding-bottom:4px;border-bottom:2px solid rgba(0,0,0,.08);}
+.ws-flash{animation:wsFlash .9s ease;}
+@keyframes wsFlash{0%{box-shadow:0 0 0 3px var(--g);}100%{box-shadow:var(--shadow);}}
+mark.ws-hl{background:var(--mark-bg);color:var(--mark-fg);border-radius:2px;padding:0 1px;}
+.ws-float{position:fixed;right:18px;bottom:18px;z-index:400;background:var(--g);color:#fff;border:none;
+  border-radius:999px;padding:11px 18px;font-size:13px;font-weight:700;cursor:pointer;
+  box-shadow:0 6px 20px rgba(49,130,246,.4);display:flex;align-items:center;gap:6px;}
+.ws-float b{background:rgba(255,255,255,.25);border-radius:999px;padding:0 7px;}
+@media (max-width:720px){
+  .ws-grid{grid-template-columns:1fr;}
+  .ws-pane{height:auto;min-height:340px;max-height:75vh;}
+}
+body.dark .ws-bar,body.dark .ws-pane{border-color:rgba(255,255,255,.08);}
+body.dark .ws-art-b{color:#c9ccd2;}
+
 /* ── 규정(법령/내규) 단위 카드 ── */
 .reg-card{margin-bottom:12px;}
 .reg-head{cursor:default;flex-wrap:wrap;gap:8px;}
@@ -1588,6 +1642,17 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   <!-- 교차 결과(법령↔내규) — 넓은 화면에서 오른쪽 열 -->
   <div id="internalResults"></div>
   </div><!-- /.res-split -->
+  <!-- 다중 창(그리드) 열람 작업공간: 내규·법령을 한 페이지에서 나란히 -->
+  <div id="workspace" class="ws" style="display:none;" aria-label="문서 열람 작업공간">
+    <div class="ws-bar">
+      <span class="ws-bar-t">📑 열람 작업공간 <span class="ws-cnt" id="wsCnt">0</span></span>
+      <span class="ws-hint" id="wsHint">문서를 더 열면 이 화면에서 나란히 비교할 수 있어요</span>
+      <span style="flex:1"></span>
+      <button class="ws-bar-btn" onclick="wsCloseAll()">전체 닫기</button>
+      <button class="ws-bar-btn" onclick="wsBackToList()">← 목록·검색으로</button>
+    </div>
+    <div class="ws-grid ws-1" id="wsGrid"></div>
+  </div>
   <!-- 페이지네이션 -->
   <div id="pagination" style="display:flex;justify-content:center;gap:6px;margin-top:12px;flex-wrap:wrap;"></div>
 
@@ -1832,6 +1897,8 @@ function renderInternalChips(){
 }
 function scenarioQuick(q){ document.getElementById('q').value=q; doSearch(); }
 function clearResults(){
+  // 새 검색·모드 전환 시 목록 화면을 드러낸다(작업공간 창은 보존 → 우하단 버튼으로 복귀)
+  if(typeof wsBackToList==='function') wsBackToList();
   const fbar=document.getElementById('fbar'); if(fbar) fbar.style.display='none';
   const tb=document.getElementById('regToolbar'); if(tb){ tb.style.display='none'; tb.innerHTML=''; }
   _currentResults=null;
@@ -1903,7 +1970,7 @@ function _dashGrid(items){
     const chips=list.map(it=>{
       const e=argAttr(it.title);
       const rev=it.revision?`<span class="idb-rev">${escHtml(it.revision)}</span>`:'';
-      return `<button class="idb-item" title="${escHtml(it.title)}${it.revision?' · '+escHtml(it.revision):''}" onclick="openInternalPanel('${e}')">`+
+      return `<button class="idb-item" title="${escHtml(it.title)}${it.revision?' · '+escHtml(it.revision):''}" onclick="wsOpen('${e}','internal')">`+
              `<span class="idb-item-t">${escHtml(it.title)}</span>${rev}</button>`;
     }).join('');
     return `<div class="idb-card"><div class="idb-card-h"><span class="idb-ic">${g.ic}</span>${escHtml(g.key)}<span class="idb-cnt">${list.length}</span></div>`+
@@ -2131,16 +2198,20 @@ function previewArticle(el, artNo){
   el.classList.add('on');
   const no=parseInt(artNo,10);
   if(kind==='internal'){
-    openPrimaryDoc(name,'internal');
+    wsOpen(name,'internal');
   }else{
-    openPrimaryDoc(name,'law',card.dataset.docUrl||'',card.dataset.docOrg||'',card.dataset.docType||'');
+    wsOpen(name,'law',card.dataset.docUrl||'',card.dataset.docOrg||'',card.dataset.docType||'');
   }
-  if(!no) return;
-  // 전문이 로드된 뒤 해당 조문으로 스크롤(로딩 시간 고려해 몇 차례 시도)
+  if(!no || kind==='internal') return;
+  // 창(법령)이 로드된 뒤 해당 조문으로 스크롤(로딩 시간 고려해 몇 차례 시도)
   let tries=0;
   const tick=setInterval(()=>{
     tries++;
-    try{ if(typeof jumpToArt==='function' && document.querySelector('#fpBody .fp-art')){ jumpToArt(no); clearInterval(tick); return; } }catch(e){}
+    try{
+      const p=_wsPanes.find(x=>_rnorm(x.name)===_rnorm(name) && x.docType==='law');
+      const el=p?document.getElementById('wspane_'+p.id):null;
+      if(el && el.querySelector('.ws-art')){ wsJumpArt(el,no); clearInterval(tick); return; }
+    }catch(e){}
     if(tries>24) clearInterval(tick);
   },220);
 }
@@ -2979,7 +3050,7 @@ function filterInternalTree(){
 }
 function openInternalFromTree(name){
   closeInternalTree();   // 목록에서 선택하면 사이드바를 닫아 전문이 가려지지 않도록
-  openInternalPanel(name);
+  wsOpen(name,'internal');
 }
 
 // ── 실무 시나리오 검색 ──
@@ -3078,8 +3149,8 @@ function _scenDocName(label){
 function openScenSource(type, label){
   const name=_scenDocName(String(label||''));
   if(!name) return;
-  if(type==='internal') openInternalPanel(name);
-  else openFullPanel(name,'https://www.law.go.kr/법령/'+encodeURIComponent(name));
+  if(type==='internal') wsOpen(name,'internal');
+  else wsOpen(name,'law');
 }
 // 본문 [근거 …제N조] 인용(유형 미확정): 내규명 레지스트리로 내규/법령 판별
 async function openScenCite(label){
@@ -3087,8 +3158,8 @@ async function openScenCite(label){
   if(!name) return;
   try{ if(typeof loadRegNames==='function') await loadRegNames(); }catch(e){}
   const inter=(typeof matchInternalRule==='function')?matchInternalRule(name):null;
-  if(inter){ openInternalPanel(inter); return; }
-  openFullPanel(name,'https://www.law.go.kr/법령/'+encodeURIComponent(name));
+  if(inter){ wsOpen(inter,'internal'); return; }
+  wsOpen(name,'law');
 }
 function renderScenarioResults(d){
   const laws      = d.laws || [];
@@ -3222,7 +3293,7 @@ function renderScenarioResults(d){
       </div>
       <div class="card-body" style="display:none;" id="scrb${i}">
         <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-          <button class="abtn primary" onclick="openFullPanel('${argAttr(name)}','${argAttr(lawUrl)}')">📄 전문 보기</button>
+          <button class="abtn primary" onclick="wsOpen('${argAttr(name)}','law','${argAttr(lawUrl)}')">📄 전문 보기</button>
           <a class="abtn" href="${escAttr(safeUrl(lawUrl))}" target="_blank">↗ 법제처</a>
         </div>
         <div class="art-wrap">${artHtml}</div>
@@ -3551,7 +3622,7 @@ function renderInternalResults(d, q){
       const e=argAttr(x.title);
       const cat=x.category?`<span class="cat">${escHtml(x.category)}</span>`:'';
       const dot=bodyNames.has(_rnorm(x.title))?' ·':'';
-      return `<button class="nm-chip" onclick="openInternalPanel('${e}')" title="${escHtml(x.title)}${x.revision?' · '+escHtml(x.revision):''}">`+
+      return `<button class="nm-chip" onclick="wsOpen('${e}','internal')" title="${escHtml(x.title)}${x.revision?' · '+escHtml(x.revision):''}">`+
              `${escHtml(x.title)}${cat}${dot}</button>`;
     }).join('');
     const box=`<div class="nm-sec"><div class="nm-sec-h">🔖 규정명에 "${escHtml(q)}" 포함<span class="cnt">${nm.length}건</span></div>`+
@@ -3716,7 +3787,7 @@ function renderBasisResults(laws, basisType, keywords){
       </div>
       <div class="card-body" style="display:none;" id="brb${i}">
         <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-          <button class="abtn primary" onclick="openFullPanel('${argAttr(name)}','${argAttr(lawUrl)}')">📄 전문 보기</button>
+          <button class="abtn primary" onclick="wsOpen('${argAttr(name)}','law','${argAttr(lawUrl)}')">📄 전문 보기</button>
           <a class="abtn" href="${escAttr(safeUrl(lawUrl))}" target="_blank">↗ 법제처</a>
         </div>
         <div class="art-wrap">${artHtml}</div>
@@ -3844,7 +3915,7 @@ function renderPage(){
           ${no?`<div class="mbox"><div class="mlbl">법령번호</div><div class="mval">${no}</div></div>`:''}
         </div>
         <div class="actions">
-          <button class="abtn primary" onclick="openFullPanel('${argAttr(name)}','${argAttr(lawUrl)}','${argAttr(org)}','${argAttr(type)}')">📄 조문 전문</button>
+          <button class="abtn primary" onclick="wsOpen('${argAttr(name)}','law','${argAttr(lawUrl)}','${argAttr(org)}','${argAttr(type)}')">📄 조문 전문</button>
           <a class="abtn" href="${escAttr(safeUrl(lawUrl))}" target="_blank">↗ 법제처</a>
           ${makeFavBtnHtml(name,org,type,lawUrl)}
           ${makeCollBtnHtml(name,org,lawUrl)}
@@ -4401,8 +4472,8 @@ async function renderFavList(){
   document.getElementById('results').innerHTML=favs.map((f,i)=>{
     const isInt=_isIntFav(f.type);
     const openBtn=isInt
-      ? `<button class="abtn primary" onclick="openInternalPanel('${argAttr(f.name)}')">📄 규정 전문 보기</button>`
-      : `<button class="abtn primary" onclick="openFullPanel('${argAttr(f.name)}','${argAttr(f.url)}')">📄 조문 전문 보기</button>`
+      ? `<button class="abtn primary" onclick="wsOpen('${argAttr(f.name)}','internal')">📄 규정 전문 보기</button>`
+      : `<button class="abtn primary" onclick="wsOpen('${argAttr(f.name)}','law','${argAttr(f.url)}')">📄 조문 전문 보기</button>`
         +`<a class="abtn" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ 법제처</a>`;
     return `
     <div class="card" id="fc${i}">
@@ -5075,6 +5146,21 @@ async function loadCmpLaw(col){
 document.addEventListener('DOMContentLoaded',()=>{
   // ── 이벤트 위임: 클릭 ──────────────────────────────────────────────────
   document.addEventListener('click', e=>{
+    // 작업공간(그리드) 창 내부의 참조 클릭 → 새 창(패널)으로 추가 열기
+    if(e.target.closest('#workspace')){
+      const wxr = e.target.closest('.art-xref[data-artno]');
+      if(wxr){
+        e.stopPropagation();
+        const reflaw=wxr.dataset.reflaw||'';
+        if(reflaw){ const inter=matchInternalRule(reflaw); wsOpen(inter||reflaw, inter?'internal':'law'); }
+        else { const paneEl=wxr.closest('.ws-pane'); if(paneEl) wsJumpArt(paneEl, parseInt(wxr.dataset.artno,10)); }
+        return;
+      }
+      const wlr = e.target.closest('.law-ref[data-reflaw]');
+      if(wlr){ e.stopPropagation(); try{hideRefPopover();}catch(_){}
+        const nm=wlr.dataset.reflaw; const inter=matchInternalRule(nm);
+        wsOpen(inter||nm, inter?'internal':'law'); return; }
+    }
     const xref = e.target.closest('.art-xref[data-artno]');
     if(xref){
       e.stopPropagation();
@@ -5428,7 +5514,7 @@ function renderStatPanel(){
   // 북마크 목록
   const bmHtml=bms.length
     ? bms.map(b=>`
-        <div class="stat-row" style="cursor:pointer;" onclick="openFullPanel(decodeURIComponent('${encodeURIComponent(b.law||'')}'),decodeURIComponent('${encodeURIComponent(b.url||'')}'))">
+        <div class="stat-row" style="cursor:pointer;" onclick="wsOpen(decodeURIComponent('${encodeURIComponent(b.law||'')}'),'law',decodeURIComponent('${encodeURIComponent(b.url||'')}'))">
           <span class="stat-rank" style="color:#3b82f6;">🔖</span>
           <span class="stat-label">
             <span style="font-size:11px;color:var(--ht);">${escHtml(b.law||'')}</span><br>
@@ -5630,18 +5716,259 @@ let _refActive = -1;  // 현재 활성 탭 인덱스
 let _leftDoc = null;  // 왼쪽(주) 패널 문서 {name, docType}
 
 // ── 분할 보기: 왼쪽이 비어있으면 왼쪽, 있으면 오른쪽에 나란히 열기 ──
+// ══════════════════════════════════════════════════════════════════════════
+// 다중 창(그리드) 열람 작업공간 — 내규·법령을 같은 페이지 안에서 창을 추가하며 조회
+// 카드/대시보드/이름칩의 "전문 보기"는 여기로 열려 그리드가 분할된다.
+// 각 창의 ⤢ 로 전체화면(AI·메모·비교 등 상세 기능) 패널을 열 수 있다.
+// ══════════════════════════════════════════════════════════════════════════
+let _wsPanes=[];   // {id,name,docType,url,org,type,loading,error,arts,text,structured,abbrevMap,filter}
+let _wsId=0;
+function _wsKey(name,docType){ return _rnorm(name)+'|'+(docType||'law'); }
+function wsIsOpen(){ return _wsPanes.length>0; }
+function _wsFlash(el){ if(!el) return; el.classList.add('ws-flash'); setTimeout(()=>el.classList.remove('ws-flash'),900); }
+function wsShow(){
+  const ws=document.getElementById('workspace'); if(!ws) return;
+  ws.style.display='block';
+  const rs=document.getElementById('resSplit'); if(rs) rs.style.display='none';
+  const pg=document.getElementById('pagination'); if(pg) pg.style.display='none';
+  const fb=document.getElementById('fbar');
+  if(fb && fb.style.display!=='none'){ fb.dataset.wsHidden='1'; fb.style.display='none'; }
+  wsUpdateFloat();
+}
+function wsBackToList(){
+  const ws=document.getElementById('workspace'); if(ws) ws.style.display='none';
+  const rs=document.getElementById('resSplit'); if(rs) rs.style.display='';
+  const pg=document.getElementById('pagination'); if(pg) pg.style.display='';
+  const fb=document.getElementById('fbar');
+  if(fb && fb.dataset.wsHidden){ fb.style.display=''; delete fb.dataset.wsHidden; }
+  wsUpdateFloat();
+}
+function wsUpdateCnt(){
+  const c=document.getElementById('wsCnt'); if(c) c.textContent=_wsPanes.length;
+  const h=document.getElementById('wsHint'); if(h) h.style.display=_wsPanes.length>1?'none':'';
+}
+function wsUpdateFloat(){
+  let f=document.getElementById('wsFloat');
+  const ws=document.getElementById('workspace');
+  const hidden = !ws || ws.style.display==='none';
+  if(_wsPanes.length && hidden){
+    if(!f){ f=document.createElement('button'); f.id='wsFloat'; f.className='ws-float';
+      f.setAttribute('aria-label','열람 작업공간 다시 열기'); f.onclick=wsReopen; document.body.appendChild(f); }
+    f.innerHTML=`📑 작업공간 <b>${_wsPanes.length}</b>`;
+    f.style.display='';
+  } else if(f){ f.style.display='none'; }
+}
+function wsReopen(){
+  if(!_wsPanes.length) return;
+  wsShow(); wsRenderShell();
+  _wsPanes.forEach(p=>{ if(!p.loading) wsRenderPaneBody(p); });
+}
+async function wsOpen(name, docType, url, org, type){
+  name=(name||'').trim(); if(!name) return;
+  docType = docType||'internal';
+  wsShow();
+  const key=_wsKey(name,docType);
+  const exist=_wsPanes.find(p=>_wsKey(p.name,p.docType)===key);
+  if(exist){
+    const el=document.getElementById('wspane_'+exist.id);
+    if(el){ el.scrollIntoView({behavior:'smooth',block:'nearest'}); _wsFlash(el); }
+    return;
+  }
+  const id=++_wsId;
+  const pane={id,name,docType,url:url||'',org:org||'',type:type||'',loading:true,
+              error:'',arts:null,text:null,structured:null,abbrevMap:{},filter:''};
+  _wsPanes.push(pane);
+  wsRenderShell();
+  try{
+    if(docType==='internal'){
+      const r=await fetch(`/api/internal/doc?name=${encodeURIComponent(name)}`);
+      const d=await r.json();
+      pane.loading=false;
+      if(d.error){ pane.error=d.error; }
+      else { pane.text=(d.text||'').trim(); pane.structured=d.structured||null;
+             if(!pane.text && !(pane.structured&&pane.structured.length)) pane.error='전문을 찾지 못했습니다.'; }
+    } else {
+      const r=await fetch(`/api/law/articles?name=${encodeURIComponent(name)}`);
+      const d=await r.json();
+      pane.loading=false;
+      if((!d.articles || !d.articles.length)){ pane.error=d.error||'조문을 가져오지 못했습니다.'; }
+      else { pane.arts=d.articles||[]; try{ pane.abbrevMap=extractLawAbbrevs(pane.arts,name)||{}; }catch(e){ pane.abbrevMap={}; } }
+    }
+  }catch(e){ pane.loading=false; pane.error='문서를 불러오지 못했습니다.'; }
+  // 창이 그 사이 닫혔으면 무시
+  if(!_wsPanes.some(p=>p.id===id)) return;
+  wsRenderPaneBody(pane);
+  wsUpdateCnt();
+  if(docType==='internal' && !pane.error){
+    loadRegNames().then(()=>{ try{ const el=document.getElementById('wsbody_'+id); if(el) markInternalRefs(el); }catch(e){} });
+  }
+}
+function wsColClass(n){ return n<=1?'ws-1':''; }
+function wsRenderShell(){
+  const grid=document.getElementById('wsGrid'); if(!grid) return;
+  grid.className='ws-grid '+wsColClass(_wsPanes.length);
+  grid.innerHTML=_wsPanes.map(p=>{
+    const isInt=p.docType==='internal';
+    return `<section class="ws-pane" id="wspane_${p.id}">
+      <header class="ws-pane-head">
+        <span class="ws-badge ws-badge-${isInt?'int':'law'}">${isInt?'내규':'법령'}</span>
+        <span class="ws-pane-title" title="${escAttr(p.name)}">${escHtml(p.name)}</span>
+        <input class="ws-pane-filter" placeholder="조문·키워드" value="${escAttr(p.filter||'')}"
+               oninput="wsFilter(${p.id},this.value)" aria-label="이 문서 안에서 찾기">
+        <button class="ws-icon" title="전체화면·상세 기능(AI·메모·비교)" onclick="wsExpand(${p.id})">⤢</button>
+        <button class="ws-icon" title="이 창 닫기" onclick="wsClose(${p.id})">✕</button>
+      </header>
+      <div class="ws-pane-body" id="wsbody_${p.id}">${wsBodyHtml(p)}</div>
+    </section>`;
+  }).join('');
+  wsUpdateCnt();
+}
+function wsBodyHtml(p){
+  if(p.loading) return `<div class="fp-loading"><div class="spinner" style="margin:0 auto 10px;"></div>불러오는 중...</div>`;
+  if(p.error){
+    const u=safeUrl('https://www.law.go.kr/법령/'+encodeURIComponent(p.name));
+    return `<div class="fp-empty">⚠ ${escHtml(p.error)}<br>
+      <a href="${u}" target="_blank" rel="noopener" style="color:var(--g);">법제처에서 보기 →</a></div>`;
+  }
+  return p.docType==='internal' ? wsInternalHtml(p) : wsLawHtml(p);
+}
+function wsInternalHtml(p){
+  let html='';
+  if(Array.isArray(p.structured)&&p.structured.length){
+    html=p.structured.map(it=>{
+      const t=it.title||it.name||it['제목']||it['규정명']||'';
+      const c=it.content||it.text||it['내용']||it['본문']||(typeof it==='string'?it:JSON.stringify(it,null,2));
+      return `${t?`<div class="rf-h1">${escHtml(String(t))}</div>`:''}${formatRuleText(String(c))}`;
+    }).join('');
+  } else {
+    html=formatRuleText(p.text||'');
+  }
+  return `<div class="ws-doc">${html}
+    <div class="int-foot" style="margin-top:14px;">※ 본문의 「법령명」·"○○법 제N조"를 클릭하면 관련 문서가 새 창으로 추가됩니다.</div></div>`;
+}
+function wsLawHtml(p){
+  const arts=p.arts||[];
+  if(!arts.length) return `<div class="fp-empty">조문 정보를 가져오지 못했습니다.</div>`;
+  const fRaw=(p.filter||'').trim();
+  const f=_rnorm(fRaw);
+  const kws=fRaw?[fRaw]:[];
+  const rows=arts.map(a=>{
+    if(a.type==='header'){
+      const hno=a['header_no']||''; const t=a['조문제목']||'';
+      const lab = hno&&t?`${escHtml(hno)}  ${escHtml(t)}`:(hno?escHtml(hno):escHtml(t));
+      return {header:true, html:`<div class="ws-art-h2">${lab}</div>`};
+    }
+    const no=artNoLabel(a); const title=a['조문제목']||''; const content=a['조문내용']||'';
+    let bodyHtml=''; try{ bodyHtml=artBodyHtml(a,{lawName:p.name,abbrevMap:p.abbrevMap,tooltip:true,kws}); }catch(e){ bodyHtml=escHtml(content); }
+    return {header:false, text:(no+' '+title+' '+content),
+      html:`<div class="ws-art">
+        <div class="ws-art-t">${no?`<span class="ws-art-no">${escHtml(no)}</span>`:''}${highlightKwsSafe(escHtml(title||no||'조문'),kws)}</div>
+        ${bodyHtml?`<div class="ws-art-b">${bodyHtml}</div>`:''}
+      </div>`};
+  });
+  let out='', shown=0;
+  if(!f){ out=rows.map(r=>r.html).join(''); shown=rows.filter(r=>!r.header).length; }
+  else {
+    let pendingHeader=null;
+    rows.forEach(r=>{
+      if(r.header){ pendingHeader=r; return; }
+      if(_rnorm(r.text).includes(f)){
+        if(pendingHeader){ out+=pendingHeader.html; pendingHeader=null; }
+        out+=r.html; shown++;
+      }
+    });
+    if(!shown) out=`<div class="fp-empty">"${escHtml(fRaw)}"에 해당하는 조문이 없습니다.</div>`;
+  }
+  return `<div class="ws-doc">${out}</div>`;
+}
+function wsRenderPaneBody(pane){
+  const b=document.getElementById('wsbody_'+pane.id); if(!b) return;
+  b.innerHTML=wsBodyHtml(pane);
+  if(pane.docType==='internal' && !pane.error && !pane.loading){
+    try{ const host=b.querySelector('.ws-doc')||b; buildApxIndex(host); linkifyApxRefs(host); }catch(e){}
+  }
+}
+function wsFilter(id,val){
+  const p=_wsPanes.find(x=>x.id===id); if(!p) return;
+  p.filter=val;
+  const b=document.getElementById('wsbody_'+id); if(!b) return;
+  if(p.docType==='law'){
+    b.innerHTML=wsBodyHtml(p);
+  } else {
+    try{ _wsHighlight(b, (val||'').trim()); }catch(e){}
+  }
+}
+// 텍스트 노드만 순회하며 매칭을 <mark>로 감싼다(HTML 구조 손상 없이 안전).
+function _wsHighlight(container, term){
+  container.querySelectorAll('mark.ws-hl').forEach(m=>{
+    const t=document.createTextNode(m.textContent||''); const par=m.parentNode;
+    if(par){ par.replaceChild(t,m); }
+  });
+  try{ container.normalize(); }catch(e){}
+  if(!term) return 0;
+  const low=term.toLowerCase(); let count=0, first=null;
+  const walker=document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+    acceptNode(n){
+      if(!n.nodeValue || !n.nodeValue.toLowerCase().includes(low)) return NodeFilter.FILTER_REJECT;
+      const par=n.parentNode;
+      if(par && par.nodeName && /^(SCRIPT|STYLE)$/.test(par.nodeName)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const targets=[]; while(walker.nextNode()) targets.push(walker.currentNode);
+  targets.forEach(node=>{
+    const txt=node.nodeValue, l=txt.toLowerCase();
+    const frag=document.createDocumentFragment(); let idx=0, pos;
+    while((pos=l.indexOf(low,idx))>=0){
+      if(pos>idx) frag.appendChild(document.createTextNode(txt.slice(idx,pos)));
+      const m=document.createElement('mark'); m.className='ws-hl'; m.textContent=txt.slice(pos,pos+term.length);
+      frag.appendChild(m); if(!first) first=m; idx=pos+term.length; count++;
+    }
+    if(idx<txt.length) frag.appendChild(document.createTextNode(txt.slice(idx)));
+    if(node.parentNode) node.parentNode.replaceChild(frag,node);
+  });
+  if(first) first.scrollIntoView({behavior:'smooth',block:'center'});
+  return count;
+}
+function wsClose(id){
+  _wsPanes=_wsPanes.filter(p=>p.id!==id);
+  if(!_wsPanes.length){
+    const g=document.getElementById('wsGrid'); if(g) g.innerHTML='';
+    wsBackToList(); return;
+  }
+  wsRenderShell();
+  _wsPanes.forEach(p=>{ if(!p.loading) wsRenderPaneBody(p); });
+}
+function wsCloseAll(){
+  _wsPanes=[]; const g=document.getElementById('wsGrid'); if(g) g.innerHTML='';
+  wsBackToList();
+}
+function wsExpand(id){
+  const p=_wsPanes.find(x=>x.id===id); if(!p) return;
+  if(p.docType==='internal') openInternalPanel(p.name);
+  else openFullPanel(p.name, p.url||('https://www.law.go.kr/법령/'+encodeURIComponent(p.name)), p.org, p.type);
+}
+// 같은 창 안에서 지정 조문으로 스크롤(법령 창)
+function wsJumpArt(paneEl, artNo){
+  if(!paneEl||!artNo) return;
+  const arts=paneEl.querySelectorAll('.ws-art');
+  for(const el of arts){
+    const noEl=el.querySelector('.ws-art-no');
+    const n=parseInt((noEl?noEl.textContent:'').replace(/[^0-9]/g,''),10);
+    if(n===artNo){ el.scrollIntoView({behavior:'smooth',block:'start'}); _wsFlash(el); return; }
+  }
+}
+
 function openDocSplit(name, docType, url, org, type){
-  const panel=document.getElementById('fullpanel');
-  const isOpen=panel.classList.contains('open');
-  if(!isOpen || !_leftDoc){
-    return openPrimaryDoc(name, docType, url, org, type); // 왼쪽 먼저
-  }
-  if(_leftDoc.name===name && _leftDoc.docType===docType){
-    return; // 이미 왼쪽에 있음
-  }
-  return openDocRight(name, docType, url); // 오른쪽에 나란히
+  // 작업공간이 그리드로 자연스럽게 분할되므로, 나란히 보기는 창을 추가하는 것으로 통일
+  return wsOpen(name, docType, url, org, type);
 }
 function openPrimaryDoc(name, docType, url, org, type){
+  // 카드·대시보드·검색결과의 "전문 보기"는 작업공간(그리드)에 창으로 연다
+  return wsOpen(name, docType, url, org, type);
+}
+// 전체화면 패널로 직접 여는 경로(작업공간 창의 ⤢, 좌우 스왑 등 내부용)
+function openPrimaryDocPanel(name, docType, url, org, type){
   if(docType==='internal') return openInternalPanel(name);
   return openFullPanel(name, url||('https://www.law.go.kr/법령/'+encodeURIComponent(name)), org, type);
 }
@@ -5655,8 +5982,8 @@ async function swapPanels(){
   }
   const newLeft  = {name: rt.name, docType: rt.docType || 'law'};
   const newRight = {name: _leftDoc.name, docType: _leftDoc.docType};
-  await openPrimaryDoc(newLeft.name, newLeft.docType);   // 오른쪽 문서를 왼쪽(주)으로
-  await openDocRight(newRight.name, newRight.docType);   // 기존 왼쪽 문서를 오른쪽으로
+  await openPrimaryDocPanel(newLeft.name, newLeft.docType);   // 오른쪽 문서를 왼쪽(주)으로
+  await openDocRight(newRight.name, newRight.docType);        // 기존 왼쪽 문서를 오른쪽으로
 }
 
 // ── 오른쪽 패널에 문서(내규/법령) 열기 (탭) ──
@@ -6935,8 +7262,8 @@ function renderCollModal(){
         ${(c.laws||[]).map((l,li)=>{
           const isInt=String(l.type||'')==='internal';
           const openFn=isInt
-            ? `openInternalPanel('${argAttr(l.name)}');closeCollModal();`
-            : `openFullPanel('${argAttr(l.name)}','${argAttr(l.url||'')}');closeCollModal();`;
+            ? `wsOpen('${argAttr(l.name)}','internal');closeCollModal();`
+            : `wsOpen('${argAttr(l.name)}','law','${argAttr(l.url||'')}');closeCollModal();`;
           return `
           <div class="coll-item">
             <span class="coll-item-name" onclick="${openFn}">${isInt?'📋 ':''}${escHtml(l.name)}</span>
