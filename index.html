@@ -5150,7 +5150,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(e.target.closest('#workspace')){
       const wxr = e.target.closest('.art-xref[data-artno]');
       if(wxr){
-        e.stopPropagation();
+        e.stopPropagation(); try{hideArtPopover();}catch(_){}
         const reflaw=wxr.dataset.reflaw||'';
         if(reflaw){ const inter=matchInternalRule(reflaw); wsOpen(inter||reflaw, inter?'internal':'law'); }
         else { const paneEl=wxr.closest('.ws-pane'); if(paneEl) wsJumpArt(paneEl, parseInt(wxr.dataset.artno,10)); }
@@ -5225,14 +5225,33 @@ document.addEventListener('DOMContentLoaded',()=>{
     const refArtItem = e.target.closest('.reflist-art-item[data-artno]');
     if(refArtItem?.dataset.artno){ e.stopPropagation(); jumpToArt(parseInt(refArtItem.dataset.artno)); return; }
     if(!e.target.closest('#refPopover')) hideRefPopover();
+    if(!e.target.closest('#artPopover')) hideArtPopover();
   });
-  // mouseenter: 법령 링크 팝오버
+  // mouseenter: 법령 링크 팝오버 / 준용조문 미리보기 카드
   document.addEventListener('mouseover', e=>{
     const lRef = e.target.closest('.law-ref[data-reflaw]');
-    if(lRef) showRefPopoverDelayed(e, lRef.dataset.reflaw);
+    if(lRef){ showRefPopoverDelayed(e, lRef.dataset.reflaw); return; }
+    const aRef = e.target.closest('.art-xref[data-artno]');
+    if(aRef){
+      const ev={clientX:e.clientX, clientY:e.clientY};
+      clearTimeout(_artPopHideTimer); clearTimeout(_artPopTimer);
+      _artPopTimer=setTimeout(()=>showArtPopover(aRef, ev), 420);
+    }
   });
   document.addEventListener('mouseout', e=>{
     if(e.target.closest('.law-ref[data-reflaw]')) clearTimeout(_popoverTimer);
+    const aRef=e.target.closest('.art-xref[data-artno]');
+    if(aRef){
+      clearTimeout(_artPopTimer);   // 대기 중인 표시 취소(숨김 타이머는 별도)
+      const to=e.relatedTarget;
+      // 카드 위나 다른 준용조문으로 이동하는 경우는 유지
+      if(to && to.closest && (to.closest('#artPopover') || to.closest('.art-xref[data-artno]'))) return;
+      clearTimeout(_artPopHideTimer);
+      _artPopHideTimer=setTimeout(()=>{
+        const pop=document.getElementById('artPopover');
+        if(pop && !pop.matches(':hover')) hideArtPopover();
+      }, 160);
+    }
   });
 
   // ── 키보드 단축키 ────────────────────────────────────────────────────────
@@ -7086,6 +7105,127 @@ function hideRefPopover(){
   document.getElementById('refPopover')?.classList.remove('show');
 }
 
+// ── 준용조문 hover 미리보기(작은 카드) ────────────────────────────────
+// 본문의 "제N조(제N항 제N호)" 참조에 마우스를 올리면 해당 조문 내용을
+// 작은 팝업 카드로 보여준다. 타법/타규정 준용은 그 문서를, 같은 문서
+// 내 참조는 현재 창의 데이터에서 조문을 찾는다.
+let _artPopTimer  = null;         // 표시 지연 타이머
+let _artPopHideTimer = null;      // 숨김 지연 타이머(표시 타이머와 분리)
+let _artPopSeq = 0;               // 비동기 경쟁 방지 토큰
+let _artPopTarget = null;         // {name, docType} — "전체 보기"용
+const _artDocCache = {};          // 'l|법령명' → arts, 'i|규정명' → text
+async function _getLawArtsForPop(name){
+  const k='l|'+name; if(_artDocCache[k]) return _artDocCache[k];
+  const r=await fetch(`/api/law/articles?name=${encodeURIComponent(name)}`);
+  const d=await r.json(); const arts=d.articles||[];
+  _artDocCache[k]=arts; return arts;
+}
+async function _getInternalTextForPop(name){
+  const k='i|'+name; if(_artDocCache[k]!=null) return _artDocCache[k];
+  const r=await fetch(`/api/internal/doc?name=${encodeURIComponent(name)}`);
+  const d=await r.json();
+  let text=(d.text||'').trim();
+  if(!text && Array.isArray(d.structured))
+    text=d.structured.map(it=>String(it.content||it.text||it['내용']||it['본문']||'')).join('\n');
+  _artDocCache[k]=text; return text;
+}
+function _findLawArtByNo(arts, artNo){
+  if(!arts) return null;
+  const want=String(artNo).replace(/\s/g,'');
+  for(const a of arts){
+    if(a.type && a.type!=='article') continue;
+    const lbl=(artNoLabel(a)||'').replace(/\s/g,'');
+    const mm=lbl.match(/제(\d+)조(?:의(\d+))?/);
+    if(!mm) continue;
+    if(mm[1]+(mm[2]?'의'+mm[2]:'')===want)
+      return {label:artNoLabel(a), title:a['조문제목']||'', content:a['조문내용']||''};
+  }
+  return null;
+}
+// 평문(내규 전문)에서 특정 조문 블록 추출
+function _extractArtFromText(text, artNo){
+  if(!text||!artNo) return null;
+  const m=String(artNo).match(/^(\d+)(?:의(\d+))?$/); if(!m) return null;
+  const n=m[1], sub=m[2];
+  const startRe=new RegExp(`제\\s*${n}\\s*조${sub?`\\s*의\\s*${sub}`:''}\\s*[(（]([^)）\\n]{0,60})[)）]`);
+  const sm=startRe.exec(text); if(!sm) return null;
+  const after=sm.index+sm[0].length;
+  const nm=/제\s*\d+\s*조(?:\s*의\s*\d+)?\s*[(（]/.exec(text.slice(after));
+  const end=nm?after+nm.index:text.length;
+  const content=text.slice(after,end).replace(/\s+/g,' ').trim();
+  return {label:`제${n}조${sub?'의'+sub:''}`, title:(sm[1]||'').trim(), content};
+}
+// 같은 문서(현재 창/패널)의 백킹 데이터 반환
+function _currentDocCtx(el){
+  const paneEl=el.closest('.ws-pane');
+  if(paneEl){
+    const id=parseInt((paneEl.id||'').replace('wspane_',''),10);
+    const p=_wsPanes.find(x=>x.id===id);
+    if(p) return {name:p.name, docType:p.docType, arts:p.arts, text:p.text};
+  }
+  if(el.closest('#fpBody')) return {name:(_leftDoc&&_leftDoc.name)||'', docType:(_leftDoc&&_leftDoc.docType)||'law', arts:fpArts};
+  if(el.closest('#fpRightBody')){ const rt=_refTabs[_refActive]; if(rt) return {name:rt.name, docType:rt.docType||'law', arts:rt.arts, text:rt.text}; }
+  return null;
+}
+function _artPopPosition(pop, ev){
+  const w=pop.offsetWidth||320, h=pop.offsetHeight||160;
+  const x=Math.min((ev.clientX||0)+14, window.innerWidth - w - 12);
+  const y=Math.min((ev.clientY||0)+12, window.innerHeight - h - 12);
+  pop.style.left=Math.max(8,x)+'px'; pop.style.top=Math.max(8,y)+'px';
+}
+async function showArtPopover(el, ev){
+  const pop=document.getElementById('artPopover'); if(!pop||!el) return;
+  const seq=++_artPopSeq;
+  const t=el.textContent||'';
+  const am=t.match(/제(\d+)조(?:의(\d+))?/);
+  const artNo = am ? am[1]+(am[2]?'의'+am[2]:'') : (el.dataset.artno||'');
+  if(!artNo) return;
+  const hang=el.dataset.hang||'', ho=el.dataset.ho||'';
+  let refName=el.dataset.reflaw||'', docType='law', sameDoc=!refName;
+  if(refName){ const inter=matchInternalRule(refName); if(inter){ docType='internal'; refName=inter; } else docType='law'; }
+  // 표시(로딩)
+  document.getElementById('artPopoverTitle').textContent = refName || '이 규정';
+  document.getElementById('artPopoverBody').innerHTML='<div style="color:var(--ht);font-size:12px;">불러오는 중...</div>';
+  pop.classList.add('show'); _artPopPosition(pop, ev);
+  let art=null, srcName=refName;
+  try{
+    if(sameDoc){
+      const ctx=_currentDocCtx(el);
+      if(ctx){ srcName=ctx.name; docType=ctx.docType||'law';
+        art = (ctx.docType==='law') ? _findLawArtByNo(ctx.arts, artNo)
+            : (ctx.text ? _extractArtFromText(ctx.text, artNo) : null);
+      }
+    } else if(docType==='law'){
+      art=_findLawArtByNo(await _getLawArtsForPop(refName), artNo);
+    } else {
+      art=_extractArtFromText(await _getInternalTextForPop(refName), artNo);
+    }
+  }catch(e){}
+  // 그 사이 팝업이 닫혔거나 다른 조문으로 바뀌었으면 중단
+  if(seq!==_artPopSeq || !pop.classList.contains('show')) return;
+  _artPopTarget = srcName ? {name:srcName, docType} : null;
+  const openBtn=document.getElementById('artPopoverOpen');
+  if(openBtn) openBtn.style.display = _artPopTarget ? '' : 'none';
+  if(!art){
+    document.getElementById('artPopoverBody').innerHTML='<div style="color:var(--ht);font-size:12px;">해당 조문을 찾지 못했습니다.</div>';
+    _artPopPosition(pop, ev); return;
+  }
+  const clause=[hang?`제${hang}항`:'', ho?`제${ho}호`:''].filter(Boolean).join(' ');
+  document.getElementById('artPopoverBody').innerHTML =
+    `<div class="ref-popover-art-no">${escHtml(art.label||('제'+artNo+'조'))}${art.title?'('+escHtml(art.title)+')':''}`+
+    `${clause?` · <span style="color:var(--gd);">${escHtml(clause)}</span>`:''}</div>`+
+    `<div style="color:var(--tx);">${escHtml((art.content||'').slice(0,260))}${(art.content||'').length>260?'…':''}</div>`;
+  _artPopPosition(pop, ev);
+}
+function hideArtPopover(){
+  clearTimeout(_artPopTimer); clearTimeout(_artPopHideTimer);
+  document.getElementById('artPopover')?.classList.remove('show');
+}
+function _artPopOpenFull(){
+  const tg=_artPopTarget; hideArtPopover();
+  if(tg && tg.name) wsOpen(tg.name, tg.docType||'law');
+}
+
 // ── 준용목록 hover 미리보기 ─────────────────────────────────────
 let _previewTimer = null;
 const _previewCache = {};
@@ -7694,6 +7834,16 @@ async function scoreAndReorderAsync(laws, keywords){
     <button class="abtn" style="flex:1;" onclick="openRefAuto(document.getElementById('refPopoverTitle').textContent)">📋 조문 전문</button>
     <button class="abtn" style="flex:1;" onclick="openRefInCompare(document.getElementById('refPopoverTitle').textContent)">⚖ 비교 모드</button>
   </div>
+</div>
+<!-- 준용조문 hover 미리보기(작은 카드) -->
+<div class="ref-popover" id="artPopover" style="width:320px;max-height:280px;"
+     onmouseenter="clearTimeout(_artPopTimer)" onmouseleave="hideArtPopover()">
+  <div class="ref-popover-hd">
+    <span class="ref-popover-title" id="artPopoverTitle"></span>
+    <button class="fp-tbtn" id="artPopoverOpen" onclick="_artPopOpenFull()" style="font-size:11px;padding:2px 8px;">전체 보기</button>
+    <button class="fp-close" style="width:20px;height:20px;font-size:11px;" onclick="hideArtPopover()">✕</button>
+  </div>
+  <div class="ref-popover-body" id="artPopoverBody">불러오는 중...</div>
 </div>
 <!-- 준용목록 조문 미리보기 -->
 <div class="reflist-preview" id="reflistPreview"></div>
