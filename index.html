@@ -363,12 +363,30 @@ body.dark .int-badge-law{background:#12233d!important;color:#93c5fd!important;}
 .ws-bar-btn{font-size:12px;font-weight:600;color:var(--mu);background:transparent;border:1px solid rgba(0,0,0,.1);
   border-radius:8px;padding:5px 11px;cursor:pointer;transition:.12s;}
 .ws-bar-btn:hover{background:var(--bg);color:var(--tx);}
-.ws-grid{display:grid;gap:14px;align-items:start;
-  grid-template-columns:repeat(auto-fit,minmax(min(440px,100%),1fr));}
-.ws-grid.ws-1{grid-template-columns:1fr;}
-.ws-pane{display:flex;flex-direction:column;background:var(--sf);border:1px solid rgba(0,0,0,.07);
+.ws-grid{display:flex;gap:14px;align-items:stretch;}
+.ws-pane{flex:1 1 0;display:flex;flex-direction:column;background:var(--sf);border:1px solid rgba(0,0,0,.07);
   border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;min-width:0;
   height:calc(100vh - 210px);min-height:460px;}
+/* 새 창 진입: 오른쪽에서 미끄러져 들어오며 기존 창을 왼쪽으로 밀어내는 느낌 */
+.ws-pane.ws-enter{animation:wsPaneIn .34s cubic-bezier(.4,0,.2,1);}
+@keyframes wsPaneIn{from{opacity:0;transform:translateX(56px) scale(.98);}to{opacity:1;transform:translateX(0) scale(1);}}
+.ws-pane.ws-shift{animation:wsPaneShift .34s cubic-bezier(.4,0,.2,1);}
+@keyframes wsPaneShift{from{transform:translateX(22px);}to{transform:translateX(0);}}
+/* 오른쪽 카드 스택(초과 문서) */
+.ws-stack{flex:0 0 52px;display:flex;flex-direction:column;gap:0;position:relative;padding-top:24px;align-items:stretch;}
+.ws-stack-h{position:absolute;top:0;left:0;right:0;font-size:10px;font-weight:800;color:var(--mu);
+  text-align:center;letter-spacing:.02em;}
+.ws-stack-card{position:relative;flex:1 1 0;min-height:72px;margin-bottom:-10px;
+  background:var(--sf);border:1px solid rgba(0,0,0,.1);border-left:3px solid var(--g);
+  border-radius:10px 4px 4px 10px;box-shadow:-3px 3px 10px rgba(0,0,0,.10);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:8px 2px;overflow:hidden;
+  transition:transform .16s,box-shadow .16s,border-color .16s;animation:wsStackIn .3s ease;}
+.ws-stack-card:hover{transform:translateX(-6px);border-left-color:var(--gd);box-shadow:-5px 4px 14px rgba(0,0,0,.16);z-index:5;}
+.ws-stack-card:last-child{margin-bottom:0;}
+.ws-stack-card.int{border-left-color:#0f766e;}
+.ws-stack-title{writing-mode:vertical-rl;text-orientation:mixed;font-size:11.5px;font-weight:700;
+  color:var(--tx);max-height:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+@keyframes wsStackIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
 .ws-pane::before{content:'';display:block;height:3px;flex-shrink:0;
   background:linear-gradient(90deg,var(--g),transparent 80%);opacity:.9;}
 .ws-pane-head{display:flex;align-items:center;gap:8px;padding:10px 12px;
@@ -401,10 +419,13 @@ mark.ws-hl{background:var(--mark-bg);color:var(--mark-fg);border-radius:2px;padd
   box-shadow:0 6px 20px rgba(49,130,246,.4);display:flex;align-items:center;gap:6px;}
 .ws-float b{background:rgba(255,255,255,.25);border-radius:999px;padding:0 7px;}
 @media (max-width:720px){
-  .ws-grid{grid-template-columns:1fr;}
+  .ws-grid{flex-direction:column;}
   .ws-pane{height:auto;min-height:340px;max-height:75vh;}
+  .ws-stack{flex:1 1 auto;flex-direction:row;padding-top:20px;gap:8px;overflow-x:auto;}
+  .ws-stack-card{margin-bottom:0;min-height:56px;writing-mode:horizontal-tb;}
+  .ws-stack-title{writing-mode:horizontal-tb;}
 }
-body.dark .ws-bar,body.dark .ws-pane{border-color:rgba(255,255,255,.08);}
+body.dark .ws-bar,body.dark .ws-pane,body.dark .ws-stack-card{border-color:rgba(255,255,255,.08);}
 body.dark .ws-art-b{color:#c9ccd2;}
 
 /* ── 규정(법령/내규) 단위 카드 ── */
@@ -5219,7 +5240,13 @@ document.addEventListener('DOMContentLoaded',()=>{
       return;
     }
     const lawRef = e.target.closest('.law-ref[data-reflaw]');
-    if(lawRef){ e.stopPropagation(); hideRefPopover(); openRefAuto(lawRef.dataset.reflaw); return; }
+    if(lawRef){
+      e.stopPropagation(); hideRefPopover();
+      const nm=lawRef.dataset.reflaw; const fp=document.getElementById('fullpanel');
+      if(fp && fp.classList.contains('open')){ openRefAuto(nm); }      // 전체화면 패널 안 → 준용 패널
+      else { const inter=matchInternalRule(nm); wsOpen(inter||nm, inter?'internal':'law'); }  // 규정 자체 → 페이지내 그리드 창
+      return;
+    }
     const refLawName = e.target.closest('.reflist-law-name[data-reflaw]');
     if(refLawName){ e.stopPropagation(); openRefAuto(refLawName.dataset.reflaw); return; }
     const refArtItem = e.target.closest('.reflist-art-item[data-artno]');
@@ -5227,10 +5254,9 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(!e.target.closest('#refPopover')) hideRefPopover();
     if(!e.target.closest('#artPopover')) hideArtPopover();
   });
-  // mouseenter: 법령 링크 팝오버 / 준용조문 미리보기 카드
+  // mouseenter: 준용조문(조·항·호·목) 미리보기 카드
+  //  ※ 규정 자체 참조(「법령명」)는 hover 대신 '클릭 → 페이지내 그리드 창'으로 처리
   document.addEventListener('mouseover', e=>{
-    const lRef = e.target.closest('.law-ref[data-reflaw]');
-    if(lRef){ showRefPopoverDelayed(e, lRef.dataset.reflaw); return; }
     const aRef = e.target.closest('.art-xref[data-artno]');
     if(aRef){
       const ev={clientX:e.clientX, clientY:e.clientY};
@@ -5746,6 +5772,8 @@ let _leftDoc = null;  // 왼쪽(주) 패널 문서 {name, docType}
 // ══════════════════════════════════════════════════════════════════════════
 let _wsPanes=[];   // {id,name,docType,url,org,type,loading,error,arts,text,structured,abbrevMap,filter}
 let _wsId=0;
+let _wsEnterId=0;  // 이번 렌더에서 '새로 들어온' 창(진입 애니메이션 대상)
+const WS_MAX_VISIBLE_RIGHT=2;  // 최초 규정 오른쪽으로 동시에 펼칠 최대 창 수
 function _wsKey(name,docType){ return _rnorm(name)+'|'+(docType||'law'); }
 function wsIsOpen(){ return _wsPanes.length>0; }
 function _wsFlash(el){ if(!el) return; el.classList.add('ws-flash'); setTimeout(()=>el.classList.remove('ws-flash'),900); }
@@ -5784,7 +5812,6 @@ function wsUpdateFloat(){
 function wsReopen(){
   if(!_wsPanes.length) return;
   wsShow(); wsRenderShell();
-  _wsPanes.forEach(p=>{ if(!p.loading) wsRenderPaneBody(p); });
 }
 async function wsOpen(name, docType, url, org, type){
   name=(name||'').trim(); if(!name) return;
@@ -5801,6 +5828,7 @@ async function wsOpen(name, docType, url, org, type){
   const pane={id,name,docType,url:url||'',org:org||'',type:type||'',loading:true,
               error:'',arts:null,text:null,structured:null,abbrevMap:{},filter:''};
   _wsPanes.push(pane);
+  _wsEnterId=id;               // 오른쪽에서 미끄러져 들어오는 진입 애니메이션
   wsRenderShell();
   try{
     if(docType==='internal'){
@@ -5826,25 +5854,67 @@ async function wsOpen(name, docType, url, org, type){
     loadRegNames().then(()=>{ try{ const el=document.getElementById('wsbody_'+id); if(el) markInternalRefs(el); }catch(e){} });
   }
 }
-function wsColClass(n){ return n<=1?'ws-1':''; }
+// 레이아웃 계산: [최초 규정] + 오른쪽 최근 N창(펼침) + 나머지(오른쪽 스택)
+function _wsLayout(){
+  const primary=_wsPanes[0]||null;
+  const others=_wsPanes.slice(1);
+  const visibleOthers=others.slice(-WS_MAX_VISIBLE_RIGHT);
+  const stacked=others.slice(0, Math.max(0, others.length-WS_MAX_VISIBLE_RIGHT));
+  const visible = primary ? [primary, ...visibleOthers] : [];
+  return {primary, visible, stacked};
+}
+function wsPaneHtml(p, cls){
+  const isInt=p.docType==='internal';
+  return `<section class="ws-pane${cls?' '+cls:''}" id="wspane_${p.id}">
+    <header class="ws-pane-head">
+      <span class="ws-badge ws-badge-${isInt?'int':'law'}">${isInt?'내규':'법령'}</span>
+      <span class="ws-pane-title" title="${escAttr(p.name)}">${escHtml(p.name)}</span>
+      <input class="ws-pane-filter" placeholder="조문·키워드" value="${escAttr(p.filter||'')}"
+             oninput="wsFilter(${p.id},this.value)" aria-label="이 문서 안에서 찾기">
+      <button class="ws-icon" title="전체화면·상세 기능(AI·메모·비교)" onclick="wsExpand(${p.id})">⤢</button>
+      <button class="ws-icon" title="이 창 닫기" onclick="wsClose(${p.id})">✕</button>
+    </header>
+    <div class="ws-pane-body" id="wsbody_${p.id}">${wsBodyHtml(p)}</div>
+  </section>`;
+}
 function wsRenderShell(){
   const grid=document.getElementById('wsGrid'); if(!grid) return;
-  grid.className='ws-grid '+wsColClass(_wsPanes.length);
-  grid.innerHTML=_wsPanes.map(p=>{
-    const isInt=p.docType==='internal';
-    return `<section class="ws-pane" id="wspane_${p.id}">
-      <header class="ws-pane-head">
-        <span class="ws-badge ws-badge-${isInt?'int':'law'}">${isInt?'내규':'법령'}</span>
-        <span class="ws-pane-title" title="${escAttr(p.name)}">${escHtml(p.name)}</span>
-        <input class="ws-pane-filter" placeholder="조문·키워드" value="${escAttr(p.filter||'')}"
-               oninput="wsFilter(${p.id},this.value)" aria-label="이 문서 안에서 찾기">
-        <button class="ws-icon" title="전체화면·상세 기능(AI·메모·비교)" onclick="wsExpand(${p.id})">⤢</button>
-        <button class="ws-icon" title="이 창 닫기" onclick="wsClose(${p.id})">✕</button>
-      </header>
-      <div class="ws-pane-body" id="wsbody_${p.id}">${wsBodyHtml(p)}</div>
-    </section>`;
+  const {visible, stacked}=_wsLayout();
+  const entering=_wsEnterId;
+  grid.className='ws-grid';
+  let html=visible.map(p=>{
+    const cls = p.id===entering ? 'ws-enter' : (entering ? 'ws-shift' : '');
+    return wsPaneHtml(p, cls);
   }).join('');
+  if(stacked.length){
+    html += `<div class="ws-stack" aria-label="쌓인 문서 ${stacked.length}건">
+      <div class="ws-stack-h">쌓임 ${stacked.length}</div>`
+      + stacked.map(p=>`<button class="ws-stack-card${p.docType==='internal'?' int':''}"
+          title="${escAttr(p.name)} — 클릭하면 다시 펼칩니다" onclick="wsRestore(${p.id})">
+          <span class="ws-stack-title">${escHtml(p.name)}</span></button>`).join('')
+      + `</div>`;
+  }
+  grid.innerHTML=html;
+  _wsEnterId=0;
+  _wsPostRender();
   wsUpdateCnt();
+}
+// 렌더 후처리: 화면에 보이는 내규 창의 별표·참조 링크 재연결
+function _wsPostRender(){
+  const {visible}=_wsLayout();
+  visible.forEach(p=>{
+    if(p.loading || p.error || p.docType!=='internal') return;
+    const b=document.getElementById('wsbody_'+p.id); if(!b) return;
+    try{ const host=b.querySelector('.ws-doc')||b; buildApxIndex(host); linkifyApxRefs(host); }catch(e){}
+    try{ if(_regNames) markInternalRefs(b); }catch(e){}
+  });
+}
+// 스택의 문서를 다시 펼침(가장 최근 창으로 승격 → 보이는 영역 진입)
+function wsRestore(id){
+  const idx=_wsPanes.findIndex(p=>p.id===id); if(idx<0) return;
+  const [p]=_wsPanes.splice(idx,1); _wsPanes.push(p);
+  _wsEnterId=id;
+  wsRenderShell();
 }
 function wsBodyHtml(p){
   if(p.loading) return `<div class="fp-loading"><div class="spinner" style="margin:0 auto 10px;"></div>불러오는 중...</div>`;
@@ -5867,7 +5937,7 @@ function wsInternalHtml(p){
     html=formatRuleText(p.text||'');
   }
   return `<div class="ws-doc">${html}
-    <div class="int-foot" style="margin-top:14px;">※ 본문의 「법령명」·"○○법 제N조"를 클릭하면 관련 문서가 새 창으로 추가됩니다.</div></div>`;
+    <div class="int-foot" style="margin-top:14px;">※ 「규정·법령명」을 <b>클릭</b>하면 원문이 오른쪽에 새 창으로 열립니다. "제N조" 준용조문은 <b>마우스를 올리면</b> 내용 미리보기가 뜹니다.</div></div>`;
 }
 function wsLawHtml(p){
   const arts=p.arts||[];
@@ -5960,7 +6030,6 @@ function wsClose(id){
     wsBackToList(); return;
   }
   wsRenderShell();
-  _wsPanes.forEach(p=>{ if(!p.loading) wsRenderPaneBody(p); });
 }
 function wsCloseAll(){
   _wsPanes=[]; const g=document.getElementById('wsGrid'); if(g) g.innerHTML='';
