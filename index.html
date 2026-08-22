@@ -2468,7 +2468,7 @@ async function openInternalPanel(name){
     try{ const host=body.firstElementChild||body; buildApxIndex(host); linkifyApxRefs(host); }catch(e){}
     loadOriginalInfo(name);   // 원본 PDF 유무 확인 → 헤더 버튼 노출
     // 참조가 내규인지 표시(내규는 초록 배지, 법령은 기존 스타일)
-    loadRegNames().then(()=>{ try{ markInternalRefs(body); }catch(e){} });
+    loadRegNames().then(()=>{ try{ _collapseSpacedNames(body); markInternalRefs(body); }catch(e){} });
   }catch(e){ body.innerHTML='<div class="fp-empty">내규 전문 조회 중 오류가 발생했습니다.</div>'; }
 }
 
@@ -2517,6 +2517,37 @@ function markInternalRefs(root){
     }
   });
   return n;
+}
+// 자간 벌어짐(예: "감 사 규 정") 복원 — 사전 검증형.
+// 낱자(한글 1음절)가 연속으로 공백 분리된 구간을 찾아, 붙였을 때 '실제 내규명'과
+// 일치하는 경우에만 공백을 제거한다. 이름과 일치하지 않는 줄바꿈 잔여 공백
+// ("합동감 사를" 등)이나 일반 문장은 절대 건드리지 않아 법령문 손상이 없다.
+function _collapseSpacedNames(root){
+  if(!root || !_regNames || !_regNames.size) return;
+  const walker=document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  const nodes=[];
+  while(walker.nextNode()){
+    const v=walker.currentNode.nodeValue||'';
+    if(/[가-힣] [가-힣]/.test(v)) nodes.push(walker.currentNode);
+  }
+  nodes.forEach(node=>{
+    const parts=node.nodeValue.split(' ');
+    let changed=false, i=0;
+    while(i<parts.length){
+      if(/^[가-힣]$/.test(parts[i])){
+        let j=i;
+        while(j+1<parts.length && /^[가-힣]$/.test(parts[j+1])) j++;
+        if(j>i){                                   // 낱자 2개 이상 연속(창)
+          const joined=parts.slice(i,j+1).join('');
+          if(_regNames.has(_rnorm(joined))){        // 붙였더니 실제 내규명 → 자간
+            parts.splice(i, j-i+1, joined); changed=true; continue;
+          }
+        }
+      }
+      i++;
+    }
+    if(changed) node.nodeValue=parts.join(' ');
+  });
 }
 // 참조 클릭 라우팅: 내규면 내규 전문, 아니면 법령 조문
 function openRefAuto(name, artNos, focus){
@@ -5864,7 +5895,7 @@ async function wsOpen(name, docType, url, org, type){
   wsRenderPaneBody(pane);
   wsUpdateCnt();
   if(docType==='internal' && !pane.error){
-    loadRegNames().then(()=>{ try{ const el=document.getElementById('wsbody_'+id); if(el) markInternalRefs(el); }catch(e){} });
+    loadRegNames().then(()=>{ try{ const el=document.getElementById('wsbody_'+id); if(el){ _collapseSpacedNames(el); markInternalRefs(el); } }catch(e){} });
   }
 }
 // 레이아웃 계산: [최초 규정] + 오른쪽 최근 N창(펼침) + 나머지(오른쪽 스택)
@@ -5919,7 +5950,7 @@ function _wsPostRender(){
     if(p.loading || p.error || p.docType!=='internal') return;
     const b=document.getElementById('wsbody_'+p.id); if(!b) return;
     try{ const host=b.querySelector('.ws-doc')||b; buildApxIndex(host); linkifyApxRefs(host); }catch(e){}
-    try{ if(_regNames) markInternalRefs(b); }catch(e){}
+    try{ if(_regNames){ _collapseSpacedNames(b); markInternalRefs(b); } }catch(e){}
   });
 }
 // 스택의 문서를 다시 펼침(가장 최근 창으로 승격 → 보이는 영역 진입)
