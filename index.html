@@ -661,7 +661,10 @@ body.dark .int-law-chip{background:#161920;color:#93c5fd;}
 .idb-head{margin-bottom:14px;}
 .idb-title{font-size:16px;font-weight:800;color:var(--tx);display:flex;align-items:center;gap:8px;}
 .idb-total{font-size:12px;font-weight:700;color:var(--gd);background:var(--gl);border-radius:999px;padding:2px 10px;}
-.idb-sub{font-size:12.5px;color:var(--mu);margin:5px 0 10px;}
+.idb-sub{font-size:12.5px;color:var(--mu);}
+.idb-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0 10px;}
+.idb-filter{flex:0 1 320px;min-width:180px;padding:9px 14px;border:1px solid var(--bd);border-radius:10px;font-size:13px;background:var(--sf);color:var(--tx);outline:none;font-family:var(--font);}
+.idb-filter:focus{border-color:var(--g);box-shadow:0 0 0 3px var(--gl);}
 .idb-pills{display:flex;flex-wrap:wrap;gap:6px;}
 .idb-pill{font-size:11.5px;color:var(--mu);background:var(--sf);border:1px solid var(--bd);border-radius:999px;padding:3px 10px;}
 .idb-pill b{color:var(--tx);font-weight:700;margin-left:2px;}
@@ -1873,12 +1876,29 @@ async function renderInternalDashboard(){
   }
   if(mode!=='internal') return;               // 로딩 중 모드가 바뀌면 중단
   const items=_intDashItems;
+  const total=items.length;
+  const groups0={}; RULE_TREE_ORDER.forEach(g=>groups0[g.key]=[]);
+  items.forEach(it=>{ (groups0[it.category]||groups0['기타']||(groups0['기타']=[])).push(it); });
+  const pills=RULE_TREE_ORDER.filter(g=>(groups0[g.key]||[]).length).map(g=>
+    `<span class="idb-pill">${g.ic} ${escHtml(g.key)} <b>${groups0[g.key].length}</b></span>`).join('');
+  res.innerHTML=`<div class="int-dash">
+    <div class="idb-head">
+      <div class="idb-title">📚 내규 전체 목록 <span class="idb-total">${total}건</span></div>
+      <div class="idb-toolbar">
+        <input id="idbFilter" class="idb-filter" type="search" placeholder="규정명으로 빠르게 찾기…" autocomplete="off"
+               oninput="_applyDashFilter()" aria-label="규정명 빠른 필터">
+        <span class="idb-sub">규정을 클릭하면 전문을 봅니다 · 위 검색창에서 키워드로도 검색</span>
+      </div>
+      <div class="idb-pills">${pills}</div>
+    </div>
+    <div class="idb-grid" id="idbGrid">${_dashGrid(items)}</div>
+  </div>`;
+}
+// 대시보드 그리드(구분별 카드) HTML — 필터에 재사용
+function _dashGrid(items){
   const groups={}; RULE_TREE_ORDER.forEach(g=>groups[g.key]=[]);
   items.forEach(it=>{ (groups[it.category]||groups['기타']||(groups['기타']=[])).push(it); });
-  const total=items.length;
-  const pills=RULE_TREE_ORDER.filter(g=>(groups[g.key]||[]).length).map(g=>
-    `<span class="idb-pill">${g.ic} ${escHtml(g.key)} <b>${groups[g.key].length}</b></span>`).join('');
-  const cards=RULE_TREE_ORDER.map(g=>{
+  const html=RULE_TREE_ORDER.map(g=>{
     const list=groups[g.key]||[]; if(!list.length) return '';
     const chips=list.map(it=>{
       const e=argAttr(it.title);
@@ -1889,14 +1909,14 @@ async function renderInternalDashboard(){
     return `<div class="idb-card"><div class="idb-card-h"><span class="idb-ic">${g.ic}</span>${escHtml(g.key)}<span class="idb-cnt">${list.length}</span></div>`+
            `<div class="idb-list">${chips}</div></div>`;
   }).join('');
-  res.innerHTML=`<div class="int-dash">
-    <div class="idb-head">
-      <div class="idb-title">📚 내규 전체 목록 <span class="idb-total">${total}건</span></div>
-      <div class="idb-sub">규정을 클릭하면 전문을 볼 수 있습니다 · 위 검색창에서 키워드로도 찾을 수 있습니다</div>
-      <div class="idb-pills">${pills}</div>
-    </div>
-    <div class="idb-grid">${cards}</div>
-  </div>`;
+  return html || `<div class="empty" style="padding:24px;grid-column:1/-1;"><p>일치하는 규정이 없습니다.</p></div>`;
+}
+// 대시보드 실시간 필터 — 타이핑으로 즉시 좁히기(클릭 없이)
+function _applyDashFilter(){
+  const el=document.getElementById('idbFilter'); if(!el||!_intDashItems) return;
+  const q=(el.value||'').trim().toLowerCase();
+  const items=q?_intDashItems.filter(it=>(it.title||'').toLowerCase().includes(q)):_intDashItems;
+  const grid=document.getElementById('idbGrid'); if(grid) grid.innerHTML=_dashGrid(items);
 }
 
 function quick(kw){document.getElementById('q').value=kw;doSearch();}
