@@ -5586,14 +5586,18 @@ function extractLawAbbrevs(arts, currentLawName){
 }
 
 function applyXref(html, lawName, abbrevMap={}){
-  // 1) 「법령명」 → 준용 법령 링크 (괄호 있는 경우)
+  // 1) 「법령명」 → 준용 법령 링크
   //    접미사: 법률·법·시행령·시행규칙·고시·예규·세칙·령·규칙·조례·훈령·규정·지침·기준
+  //    관용 표기 허용: 「 … 」 안쪽의 여백, 그리고 법령명 뒤에 붙는
+  //    "(이하 …이라 한다)"·"(약칭: …)" 같은 괄호부(원문/추출 과정에서 흔함).
+  //    → 법령명만 data-reflaw 로 잡고, 「…」 전체를 클릭 가능하게 감싼다.
   html = html.replace(
-    /[「｢]([^」｣\n]{2,50}(?:법률|법|시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준))[」｣]/g,
+    /[「｢]\s*([^」｣\n(（]{2,50}?(?:법률|법|시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준))\s*(?:[(（][^」｣\n]*?[)）])?\s*[」｣]/g,
     (match, name) => {
-      if(name === lawName) return match;
-      const safe = name.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      return `<span class="law-ref" data-reflaw="${safe}" title="「${safe}」 조문 보기">「${safe}」</span>`;
+      const nm = (name||'').trim();
+      if(!nm || nm === lawName) return match;
+      const safe = nm.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<span class="law-ref" data-reflaw="${safe}" title="「${safe}」 조문 보기">${match}</span>`;
     }
   );
 
