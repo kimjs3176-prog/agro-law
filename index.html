@@ -413,6 +413,8 @@ body.dark .int-badge-law{background:#12233d!important;color:#93c5fd!important;}
   margin:14px 0 6px;padding-bottom:4px;border-bottom:2px solid rgba(0,0,0,.08);}
 .ws-flash{animation:wsFlash .9s ease;}
 @keyframes wsFlash{0%{box-shadow:0 0 0 3px var(--g);}100%{box-shadow:var(--shadow);}}
+.ws-artflash{animation:wsArtFlash 1.2s ease;border-radius:3px;}
+@keyframes wsArtFlash{0%,20%{background:var(--mark-bg);color:var(--mark-fg);}100%{background:transparent;}}
 mark.ws-hl{background:var(--mark-bg);color:var(--mark-fg);border-radius:2px;padding:0 1px;}
 .ws-float{position:fixed;right:18px;bottom:18px;z-index:400;background:var(--g);color:#fff;border:none;
   border-radius:999px;padding:11px 18px;font-size:13px;font-weight:700;cursor:pointer;
@@ -5171,10 +5173,21 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(e.target.closest('#workspace')){
       const wxr = e.target.closest('.art-xref[data-artno]');
       if(wxr){
+        // 조·항·호·목 준용: 마우스오버(미리보기)와 별개로, 클릭하면 원문을 연다
         e.stopPropagation(); try{hideArtPopover();}catch(_){}
+        const artFull=_artFullNo(wxr);
         const reflaw=wxr.dataset.reflaw||'';
-        if(reflaw){ const inter=matchInternalRule(reflaw); wsOpen(inter||reflaw, inter?'internal':'law'); }
-        else { const paneEl=wxr.closest('.ws-pane'); if(paneEl) wsJumpArt(paneEl, parseInt(wxr.dataset.artno,10)); }
+        if(reflaw){
+          // 타법/타규정 준용 → 해당 원문을 새 창으로 열고 그 조문으로 이동
+          const inter=matchInternalRule(reflaw);
+          const nm=inter||reflaw, dt=inter?'internal':'law';
+          wsOpen(nm, dt); _wsScrollAfterOpen(nm, dt, artFull);
+        } else {
+          // 같은 문서 내 준용 → 현재 창에서 그 조문으로 이동(원문 확인)
+          const paneEl=wxr.closest('.ws-pane'); const p=_paneFromEl(paneEl);
+          if(p && p.docType==='law') wsJumpArt(paneEl, parseInt(artFull,10));
+          else if(paneEl) _wsScrollToArtInternal(paneEl, artFull);
+        }
         return;
       }
       const wlr = e.target.closest('.law-ref[data-reflaw]');
@@ -5937,7 +5950,7 @@ function wsInternalHtml(p){
     html=formatRuleText(p.text||'');
   }
   return `<div class="ws-doc">${html}
-    <div class="int-foot" style="margin-top:14px;">※ 「규정·법령명」을 <b>클릭</b>하면 원문이 오른쪽에 새 창으로 열립니다. "제N조" 준용조문은 <b>마우스를 올리면</b> 내용 미리보기가 뜹니다.</div></div>`;
+    <div class="int-foot" style="margin-top:14px;">※ 「규정·법령명」을 <b>클릭</b>하면 원문이 새 창으로 열립니다. "제N조" 준용조문은 <b>마우스오버</b>로 미리보고, <b>클릭</b>하면 원문 해당 조문으로 이동합니다.</div></div>`;
 }
 function wsLawHtml(p){
   const arts=p.arts||[];
@@ -6049,6 +6062,59 @@ function wsJumpArt(paneEl, artNo){
     const n=parseInt((noEl?noEl.textContent:'').replace(/[^0-9]/g,''),10);
     if(n===artNo){ el.scrollIntoView({behavior:'smooth',block:'start'}); _wsFlash(el); return; }
   }
+}
+// art-xref 요소의 전체 조문번호("15" 또는 "15의2") 추출
+function _artFullNo(el){
+  const t=(el&&el.textContent)||'';
+  const m=t.match(/제(\d+)조(?:의(\d+))?/);
+  if(m) return m[1]+(m[2]?'의'+m[2]:'');
+  return el&&el.dataset?(el.dataset.artno||''):'';
+}
+// DOM 창 요소 → 해당 pane 상태
+function _paneFromEl(paneEl){
+  if(!paneEl) return null;
+  const id=parseInt((paneEl.id||'').replace('wspane_',''),10);
+  return _wsPanes.find(x=>x.id===id)||null;
+}
+// 내규 창(평문)에서 지정 조문 머리말로 스크롤
+// 머리말은 "<span class=art-xref>제N조</span>(제목)" 형태 → 뒤 텍스트가 '('로 시작
+function _wsScrollToArtInternal(paneEl, artFull){
+  if(!paneEl||!artFull) return false;
+  const body=paneEl.querySelector('.ws-pane-body')||paneEl;
+  const xrefs=body.querySelectorAll('.art-xref[data-artno]');
+  let target=null, fallback=null;
+  xrefs.forEach(el=>{
+    if(_artFullNo(el)!==String(artFull)) return;
+    if(!fallback) fallback=el;
+    const nx=el.nextSibling;
+    const txt=(nx && nx.nodeType===3) ? (nx.nodeValue||'').replace(/^\s+/,'') : '';
+    if(!target && txt.startsWith('(')) target=el;   // 조문 머리말
+  });
+  const el=target||fallback;
+  if(el){
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+    el.classList.add('ws-artflash'); setTimeout(()=>el.classList.remove('ws-artflash'),1200);
+    return true;
+  }
+  return false;
+}
+// 원문 창을 연 뒤(로드 완료 후) 지정 조문으로 이동
+function _wsScrollAfterOpen(name, docType, artFull){
+  if(!artFull) return;
+  const no=parseInt(artFull,10);
+  let tries=0;
+  const tick=setInterval(()=>{
+    tries++;
+    try{
+      const p=_wsPanes.find(x=>_rnorm(x.name)===_rnorm(name) && x.docType===docType);
+      const el=p?document.getElementById('wspane_'+p.id):null;
+      if(el && !el.querySelector('.fp-loading')){
+        if(docType==='law'){ if(el.querySelector('.ws-art')){ wsJumpArt(el, no); clearInterval(tick); return; } }
+        else { if(el.querySelector('.ws-doc')){ _wsScrollToArtInternal(el, artFull); clearInterval(tick); return; } }
+      }
+    }catch(e){}
+    if(tries>28) clearInterval(tick);
+  }, 200);
 }
 
 function openDocSplit(name, docType, url, org, type){
