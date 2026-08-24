@@ -3414,7 +3414,7 @@ async function doSearchArticle(q){
 function extractLawNamesFromText(text){
   const cnt=new Map();
   const bump=n=>{ n=(n||'').trim(); if(n) cnt.set(n,(cnt.get(n)||0)+1); };
-  const re1=/[「｢]([^」｣\n]{2,50}(?:법률|법|시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준))[」｣]/g;
+  const re1=/[「｢『《〈]([^」｣』》〉\n]{2,50}(?:법률|법|시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준))[」｣』》〉]/g;
   const re2=/(?<![가-힣])([가-힣]{2,20}(?:법률|법))(?= *제\d+조)/g;
   let m;
   while((m=re1.exec(text))) bump(m[1]);
@@ -5684,7 +5684,7 @@ function extractLawAbbrevs(arts, currentLawName){
     .map(a => (a['조문내용']||'') + ' ' + (a['조문제목']||''))
     .join('\n');
   // 「법령명」(이하 "약칭"이라 한다) — 따옴표는 다양한 형태 허용
-  const re = /[「｢]([^」｣\n]{2,50}(?:법률|법|시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준))[」｣][^(\n]{0,30}\(이하\s*["'"＂']([\w가-힣 ]{1,12})["'"＂']\s*이라\s*한다\)/g;
+  const re = /[「｢『《〈]([^」｣』》〉\n]{2,50}(?:법률|법|시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준))[」｣』》〉][^(\n]{0,30}\(이하\s*["'"＂']([\w가-힣 ]{1,12})["'"＂']\s*이라\s*한다\)/g;
   let m;
   while((m = re.exec(allText)) !== null){
     const refLawName = m[1].trim();
@@ -5698,11 +5698,12 @@ function extractLawAbbrevs(arts, currentLawName){
 function applyXref(html, lawName, abbrevMap={}){
   // 1) 「법령명」 → 준용 법령 링크
   //    접미사: 법률·법·시행령·시행규칙·고시·예규·세칙·령·규칙·조례·훈령·규정·지침·기준
-  //    관용 표기 허용: 「 … 」 안쪽의 여백, 그리고 법령명 뒤에 붙는
+  //    괄호 변형 허용: 「」·｢｣ 뿐 아니라 『』·《》·〈〉 도 인식(원문마다 표기가 다르다).
+  //    관용 표기 허용: 괄호 안쪽의 여백, 그리고 법령명 뒤에 붙는
   //    "(이하 …이라 한다)"·"(약칭: …)" 같은 괄호부(원문/추출 과정에서 흔함).
   //    → 법령명만 data-reflaw 로 잡고, 「…」 전체를 클릭 가능하게 감싼다.
   html = html.replace(
-    /[「｢]\s*([^」｣\n(（]{2,50}?(?:법률|법|시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준|정관|규약|약관|헌장|준칙))\s*(?:[(（][^」｣\n]*?[)）])?\s*[」｣]/g,
+    /[「｢『《〈]\s*([^」｣』》〉\n(（]{2,50}?(?:법률|법|시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준|정관|규약|약관|헌장|준칙))\s*(?:[(（][^」｣』》〉\n]*?[)）])?\s*[」｣』》〉]/g,
     (match, name) => {
       const nm = (name||'').trim();
       if(!nm || nm === lawName) return match;
@@ -5726,6 +5727,18 @@ function applyXref(html, lawName, abbrevMap={}){
   //       최소 접두어 3음절: 단독 '시행령', '규칙' 같은 단어의 오탐 방지
   html = html.replace(
     /(?<![가-힣])([가-힣]{3,20}(?:시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준))( +)(?=제\d+조)/g,
+    (match, refLaw, spaces) => {
+      if(refLaw === lawName) return match;
+      const safe = refLaw.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<span class="law-ref" data-reflaw="${safe}" title="「${safe}」 조문 보기">${refLaw}</span>${spaces}`;
+    }
+  );
+
+  // 1b-c) 접두 2음절 + 2음절 접미어 내규명 + 제N조 (예: 감사규정 제23조, 인사규정 제5조)
+  //       접두 3음절을 요구하는 1b-b가 놓치는 '△△규정' 형태 보완. 접미어를 2음절로
+  //       한정하고 접두 2음절을 요구해(=총 4자↑) '규정'·'훈령' 단독 오탐을 막는다.
+  html = html.replace(
+    /(?<![가-힣])([가-힣]{2,18}(?:규정|지침|기준|세칙|예규|규약|준칙|조례|훈령))( +)(?=제\d+조)/g,
     (match, refLaw, spaces) => {
       if(refLaw === lawName) return match;
       const safe = refLaw.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -6440,7 +6453,7 @@ function closeRefTab(idx){
 
 // 조문 목록에서 「법령명」 참조 추출
 function extractLawRefs(arts){
-  const lawRefRe = new RegExp('[「｢]([^」｣\\n]{2,50}(?:' + _LAW_SUFFIX + '))[」｣]', 'g');
+  const lawRefRe = new RegExp('[「｢『《〈]([^」｣』》〉\\n]{2,50}(?:' + _LAW_SUFFIX + '))[」｣』》〉]', 'g');
   const counts = {};
   const currentName = document.getElementById('fpTitle').textContent;
   arts.forEach(a=>{
@@ -7060,7 +7073,7 @@ function buildRefList(){
   }
 
   // 법령별로 어느 조문에서 참조하는지 수집
-  const lawRefRe = new RegExp('[「｢]([^」｣\\n]{2,50}(?:' + _LAW_SUFFIX + '))[」｣]', 'g');
+  const lawRefRe = new RegExp('[「｢『《〈]([^」｣』》〉\\n]{2,50}(?:' + _LAW_SUFFIX + '))[」｣』》〉]', 'g');
   const refMap   = {};  // { 법령명: [{artNo, artTitle}] }
 
   fpArts.forEach(a => {
@@ -7692,7 +7705,7 @@ async function buildNetwork(){
   const H = document.getElementById('netCanvas').offsetHeight || 500;
   g.innerHTML = `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#9ca3af" font-size="14">법령 조문 분석 중...</text>`;
 
-  const lawRefRe = new RegExp('[「｢]([^」｣\\n]{2,50}(?:' + _LAW_SUFFIX + '))[」｣]', 'g');
+  const lawRefRe = new RegExp('[「｢『《〈]([^」｣』》〉\\n]{2,50}(?:' + _LAW_SUFFIX + '))[」｣』》〉]', 'g');
 
   // 노드·엣지 수집 (BFS로 depth까지)
   const nodes = [{name:centerName, type:'center', refs:[], artCount:0}];
