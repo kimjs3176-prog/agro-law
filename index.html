@@ -2503,6 +2503,15 @@ function matchInternalRule(name){
   // '규정 시행세칙' 등 부분 표기 대응: 참조명을 포함하는 내규가 유일할 때만 인정
   const cands=[..._regNames].filter(x=>x===k||x.startsWith(k));
   if(cands.length===1) return _regNameOrig.get(cands[0]);
+  // 기관명이 다른 조직문서(정관·규약·약관·헌장·준칙) 대응.
+  // 국가법령에는 '정관'이 없고 기관당 1건이 일반적이므로, 기관 접두어가 달라도
+  // 접미사가 같은 내규가 유일하면 동일 문서로 연결한다.
+  //   예) '농업기술실용화재단 정관'(옛 명칭) → 현행 '한국농업기술진흥원 정관'
+  const m=k.match(/(정관|규약|약관|헌장|준칙)$/);
+  if(m){
+    const bySuf=[..._regNames].filter(x=>x.endsWith(m[1]));
+    if(bySuf.length===1) return _regNameOrig.get(bySuf[0]);
+  }
   return null;
 }
 // 본문의 참조 중 내규인 것에 배지를 달아 시각적으로 구분
