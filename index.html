@@ -2438,6 +2438,7 @@ async function openInternalPanel(name){
     const r=await fetch(`/api/internal/doc?name=${encodeURIComponent(name)}`);
     const d=await r.json();
     if(d.error){ body.innerHTML=`<div class="fp-empty">⚠ ${escHtml(d.error)}</div>`; return; }
+    try{ await loadRegNames(); }catch(e){}   // 내규 사전을 렌더 전에 준비(참조 링크)
     const raw=(d.text||'').trim();
     let html='';
     if(Array.isArray(d.structured)&&d.structured.length){
@@ -2464,7 +2465,19 @@ async function openInternalPanel(name){
 let _regNames=null;              // Set(정규화 명칭)
 let _regNameOrig=new Map();      // 정규화 → 원래 표기
 let _regMeta=new Map();          // 정규화 → {revision, effective_date, history}
+let _regNameAlt=null;            // 사전 매칭용: 알려진 내규명 정규식(제N조 앞)
 const _rnorm=s=>(s||'').replace(/\s+/g,'').toLowerCase();
+// 사전(내규 registry) 기반 참조 링크용 정규식 구축.
+// 알려진 내규명(3자↑)이 '제N조' 바로 앞에 올 때만 매칭 → 참조 문맥에서만 링크.
+// 이름 안의 공백은 \s+ 로 완화해 자간·띄어쓰기 변형을 흡수한다. 긴 이름 우선.
+function _buildRegNameAlt(){
+  const list=[..._regNameOrig.values()].filter(n=>n && n.replace(/\s/g,'').length>=3)
+    .sort((a,b)=>b.length-a.length);
+  if(!list.length){ _regNameAlt=null; return; }
+  const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s*');
+  try{ _regNameAlt=new RegExp('('+list.map(esc).join('|')+')(?=\\s*제\\s*\\d+\\s*조)','g'); }
+  catch(e){ _regNameAlt=null; }
+}
 async function loadRegNames(){
   if(_regNames) return _regNames;
   _regNames=new Set();
@@ -2475,6 +2488,7 @@ async function loadRegNames(){
       const k=_rnorm(x.title);
       if(k){ _regNames.add(k); _regNameOrig.set(k,x.title); _regMeta.set(k,x); }
     });
+    _buildRegNameAlt();
   }catch(e){}
   return _regNames;
 }
@@ -5687,7 +5701,7 @@ function applyXref(html, lawName, abbrevMap={}){
   //    "(이하 …이라 한다)"·"(약칭: …)" 같은 괄호부(원문/추출 과정에서 흔함).
   //    → 법령명만 data-reflaw 로 잡고, 「…」 전체를 클릭 가능하게 감싼다.
   html = html.replace(
-    /[「｢『《〈]\s*([^」｣』》〉\n(（]{2,50}?(?:법률|법|시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준|정관|규약|약관|헌장|준칙))\s*(?:[(（][^」｣』》〉\n]*?[)）])?\s*[」｣』》〉]/g,
+    /[「｢『《〈]\s*([^」｣』》〉\n(（]{1,50}?(?:법률|법|시행령|시행규칙|고시|예규|세칙|령|규칙|조례|훈령|규정|지침|기준|정관|규약|약관|헌장|준칙))\s*(?:[(（][^」｣』》〉\n]*?[)）])?\s*[」｣』》〉]/g,
     (match, name) => {
       const nm = (name||'').trim();
       if(!nm || nm === lawName) return match;
@@ -5742,6 +5756,23 @@ function applyXref(html, lawName, abbrevMap={}){
       return `<span class="law-ref" data-reflaw="${safe}" title="「${safe}」 조문 보기">${refLaw}</span>${spaces}`;
     }
   );
+
+  // 1b-e) 사전(내규 registry) 기반 안전망: 알려진 내규명 + 제N조 를 내규 참조로 링크.
+  //   규칙 기반(1a~1d)이 놓친 형태라도, 실제 존재하는 내규명과 정확히 일치하면 확실히
+  //   내규로 연결한다(이름 추측이 아닌 사전 대조 → 오연결·미연결 최소화).
+  //   태그 파트는 건드리지 않아 이미 링크된 이름은 중복 처리되지 않는다.
+  if(_regNameAlt){
+    const _pp=html.split(/(<[^>]+>)/g);
+    html=_pp.map((seg,idx)=>{
+      if(idx%2===1) return seg;                 // 태그 파트 보존
+      _regNameAlt.lastIndex=0;
+      return seg.replace(_regNameAlt, (nm)=>{
+        if(nm===lawName) return nm;
+        const safe=nm.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        return `<span class="law-ref rule-ref" data-reflaw="${safe}" data-refinternal="${safe}" title="「${safe}」 내규 전문 보기">${nm}</span>`;
+      });
+    }).join('');
+  }
 
   // 1c) 약칭 → 법령 링크 (예: "영 제34조", "법 제35조의2")
   //     extractLawAbbrevs 가 반환한 맵 기반; 태그 내부 속성 건드리지 않도록 텍스트 파트만 처리
@@ -5921,6 +5952,8 @@ async function wsOpen(name, docType, url, org, type){
       else { pane.arts=d.articles||[]; try{ pane.abbrevMap=extractLawAbbrevs(pane.arts,name)||{}; }catch(e){ pane.abbrevMap={}; } }
     }
   }catch(e){ pane.loading=false; pane.error='문서를 불러오지 못했습니다.'; }
+  // 내규 사전(참조 링크용)을 렌더 전에 준비 — 알려진 내규명 링크가 첫 렌더부터 적용되도록
+  if(docType==='internal' && !pane.error){ try{ await loadRegNames(); }catch(e){} }
   // 창이 그 사이 닫혔으면 무시
   if(!_wsPanes.some(p=>p.id===id)) return;
   wsRenderPaneBody(pane);
