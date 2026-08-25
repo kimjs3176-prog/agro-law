@@ -5730,6 +5730,19 @@ function applyXref(html, lawName, abbrevMap={}){
     }
   );
 
+  // 1b-d) 괄호 없는 조직문서(정관·규약·약관·헌장·준칙) + 제N조 (예: "정관 제16조")
+  //       국가법령에 없는 조직문서명이라, 바로 뒤 제N조를 해당 내규로 연결한다.
+  //       matchInternalRule의 접미사 폴백이 기관 정관 1건으로 매핑.
+  //       접두어 없이 '정관'만 잡아 '행정관'·'재정관리' 등 오탐을 막는다(앞 lookbehind).
+  html = html.replace(
+    /(?<![가-힣])(정관|규약|약관|헌장|준칙)( +)(?=제\d+조)/g,
+    (match, refLaw, spaces) => {
+      if(refLaw === lawName) return match;
+      const safe = refLaw.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<span class="law-ref" data-reflaw="${safe}" title="「${safe}」 조문 보기">${refLaw}</span>${spaces}`;
+    }
+  );
+
   // 1c) 약칭 → 법령 링크 (예: "영 제34조", "법 제35조의2")
   //     extractLawAbbrevs 가 반환한 맵 기반; 태그 내부 속성 건드리지 않도록 텍스트 파트만 처리
   if(abbrevMap && Object.keys(abbrevMap).length > 0){
