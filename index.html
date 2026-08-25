@@ -88,6 +88,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .mbtn{padding:7px 20px;font-size:13px;cursor:pointer;border:none;background:transparent;color:var(--mu);transition:.18s;border-radius:999px;}
 .mbtn:hover{background:rgba(255,255,255,.7);color:var(--tx);}
 .mbtn.active{background:var(--sf);color:var(--g);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.10);}
+/* 내규=메인(강조), 법령·시나리오=부가(약한 강조) — 세그먼트 토글은 유지 */
+.mtoggle{align-items:center;}
+.mbtn-primary{font-weight:700;}
+.mbtn-primary .mb-full,.mbtn-primary .mb-short{font-size:13.5px;}
+.mbtn-sub{font-size:12.5px;}
+/* 시나리오 API 키 안내 */
+.scen-apikey-note{font-size:12.5px;line-height:1.6;color:#92400e;background:#fff8ec;
+  border:1px solid #fcd9a3;border-radius:10px;padding:10px 13px;margin:2px 0 12px;}
+.scen-apikey-link{font-size:12px;font-weight:700;color:#fff;background:var(--g);border:none;
+  border-radius:7px;padding:2px 8px;cursor:pointer;margin:0 1px;vertical-align:baseline;}
+.scen-apikey-link:hover{background:var(--gd);}
+body.dark .scen-apikey-note{color:#fcd9a3;background:#3a2a12;border-color:#5a4520;}
 /* 검색창 — large Toss style */
 .srow{display:flex;gap:10px;}
 .sinput{flex:1;min-width:0;padding:14px 18px;border:2px solid transparent;border-radius:14px;font-size:15px;background:#f1f3f6;color:var(--tx);outline:none;transition:all .2s cubic-bezier(.34,1.56,.64,1);font-family:var(--font);}
@@ -1286,39 +1298,9 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   </div>
 </div>
 
-<!-- ③ 네트워크 그래프 패널 -->
-<div class="net-panel" id="netPanel" role="dialog" aria-modal="true" aria-label="법령 관계 네트워크">
-  <div class="net-hd">
-    <span style="font-size:15px;font-weight:600;">🕸 법령 관계 네트워크</span>
-    <select id="netCenter" style="padding:6px 10px;border:1px solid var(--bd);border-radius:var(--rs);font-size:13px;background:var(--sf);color:var(--tx);" onchange="buildNetwork()"></select>
-    <span style="font-size:12px;color:var(--ht);">중심 법령을 선택하면 준용·참조 관계를 시각화합니다</span>
-    <button class="fp-tbtn" onclick="closeNetPanel()">✕ 닫기</button>
-  </div>
-  <div class="net-controls">
-    <span style="font-size:12px;color:var(--mu);">탐색 깊이:</span>
-    <button class="net-depth-btn active" id="ndBtn1" onclick="setNetDepth(1)">1단계</button>
-    <button class="net-depth-btn" id="ndBtn2" onclick="setNetDepth(2)">2단계</button>
-    <button class="net-depth-btn" id="ndBtn3" onclick="setNetDepth(3)">3단계</button>
-    <span style="font-size:12px;color:var(--ht);margin-left:8px;">클릭 → 조문 전문 열기</span>
-  </div>
-  <div class="net-canvas" id="netCanvas">
-    <svg id="netSvg">
-      <defs>
-        <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-          <path d="M0,0 L0,6 L8,3 z" fill="#9ca3af"/>
-        </marker>
-      </defs>
-      <g id="netG"></g>
-    </svg>
-    <div class="net-legend">
-      <div class="net-legend-row"><div class="net-legend-dot" style="background:#1D9E75;"></div>현재 법령</div>
-      <div class="net-legend-row"><div class="net-legend-dot" style="background:#3b82f6;"></div>준용하는 법령</div>
-      <div class="net-legend-row"><div class="net-legend-dot" style="background:#f59e0b;"></div>시행령·시행규칙</div>
-    </div>
-  </div>
-</div>
+<!-- (법령 관계도 기능은 제거됨) -->
 
-<!-- 모바일 하단 네비게이션 (body 직속 — 관계도 패널 밖에 위치해야 표시됨) -->
+<!-- 모바일 하단 네비게이션 (body 직속) -->
 <nav class="mobile-nav" id="mobileNav">
   <button class="mnav-btn" onclick="document.getElementById('q').focus();window.scrollTo(0,0)">
     <span class="mnav-icon">🔍</span>검색
@@ -1336,8 +1318,6 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     <span class="mnav-icon" id="mnavDarkIcon">🌙</span>화면
   </button>
 </nav>
-
-<div class="net-tooltip" id="netTooltip"></div>
 
 <!-- 법령 비교 패널 -->
 <div class="cmp-panel" id="cmpPanel" role="dialog" aria-modal="true" aria-label="법령 비교">
@@ -1563,13 +1543,12 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   <div>
     <span class="brand"><span class="brand-full">KOAT 내규&국가법령 종합 검색</span><span class="brand-short">KOAT 종합검색</span></span>
     <span class="brand-en" style="font-size:10px;color:#9ca3af;margin-left:6px;font-weight:500;letter-spacing:.5px;">Integrated Legal Search</span><br>
-    <span class="brand-sub">국가법령정보 + 사규(내규) MCP 연동</span>
+    <span class="brand-sub">사규(내규) 검색 · 국가법령 연계</span>
   </div>
   <span class="apibadge" id="badge">● 확인 중</span>
   <button class="dark-btn hide-mobile" id="darkBtn" onclick="toggleDark()" title="다크모드" aria-label="다크 모드 전환">🌙</button>
   <button class="settings-btn hide-mobile" onclick="openStatPanel()"><span class="sb-icon">📊</span><span class="sb-label"> 통계</span></button>
   <button class="settings-btn hide-mobile" onclick="openCollModal()"><span class="sb-icon">📁</span><span class="sb-label"> 컬렉션</span></button>
-  <button class="settings-btn" onclick="openNetPanel()"><span class="sb-icon">🕸</span><span class="sb-label"> 관계도</span></button>
   <a class="settings-btn" href="/upload" style="text-decoration:none;display:inline-flex;align-items:center;" title="개정된 내규를 업로드해 최신본으로 반영"><span class="sb-icon">📤</span><span class="sb-label"> 개정 내규 업로드</span></a>
   <button class="settings-btn" onclick="openAiModal()"><span class="sb-icon">✦</span><span class="sb-label"> AI 설정</span> <span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
 </div>
@@ -1591,11 +1570,11 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     <div class="tabs" id="agencyTabs">
       <button class="fav-tab-btn" id="favTabBtn" onclick="toggleFavTab()">☆ 즐겨찾기 <span id="favCount"></span></button>
     </div>
-    <!-- 검색 모드 -->
+    <!-- 검색 모드: 내규(메인) · 법령/시나리오(부가) -->
     <div class="mtoggle">
-      <button class="mbtn active" id="mintbtn" onclick="setMode('internal')"><span class="mb-full">📋 내규</span><span class="mb-short">📋 내규</span></button>
-      <button class="mbtn" id="mlawbtn" onclick="setMode('law')"><span class="mb-full">📖 법령</span><span class="mb-short">📖 법령</span></button>
-      <button class="mbtn" id="mscenbtn" onclick="setMode('scenario')"><span class="mb-full">✦ 시나리오</span><span class="mb-short">✦ 시나리오</span></button>
+      <button class="mbtn mbtn-primary active" id="mintbtn" onclick="setMode('internal')" title="사내 규정(내규) 검색 — 메인"><span class="mb-full">📋 내규</span><span class="mb-short">📋 내규</span></button>
+      <button class="mbtn mbtn-sub" id="mlawbtn" onclick="setMode('law')" title="국가법령 검색"><span class="mb-full">📖 법령</span><span class="mb-short">📖 법령</span></button>
+      <button class="mbtn mbtn-sub" id="mscenbtn" onclick="setMode('scenario')" title="실무 시나리오 AI 검색(API 키 필요)"><span class="mb-full">✦ 시나리오</span><span class="mb-short">✦ 시나리오</span></button>
     </div>
     <!-- 검색창 -->
     <div class="srow">
@@ -1609,6 +1588,11 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
     <!-- 시나리오 예시 칩 (시나리오 모드일 때만 표시) -->
     <div id="scenarioExamples" style="display:none;">
+      <div class="scen-apikey-note">
+        ⚠ 시나리오 검색은 <b>AI가 답변을 생성</b>합니다. 작동하려면 먼저 상단
+        <button class="scen-apikey-link" onclick="openAiModal()">✦ AI 설정</button>
+        에서 API 키를 등록하세요. (키 없이는 결과가 표시되지 않습니다)
+      </div>
       <div class="qlabel">예시 질문</div>
       <div class="scenario-chips">
         <button class="scenario-chip" onclick="scenarioQuick('농약을 수입하여 국내에서 판매하려면 어떤 절차가 필요한가요?')">농약 수입·판매 절차</button>
