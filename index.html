@@ -28,8 +28,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .brand{font-size:17px;font-weight:800;letter-spacing:-.5px;color:var(--tx);}.brand-sub{font-size:11px;color:var(--mu);font-weight:500;letter-spacing:.1px;}
 .apibadge{margin-left:auto;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;background:var(--gl);color:var(--gd);}
 /* 레이아웃 */
-.main{max-width:min(1320px,94vw);margin:0 auto;padding:24px 22px 40px;}
-@media(min-width:1600px){.main{max-width:1440px;}}
+.main{max-width:min(1680px,96vw);margin:0 auto;padding:24px 28px 40px;}
+@media(min-width:1800px){.main{max-width:1800px;}}
 @media(max-width:900px){.main{max-width:100%;padding:18px 14px 32px;}}
 .reg-sem-badge{font-size:10.5px;font-weight:800;color:#fff;background:#7c3aed;
   border-radius:5px;padding:2px 7px;white-space:nowrap;}
@@ -2467,6 +2467,17 @@ let _regNameOrig=new Map();      // 정규화 → 원래 표기
 let _regMeta=new Map();          // 정규화 → {revision, effective_date, history}
 let _regNameAlt=null;            // 사전 매칭용: 알려진 내규명 정규식(제N조 앞)
 const _rnorm=s=>(s||'').replace(/\s+/g,'').toLowerCase();
+// 관련도 계산용 본문에서 별표·별지·부칙(조직도·서식·개정이력) 이후를 잘라낸다.
+// 검색가치가 낮은 영역의 우연한 매칭이 순위를 왜곡하는 것을 방지.
+function _stripApxForRel(t){
+  if(!t) return t;
+  const mApx=t.search(/(?:^|\n)[ \t]*[\[<（(〔【［]?\s*별\s*[표지]/);
+  const mAdd=t.search(/(?:^|\n)[ \t]*부\s*칙(?:\s|$)/);
+  let cut=t.length;
+  if(mApx>=0) cut=Math.min(cut,mApx);
+  if(mAdd>=0) cut=Math.min(cut,mAdd);
+  return cut>200 ? t.slice(0,cut) : t;   // 너무 앞이면(본문 거의 없음) 원문 유지
+}
 // 사전(내규 registry) 기반 참조 링크용 정규식 구축.
 // 알려진 내규명(3자↑)이 '제N조' 바로 앞에 올 때만 매칭 → 참조 문맥에서만 링크.
 // 이름 안의 공백은 \s+ 로 완화해 자간·띄어쓰기 변형을 흡수한다. 긴 이름 우선.
@@ -2873,22 +2884,27 @@ function formatRuleText(raw){
     return null; };
   function renderHistory(cells){
     const types=cells.map(histType);
-    // 열 수 추정: 첫 셀 유형이 다시 나오는 간격
-    let C=0;
-    for(let k=1;k<cells.length && k<=6;k++){ if(types[k]===types[0]){ C=k; break; } }
-    if(C<2 || C>6 || cells.length%C!==0) return null;
-    const rows=[]; for(let r=0;r<cells.length;r+=C) rows.push(cells.slice(r,r+C));
-    const label={date:'시행일',gubun:'구분',num:'내규번호',kind:'종류'};
-    const heads=[], used={};
-    for(let j=0;j<C;j++){
-      const cnt={}; rows.forEach(rw=>{const ty=histType(rw[j]); if(ty)cnt[ty]=(cnt[ty]||0)+1;});
-      const dom=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0];
-      let lab=label[dom]||'구분'; if(used[lab]) lab=lab+(used[lab]+1); used[label[dom]||'구분']=(used[label[dom]||'구분']||0)+1;
-      heads.push(lab);
+    // 구분(제정/개정) 경계로 행을 나눈다 — 제정 행이 종류·번호를 누락하는 등
+    // 행마다 칸 수가 달라도 정렬이 어긋나지 않는다(주기 추정 대신 유형 배치).
+    const starts=[]; types.forEach((ty,i)=>{ if(ty==='gubun') starts.push(i); });
+    if(starts.length<2) return null;
+    const rows=[];
+    for(let s=0;s<starts.length;s++){
+      const a=starts[s], b=(s+1<starts.length)?starts[s+1]:cells.length;
+      rows.push(cells.slice(a,b));
     }
+    // 각 행을 {구분·시행일·종류·번호} 스키마로 유형에 따라 배치
+    const norm=rows.map(r=>{
+      const c={gubun:'',date:'',kind:'',num:''};
+      r.forEach(x=>{ const ty=histType(x); if(ty && !c[ty]) c[ty]=x; else if(!c.gubun && !ty) c.gubun=x; });
+      return c;
+    });
+    const cols=[['구분','gubun'],['시행일','date']];
+    if(norm.some(c=>c.kind)) cols.push(['종류','kind']);
+    if(norm.some(c=>c.num))  cols.push(['내규번호','num']);
     let h='<div class="rf-tablewrap"><table class="rf-table"><thead><tr>'+
-          heads.map(c=>`<th>${seg(c)}</th>`).join('')+'</tr></thead><tbody>';
-    rows.forEach(rw=>{ h+='<tr>'+rw.map(c=>`<td>${seg(c)}</td>`).join('')+'</tr>'; });
+          cols.map(c=>`<th>${seg(c[0])}</th>`).join('')+'</tr></thead><tbody>';
+    norm.forEach(c=>{ h+='<tr>'+cols.map(col=>`<td>${seg(c[col[1]]||'')}</td>`).join('')+'</tr>'; });
     h+='</tbody></table></div>';
     return `<div class="rf-appendix"><div class="rf-apx-head"><span class="rf-apx-tag">연혁</span>`+
            `<span class="rf-apx-meta">제·개정 이력</span></div><div class="rf-apx-body">${h}</div></div>`;
@@ -2990,12 +3006,15 @@ function formatRuleText(raw){
       const tv=renderTOC(blob);
       if(tv){ html+=tv; i=j-1; continue; }
     }
-    // 제·개정 연혁 블록: 구분→시행일 순으로 흩어진 셀을 표로 복원
-    if(histType(t)==='gubun' && i+1<merged.length && histType(merged[i+1].trim())==='date'){
+    // 제·개정 연혁 블록: 구분/시행일/종류/번호 셀이 연속으로 흩어진 경우 표로 복원.
+    // 시작 셀 유형에 상관없이 '연혁 셀'이 8개 이상 연속되면 표로 복원(원문 포맷 차이에 견고).
+    if(histType(t)!==null){
       const cells=[]; let j=i;
       while(j<merged.length){ const u=merged[j].trim(); if(!u){ j++; continue; }
         if(histType(u)===null) break; cells.push(u); j++; }
-      if(cells.length>=8){ const hv=renderHistory(cells); if(hv){ html+=hv; i=j-1; continue; } }
+      // 날짜 셀이 2개 이상 포함될 때만 연혁으로 인정(단독 '내규'·'개정' 오탐 방지)
+      const dateCnt=cells.filter(c=>histType(c)==='date').length;
+      if(cells.length>=8 && dateCnt>=2){ const hv=renderHistory(cells); if(hv){ html+=hv; i=j-1; continue; } }
     }
     // 별표·별지 블록: 제목 이후 셀들을 모아 서식 표로 복원
     if(isApxHeader(t)){
@@ -3674,7 +3693,9 @@ function renderInternalResults(d, q){
     // 관련도 점수: 키워드 출현 빈도를 문서 크기로 정규화(거대 문서 페널티).
     // 직원채용지침(8만자)처럼 문서가 커서 우연히 포함하는 규정이 상위를 차지하지
     // 않도록, 실제로 키워드를 자주·집중적으로 다루는 규정을 우선한다.
-    const body=(_intDocCache[it.name]||'').toLowerCase();
+    // 별표·별지·부칙(조직도·서식·개정이력)은 검색가치가 낮고 '보안실' 같은 팀명이
+    // 우연히 매칭돼 순위를 왜곡하므로 관련도 계산에서 제외한다(예: 직제규정 시행세칙).
+    const body=_stripApxForRel(_intDocCache[it.name]||'').toLowerCase();
     const occ = (qL && body) ? Math.max(0, body.split(qL).length-1) : it._kwHits;
     it._rel = occ>0 ? occ/Math.sqrt(Math.max(300, body.length||1)) : 0;
   });
