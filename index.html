@@ -28,9 +28,29 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .brand{font-size:17px;font-weight:800;letter-spacing:-.5px;color:var(--tx);}.brand-sub{font-size:11px;color:var(--mu);font-weight:500;letter-spacing:.1px;}
 .apibadge{margin-left:auto;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;background:var(--gl);color:var(--gd);}
 /* 레이아웃 */
-.main{max-width:min(1680px,96vw);margin:0 auto;padding:24px 28px 40px;}
+.main{max-width:min(1680px,96vw);margin:0 auto;padding:24px 28px 40px;display:flex;gap:20px;align-items:flex-start;}
 @media(min-width:1800px){.main{max-width:1800px;}}
-@media(max-width:900px){.main{max-width:100%;padding:18px 14px 32px;}}
+@media(max-width:900px){.main{max-width:100%;padding:18px 14px 32px;flex-direction:column;gap:12px;}}
+/* 좌측 메뉴 패널 */
+.main-content{flex:1;min-width:0;}
+.side-menu{flex:0 0 186px;position:sticky;top:72px;background:var(--sf);border:1px solid rgba(0,0,0,.06);
+  border-radius:var(--r);box-shadow:var(--shadow);padding:12px 10px;display:flex;flex-direction:column;gap:14px;}
+.sm-sec{display:flex;flex-direction:column;gap:3px;}
+.sm-label{font-size:10px;font-weight:800;color:var(--ht);letter-spacing:.06em;padding:2px 8px 4px;}
+.sm-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border:none;background:transparent;
+  border-radius:10px;font-size:13.5px;font-weight:600;color:var(--mu);cursor:pointer;text-align:left;
+  text-decoration:none;transition:.12s;width:100%;white-space:nowrap;}
+.sm-item:hover{background:var(--bg);color:var(--tx);}
+.sm-item.active{background:var(--gl);color:var(--gp);font-weight:700;}
+.sm-ic{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
+body.dark .side-menu{border-color:rgba(255,255,255,.08);}
+@media(max-width:900px){
+  .side-menu{flex:none;width:100%;position:static;flex-direction:row;flex-wrap:wrap;gap:6px;padding:8px 10px;box-shadow:var(--shadow);}
+  .side-menu .sm-sec{flex-direction:row;flex-wrap:wrap;gap:6px;align-items:center;}
+  .sm-label{display:none;}
+  .sm-tools{display:none;}   /* 모바일은 하단 내비게이션으로 대체 */
+  .sm-item{width:auto;padding:7px 13px;border:1px solid rgba(0,0,0,.08);border-radius:999px;font-size:13px;}
+}
 .reg-sem-badge{font-size:10.5px;font-weight:800;color:#fff;background:#7c3aed;
   border-radius:5px;padding:2px 7px;white-space:nowrap;}
 .art-sem-badge{font-size:9.5px;font-weight:800;color:#fff;background:#7c3aed;
@@ -1546,11 +1566,8 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     <span class="brand-sub">사규(내규) 검색 · 국가법령 연계</span>
   </div>
   <span class="apibadge" id="badge">● 확인 중</span>
-  <button class="dark-btn hide-mobile" id="darkBtn" onclick="toggleDark()" title="다크모드" aria-label="다크 모드 전환">🌙</button>
-  <button class="settings-btn hide-mobile" onclick="openStatPanel()"><span class="sb-icon">📊</span><span class="sb-label"> 통계</span></button>
-  <button class="settings-btn hide-mobile" onclick="openCollModal()"><span class="sb-icon">📁</span><span class="sb-label"> 컬렉션</span></button>
-  <a class="settings-btn" href="/upload" style="text-decoration:none;display:inline-flex;align-items:center;" title="개정된 내규를 업로드해 최신본으로 반영"><span class="sb-icon">📤</span><span class="sb-label"> 개정 내규 업로드</span></a>
-  <button class="settings-btn" onclick="openAiModal()"><span class="sb-icon">✦</span><span class="sb-label"> AI 설정</span> <span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
+  <button class="dark-btn" id="darkBtn" onclick="toggleDark()" title="다크모드" aria-label="다크 모드 전환">🌙</button>
+  <!-- 통계·컬렉션·업로드·AI설정은 좌측 메뉴 패널로 이동 -->
 </div>
 
 <!-- 통계 패널 -->
@@ -1565,16 +1582,28 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 </div>
 
 <div class="main">
+  <!-- 좌측 메뉴 패널: 검색 모드(내규/법령/시나리오) + 도구 -->
+  <aside class="side-menu" id="sideMenu" aria-label="주요 메뉴">
+    <div class="sm-sec">
+      <div class="sm-label">검색</div>
+      <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="사내 규정(내규) 검색"><span class="sm-ic">📋</span><span>내규 검색</span></button>
+      <button class="sm-item" id="smLaw" onclick="setMode('law')" title="국가법령 조회"><span class="sm-ic">📖</span><span>법령 조회</span></button>
+      <button class="sm-item" id="smScenario" onclick="setMode('scenario')" title="실무 시나리오 AI 검색(API 키 필요)"><span class="sm-ic">✦</span><span>시나리오</span></button>
+    </div>
+    <div class="sm-sec sm-tools">
+      <div class="sm-label">도구</div>
+      <button class="sm-item" onclick="toggleFavTab()"><span class="sm-ic">☆</span><span>즐겨찾기</span></button>
+      <button class="sm-item" onclick="openCollModal()"><span class="sm-ic">📁</span><span>컬렉션</span></button>
+      <button class="sm-item" onclick="openStatPanel()"><span class="sm-ic">📊</span><span>통계</span></button>
+      <a class="sm-item" href="/upload" title="개정된 내규를 업로드해 최신본으로 반영"><span class="sm-ic">📤</span><span>내규 업로드</span></a>
+      <button class="sm-item" onclick="openAiModal()"><span class="sm-ic">✦</span><span>AI 설정</span> <span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
+    </div>
+  </aside>
+  <div class="main-content">
   <div class="spanel">
     <!-- 기관 탭 (동적 렌더링) -->
     <div class="tabs" id="agencyTabs">
       <button class="fav-tab-btn" id="favTabBtn" onclick="toggleFavTab()">☆ 즐겨찾기 <span id="favCount"></span></button>
-    </div>
-    <!-- 검색 모드: 내규(메인) · 법령/시나리오(부가) -->
-    <div class="mtoggle">
-      <button class="mbtn mbtn-primary active" id="mintbtn" onclick="setMode('internal')" title="사내 규정(내규) 검색 — 메인"><span class="mb-full">📋 내규</span><span class="mb-short">📋 내규</span></button>
-      <button class="mbtn mbtn-sub" id="mlawbtn" onclick="setMode('law')" title="국가법령 검색"><span class="mb-full">📖 법령</span><span class="mb-short">📖 법령</span></button>
-      <button class="mbtn mbtn-sub" id="mscenbtn" onclick="setMode('scenario')" title="실무 시나리오 AI 검색(API 키 필요)"><span class="mb-full">✦ 시나리오</span><span class="mb-short">✦ 시나리오</span></button>
     </div>
     <!-- 검색창 -->
     <div class="srow">
@@ -1665,6 +1694,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   </div>
   <!-- 페이지네이션 -->
   <div id="pagination" style="display:flex;justify-content:center;gap:6px;margin-top:12px;flex-wrap:wrap;"></div>
+  </div><!-- /.main-content -->
 
   <script>
 // ── 상수 ──
@@ -1860,11 +1890,9 @@ function setAgency(ag){
 // ── 검색 모드 ──
 function setMode(m){
   mode=m;
-  document.getElementById('mintbtn').classList.toggle('active', m==='internal');
-  document.getElementById('mlawbtn').classList.toggle('active', m==='law');
-  const scBtn = document.getElementById('mscenbtn');
-  scBtn.classList.remove('active');
-  scBtn.classList.toggle('scenario-active', m==='scenario');
+  // 좌측 메뉴 패널의 활성 표시(기존 상단 토글은 메뉴로 이동)
+  const _sm={internal:'smInternal',law:'smLaw',scenario:'smScenario'};
+  Object.entries(_sm).forEach(([k,id])=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active', m===k); });
 
   const examples    = document.getElementById('scenarioExamples');
   const intExamples = document.getElementById('internalExamples');
@@ -8072,6 +8100,7 @@ async function scoreAndReorderAsync(laws, keywords){
 
 
 </script>
+</div><!-- /.main -->
 
 <!-- 인라인 준용 팝오버 -->
 <div class="ref-popover" id="refPopover">
