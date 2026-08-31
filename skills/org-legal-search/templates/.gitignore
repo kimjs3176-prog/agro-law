@@ -1,0 +1,9 @@
+# 실제 비밀정보는 커밋 금지 — .env.example 만 공유
+.env
+.env.local
+__pycache__/
+*.pyc
+.venv/
+# 의미 검색 벡터는 크므로 각 배포에서 생성/관리(선택적으로 추적)
+# regulations_vectors.bin
+# regulations_vectors.json
