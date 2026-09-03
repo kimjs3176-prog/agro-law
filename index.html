@@ -840,7 +840,11 @@ body.dark .int-law-chip{background:#161920;color:#93c5fd;}
 .idb-pills{display:flex;flex-wrap:wrap;gap:6px;}
 .idb-pill{font-size:11.5px;color:var(--mu);background:var(--sf);border:1px solid var(--bd);border-radius:999px;padding:3px 10px;}
 .idb-pill b{color:var(--tx);font-weight:700;margin-left:2px;}
-.idb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;}
+/* masonry: JS(_dashGrid)가 카드를 높이 균형 배분한 열(.idb-col)에 담는다. 카드가 내용
+   높이만큼만 차지하고 가로폭도 꽉 채운다 — grid의 행 높이 정렬(정관 1건이 최장 카드
+   높이로 늘어남)과 CSS multicol의 열 미충전 문제를 모두 회피. */
+.idb-grid{display:flex;align-items:flex-start;gap:12px;}
+.idb-col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:12px;}
 .idb-card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);}
 .idb-card-h{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:700;color:var(--tx);padding-bottom:8px;margin-bottom:6px;border-bottom:1px solid var(--bd);}
 .idb-ic{font-size:15px;}
@@ -851,7 +855,7 @@ body.dark .int-law-chip{background:#161920;color:#93c5fd;}
 .idb-item-t{font-size:13px;color:var(--tx);font-weight:500;flex:1;line-height:1.4;}
 .idb-item:hover .idb-item-t{color:var(--g);}
 .idb-rev{font-size:11px;color:var(--ht);white-space:nowrap;flex-shrink:0;}
-@media(max-width:640px){ .idb-grid{grid-template-columns:1fr;} }
+@media(max-width:560px){ .idb-grid{flex-direction:column;} }
 /* 푸터 */
 .footer{text-align:center;padding:22px 0 14px;font-size:12px;color:var(--ht);}
 /* 시나리오 검색 */
@@ -2100,18 +2104,35 @@ function _dashCatFilter(key){
 function _dashGrid(items){
   const groups={}; RULE_TREE_ORDER.forEach(g=>groups[g.key]=[]);
   items.forEach(it=>{ (groups[it.category]||groups['기타']||(groups['기타']=[])).push(it); });
-  const html=RULE_TREE_ORDER.map(g=>{
-    const list=groups[g.key]||[]; if(!list.length) return '';
+  // 카드 HTML + 예상 높이 수집(열 균형 배분용)
+  const cards=[];
+  RULE_TREE_ORDER.forEach(g=>{
+    const list=groups[g.key]||[]; if(!list.length) return;
     const chips=list.map(it=>{
       const e=argAttr(it.title);
       const rev=it.revision?`<span class="idb-rev">${escHtml(it.revision)}</span>`:'';
       return `<button class="idb-item" title="${escHtml(it.title)}${it.revision?' · '+escHtml(it.revision):''}" onclick="wsOpen('${e}','internal')">`+
              `<span class="idb-item-t">${escHtml(it.title)}</span>${rev}</button>`;
     }).join('');
-    return `<div class="idb-card"><div class="idb-card-h"><span class="idb-ic">${g.ic}</span>${escHtml(g.key)}<span class="idb-cnt">${list.length}</span></div>`+
-           `<div class="idb-list">${chips}</div></div>`;
-  }).join('');
-  return html || `<div class="empty" style="padding:24px;grid-column:1/-1;"><p>일치하는 규정이 없습니다.</p></div>`;
+    const html=`<div class="idb-card"><div class="idb-card-h"><span class="idb-ic">${g.ic}</span>${escHtml(g.key)}<span class="idb-cnt">${list.length}</span></div>`+
+               `<div class="idb-list">${chips}</div></div>`;
+    // 예상 높이: 헤더+패딩 + 항목수×행높이 (리스트 max-height 340 상한 반영)
+    const h=Math.min(340, list.length*27) + 70;
+    cards.push({html, h});
+  });
+  if(!cards.length) return `<div class="empty" style="padding:24px;"><p>일치하는 규정이 없습니다.</p></div>`;
+  // masonry: 카드를 '현재 가장 낮은 열'에 순서대로 배치해 높이를 균형 있게 채운다.
+  // (grid는 정관 1건 카드가 최장 카드 높이로 늘어나고, CSS multicol은 열이 덜 채워지는 문제)
+  const cols=Math.max(1, Math.min(_dashCols(), cards.length));   // 빈 열 방지: 카드 수 초과 금지
+  const colH=new Array(cols).fill(0), colHtml=new Array(cols).fill('');
+  cards.forEach(c=>{ let mi=0; for(let i=1;i<cols;i++){ if(colH[i]<colH[mi]) mi=i; } colHtml[mi]+=c.html; colH[mi]+=c.h+12; });
+  return colHtml.map(h=>`<div class="idb-col">${h}</div>`).join('');
+}
+// 대시보드 열 수(반응형) — 그리드 실제 폭 우선, 없으면 화면 폭으로 추정
+function _dashCols(){
+  let w=0; const g=document.getElementById('idbGrid'); if(g) w=g.clientWidth;
+  if(!w) w=Math.min(1680, Math.round(window.innerWidth*0.96))-60;
+  if(w<520) return 1; if(w<820) return 2; if(w<1140) return 3; if(w<1460) return 4; return 5;
 }
 // 대시보드 실시간 필터 — 타이핑으로 즉시 좁히기(클릭 없이)
 function _applyDashFilter(){
@@ -2123,6 +2144,13 @@ function _applyDashFilter(){
   if(_dashCat) items=items.filter(it=>_dashBucket(it)===_dashCat);
   const grid=document.getElementById('idbGrid'); if(grid) grid.innerHTML=_dashGrid(items);
 }
+// 화면 폭이 바뀌면 대시보드 열 수를 다시 계산해 재배치(대시보드가 보일 때만)
+let _dashResizeT=null;
+window.addEventListener('resize', ()=>{
+  if(mode!=='internal') return;
+  if(!document.getElementById('idbGrid')) return;
+  clearTimeout(_dashResizeT); _dashResizeT=setTimeout(_applyDashFilter, 180);
+});
 
 function quick(kw){document.getElementById('q').value=kw;doSearch();}
 
@@ -6210,6 +6238,11 @@ function wsPaneHtml(p, cls){
 }
 function wsRenderShell(){
   const grid=document.getElementById('wsGrid'); if(!grid) return;
+  // 그리드를 다시 그릴 때 기존 창의 스크롤 위치를 보존한다. innerHTML 재생성은 모든 창의
+  // DOM을 새로 만들어 스크롤이 맨 위(제1조)로 튕기는데, 준용 링크로 오른쪽에 법령을 열 때
+  // 왼쪽 내규가 제1조로 이동해 비교가 끊기던 문제를 막는다.
+  const _prevScroll={};
+  grid.querySelectorAll('.ws-pane-body').forEach(b=>{ const m=(b.id||'').match(/^wsbody_(\d+)$/); if(m) _prevScroll[m[1]]=b.scrollTop; });
   const {visible, stacked}=_wsLayout();
   const entering=_wsEnterId;
   grid.className='ws-grid';
@@ -6228,6 +6261,8 @@ function wsRenderShell(){
   grid.innerHTML=html;
   _wsEnterId=0;
   _wsPostRender();
+  // 새로 진입한 창(entering)을 뺀 기존 창들의 스크롤 위치 복원
+  Object.keys(_prevScroll).forEach(id=>{ if(+id===entering) return; const b=document.getElementById('wsbody_'+id); if(b) b.scrollTop=_prevScroll[id]; });
   wsUpdateCnt();
 }
 // 렌더 후처리: 화면에 보이는 내규 창의 별표·참조 링크 재연결
