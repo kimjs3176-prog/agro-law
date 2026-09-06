@@ -163,6 +163,29 @@ body.dark .comp-badge.closed{background:rgba(239,68,68,.2);color:#fca5a5;}
 .fin-yoy{font-weight:700;}
 .fin-yoy.up{color:#dc2626;} .fin-yoy.dn{color:#2563eb;}
 body.dark .fin-yoy.up{color:#f87171;} body.dark .fin-yoy.dn{color:#60a5fa;}
+/* 기업 상세 — 요약 지표 타일·업종·연계 특허 */
+.comp-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:12px 0 4px;}
+.comp-stat{background:var(--gl);border-radius:12px;padding:12px 14px;}
+.cs-label{font-size:11.5px;color:var(--mu);font-weight:600;}
+.cs-value{font-size:19px;font-weight:900;color:var(--gp);letter-spacing:-.5px;margin-top:3px;line-height:1.1;}
+.cs-sub{font-size:11px;color:var(--mu);margin-top:3px;font-weight:600;}
+.comp-sec{margin-top:16px;}
+.comp-sec-h{font-size:13px;font-weight:800;color:var(--tx);display:flex;align-items:center;gap:7px;margin-bottom:9px;}
+.comp-sec-n{font-size:11px;font-weight:700;color:var(--gd);background:var(--gl);border-radius:999px;padding:1px 9px;}
+.comp-skills{display:flex;flex-wrap:wrap;gap:6px;}
+.comp-skill{font-size:12.5px;font-weight:600;color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 11px;background:var(--sf);}
+.cpat-list{display:flex;flex-direction:column;gap:8px;}
+.cpat-card{border:1px solid var(--bd);border-radius:10px;padding:11px 13px;background:var(--sf);}
+.cpat-h{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.cpat-b{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;}
+.cpat-b.reg{background:#e7f6ec;color:#137a3e;} .cpat-b.open{background:var(--gl);color:var(--gp);}
+body.dark .cpat-b.reg{background:rgba(34,197,94,.16);color:#6ee7a0;}
+.cpat-no{margin-left:auto;font-size:11.5px;color:var(--ht);font-variant-numeric:tabular-nums;}
+.cpat-t{font-size:13.5px;font-weight:700;color:var(--tx);line-height:1.45;word-break:keep-all;}
+.cpat-m{font-size:11.5px;color:var(--mu);margin-top:5px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.cpat-date{color:var(--ht);}
+.cpat-more{display:inline-block;margin-top:10px;font-size:12.5px;font-weight:700;color:var(--g);text-decoration:none;}
+.cpat-more:hover{text-decoration:underline;}
 /* 기회 레이더(지원사업·조달) */
 .opp-presets{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px;}
 .opp-chip{font-size:12px;font-weight:600;padding:5px 11px;border:1px solid var(--bd);border-radius:999px;background:var(--sf);color:var(--tx);cursor:pointer;transition:.12s;}
@@ -206,6 +229,37 @@ body.dark .opp-tag{background:rgba(34,197,94,.16);color:#6ee7a0;}
 .opp-card-meta b{color:var(--tx);font-weight:600;margin-right:3px;}
 .opp-card .assist-card-link{display:inline-block;margin-top:8px;font-size:12px;font-weight:600;color:var(--g);text-decoration:none;}
 .opp-card .assist-card-link:hover{text-decoration:underline;}
+/* 기회 레이더 — 필터·리치 카드 */
+.opp-filters{display:flex;flex-direction:column;gap:8px;margin:10px 0 4px;}
+.opp-frow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.opp-flabel{font-size:11.5px;font-weight:700;color:var(--mu);flex-shrink:0;min-width:52px;}
+.opp-segset{display:inline-flex;background:var(--gl);border-radius:9px;padding:3px;gap:2px;flex-wrap:wrap;}
+.opp-seg{font-size:12px;font-weight:700;padding:5px 12px;border:none;border-radius:7px;background:transparent;color:var(--mu);cursor:pointer;font-family:var(--font);transition:.12s;}
+.opp-seg:hover{color:var(--gp);}
+.opp-seg.active{background:var(--sf);color:var(--gp);box-shadow:0 1px 3px rgba(17,18,23,.1);}
+.opp-toggle{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--tx);cursor:pointer;user-select:none;}
+.opp-toggle input{position:absolute;opacity:0;width:0;height:0;}
+.opp-tg-track{width:36px;height:20px;border-radius:999px;background:var(--bd);position:relative;transition:.15s;flex-shrink:0;}
+.opp-tg-track::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.2);}
+.opp-toggle input:checked+.opp-tg-track{background:var(--g);}
+.opp-toggle input:checked+.opp-tg-track::after{transform:translateX(16px);}
+.opp-badge-e{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:#e7f0ff;color:#1d4ed8;}
+body.dark .opp-badge-e{background:rgba(59,130,246,.2);color:#93c5fd;}
+.opp-type{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;border:1px solid var(--bd);color:var(--mu);}
+.opp-no{margin-left:8px;color:var(--ht);}
+.opp-grid{display:grid;grid-template-columns:1fr;gap:1px;background:var(--bd);border:1px solid var(--bd);border-radius:9px;overflow:hidden;margin-top:9px;}
+.opp-grow{display:flex;gap:10px;background:var(--sf);padding:7px 11px;font-size:12.5px;}
+.opp-gk{color:var(--mu);min-width:96px;flex-shrink:0;font-weight:600;}
+.opp-gv{color:var(--tx);font-weight:600;}
+.opp-gv.opp-due{color:#c0342b;font-weight:800;}
+body.dark .opp-gv.opp-due{color:#fca5a5;}
+.opp-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;}
+.opp-htag{font-size:11px;font-weight:600;color:var(--gp);background:var(--gl);border-radius:6px;padding:2px 7px;}
+.opp-btns{display:flex;gap:7px;margin-top:11px;flex-wrap:wrap;}
+.opp-btn{font-size:12px;font-weight:700;padding:7px 13px;border-radius:8px;border:1px solid var(--bd);background:var(--sf);color:var(--tx);text-decoration:none;transition:.12s;}
+.opp-btn:hover{border-color:var(--g);color:var(--g);}
+.opp-btn.primary{background:var(--g);border-color:var(--g);color:#fff;}
+.opp-btn.primary:hover{background:var(--gd);color:#fff;}
 @media(max-width:640px){ .pat-year{width:88px;} .pat-frow2 .pat-inp:first-of-type{min-width:120px;} .opp-bar{flex-direction:column;align-items:stretch;} }
 .reg-sem-badge{font-size:10.5px;font-weight:800;color:#fff;background:#7c3aed;
   border-radius:5px;padding:2px 7px;white-space:nowrap;}
@@ -2226,8 +2280,36 @@ function compDetail(bno, nameEnc){
   const back=`<button class="pat-back" onclick="compBackToList()">← 목록으로</button>`;
   const qs=(bno&&bno.replace(/\D/g,'').length>=10)?('bno='+encodeURIComponent(bno)):('query='+encodeURIComponent(decodeURIComponent(nameEnc||'')));
   box.innerHTML=back+`<div class="assist-loading"><div class="spinner"></div><span>상세 불러오는 중...</span></div>`;
-  fetch('/api/assist/company/detail?'+qs).then(r=>r.json()).then(d=>{ box.innerHTML=back+_renderCompanyDetail(d); })
-    .catch(e=>{ box.innerHTML=back+`<div class="assist-note">상세를 불러오지 못했습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
+  fetch('/api/assist/company/detail?'+qs).then(r=>r.json()).then(d=>{
+    box.innerHTML=back+_renderCompanyDetail(d);
+    const nm=(d&&d.detail&&d.detail.name)||decodeURIComponent(nameEnc||'');
+    if(nm&&nm!=='(상호 미상)') _loadCompPatents(nm);
+  }).catch(e=>{ box.innerHTML=back+`<div class="assist-note">상세를 불러오지 못했습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
+}
+// 연계 특허/지식재산권 — 회사명을 출원인으로 KIPRIS 검색(있을 때만 표시)
+function _loadCompPatents(name){
+  const box=document.getElementById('compPatents'); if(!box) return;
+  fetch('/api/assist/patent?applicant='+encodeURIComponent(name)+'&rows=8')
+    .then(r=>r.json()).then(d=>{ box.innerHTML=_renderCompPatents(d, name); })
+    .catch(()=>{ box.hidden=true; });
+}
+function _renderCompPatents(d, name){
+  if(!d||d.need_key||d.success===false||!(d.items||[]).length) return '';  // 조용히 생략
+  const items=d.items.slice(0,8);
+  const cards=items.map(it=>{
+    const reg=/등록/.test(it.status||'')||it.regno;
+    const badge=reg?`<span class="cpat-b reg">등록특허</span>`:`<span class="cpat-b open">공개특허</span>`;
+    const no=it.regno||it.appno||'';
+    const date=reg&&it.regno?('등록 '+_fmtDate(it.appdate)):('출원 '+_fmtDate(it.appdate));
+    return `<div class="cpat-card"><div class="cpat-h">${badge}<span class="cpat-no">${escHtml(no)}</span></div>`+
+      `<div class="cpat-t">${escHtml(it.title||'')}</div>`+
+      `<div class="cpat-m">${it.applicant?'출원인 '+escHtml(it.applicant):''}${it.appdate?'<span class="cpat-date">'+escHtml(date)+'</span>':''}</div></div>`;
+  }).join('');
+  const totalTxt=d.total&&d.total!==String(items.length)?`총 ${escHtml(d.total)}건`:`${items.length}건`;
+  const kiprisUrl='https://www.kipris.or.kr/khome/search/searchResult.do?query='+encodeURIComponent(name);
+  return `<div class="comp-sec"><div class="comp-sec-h">💡 연계 특허 및 지식재산권 <span class="comp-sec-n">${totalTxt}</span></div>`+
+    `<div class="cpat-list">${cards}</div>`+
+    `<a class="cpat-more" href="${escHtml(kiprisUrl)}" target="_blank" rel="noopener">KIPRIS 연계특허 전체보기 ↗</a></div>`;
 }
 function compBackToList(){ const box=document.getElementById('compResults'); if(box) box.innerHTML=_renderCompanyList(_compLast||{success:true,items:[]}); }
 function _compVal(k,v){
@@ -2268,6 +2350,17 @@ function _compStatusBadge(fields){
   else if(/계속|정상|영업/.test(s)){ cls='ok'; label='영업 중'; }
   return `<span class="comp-badge ${cls}">${cls==='closed'?'⛔':cls==='rest'?'⏸':'●'} ${label}</span>`;
 }
+function _renderCompStats(stats){
+  if(!stats||!stats.length) return '';
+  const tiles=stats.map(s=>`<div class="comp-stat"><div class="cs-label">${escHtml(s.label)}</div>`+
+    `<div class="cs-value">${escHtml(s.value)}</div>${s.sub?`<div class="cs-sub">${escHtml(s.sub)}</div>`:''}</div>`).join('');
+  return `<div class="comp-stats">${tiles}</div>`;
+}
+function _renderCompSkills(skills){
+  if(!skills||!skills.length) return '';
+  const chips=skills.filter(Boolean).slice(0,6).map(s=>`<span class="comp-skill">${escHtml(s)}</span>`).join('');
+  return `<div class="comp-sec"><div class="comp-sec-h">🏷️ 주요 업종</div><div class="comp-skills">${chips}</div></div>`;
+}
 function _renderCompanyDetail(d){
   if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'상세 정보를 찾지 못했습니다.')}</div>`;
   const t=d.detail||{};
@@ -2275,18 +2368,40 @@ function _renderCompanyDetail(d){
   if(!fields.length&&!t.finance) return `<div class="assist-note">표시할 상세 정보가 없습니다.</div>`;
   const grid=fields.map(f=>`<div class="pat-d-row"><span class="pat-d-k">${escHtml(f[0])}</span><span class="pat-d-v">${_compVal(f[0],f[1])}</span></div>`).join('');
   return `<div class="pat-detail"><div class="pat-d-title">${escHtml(t.name||'(상호 미상)')}${_compStatusBadge(fields)}</div>`+
-    `<div class="pat-d-grid comp-grid">${grid}</div>${_renderFinance(t.finance)}</div>`;
+    _renderCompStats(t.stats)+
+    `<div class="pat-d-grid comp-grid">${grid}</div>`+
+    _renderCompSkills(t.skills)+
+    _renderFinance(t.finance)+
+    `<div id="compPatents" class="comp-pat-slot"></div></div>`;
 }
 // ── 기회 레이더: 지원사업·조달 공통(마감임박·적합도·관심 캘린더) ──
 let _oppLast={}, _oppSort='deadline', _oppItemMap={};
+let _oppType='servc', _oppMethod='', _oppOpenOnly=false;   // 조달: 유형·계약방식 / 지원: 접수중만
 const OPP_AGRI=['농업','농촌','농산물','스마트팜','원예','축산','종자','농기계','귀농','청년농','친환경','식품','농가','재배','작물','과수','농진','기술보급','시설원예','임업'];
+const PROC_TYPES=[['servc','용역'],['thng','물품'],['cnstwk','공사'],['frgcpt','외자']];
+const PROC_METHODS=[['','전체'],['일반경쟁','일반경쟁'],['제한경쟁','제한경쟁'],['수의','수의계약'],['협상','협상']];
+function _oppFilterHtml(kind, cfg){
+  if(kind==='procurement'){
+    const t=PROC_TYPES.map(([v,l])=>`<button class="opp-seg${v==='servc'?' active':''}" data-v="${v}" onclick="_oppSetType('${v}')">${l}</button>`).join('');
+    const m=PROC_METHODS.map(([v,l])=>`<button class="opp-seg${v===''?' active':''}" data-v="${argAttr(v)}" onclick="_oppSetMethod('${argAttr(v)}')">${l}</button>`).join('');
+    return `<div class="opp-filters">`+
+      `<div class="opp-frow"><span class="opp-flabel">공고 유형</span><div class="opp-segset" id="oppTypeSet">${t}</div></div>`+
+      `<div class="opp-frow"><span class="opp-flabel">계약 방식</span><div class="opp-segset" id="oppMethodSet">${m}</div></div>`+
+    `</div>`;
+  }
+  // 지원사업: 접수중만 보기 토글 + 분야 프리셋
+  const chips=(cfg.presets||[]).map(pv=>`<button class="opp-chip" onclick="_oppPreset('${kind}',this)">${escHtml(pv)}</button>`).join('');
+  return `<div class="opp-filters">`+
+    `<div class="opp-frow"><label class="opp-toggle"><input type="checkbox" id="oppOpen" onchange="_oppToggleOpen('${kind}')"><span class="opp-tg-track"></span>접수중만 보기</label></div>`+
+    `<div class="opp-presets">${chips}</div>`+
+  `</div>`;
+}
 function _oppInit(kind, head, cfg){
-  _oppLast[kind]=null; _oppSort='deadline';
-  const chips=cfg.presets.map(pv=>`<button class="opp-chip" onclick="_oppPreset('${kind}',this)">${escHtml(pv)}</button>`).join('');
+  _oppLast[kind]=null; _oppSort='deadline'; _oppType='servc'; _oppMethod=''; _oppOpenOnly=false;
   const p=document.getElementById('assistantPanel');
   p.innerHTML=head+
     `<div class="assist-search"><input id="oppQuery" class="sinput" placeholder="${escHtml(cfg.ph)}" onkeydown="if(event.key==='Enter')runOppty('${kind}')" aria-label="${escHtml(cfg.label)} 검색어"><button class="sbtn" onclick="runOppty('${kind}')">조회</button></div>`+
-    `<div class="opp-presets">${chips}</div>`+
+    _oppFilterHtml(kind, cfg)+
     `<div class="opp-bar">`+
       `<div class="opp-sorts">`+
         `<button class="opp-sort active" data-s="deadline" onclick="_oppSetSort('deadline','${kind}')">⏰ 마감임박순</button>`+
@@ -2307,16 +2422,33 @@ function _oppPreset(kind, btn){
   const q=document.getElementById('oppQuery'); if(q) q.value=(btn.textContent||'').replace(/·/g,' ');
   runOppty(kind);
 }
+function _oppSetType(v){
+  _oppType=v;
+  document.querySelectorAll('#oppTypeSet .opp-seg').forEach(b=>b.classList.toggle('active',b.dataset.v===v));
+  runOppty('procurement');
+}
+function _oppSetMethod(v){
+  _oppMethod=v;
+  document.querySelectorAll('#oppMethodSet .opp-seg').forEach(b=>b.classList.toggle('active',b.dataset.v===v));
+  const box=document.getElementById('oppResults'); if(box&&_oppLast['procurement']) box.innerHTML=_renderOppty('procurement');
+}
+function _oppToggleOpen(kind){
+  _oppOpenOnly=!!(document.getElementById('oppOpen')||{}).checked;
+  const box=document.getElementById('oppResults'); if(box&&_oppLast[kind]) box.innerHTML=_renderOppty(kind);
+}
 async function runOppty(kind){
   const box=document.getElementById('oppResults'); if(!box) return;
   const q=((document.getElementById('oppQuery')||{}).value||'').trim();
   box.innerHTML=`<div class="assist-loading"><div class="spinner"></div><span>공고 조회 중...</span></div>`;
   try{
-    const r=await fetch(`/api/assist/${kind}?query=${encodeURIComponent(q)}`);
+    let url=`/api/assist/${kind}?query=${encodeURIComponent(q)}`;
+    if(kind==='procurement') url+=`&type=${encodeURIComponent(_oppType)}`;
+    const r=await fetch(url);
     const d=await r.json(); d._q=q; d._kind=kind; _oppLast[kind]=d;
     box.innerHTML=_renderOppty(kind);
   }catch(e){ box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; }
 }
+function _fmtDT(s){ s=String(s||'').replace(/(\d{4})(\d{2})(\d{2})(\d{2})?(\d{2})?/, (m,y,mo,d,h,mi)=>`${y}.${mo}.${d}`+(h?` ${h}:${mi||'00'}`:'')); return s; }
 function _dday(end){
   end=String(end||''); if(end.length<8) return null;
   const y=+end.slice(0,4), m=+end.slice(4,6)-1, d=+end.slice(6,8);
@@ -2383,30 +2515,60 @@ function _renderOppty(kind){
   }
   if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'조회에 실패했습니다.')}</div>`;
   let items=(d.items||[]).slice();
-  if(!items.length) return `<div class="assist-note">결과가 없습니다. 키워드를 바꾸거나 프리셋을 눌러보세요.</div>`;
+  const total0=items.length;
   const q=d._q||'';
   items.forEach(it=>{ it._dd=_dday(it.end); it._score=_oppScore(it); });
+  // 클라이언트 필터: 계약방식(조달)·접수중만
+  if(kind==='procurement'&&_oppMethod) items=items.filter(it=>String(it.method||'').indexOf(_oppMethod)>=0);
+  if(_oppOpenOnly) items=items.filter(it=>it._dd&&it._dd.n>=0);
+  if(!items.length) return `<div class="assist-note">${total0?'조건에 맞는 공고가 없습니다. 필터를 완화해보세요.':'결과가 없습니다. 키워드를 바꾸거나 필터를 바꿔보세요.'}</div>`;
   items=_oppSortItems(items);
   _oppItemMap={};
-  const cards=items.map(it=>{
-    const id=_oppId(kind,it); _oppItemMap[id]=Object.assign({kind},it);
-    const dd=it._dd;
-    const ddBadge=dd?`<span class="opp-dd ${dd.cls}">${escHtml(dd.label)}</span>`:`<span class="opp-dd none">기간 확인</span>`;
-    const agri=_oppAgri((it.title||'')+(it.subtitle||''))?`<span class="opp-tag">🌾 관련</span>`:'';
-    const on=_oppIsStar(id);
-    const meta=(it.meta||[]).filter(m=>m&&m[1]&&m[1]!=='-').map(m=>`<span><b>${escHtml(m[0])}</b> ${escHtml(String(m[1]))}</span>`).join('');
-    const link=it.url?`<a class="assist-card-link" href="${escHtml(it.url)}" target="_blank" rel="noopener">공고 바로가기 →</a>`:'';
-    return `<div class="opp-card${dd&&dd.cls==='done'?' is-done':''}">`+
-      `<button class="opp-star${on?' on':''}" onclick="_oppToggleStar('${argAttr(id)}',this)" title="관심함에 담기(캘린더 내보내기 대상)" aria-pressed="${on}">${on?'★':'☆'}</button>`+
-      `<div class="opp-card-h">${ddBadge}${agri}</div>`+
-      `<div class="opp-card-t">${_oppHi(it.title||'',q)}</div>`+
-      (it.subtitle?`<div class="opp-card-sub">${escHtml(it.subtitle)}</div>`:'')+
-      (meta?`<div class="opp-card-meta">${meta}</div>`:'')+link+`</div>`;
-  }).join('');
+  const cards=items.map(it=>_oppCard(kind,it,q)).join('');
   const active=items.filter(it=>it._dd&&it._dd.n>=0).length;
   const sortLabel=_oppSort==='deadline'?'마감임박순':(_oppSort==='relevance'?'적합도순':'최신순');
   const head=`<div class="opp-count">${items.length}건 · <b class="opp-active">진행 ${active}건</b> · ${escHtml(sortLabel)}</div>`;
   return head+`<div class="opp-list">${cards}</div>`;
+}
+function _oppCard(kind, it, q){
+  const id=_oppId(kind,it); _oppItemMap[id]=Object.assign({kind},it);
+  const dd=it._dd;
+  const ddBadge=dd?`<span class="opp-dd ${dd.cls}">${escHtml(dd.label)}</span>`:`<span class="opp-dd none">기간 확인</span>`;
+  const on=_oppIsStar(id);
+  const star=`<button class="opp-star${on?' on':''}" onclick="_oppToggleStar('${argAttr(id)}',this)" title="관심함에 담기(캘린더 내보내기 대상)" aria-pressed="${on}">${on?'★':'☆'}</button>`;
+  const active=dd&&dd.n>=0;
+  if(kind==='procurement'){
+    const statusB=active?`<span class="opp-badge-e">전자입찰 진행중</span>`:'';
+    const typeB=it.type?`<span class="opp-type">${escHtml(it.type)}</span>`:'';
+    const rows=[];
+    if(it.est||it.budget) rows.push(['추정가격/배정예산', it.est||it.budget]);
+    if(it.method) rows.push(['계약방법', it.method]);
+    if(it.openDt) rows.push(['개찰일시', _fmtDT(it.openDt)]);
+    const grid=rows.map(r=>`<div class="opp-grow"><span class="opp-gk">${escHtml(r[0])}</span><span class="opp-gv">${escHtml(String(r[1]))}</span></div>`).join('');
+    const sub=(it.subtitle||it.bidNo)?`<div class="opp-card-sub">${it.subtitle?escHtml(it.subtitle):''}${it.bidNo?`<span class="opp-no">공고번호 ${escHtml(it.bidNo)}</span>`:''}</div>`:'';
+    const link=it.url?`<a class="assist-card-link" href="${escHtml(it.url)}" target="_blank" rel="noopener">공고 바로가기 →</a>`:'';
+    return `<div class="opp-card${dd&&dd.cls==='done'?' is-done':''}">${star}`+
+      `<div class="opp-card-h">${ddBadge}${statusB}${typeB}</div>`+
+      `<div class="opp-card-t">${_oppHi(it.title||'',q)}</div>${sub}`+
+      (grid?`<div class="opp-grid">${grid}</div>`:'')+link+`</div>`;
+  }
+  // 지원사업
+  const statusB=active?`<span class="opp-badge-e">접수중</span>`:'';
+  const orgB=it.subtitle?`<span class="opp-type">${escHtml(it.subtitle)}</span>`:'';
+  const rows=[];
+  if(it.target) rows.push(['지원대상', it.target]);
+  if(it.field) rows.push(['분야', it.field]);
+  if(it.endText||it.end) rows.push(['접수마감', _fmtDT(it.endText||it.end), active]);
+  const grid=rows.map(r=>`<div class="opp-grow"><span class="opp-gk">${escHtml(r[0])}</span><span class="opp-gv${r[2]?' opp-due':''}">${escHtml(String(r[1]))}</span></div>`).join('');
+  const tags=(it.tags||[]).length?`<div class="opp-tags">${it.tags.map(t=>`<span class="opp-htag">#${escHtml(String(t).replace(/^#/,''))}</span>`).join('')}</div>`:'';
+  const btns=`<div class="opp-btns">`+
+    (it.url?`<a class="opp-btn" href="${escHtml(it.url)}" target="_blank" rel="noopener">공고 원문</a>`:'')+
+    (it.applyUrl?`<a class="opp-btn primary" href="${escHtml(it.applyUrl)}" target="_blank" rel="noopener">신청 바로가기 →</a>`:'')+
+    `</div>`;
+  return `<div class="opp-card${dd&&dd.cls==='done'?' is-done':''}">${star}`+
+    `<div class="opp-card-h">${ddBadge}${statusB}${orgB}</div>`+
+    `<div class="opp-card-t">${_oppHi(it.title||'',q)}</div>`+
+    (grid?`<div class="opp-grid">${grid}</div>`:'')+tags+btns+`</div>`;
 }
 function _downloadICS(events){
   const pad=n=>String(n).padStart(2,'0');

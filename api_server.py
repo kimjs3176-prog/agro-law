@@ -4908,9 +4908,31 @@ def assist_company_detail():
         for lab, v in labeled.items():
             if lab not in seen:
                 fields.append([lab, v]); seen.add(lab)
+        # 상단 요약 지표(가능한 실데이터만) — 매출액(전년비)·임직원수·자본금
+        stats = []
+        if finance:
+            sales = next((it for it in finance["items"] if it["name"] == "매출액"), None)
+            if sales and sales.get("cur") is not None:
+                sub = ""
+                if sales.get("prev"):
+                    rr = (sales["cur"] - sales["prev"]) / abs(sales["prev"]) * 100
+                    sub = f"전년비 {'+' if rr >= 0 else ''}{rr:.1f}%"
+                stats.append({"label": "최근 매출액", "value": _won_short(sales["cur"]), "sub": sub})
+        emp = labeled.get("종업원수")
+        if emp:
+            stats.append({"label": "임직원수", "value": (emp + "명") if emp.isdigit() else emp, "sub": ""})
+        cap = labeled.get("자본금")
+        if cap:
+            stats.append({"label": "자본금", "value": _won_short(cap) or cap, "sub": ""})
+        # 주요 업종(핵심 역량 대체) — 업태·종목
+        skills = [labeled[k] for k in ("업태", "종목", "산업분류") if labeled.get(k)]
         detail = {"name": name or "(상호 미상)", "bno": rbno, "fields": fields}
         if finance:
             detail["finance"] = finance
+        if stats:
+            detail["stats"] = stats
+        if skills:
+            detail["skills"] = skills
         return jsonify({"success": True, "detail": detail})
     except Exception as e:
         return jsonify({"success": False, "error": f"상세 조회 실패: {e}"})
@@ -5041,6 +5063,24 @@ def _pick_dates(s):
     return [m.group(1) + m.group(2) + m.group(3)
             for m in re.finditer(r"(20\d{2})\D?(\d{2})\D?(\d{2})", str(s or ""))]
 
+def _won_short(v):
+    """숫자(원) → '8억 4,000만원' 식 축약. 숫자 아니면 ''."""
+    digits = re.sub(r"[^\d]", "", str(v or ""))
+    if not digits:
+        return ""
+    n = int(digits)
+    jo, n2 = divmod(n, 10 ** 12)
+    eok, n3 = divmod(n2, 10 ** 8)
+    man = n3 // 10 ** 4
+    parts = []
+    if jo:
+        parts.append(f"{jo}조")
+    if eok:
+        parts.append(f"{eok:,}억")
+    if man and not jo:
+        parts.append(f"{man:,}만")
+    return (" ".join(parts) + "원") if parts else f"{n:,}원"
+
 @app.route("/api/assist/support")
 def assist_support():
     """지원사업 조회 — 기업마당 bizinfo 지원사업 공고(마감일 파싱 포함)."""
@@ -5051,23 +5091,32 @@ def assist_support():
     try:
         r = _SESSION.get("https://www.bizinfo.go.kr/uss/rss/bizinfoApi.do",
                          params={"crtfcKey": key, "dataType": "json",
-                                 "searchCnt": "50", "hashtags": query}, timeout=15)
+                                 "searchCnt": "60", "hashtags": query}, timeout=15)
         d = r.json() or {}
         arr = d.get("jsonArray") or (d.get("response", {}) or {}).get("body", {}).get("items") or []
         items = []
-        for row in (arr if isinstance(arr, list) else [arr])[:50]:
+        for row in (arr if isinstance(arr, list) else [arr])[:60]:
             url = row.get("pblancUrl") or ""
             if url and url.startswith("/"):
                 url = "https://www.bizinfo.go.kr" + url
+            apply_url = (row.get("rceptEngnHmpgUrl") or row.get("pcUrl")
+                         or row.get("rqutUrl") or "")
+            if apply_url and apply_url.startswith("/"):
+                apply_url = "https://www.bizinfo.go.kr" + apply_url
             period = row.get("reqstBeginEndDe") or ""
             ds = _pick_dates(period)
             field = row.get("pldirSportRealmLclasCodeNm") or ""
+            target = (row.get("trgetNm") or row.get("bizTrgetNm") or "").strip()
+            tags = (row.get("hashtags") or "").strip()
+            taglist = [t for t in re.split(r"[,\s]+", tags) if t][:5]
             items.append({
                 "title": row.get("pblancNm") or row.get("polcyNm") or "(공고명 없음)",
                 "subtitle": row.get("jrsdInsttNm") or row.get("excInsttNm") or "",
                 "begin": ds[0] if ds else "", "end": ds[-1] if ds else "",
-                "endText": period, "field": field,
-                "meta": [["신청기간", period or "-"], ["분야", field or "-"]],
+                "endText": period, "field": field, "target": target, "tags": taglist,
+                "applyUrl": apply_url,
+                "meta": [["신청기간", period or "-"], ["분야", field or "-"],
+                         ["지원대상", target or "-"]],
                 "url": url})
         return jsonify({"success": True, "count": len(items), "items": items})
     except Exception as e:
@@ -5080,8 +5129,16 @@ def assist_procurement():
     if not key:
         return _assist_need_key("procurement")
     query = request.args.get("query", "").strip()
-    base = os.environ.get("PROCUREMENT_API_URL",
-        "http://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServc")
+    # 공고 유형 → 나라장터 오퍼레이션(용역·물품·공사·외자)
+    _OPS = {"servc": "getBidPblancListInfoServc", "thng": "getBidPblancListInfoThng",
+            "cnstwk": "getBidPblancListInfoCnstwk", "frgcpt": "getBidPblancListInfoFrgcpt"}
+    _TYPE_LABEL = {"servc": "용역", "thng": "물품", "cnstwk": "공사", "frgcpt": "외자"}
+    btype = request.args.get("type", "servc").strip().lower()
+    if btype not in _OPS:
+        btype = "servc"
+    base = os.environ.get("PROCUREMENT_API_URL", "").strip()
+    if not base:
+        base = f"http://apis.data.go.kr/1230000/ad/BidPublicInfoService/{_OPS[btype]}"
     end = time.strftime("%Y%m%d")
     start = time.strftime("%Y%m%d", time.localtime(time.time() - 30 * 86400))
     try:
@@ -5098,13 +5155,19 @@ def assist_procurement():
         for row in (arr if isinstance(arr, list) else [arr])[:50]:
             clse = row.get("bidClseDt") or ""
             ntce = row.get("bidNtceDt") or ""
+            openg = row.get("opengDt") or ""
+            est = row.get("presmptPrce") or row.get("presmptPrceMoney") or ""
+            budget = row.get("asignBdgtAmt") or row.get("asignBdgtAmtMoney") or ""
+            method = (row.get("cntrctCnclsMthdNm") or row.get("bidMethdNm") or "").strip()
             items.append({
                 "title": row.get("bidNtceNm") or "(공고명 없음)",
                 "subtitle": row.get("ntceInsttNm") or row.get("dminsttNm") or "",
                 "begin": (_pick_dates(ntce) or [""])[0], "end": (_pick_dates(clse) or [""])[0],
                 "endText": clse, "bidNo": row.get("bidNtceNo") or "",
+                "type": _TYPE_LABEL.get(btype, ""), "method": method,
+                "est": _won_short(est), "budget": _won_short(budget), "openDt": openg,
                 "meta": [["공고번호", row.get("bidNtceNo") or "-"],
-                         ["공고일시", ntce or "-"],
+                         ["개찰일시", openg or "-"],
                          ["입찰마감", clse or "-"]],
                 "url": row.get("bidNtceDtlUrl") or row.get("bidNtceUrl") or ""})
         return jsonify({"success": True, "count": len(items), "items": items})
