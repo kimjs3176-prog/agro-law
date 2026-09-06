@@ -143,6 +143,19 @@ body.dark .stgl.active{background:#20222a;}
 .comp-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1px;background:var(--bd);border:1px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:0;}
 .comp-grid .pat-d-row{background:var(--sf);padding:10px 13px;gap:12px;align-items:baseline;}
 .comp-grid .pat-d-k{min-width:92px;}
+.comp-link{color:var(--g);text-decoration:none;font-weight:600;}
+.comp-link:hover{text-decoration:underline;}
+.fin-box{margin-top:14px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;}
+.fin-hd{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 13px;font-weight:700;font-size:13px;background:var(--gl);color:var(--gp);}
+.fin-meta{font-weight:500;font-size:11px;color:var(--mu);}
+.fin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1px;background:var(--bd);}
+.fin-row{background:var(--sf);padding:10px 13px;display:flex;flex-direction:column;gap:3px;}
+.fin-k{font-size:12px;color:var(--mu);}
+.fin-v{font-size:15px;font-weight:700;}
+.fin-p{font-size:11px;color:var(--mu);display:flex;gap:6px;align-items:center;}
+.fin-yoy{font-weight:700;}
+.fin-yoy.up{color:#dc2626;} .fin-yoy.dn{color:#2563eb;}
+body.dark .fin-yoy.up{color:#f87171;} body.dark .fin-yoy.dn{color:#60a5fa;}
 @media(max-width:640px){ .pat-year{width:88px;} .pat-frow2 .pat-inp:first-of-type{min-width:120px;} }
 .reg-sem-badge{font-size:10.5px;font-weight:800;color:#fff;background:#7c3aed;
   border-radius:5px;padding:2px 7px;white-space:nowrap;}
@@ -2162,13 +2175,42 @@ function compDetail(bno, nameEnc){
     .catch(e=>{ box.innerHTML=back+`<div class="assist-note">상세를 불러오지 못했습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
 }
 function compBackToList(){ const box=document.getElementById('compResults'); if(box) box.innerHTML=_renderCompanyList(_compLast||{success:true,items:[]}); }
+function _compVal(k,v){
+  const s=String(v);
+  if(/^https?:\/\//i.test(s)) return `<a href="${escHtml(s)}" target="_blank" rel="noopener" class="comp-link">바로가기 ↗</a>`;
+  return escHtml(s);
+}
+function _fmtWon(n){
+  if(n===null||n===undefined||n==='') return '';
+  const neg=n<0; let a=Math.abs(Number(n)); if(!isFinite(a)) return String(n);
+  const jo=Math.floor(a/1e12), eok=Math.floor((a%1e12)/1e8), man=Math.floor((a%1e8)/1e4);
+  let parts=[]; if(jo)parts.push(jo+'조'); if(eok)parts.push(eok+'억'); if(!jo&&man)parts.push(man+'만');
+  const txt=parts.length?parts.join(' ')+'원':a.toLocaleString('ko-KR')+'원';
+  return (neg?'-':'')+txt;
+}
+function _renderFinance(fin){
+  if(!fin||!(fin.items||[]).length) return '';
+  const rows=fin.items.map(it=>{
+    let d=''; if(it.cur!=null&&it.prev!=null&&it.prev!==0){
+      const r=(it.cur-it.prev)/Math.abs(it.prev)*100; const up=r>=0;
+      d=`<span class="fin-yoy ${up?'up':'dn'}">${up?'▲':'▼'} ${Math.abs(r).toFixed(1)}%</span>`;
+    }
+    return `<div class="fin-row"><span class="fin-k">${escHtml(it.name)}</span>`+
+      `<span class="fin-v">${escHtml(_fmtWon(it.cur))}</span>`+
+      `<span class="fin-p">${it.prev!=null?'전기 '+escHtml(_fmtWon(it.prev)):''} ${d}</span></div>`;
+  }).join('');
+  return `<div class="fin-box"><div class="fin-hd">💰 재무 요약`+
+    `<span class="fin-meta">${escHtml(fin.year)}년 ${escHtml(fin.report||'')} · ${escHtml(fin.fs||'')} · 출처 DART</span></div>`+
+    `<div class="fin-grid">${rows}</div></div>`;
+}
 function _renderCompanyDetail(d){
   if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'상세 정보를 찾지 못했습니다.')}</div>`;
   const t=d.detail||{};
   const fields=(t.fields||[]).filter(f=>f&&f[1]);
-  if(!fields.length) return `<div class="assist-note">표시할 상세 정보가 없습니다.</div>`;
-  const grid=fields.map(f=>`<div class="pat-d-row"><span class="pat-d-k">${escHtml(f[0])}</span><span class="pat-d-v">${escHtml(String(f[1]))}</span></div>`).join('');
-  return `<div class="pat-detail"><div class="pat-d-title">${escHtml(t.name||'(상호 미상)')}</div><div class="pat-d-grid comp-grid">${grid}</div></div>`;
+  if(!fields.length&&!t.finance) return `<div class="assist-note">표시할 상세 정보가 없습니다.</div>`;
+  const grid=fields.map(f=>`<div class="pat-d-row"><span class="pat-d-k">${escHtml(f[0])}</span><span class="pat-d-v">${_compVal(f[0],f[1])}</span></div>`).join('');
+  return `<div class="pat-detail"><div class="pat-d-title">${escHtml(t.name||'(상호 미상)')}</div>`+
+    `<div class="pat-d-grid comp-grid">${grid}</div>${_renderFinance(t.finance)}</div>`;
 }
 function runPatent(){
   const box=document.getElementById('patResults'); if(!box) return;

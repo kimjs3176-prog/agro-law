@@ -4619,6 +4619,7 @@ def debug_law_xml():
 # 업무 도우미 — 공공 API 프록시 (기업/특허/지원사업/조달)
 # 서비스키는 환경변수로 주입한다. 키 미설정 시 need_key 응답으로 UI가 안내한다.
 #   BIZNO_API_KEY   : 비즈노 기업정보 API 키 (기업 통합검색: 회사명·사업자번호·대표자)
+#   DART_API_KEY    : (선택) DART 오픈API — 기업 상세에 재무 요약·기업개황 보강
 #   DATA_GO_KR_KEY  : 공공데이터포털 서비스키 (국세청 사업자상태 보조·나라장터 입찰공고)
 #   KIPRIS_API_KEY  : 키프리스 플러스 서비스키 (특허·상표·디자인)
 #   BIZINFO_API_KEY : 기업마당 인증키(crtfcKey) (정부 지원사업 공고)
@@ -4714,6 +4715,136 @@ def _nts_status(bno):
         pass
     return {}
 
+# ── DART(금융감독원 전자공시) 보조 조회 ─────────────────────────────────────
+# 상장·외부감사 대상 법인의 재무정보·기업개황을 회사명으로 매칭해 함께 보여준다.
+# DART_API_KEY(opendart 인증키) 미설정 시 이 블록은 조용히 건너뛴다.
+_DART_CORP = {"map": None, "at": 0.0}     # {정규화상호: [(corp_code, corp_name, stock), ...]}
+_DART_LOCK = threading.Lock()
+_DART_KEYACCTS = ["매출액", "영업이익", "당기순이익", "자산총계", "부채총계", "자본총계"]
+
+def _dart_key():
+    return (os.environ.get("DART_API_KEY", "") or "").strip()
+
+def _dart_norm(s):
+    """상호 정규화 — 법인격 표기·공백 제거 후 소문자."""
+    s = unicodedata.normalize("NFKC", str(s or ""))
+    s = re.sub(r"주식회사|유한회사|유한책임회사|합자회사|합명회사|재단법인|사단법인|\(주\)|㈜|\(유\)|㈜", "", s)
+    return re.sub(r"\s+", "", s).lower()
+
+def _dart_corp_map(key):
+    """corpCode.xml(zip) 1회 로드 → 정규화상호별 후보 목록. 24h 캐시."""
+    now = time.time()
+    if _DART_CORP["map"] is not None and (now - _DART_CORP["at"]) < 86400:
+        return _DART_CORP["map"]
+    with _DART_LOCK:
+        if _DART_CORP["map"] is not None and (time.time() - _DART_CORP["at"]) < 86400:
+            return _DART_CORP["map"]
+        m = {}
+        try:
+            r = _SESSION.get("https://opendart.fss.or.kr/api/corpCode.xml",
+                             params={"crtfcKey": key}, timeout=30)
+            zf = zipfile.ZipFile(_io.BytesIO(r.content))
+            root = _xml_fromstring(zf.read(zf.namelist()[0]))
+            for el in root.iter("list"):
+                cc = (el.findtext("corp_code") or "").strip()
+                nm = (el.findtext("corp_name") or "").strip()
+                sk = (el.findtext("stock_code") or "").strip()
+                if not cc or not nm:
+                    continue
+                m.setdefault(_dart_norm(nm), []).append((cc, nm, sk))
+        except Exception:
+            m = {}
+        # 로드 실패 시에도 캐시(빈 맵)로 잠깐 두어 매 요청 재시도 폭주를 막는다.
+        _DART_CORP["map"], _DART_CORP["at"] = m, time.time()
+        return m
+
+def _dart_find_corp(key, name):
+    """회사명 → (corp_code, corp_name, stock_code). 상장기업 우선, 정확 매칭만."""
+    cand = _dart_corp_map(key).get(_dart_norm(name)) or []
+    if not cand:
+        return None
+    listed = [c for c in cand if c[2]]        # stock_code 있는(상장) 후보 우선
+    return (listed or cand)[0]
+
+def _num(v):
+    try:
+        return int(re.sub(r"[^\d-]", "", str(v)))
+    except Exception:
+        return None
+
+def _dart_financials(key, corp_code):
+    """단일회사 주요계정(최근 사업연도) — 연결 우선, 없으면 재무제표."""
+    now = datetime.now()
+    for yr in (now.year - 1, now.year - 2):
+        try:
+            r = _SESSION.get("https://opendart.fss.or.kr/api/fnlttSinglAcnt.json",
+                             params={"crtfcKey": key, "corp_code": corp_code,
+                                     "bsns_year": str(yr), "reprt_code": "11011"},
+                             timeout=15)
+            d = r.json() or {}
+        except Exception:
+            continue
+        if d.get("status") != "000":
+            continue
+        rows = d.get("list") or []
+        fs = "CFS" if any(x.get("fs_div") == "CFS" for x in rows) else "OFS"
+        picked = {}
+        for x in rows:
+            if x.get("fs_div") != fs:
+                continue
+            nm = (x.get("account_nm") or "").strip()
+            if nm in _DART_KEYACCTS and nm not in picked:
+                picked[nm] = {"name": nm,
+                              "cur": _num(x.get("thstrm_amount")),
+                              "prev": _num(x.get("frmtrm_amount"))}
+        items = [picked[n] for n in _DART_KEYACCTS if n in picked]
+        if items:
+            return {"year": str(yr), "report": "사업보고서",
+                    "fs": "연결" if fs == "CFS" else "개별/별도", "items": items}
+    return None
+
+_DART_OVERVIEW = {          # company.json 필드 → 그리드 라벨
+    "ceo_nm": "대표자(공시)", "corp_cls": "법인구분", "jurir_no": "법인등록번호",
+    "est_dt": "설립일(공시)", "acc_mt": "결산월", "induty_code": "업종코드",
+    "hm_url": "홈페이지", "adres": "주소(공시)", "stock_name": "종목명",
+    "stock_code": "종목코드",
+}
+_DART_CLS = {"Y": "유가증권시장 상장", "K": "코스닥 상장", "N": "코넥스 상장", "E": "기타(외부감사 등)"}
+# 그리드에서 DART 보조 필드의 표시 순서(비즈노 필드 뒤에 이어 붙는다).
+_DART_GRID_ORDER = ["상장여부", "법인구분", "종목명", "종목코드", "결산월",
+                    "업종코드", "홈페이지", "공시(DART)"]
+
+def _dart_enrich(name):
+    """회사명 기준 DART 매칭 → (추가 그리드 필드 dict, 재무 요약 dict|None).
+    DART_API_KEY 없거나 매칭 실패 시 ({}, None)."""
+    key = _dart_key()
+    if not key or not name:
+        return {}, None
+    hit = _dart_find_corp(key, name)
+    if not hit:
+        return {}, None
+    corp_code, _, stock = hit
+    extra = {}
+    try:
+        r = _SESSION.get("https://opendart.fss.or.kr/api/company.json",
+                         params={"crtfcKey": key, "corp_code": corp_code}, timeout=15)
+        d = r.json() or {}
+        if d.get("status") == "000":
+            for k, lab in _DART_OVERVIEW.items():
+                v = (d.get(k) or "").strip()
+                if not v:
+                    continue
+                if k == "corp_cls":
+                    v = _DART_CLS.get(v, v)
+                elif k == "acc_mt":
+                    v = f"{v}월"
+                extra[lab] = v
+            extra["공시(DART)"] = f"https://dart.fss.or.kr/dsab007/main.do?apiKey=&corpCode={corp_code}"
+            extra["상장여부"] = "상장" if (stock or d.get("stock_code")) else "비상장"
+    except Exception:
+        pass
+    return extra, _dart_financials(key, corp_code)
+
 @app.route("/api/assist/company")
 def assist_company():
     """기업 조회 — 비즈노 통합검색(회사명·사업자번호·대표자명 등 키워드)."""
@@ -4767,15 +4898,20 @@ def assist_company_detail():
                 continue
             labeled[_BIZNO_LABELS.get(k, k)] = str(v).strip()
         labeled.update(_nts_status(rbno))     # 국세청 상태 보조
+        extra, finance = _dart_enrich(name)   # DART 기업개황 보조
+        for lab, v in extra.items():
+            labeled.setdefault(lab, v)
         fields, seen = [], set()
-        for lab in _BIZNO_ORDER:
+        for lab in _BIZNO_ORDER + _DART_GRID_ORDER:
             if lab in labeled and lab not in seen:
                 fields.append([lab, labeled[lab]]); seen.add(lab)
         for lab, v in labeled.items():
             if lab not in seen:
                 fields.append([lab, v]); seen.add(lab)
-        return jsonify({"success": True,
-                        "detail": {"name": name or "(상호 미상)", "bno": rbno, "fields": fields}})
+        detail = {"name": name or "(상호 미상)", "bno": rbno, "fields": fields}
+        if finance:
+            detail["finance"] = finance
+        return jsonify({"success": True, "detail": detail})
     except Exception as e:
         return jsonify({"success": False, "error": f"상세 조회 실패: {e}"})
 
