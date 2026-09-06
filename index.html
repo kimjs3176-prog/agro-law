@@ -186,6 +186,57 @@ body.dark .cpat-b.reg{background:rgba(34,197,94,.16);color:#6ee7a0;}
 .cpat-date{color:var(--ht);}
 .cpat-more{display:inline-block;margin-top:10px;font-size:12.5px;font-weight:700;color:var(--g);text-decoration:none;}
 .cpat-more:hover{text-decoration:underline;}
+/* ── 지출결의서 작성기 ── */
+.exp-wrap{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:18px;align-items:start;}
+.exp-form{display:flex;flex-direction:column;gap:12px;}
+.exp-fg{border:1px solid var(--bd);border-radius:12px;padding:11px 13px;background:var(--sf);}
+.exp-fgt{font-size:12px;font-weight:800;color:var(--gp);margin-bottom:8px;}
+.exp-frow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.exp-frow:last-child{margin-bottom:0;}
+.exp-form label{flex:1 1 130px;display:flex;flex-direction:column;gap:4px;font-size:11.5px;font-weight:600;color:var(--mu);min-width:0;}
+.exp-form label.exp-full{flex-basis:100%;margin-bottom:8px;}
+.exp-form input,.exp-form select,.exp-form textarea{font-family:var(--font);font-size:13px;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;outline:none;width:100%;box-sizing:border-box;}
+.exp-form input:focus,.exp-form select:focus,.exp-form textarea:focus{border-color:var(--g);box-shadow:0 0 0 3px var(--gl);}
+.exp-form textarea{resize:vertical;}
+.exp-vatrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.exp-mini{font-size:11.5px;font-weight:700;padding:5px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--sf);color:var(--g);cursor:pointer;}
+.exp-mini:hover{border-color:var(--g);}
+.exp-sum{font-size:12.5px;font-weight:800;color:var(--gp);}
+.exp-proofs{display:flex;flex-wrap:wrap;gap:6px 14px;}
+.exp-cb{flex:0 0 auto!important;flex-direction:row!important;align-items:center;gap:5px!important;font-size:12.5px!important;color:var(--tx)!important;font-weight:600;cursor:pointer;}
+.exp-cb input{width:auto!important;}
+.exp-actions{display:flex;gap:8px;position:sticky;bottom:0;}
+.exp-print{flex:1;font-size:13.5px;font-weight:800;padding:11px;border:none;border-radius:10px;background:var(--g);color:#fff;cursor:pointer;}
+.exp-print:hover{background:var(--gd);}
+.exp-clear{font-size:13px;font-weight:700;padding:11px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--mu);cursor:pointer;}
+.exp-preview{position:sticky;top:8px;}
+/* A4 문서 */
+.exp-doc{background:#fff;color:#111;border:1px solid #d8d8dd;border-radius:6px;padding:34px 40px;box-shadow:0 4px 20px rgba(0,0,0,.07);font-family:'Batang','바탕',var(--font);max-width:760px;margin:0 auto;}
+.exp-top{position:relative;margin-bottom:18px;min-height:70px;}
+.exp-title{text-align:center;font-size:28px;font-weight:900;letter-spacing:10px;margin:6px 0 0;color:#111;}
+.exp-approve{position:absolute;top:0;right:0;border-collapse:collapse;}
+.exp-approve td{border:1px solid #333;text-align:center;font-size:11px;}
+.exp-approve .ea-h{background:#f2f2f4;padding:3px 12px;font-weight:700;}
+.exp-approve .ea-b{height:44px;width:56px;}
+.exp-meta,.exp-main{width:100%;border-collapse:collapse;margin-top:10px;}
+.exp-meta td{border:1px solid #333;padding:6px 10px;font-size:12.5px;}
+.exp-meta .em-k{background:#f5f5f7;font-weight:700;width:88px;text-align:center;}
+.exp-main th{border:1px solid #333;background:#f5f5f7;font-weight:700;font-size:12.5px;padding:8px 6px;width:88px;text-align:center;line-height:1.35;}
+.exp-main td{border:1px solid #333;padding:8px 11px;font-size:12.5px;vertical-align:middle;}
+.exp-main .exp-desc{min-height:40px;white-space:pre-wrap;}
+.exp-main .exp-total{font-weight:800;font-size:13.5px;letter-spacing:.3px;}
+.exp-decl{text-align:center;margin:26px 0 4px;font-size:13.5px;}
+.exp-bigdate{text-align:center;font-size:14px;font-weight:700;letter-spacing:1px;margin:10px 0;}
+.exp-org{text-align:center;font-size:16px;font-weight:800;letter-spacing:2px;margin-top:14px;}
+.exp-org .exp-writer{display:block;font-size:12px;font-weight:600;letter-spacing:0;color:#444;margin-top:8px;}
+@media(max-width:820px){ .exp-wrap{grid-template-columns:1fr;} .exp-preview{position:static;} .exp-doc{padding:26px 22px;} }
+/* 인쇄: 지출결의서만 출력 */
+@media print{
+  body *{visibility:hidden!important;}
+  #expDoc,#expDoc *{visibility:visible!important;}
+  #expDoc{position:absolute!important;left:0;top:0;width:100%;max-width:none;border:none;box-shadow:none;padding:10mm 4mm;margin:0;}
+  @page{size:A4;margin:12mm;}
+}
 /* 기회 레이더(지원사업·조달) */
 .opp-presets{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px;}
 .opp-chip{font-size:12px;font-weight:600;padding:5px 11px;border:1px solid var(--bd);border-radius:999px;background:var(--sf);color:var(--tx);cursor:pointer;transition:.12s;}
@@ -1862,6 +1913,8 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <button class="sm-item" id="smPatent" onclick="openAssist('patent')" title="특허·실용신안 검색(KIPRIS)"><span class="sm-ic">📄</span><span>특허</span></button>
       <button class="sm-item" id="smSupport" onclick="openAssist('support')" title="정부 지원사업 공고(기업마당)"><span class="sm-ic">🎯</span><span>지원사업</span></button>
       <button class="sm-item" id="smProcurement" onclick="openAssist('procurement')" title="나라장터 입찰공고(조달청)"><span class="sm-ic">📢</span><span>조달공고</span></button>
+      <span class="sm-div" aria-hidden="true"></span>
+      <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 작성·인쇄"><span class="sm-ic">🧾</span><span>지출결의서</span></button>
     </div>
     <div class="sm-sec sm-tools">
       <button class="sm-item sm-icon" onclick="toggleFavTab()" title="즐겨찾기" aria-label="즐겨찾기"><span class="sm-ic">☆</span></button>
@@ -2691,6 +2744,130 @@ function closeAssist(){
   _assistMode=null;
   const mc=document.querySelector('.main-content'); if(mc) mc.classList.remove('assist-on');
   Object.values(ASSIST_CFG).forEach(c=>{ const t=document.getElementById(c.tab); if(t) t.classList.remove('active'); });
+  const ex=document.getElementById('smExpense'); if(ex) ex.classList.remove('active');
+}
+
+// ── 지출결의서 작성기(공공기관 표준 서식) — 입력 → 브라우저 인쇄/PDF ──────────
+const EXP_KEY='expenseDraft';
+const EXP_PROOFS=['세금계산서','계산서','영수증','카드전표','거래명세서','계약서','기타'];
+function _expLoad(){ try{ return JSON.parse(localStorage.getItem(EXP_KEY)||'{}')||{}; }catch(e){ return {}; } }
+function _expSave(){ try{ localStorage.setItem(EXP_KEY, JSON.stringify(_expCollect())); }catch(e){} }
+function _today(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function openExpense(){
+  if(typeof wsBackToList==='function') wsBackToList();
+  document.querySelector('.main-content').classList.add('assist-on');
+  document.querySelectorAll('.sm-item.active').forEach(el=>el.classList.remove('active'));
+  const tab=document.getElementById('smExpense'); if(tab) tab.classList.add('active');
+  _assistMode='expense';
+  const s=_expLoad();
+  const v=(k,d)=>escHtml(s[k]!=null?s[k]:(d||''));
+  const yr=new Date().getFullYear();
+  const methods=['계좌이체','현금','법인카드','어음','제증명 수수료','기타'];
+  const p=document.getElementById('assistantPanel');
+  p.innerHTML=`<div class="assist-head"><span class="assist-h-ic">🧾</span>`+
+    `<span class="assist-h-t">지출결의서 작성</span>`+
+    `<span class="assist-h-hint">항목을 입력하면 우측에 서식이 실시간 완성됩니다. 인쇄 버튼으로 바로 출력·PDF 저장.</span></div>`+
+    `<div class="exp-wrap">`+
+      `<div class="exp-form" id="expForm">`+
+        `<div class="exp-fg"><div class="exp-fgt">문서 정보</div><div class="exp-frow">`+
+          `<label>회계연도<input id="expYear" value="${v('expYear',yr)}"></label>`+
+          `<label>부서명<input id="expDept" value="${v('expDept')}" placeholder="예: 총무부"></label></div>`+
+          `<div class="exp-frow"><label>결의번호<input id="expNo" value="${v('expNo')}" placeholder="제2026-000호"></label>`+
+          `<label>결의일자<input id="expDate" type="date" value="${v('expDate',_today())}"></label></div></div>`+
+        `<div class="exp-fg"><div class="exp-fgt">거래처</div><div class="exp-frow">`+
+          `<label>거래처(상호)<input id="expVendor" value="${v('expVendor')}" placeholder="예: (주)그린애그로텍"></label>`+
+          `<label>사업자등록번호<input id="expBno" value="${v('expBno')}" placeholder="000-00-00000"></label></div>`+
+          `<div class="exp-frow"><label>대표자<input id="expCeo" value="${v('expCeo')}"></label></div></div>`+
+        `<div class="exp-fg"><div class="exp-fgt">거래 내용</div>`+
+          `<label class="exp-full">적요(거래내용)<textarea id="expDesc" rows="2" placeholder="예: 스마트팜 실증 기자재 구매">${v('expDesc')}</textarea></label>`+
+          `<div class="exp-frow"><label>지출과목(예산과목)<input id="expBudget" value="${v('expBudget')}" placeholder="예: 자산취득비"></label></div></div>`+
+        `<div class="exp-fg"><div class="exp-fgt">금액</div><div class="exp-frow">`+
+          `<label>공급가액(원)<input id="expSupply" inputmode="numeric" value="${v('expSupply')}" oninput="_expVatAuto()"></label>`+
+          `<label>부가세(원)<input id="expVat" inputmode="numeric" value="${v('expVat')}"></label></div>`+
+          `<div class="exp-vatrow"><button type="button" class="exp-mini" onclick="_expVatAuto(true)">부가세 10% 자동</button>`+
+          `<span class="exp-sum" id="expSumHint"></span></div></div>`+
+        `<div class="exp-fg"><div class="exp-fgt">지급</div><div class="exp-frow">`+
+          `<label>결제방식<select id="expMethod">${methods.map(m=>`<option${s.expMethod===m?' selected':''}>${m}</option>`).join('')}</select></label>`+
+          `<label>은행<input id="expBank" value="${v('expBank')}" placeholder="예: 농협"></label></div>`+
+          `<div class="exp-frow"><label>예금주<input id="expHolder" value="${v('expHolder')}"></label>`+
+          `<label>계좌번호<input id="expAccount" value="${v('expAccount')}"></label></div></div>`+
+        `<div class="exp-fg"><div class="exp-fgt">증빙</div><div class="exp-proofs" id="expProofs">`+
+          EXP_PROOFS.map(pf=>`<label class="exp-cb"><input type="checkbox" value="${pf}"${(s.expProofs||[]).indexOf(pf)>=0?' checked':''}>${pf}</label>`).join('')+`</div></div>`+
+        `<div class="exp-fg"><div class="exp-fgt">작성/기관</div><div class="exp-frow">`+
+          `<label>작성자<input id="expWriter" value="${v('expWriter')}"></label>`+
+          `<label>기관명<input id="expOrg" value="${v('expOrg','한국농업기술진흥원')}"></label></div></div>`+
+        `<div class="exp-actions"><button class="exp-print" onclick="printExpense()">🖨 인쇄 / PDF 저장</button>`+
+          `<button class="exp-clear" onclick="_expReset()">초기화</button></div>`+
+      `</div>`+
+      `<div class="exp-preview"><div class="exp-doc" id="expDoc"></div></div>`+
+    `</div>`;
+  const form=document.getElementById('expForm');
+  if(form){ const h=()=>{ _expUpdate(); _expSave(); };
+    form.addEventListener('input', h); form.addEventListener('change', h); }
+  _expUpdate();
+}
+function _expNum(id){ return parseInt(String((document.getElementById(id)||{}).value||'').replace(/[^\d]/g,''),10)||0; }
+function _expVatAuto(force){
+  const sup=_expNum('expSupply'); const vatEl=document.getElementById('expVat');
+  if(vatEl && (force || !vatEl.value)) vatEl.value=Math.round(sup*0.1);
+  _expUpdate(); _expSave();
+}
+function _expCollect(){
+  const g=id=>((document.getElementById(id)||{}).value||'').trim();
+  const proofs=[...document.querySelectorAll('#expProofs input:checked')].map(c=>c.value);
+  return {expYear:g('expYear'),expDept:g('expDept'),expNo:g('expNo'),expDate:g('expDate'),
+    expVendor:g('expVendor'),expBno:g('expBno'),expCeo:g('expCeo'),expDesc:g('expDesc'),
+    expBudget:g('expBudget'),expSupply:g('expSupply'),expVat:g('expVat'),expMethod:g('expMethod'),
+    expBank:g('expBank'),expHolder:g('expHolder'),expAccount:g('expAccount'),
+    expWriter:g('expWriter'),expOrg:g('expOrg'),expProofs:proofs};
+}
+function _hanAmount(n){
+  n=Math.floor(Math.abs(Number(n))||0); if(n===0) return '영';
+  const dig=['','일','이','삼','사','오','육','칠','팔','구'];
+  const su=['','십','백','천'], bu=['','만','억','조','경'];
+  let res='', gi=0;
+  while(n>0){ let part=n%10000; n=Math.floor(n/10000);
+    if(part){ let s='',p=part,u=0; while(p>0){ const d=p%10; if(d) s=dig[d]+su[u]+s; p=Math.floor(p/10); u++; } res=s+bu[gi]+res; }
+    gi++; }
+  return res;
+}
+function _fmtKDate(iso){ const m=String(iso||'').match(/(\d{4})-(\d{2})-(\d{2})/); return m?`${m[1]}년 ${+m[2]}월 ${+m[3]}일`:''; }
+function _expUpdate(){
+  const d=_expCollect();
+  const sup=parseInt((d.expSupply||'').replace(/[^\d]/g,''),10)||0;
+  const vat=parseInt((d.expVat||'').replace(/[^\d]/g,''),10)||0;
+  const total=sup+vat;
+  const won=n=>'₩'+(n||0).toLocaleString('ko-KR');
+  const hint=document.getElementById('expSumHint');
+  if(hint) hint.textContent=`합계 ${won(total)}`;
+  const acct=[d.expBank,d.expHolder,d.expAccount].filter(Boolean).join(' · ');
+  const vendorLine=[d.expVendor||'—', d.expBno&&('사업자 '+d.expBno), d.expCeo&&('대표 '+d.expCeo)].filter(Boolean).join('   ');
+  const proofs=(d.expProofs||[]).join(', ');
+  const doc=document.getElementById('expDoc'); if(!doc) return;
+  doc.innerHTML=`<div class="exp-top">`+
+      `<h1 class="exp-title">지 출 결 의 서</h1>`+
+      `<table class="exp-approve"><tr>${['담당','팀장','부서장','원장'].map(h=>`<td class="ea-h">${h}</td>`).join('')}</tr>`+
+        `<tr>${[0,0,0,0].map(()=>`<td class="ea-b"></td>`).join('')}</tr></table></div>`+
+    `<table class="exp-meta"><tr><td class="em-k">회계연도</td><td>${escHtml(d.expYear||'')}</td><td class="em-k">결의번호</td><td>${escHtml(d.expNo||'')}</td></tr>`+
+      `<tr><td class="em-k">부&nbsp;&nbsp;서</td><td>${escHtml(d.expDept||'')}</td><td class="em-k">결의일자</td><td>${escHtml(_fmtKDate(d.expDate))}</td></tr></table>`+
+    `<table class="exp-main">`+
+      `<tr><th>거래처</th><td colspan="3">${escHtml(vendorLine)}</td></tr>`+
+      `<tr><th>적요<br>(거래내용)</th><td colspan="3" class="exp-desc">${escHtml(d.expDesc||'')||'&nbsp;'}</td></tr>`+
+      `<tr><th>지출과목</th><td colspan="3">${escHtml(d.expBudget||'')||'&nbsp;'}</td></tr>`+
+      `<tr><th>공급가액</th><td>${won(sup)}</td><th>부&nbsp;가&nbsp;세</th><td>${won(vat)}</td></tr>`+
+      `<tr><th>합계금액</th><td colspan="3" class="exp-total">일금 ${escHtml(_hanAmount(total))}원정  (${won(total)})</td></tr>`+
+      `<tr><th>결제방식</th><td>${escHtml(d.expMethod||'')}</td><th>증&nbsp;&nbsp;빙</th><td>${escHtml(proofs)||'&nbsp;'}</td></tr>`+
+      `<tr><th>지급계좌</th><td colspan="3">${escHtml(acct)||'&nbsp;'}</td></tr>`+
+    `</table>`+
+    `<p class="exp-decl">위와 같이 지출을 결의합니다.</p>`+
+    `<p class="exp-bigdate">${escHtml(_fmtKDate(d.expDate))}</p>`+
+    `<p class="exp-org">${escHtml(d.expOrg||'')}${d.expWriter?`<span class="exp-writer">작성자 ${escHtml(d.expWriter)} (인)</span>`:''}</p>`;
+}
+function printExpense(){ _expUpdate(); window.print(); }
+function _expReset(){
+  if(!confirm('입력한 내용을 모두 지울까요?')) return;
+  try{ localStorage.removeItem(EXP_KEY); }catch(e){}
+  openExpense();
 }
 async function runAssist(){
   const kind=_assistMode; if(!kind) return;
