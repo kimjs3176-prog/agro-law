@@ -132,7 +132,14 @@ body.dark .stgl.active{background:#20222a;}
 .pat-back{display:inline-flex;align-items:center;gap:4px;margin-bottom:12px;padding:6px 12px;border:1px solid var(--bd);border-radius:999px;background:var(--sf);color:var(--mu);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font);}
 .pat-back:hover{color:var(--tx);border-color:var(--g);}
 .pat-detail{background:var(--sf);border:1px solid var(--bd);border-radius:12px;box-shadow:var(--shadow);padding:16px 18px;}
-.pat-d-title{font-size:15px;font-weight:800;color:var(--tx);line-height:1.5;margin-bottom:12px;word-break:keep-all;}
+.pat-d-title{font-size:15px;font-weight:800;color:var(--tx);line-height:1.5;margin-bottom:12px;word-break:keep-all;display:flex;align-items:center;flex-wrap:wrap;gap:8px;}
+.comp-badge{font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;line-height:1.7;white-space:nowrap;}
+.comp-badge.ok{background:#e7f6ec;color:#137a3e;}
+.comp-badge.rest{background:#fdf2dc;color:#8a5a00;}
+.comp-badge.closed{background:#fde6e6;color:#c0342b;}
+body.dark .comp-badge.ok{background:rgba(34,197,94,.18);color:#6ee7a0;}
+body.dark .comp-badge.rest{background:rgba(245,158,11,.18);color:#fbbf24;}
+body.dark .comp-badge.closed{background:rgba(239,68,68,.2);color:#fca5a5;}
 .pat-d-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px 18px;margin-bottom:2px;}
 .pat-d-row{display:flex;gap:10px;font-size:12.5px;}
 .pat-d-k{color:var(--mu);font-weight:700;flex-shrink:0;min-width:56px;}
@@ -2203,13 +2210,23 @@ function _renderFinance(fin){
     `<span class="fin-meta">${escHtml(fin.year)}년 ${escHtml(fin.report||'')} · ${escHtml(fin.fs||'')} · 출처 DART</span></div>`+
     `<div class="fin-grid">${rows}</div></div>`;
 }
+function _compStatusBadge(fields){
+  const get=n=>(fields.find(f=>f[0]===n)||[])[1]||'';
+  const s=String(get('납세자 상태')), end=String(get('폐업일'));
+  if(!s) return '';
+  let cls='ok', label=s;
+  if(/폐업/.test(s)){ cls='closed'; label='폐업'+(end?` (${escHtml(end.replace(/(\d{4})(\d{2})(\d{2})/,'$1.$2.$3'))})`:''); }
+  else if(/휴업/.test(s)){ cls='rest'; label='휴업'; }
+  else if(/계속|정상|영업/.test(s)){ cls='ok'; label='영업 중'; }
+  return `<span class="comp-badge ${cls}">${cls==='closed'?'⛔':cls==='rest'?'⏸':'●'} ${label}</span>`;
+}
 function _renderCompanyDetail(d){
   if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'상세 정보를 찾지 못했습니다.')}</div>`;
   const t=d.detail||{};
   const fields=(t.fields||[]).filter(f=>f&&f[1]);
   if(!fields.length&&!t.finance) return `<div class="assist-note">표시할 상세 정보가 없습니다.</div>`;
   const grid=fields.map(f=>`<div class="pat-d-row"><span class="pat-d-k">${escHtml(f[0])}</span><span class="pat-d-v">${_compVal(f[0],f[1])}</span></div>`).join('');
-  return `<div class="pat-detail"><div class="pat-d-title">${escHtml(t.name||'(상호 미상)')}</div>`+
+  return `<div class="pat-detail"><div class="pat-d-title">${escHtml(t.name||'(상호 미상)')}${_compStatusBadge(fields)}</div>`+
     `<div class="pat-d-grid comp-grid">${grid}</div>${_renderFinance(t.finance)}</div>`;
 }
 function runPatent(){
