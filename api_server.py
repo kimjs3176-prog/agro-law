@@ -5036,9 +5036,14 @@ def assist_patent_detail():
     except Exception as e:
         return jsonify({"success": False, "error": f"상세 조회 실패: {e}"})
 
+def _pick_dates(s):
+    """문자열에서 날짜(YYYYMMDD·YYYY-MM-DD·YYYY.MM.DD 등)를 모두 추출."""
+    return [m.group(1) + m.group(2) + m.group(3)
+            for m in re.finditer(r"(20\d{2})\D?(\d{2})\D?(\d{2})", str(s or ""))]
+
 @app.route("/api/assist/support")
 def assist_support():
-    """지원사업 조회 — 기업마당 bizinfo 지원사업 공고."""
+    """지원사업 조회 — 기업마당 bizinfo 지원사업 공고(마감일 파싱 포함)."""
     key = _assist_key("support")
     if not key:
         return _assist_need_key("support")
@@ -5046,19 +5051,23 @@ def assist_support():
     try:
         r = _SESSION.get("https://www.bizinfo.go.kr/uss/rss/bizinfoApi.do",
                          params={"crtfcKey": key, "dataType": "json",
-                                 "searchCnt": "20", "hashtags": query}, timeout=15)
+                                 "searchCnt": "50", "hashtags": query}, timeout=15)
         d = r.json() or {}
         arr = d.get("jsonArray") or (d.get("response", {}) or {}).get("body", {}).get("items") or []
         items = []
-        for row in (arr if isinstance(arr, list) else [arr])[:20]:
+        for row in (arr if isinstance(arr, list) else [arr])[:50]:
             url = row.get("pblancUrl") or ""
             if url and url.startswith("/"):
                 url = "https://www.bizinfo.go.kr" + url
+            period = row.get("reqstBeginEndDe") or ""
+            ds = _pick_dates(period)
+            field = row.get("pldirSportRealmLclasCodeNm") or ""
             items.append({
                 "title": row.get("pblancNm") or row.get("polcyNm") or "(공고명 없음)",
                 "subtitle": row.get("jrsdInsttNm") or row.get("excInsttNm") or "",
-                "meta": [["신청기간", row.get("reqstBeginEndDe") or "-"],
-                         ["분야", row.get("pldirSportRealmLclasCodeNm") or "-"]],
+                "begin": ds[0] if ds else "", "end": ds[-1] if ds else "",
+                "endText": period, "field": field,
+                "meta": [["신청기간", period or "-"], ["분야", field or "-"]],
                 "url": url})
         return jsonify({"success": True, "count": len(items), "items": items})
     except Exception as e:
@@ -5076,7 +5085,7 @@ def assist_procurement():
     end = time.strftime("%Y%m%d")
     start = time.strftime("%Y%m%d", time.localtime(time.time() - 30 * 86400))
     try:
-        params = {"serviceKey": key, "pageNo": "1", "numOfRows": "20", "type": "json",
+        params = {"serviceKey": key, "pageNo": "1", "numOfRows": "50", "type": "json",
                   "inqryDiv": "1", "inqryBgnDt": start + "0000", "inqryEndDt": end + "2359"}
         if query:
             params["bidNtceNm"] = query
@@ -5086,13 +5095,17 @@ def assist_procurement():
         if isinstance(arr, dict):
             arr = arr.get("item") or []
         items = []
-        for row in (arr if isinstance(arr, list) else [arr])[:20]:
+        for row in (arr if isinstance(arr, list) else [arr])[:50]:
+            clse = row.get("bidClseDt") or ""
+            ntce = row.get("bidNtceDt") or ""
             items.append({
                 "title": row.get("bidNtceNm") or "(공고명 없음)",
                 "subtitle": row.get("ntceInsttNm") or row.get("dminsttNm") or "",
+                "begin": (_pick_dates(ntce) or [""])[0], "end": (_pick_dates(clse) or [""])[0],
+                "endText": clse, "bidNo": row.get("bidNtceNo") or "",
                 "meta": [["공고번호", row.get("bidNtceNo") or "-"],
-                         ["공고일시", row.get("bidNtceDt") or "-"],
-                         ["입찰마감", row.get("bidClseDt") or "-"]],
+                         ["공고일시", ntce or "-"],
+                         ["입찰마감", clse or "-"]],
                 "url": row.get("bidNtceDtlUrl") or row.get("bidNtceUrl") or ""})
         return jsonify({"success": True, "count": len(items), "items": items})
     except Exception as e:
