@@ -54,12 +54,13 @@ body.dark .sm-sec.sm-tools::before{background:rgba(255,255,255,.14);}
   .sm-tools{display:none;}   /* 모바일은 하단 내비게이션으로 대체 */
   .sm-item{padding:7px 12px;font-size:12.5px;}
 }
-/* ── 내규똑똑(핵심 기능) 강조 ── */
-.sm-item.sm-main{color:var(--gp);}
-.sm-item.sm-main .sm-ic{filter:none;}
-.sm-item.sm-main:not(.active){box-shadow:inset 0 0 0 1.5px var(--gl);}
-.sm-main-tag{font-size:9px;font-weight:800;letter-spacing:.02em;color:#fff;background:var(--g);border-radius:999px;padding:1px 6px;margin-left:1px;}
-.sm-item.sm-main.active .sm-main-tag{background:var(--gp);}
+/* ── 메뉴 정리: 주요 기능(좌, 아이콘+텍스트) + 도구(우, 아이콘) ── */
+.sm-primary{flex-wrap:wrap;gap:4px;}
+.sm-div{width:1px;height:18px;background:var(--bd);margin:0 7px;flex-shrink:0;}
+body:not(.dark) .sm-div{background:rgba(0,0,0,.1);}
+.sm-item.sm-icon{gap:0;padding:8px 10px;}
+.sm-item.sm-icon .sm-ic{font-size:15px;}
+.sm-item.sm-icon .ai-active-badge{margin-left:2px;}
 /* ── 업무 도우미(공공조회) 결과 패널 ── */
 .assist-api-badge{font-size:11px;font-weight:700;padding:4px 11px;border-radius:999px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
 .assist-api-badge[hidden]{display:none;}
@@ -1684,26 +1685,22 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 <div class="main">
   <!-- 좌측 메뉴 패널: 내규똑똑(메인)·법령·시나리오 + 공공조회 + 도구 -->
   <aside class="side-menu" id="sideMenu" aria-label="주요 메뉴">
-    <div class="sm-sec">
-      <div class="sm-label">검색</div>
-      <button class="sm-item sm-main active" id="smInternal" onclick="setMode('internal')" title="사내 규정(내규) 스마트 검색 — 핵심 기능"><span class="sm-ic">📋</span><span>내규똑똑</span><span class="sm-main-tag">핵심</span></button>
+    <div class="sm-sec sm-primary">
+      <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="사내 규정(내규) 스마트 검색"><span class="sm-ic">📋</span><span>내규똑똑</span></button>
       <button class="sm-item" id="smLaw" onclick="setMode('law')" title="국가법령 조회"><span class="sm-ic">📖</span><span>법령 조회</span></button>
       <button class="sm-item" id="smScenario" onclick="setMode('scenario')" title="실무 시나리오 AI 검색(API 키 필요)"><span class="sm-ic">✦</span><span>시나리오</span></button>
-    </div>
-    <div class="sm-sec">
-      <div class="sm-label">공공조회</div>
+      <span class="sm-div" aria-hidden="true"></span>
       <button class="sm-item" id="smCompany" onclick="openAssist('company')" title="사업자등록 상태 조회(국세청)"><span class="sm-ic">🏢</span><span>기업</span></button>
       <button class="sm-item" id="smPatent" onclick="openAssist('patent')" title="특허·실용신안 검색(KIPRIS)"><span class="sm-ic">📄</span><span>특허</span></button>
       <button class="sm-item" id="smSupport" onclick="openAssist('support')" title="정부 지원사업 공고(기업마당)"><span class="sm-ic">🎯</span><span>지원사업</span></button>
       <button class="sm-item" id="smProcurement" onclick="openAssist('procurement')" title="나라장터 입찰공고(조달청)"><span class="sm-ic">📢</span><span>조달공고</span></button>
     </div>
     <div class="sm-sec sm-tools">
-      <div class="sm-label">도구</div>
-      <button class="sm-item" onclick="toggleFavTab()"><span class="sm-ic">☆</span><span>즐겨찾기</span></button>
-      <button class="sm-item" onclick="openCollModal()"><span class="sm-ic">📁</span><span>컬렉션</span></button>
-      <button class="sm-item" onclick="openStatPanel()"><span class="sm-ic">📊</span><span>통계</span></button>
-      <a class="sm-item" href="/upload" title="개정된 내규를 업로드해 최신본으로 반영"><span class="sm-ic">📤</span><span>내규 업로드</span></a>
-      <button class="sm-item" onclick="openAiModal()"><span class="sm-ic">✦</span><span>AI 설정</span> <span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
+      <button class="sm-item sm-icon" onclick="toggleFavTab()" title="즐겨찾기" aria-label="즐겨찾기"><span class="sm-ic">☆</span></button>
+      <button class="sm-item sm-icon" onclick="openCollModal()" title="컬렉션" aria-label="컬렉션"><span class="sm-ic">📁</span></button>
+      <button class="sm-item sm-icon" onclick="openStatPanel()" title="통계" aria-label="통계"><span class="sm-ic">📊</span></button>
+      <a class="sm-item sm-icon" href="/upload" title="내규 업로드" aria-label="내규 업로드"><span class="sm-ic">📤</span></a>
+      <button class="sm-item sm-icon" onclick="openAiModal()" title="AI 설정" aria-label="AI 설정"><span class="sm-ic">✦</span><span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
     </div>
   </aside>
   <div class="main-content">
