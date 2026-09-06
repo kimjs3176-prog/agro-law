@@ -4615,6 +4615,169 @@ def debug_law_xml():
         return str(e), 500
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 업무 도우미 — 공공 API 프록시 (기업/특허/지원사업/조달)
+# 서비스키는 환경변수로 주입한다. 키 미설정 시 need_key 응답으로 UI가 안내한다.
+#   DATA_GO_KR_KEY  : 공공데이터포털 서비스키 (기업 상태조회·나라장터 입찰공고)
+#   KIPRIS_API_KEY  : 키프리스 플러스 서비스키 (특허·상표·디자인)
+#   BIZINFO_API_KEY : 기업마당 인증키(crtfcKey) (정부 지원사업 공고)
+# 참고: yybmion/public-apis-4Kr
+# ══════════════════════════════════════════════════════════════════════════
+_ASSIST_ENV = {"company": "DATA_GO_KR_KEY", "patent": "KIPRIS_API_KEY",
+               "support": "BIZINFO_API_KEY", "procurement": "DATA_GO_KR_KEY"}
+_ASSIST_APPLY = {
+    "company":     "https://www.data.go.kr/data/15081808/openapi.do",
+    "patent":      "https://plus.kipris.or.kr/portal/main/main.do",
+    "support":     "https://www.bizinfo.go.kr/",
+    "procurement": "https://www.data.go.kr/data/15129394/openapi.do",
+}
+_ASSIST_PROVIDER = {
+    "company": "국세청 사업자등록정보", "patent": "특허청 KIPRIS",
+    "support": "기업마당(중소벤처기업부)", "procurement": "조달청 나라장터",
+}
+
+def _assist_key(kind: str) -> str:
+    return (os.environ.get(_ASSIST_ENV.get(kind, ""), "") or "").strip()
+
+def _assist_need_key(kind: str):
+    return jsonify({"success": False, "need_key": True,
+                    "provider": _ASSIST_PROVIDER.get(kind, ""),
+                    "apply_url": _ASSIST_APPLY.get(kind, ""),
+                    "message": "서비스키가 설정되지 않았습니다. 관리자에게 문의하거나 "
+                               "환경변수를 설정하세요."})
+
+@app.route("/api/assist/status")
+def assist_status():
+    """각 조회 기능의 서비스키 설정 여부(배지 표시용)."""
+    return jsonify({k: bool(_assist_key(k))
+                    for k in ("company", "patent", "support", "procurement")})
+
+@app.route("/api/assist/company")
+def assist_company():
+    """기업 조회 — 국세청 사업자등록 상태조회(odcloud)."""
+    key = _assist_key("company")
+    if not key:
+        return _assist_need_key("company")
+    bno = re.sub(r"[^0-9]", "", request.args.get("bno", ""))
+    if len(bno) != 10:
+        return jsonify({"success": False, "error": "사업자등록번호 10자리를 입력하세요."})
+    try:
+        r = _SESSION.post("https://api.odcloud.kr/api/nts-businessman/v1/status",
+                          params={"serviceKey": key}, json={"b_no": [bno]}, timeout=15)
+        rows = (r.json() or {}).get("data") or []
+        if not rows:
+            return jsonify({"success": True, "count": 0, "items": []})
+        row = rows[0]
+        title = "-".join([bno[:3], bno[3:5], bno[5:]])
+        meta = [["납세자 상태", row.get("b_stt") or row.get("b_stt_cd") or "-"],
+                ["과세유형", row.get("tax_type") or "-"],
+                ["폐업일", row.get("end_dt") or "-"]]
+        return jsonify({"success": True, "count": 1, "items": [
+            {"title": title, "subtitle": row.get("tax_type", ""), "meta": meta, "url": ""}]})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"조회 실패: {e}"})
+
+@app.route("/api/assist/patent")
+def assist_patent():
+    """특허 조회 — KIPRIS Plus 특허·실용신안 검색."""
+    key = _assist_key("patent")
+    if not key:
+        return _assist_need_key("patent")
+    query = request.args.get("query", "").strip()
+    applicant = request.args.get("applicant", "").strip()
+    if not query and not applicant:
+        return jsonify({"success": False, "error": "검색어 또는 출원인을 입력하세요."})
+    base = "http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice"
+    try:
+        if applicant and not query:
+            endpoint, params = f"{base}/getAdvancedSearch", {"applicant": applicant}
+        else:
+            endpoint, params = f"{base}/getWordSearch", {"word": query or applicant}
+        params.update({"ServiceKey": key, "numOfRows": "20", "pageNo": "1"})
+        r = _SESSION.get(endpoint, params=params, timeout=15)
+        root = _xml_fromstring(r.content)
+        items = []
+        for it in root.iter("item"):
+            def g(*tags):
+                for t in tags:
+                    el = it.find(t)
+                    if el is not None and (el.text or "").strip():
+                        return el.text.strip()
+                return ""
+            items.append({
+                "title": g("inventionTitle", "InventionName", "articleName") or "(제목 없음)",
+                "subtitle": g("applicantName", "Applicant"),
+                "meta": [["출원번호", g("applicationNumber", "ApplicationNumber")],
+                         ["출원일", g("applicationDate", "ApplicationDate")],
+                         ["상태", g("registerStatus", "RegistrationStatus")]],
+                "url": ""})
+        return jsonify({"success": True, "count": len(items), "items": items})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"조회 실패: {e}"})
+
+@app.route("/api/assist/support")
+def assist_support():
+    """지원사업 조회 — 기업마당 bizinfo 지원사업 공고."""
+    key = _assist_key("support")
+    if not key:
+        return _assist_need_key("support")
+    query = request.args.get("query", "").strip()
+    try:
+        r = _SESSION.get("https://www.bizinfo.go.kr/uss/rss/bizinfoApi.do",
+                         params={"crtfcKey": key, "dataType": "json",
+                                 "searchCnt": "20", "hashtags": query}, timeout=15)
+        d = r.json() or {}
+        arr = d.get("jsonArray") or (d.get("response", {}) or {}).get("body", {}).get("items") or []
+        items = []
+        for row in (arr if isinstance(arr, list) else [arr])[:20]:
+            url = row.get("pblancUrl") or ""
+            if url and url.startswith("/"):
+                url = "https://www.bizinfo.go.kr" + url
+            items.append({
+                "title": row.get("pblancNm") or row.get("polcyNm") or "(공고명 없음)",
+                "subtitle": row.get("jrsdInsttNm") or row.get("excInsttNm") or "",
+                "meta": [["신청기간", row.get("reqstBeginEndDe") or "-"],
+                         ["분야", row.get("pldirSportRealmLclasCodeNm") or "-"]],
+                "url": url})
+        return jsonify({"success": True, "count": len(items), "items": items})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"조회 실패: {e}"})
+
+@app.route("/api/assist/procurement")
+def assist_procurement():
+    """조달공고 조회 — 조달청 나라장터 입찰공고정보(최근 30일)."""
+    key = _assist_key("procurement")
+    if not key:
+        return _assist_need_key("procurement")
+    query = request.args.get("query", "").strip()
+    base = os.environ.get("PROCUREMENT_API_URL",
+        "http://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServc")
+    end = time.strftime("%Y%m%d")
+    start = time.strftime("%Y%m%d", time.localtime(time.time() - 30 * 86400))
+    try:
+        params = {"serviceKey": key, "pageNo": "1", "numOfRows": "20", "type": "json",
+                  "inqryDiv": "1", "inqryBgnDt": start + "0000", "inqryEndDt": end + "2359"}
+        if query:
+            params["bidNtceNm"] = query
+        r = _SESSION.get(base, params=params, timeout=15)
+        body = (r.json() or {}).get("response", {}).get("body", {}) or {}
+        arr = body.get("items") or []
+        if isinstance(arr, dict):
+            arr = arr.get("item") or []
+        items = []
+        for row in (arr if isinstance(arr, list) else [arr])[:20]:
+            items.append({
+                "title": row.get("bidNtceNm") or "(공고명 없음)",
+                "subtitle": row.get("ntceInsttNm") or row.get("dminsttNm") or "",
+                "meta": [["공고번호", row.get("bidNtceNo") or "-"],
+                         ["공고일시", row.get("bidNtceDt") or "-"],
+                         ["입찰마감", row.get("bidClseDt") or "-"]],
+                "url": row.get("bidNtceDtlUrl") or row.get("bidNtceUrl") or ""})
+        return jsonify({"success": True, "count": len(items), "items": items})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"조회 실패: {e}"})
+
+
 # ── 실행 ─────────────────────────────────────────────────────────────────────
 PORT = int(os.environ.get("PORT", 5100))
 

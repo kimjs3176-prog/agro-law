@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>KOAT 내규&국가법령 종합 검색 서비스</title>
+<title>농진원 업무 도우미</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.min.css">
 <style>:root{
   /* Linear 참조 팔레트 (인디고 액센트 · 하프라인 보더 · 저채도 뉴트럴) */
@@ -54,6 +54,43 @@ body.dark .sm-sec.sm-tools::before{background:rgba(255,255,255,.14);}
   .sm-tools{display:none;}   /* 모바일은 하단 내비게이션으로 대체 */
   .sm-item{padding:7px 12px;font-size:12.5px;}
 }
+/* ── 내규똑똑(핵심 기능) 강조 ── */
+.sm-item.sm-main{color:var(--gp);}
+.sm-item.sm-main .sm-ic{filter:none;}
+.sm-item.sm-main:not(.active){box-shadow:inset 0 0 0 1.5px var(--gl);}
+.sm-main-tag{font-size:9px;font-weight:800;letter-spacing:.02em;color:#fff;background:var(--g);border-radius:999px;padding:1px 6px;margin-left:1px;}
+.sm-item.sm-main.active .sm-main-tag{background:var(--gp);}
+/* ── 업무 도우미(공공조회) 결과 패널 ── */
+.assist-api-badge{font-size:11px;font-weight:700;padding:4px 11px;border-radius:999px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
+.assist-api-badge[hidden]{display:none;}
+.assist-api-badge::before{content:'●';font-size:8px;}
+.assist-api-badge.ok{background:var(--gl);color:var(--gd);}
+.assist-api-badge.no{background:var(--amber-l);color:#b45309;}
+/* 도우미 조회 패널 — assist-on 일 때만 노출하고 일반 검색 영역은 숨김 */
+#assistantPanel{display:none;}
+.main-content.assist-on > *:not(#assistantPanel){display:none;}
+.main-content.assist-on > #assistantPanel{display:block;}
+.assist-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:2px 0 14px;}
+.assist-head .assist-api-badge{margin-left:auto;align-self:center;}
+.assist-h-ic{font-size:20px;align-self:center;}
+.assist-h-t{font-size:17px;font-weight:800;color:var(--tx);letter-spacing:-.3px;}
+.assist-h-hint{font-size:12.5px;color:var(--mu);}
+.assist-search{display:flex;gap:8px;margin-bottom:16px;}
+.assist-search .sinput{flex:1;}
+.assist-results{display:flex;flex-direction:column;gap:10px;}
+.assist-card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;}
+.assist-card-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:7px;}
+.assist-card-t{font-size:14px;font-weight:700;color:var(--tx);line-height:1.4;word-break:keep-all;}
+.assist-card-sub{font-size:12px;color:var(--mu);font-weight:600;}
+.assist-card-meta{display:flex;flex-wrap:wrap;gap:5px 16px;font-size:12.5px;color:var(--tx);}
+.assist-card-meta b{color:var(--mu);font-weight:600;margin-right:4px;}
+.assist-card-link{display:inline-block;margin-top:9px;font-size:12.5px;font-weight:700;color:var(--g);text-decoration:none;}
+.assist-card-link:hover{text-decoration:underline;}
+.assist-note{padding:18px 16px;border:1px dashed var(--bd);border-radius:12px;background:var(--bg);text-align:center;color:var(--mu);font-size:13px;line-height:1.8;}
+.assist-note b{color:var(--tx);font-weight:700;}
+.assist-note a{color:var(--g);font-weight:700;text-decoration:none;}
+.assist-note a:hover{text-decoration:underline;}
+.assist-loading{display:flex;align-items:center;justify-content:center;gap:8px;padding:24px;color:var(--mu);font-size:13px;}
 .reg-sem-badge{font-size:10.5px;font-weight:800;color:#fff;background:#7c3aed;
   border-radius:5px;padding:2px 7px;white-space:nowrap;}
 .art-sem-badge{font-size:9.5px;font-weight:800;color:#fff;background:#7c3aed;
@@ -1622,11 +1659,11 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 <!-- 상단바 -->
 <div class="topbar">
   <button class="tree-toggle" onclick="openInternalTree()" title="내규 전체 목록" aria-label="내규 전체 목록 열기">📚</button>
-  <div class="logo" style="font-size:11px;font-weight:900;letter-spacing:-.5px;">KOAT</div>
+  <div class="logo" style="font-size:12px;font-weight:900;letter-spacing:-1px;">농진</div>
   <div>
-    <span class="brand"><span class="brand-full">KOAT 내규&국가법령 종합 검색</span><span class="brand-short">KOAT 종합검색</span></span>
-    <span class="brand-en" style="font-size:10px;color:#9ca3af;margin-left:6px;font-weight:500;letter-spacing:.5px;">Integrated Legal Search</span><br>
-    <span class="brand-sub">사규(내규) 검색 · 국가법령 연계</span>
+    <span class="brand"><span class="brand-full">농진원 업무 도우미</span><span class="brand-short">업무 도우미</span></span>
+    <span class="brand-en" style="font-size:10px;color:#9ca3af;margin-left:6px;font-weight:500;letter-spacing:.5px;">Work Assistant</span><br>
+    <span class="brand-sub">내규똑똑 · 법령 · 기업 · 특허 · 지원사업 · 조달 통합 지원</span>
   </div>
   <span class="apibadge" id="badge">● 확인 중</span>
   <button class="dark-btn" id="darkBtn" onclick="toggleDark()" title="다크모드" aria-label="다크 모드 전환">🌙</button>
@@ -1645,13 +1682,20 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 </div>
 
 <div class="main">
-  <!-- 좌측 메뉴 패널: 검색 모드(내규/법령/시나리오) + 도구 -->
+  <!-- 좌측 메뉴 패널: 내규똑똑(메인)·법령·시나리오 + 공공조회 + 도구 -->
   <aside class="side-menu" id="sideMenu" aria-label="주요 메뉴">
     <div class="sm-sec">
       <div class="sm-label">검색</div>
-      <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="사내 규정(내규) 검색"><span class="sm-ic">📋</span><span>내규 검색</span></button>
+      <button class="sm-item sm-main active" id="smInternal" onclick="setMode('internal')" title="사내 규정(내규) 스마트 검색 — 핵심 기능"><span class="sm-ic">📋</span><span>내규똑똑</span><span class="sm-main-tag">핵심</span></button>
       <button class="sm-item" id="smLaw" onclick="setMode('law')" title="국가법령 조회"><span class="sm-ic">📖</span><span>법령 조회</span></button>
       <button class="sm-item" id="smScenario" onclick="setMode('scenario')" title="실무 시나리오 AI 검색(API 키 필요)"><span class="sm-ic">✦</span><span>시나리오</span></button>
+    </div>
+    <div class="sm-sec">
+      <div class="sm-label">공공조회</div>
+      <button class="sm-item" id="smCompany" onclick="openAssist('company')" title="사업자등록 상태 조회(국세청)"><span class="sm-ic">🏢</span><span>기업</span></button>
+      <button class="sm-item" id="smPatent" onclick="openAssist('patent')" title="특허·실용신안 검색(KIPRIS)"><span class="sm-ic">📄</span><span>특허</span></button>
+      <button class="sm-item" id="smSupport" onclick="openAssist('support')" title="정부 지원사업 공고(기업마당)"><span class="sm-ic">🎯</span><span>지원사업</span></button>
+      <button class="sm-item" id="smProcurement" onclick="openAssist('procurement')" title="나라장터 입찰공고(조달청)"><span class="sm-ic">📢</span><span>조달공고</span></button>
     </div>
     <div class="sm-sec sm-tools">
       <div class="sm-label">도구</div>
@@ -1663,6 +1707,8 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
   </aside>
   <div class="main-content">
+  <!-- 업무 도우미 조회 패널(기본 숨김, 상단 바에서 열림) -->
+  <section class="assist-panel" id="assistantPanel" aria-label="업무 도우미 조회"></section>
   <div class="spanel">
     <!-- 기관 탭 (동적 렌더링) -->
     <div class="tabs" id="agencyTabs">
@@ -1951,7 +1997,88 @@ function setAgency(ag){
 }
 
 // ── 검색 모드 ──
+// ── 업무 도우미(공공 API 조회): 기업·특허·지원사업·조달 ──────────────────────
+let _assistMode=null, _assistStatus=null;
+const ASSIST_CFG={
+  company:    {tab:'smCompany',    label:'기업 조회',   ic:'🏢', ph:'사업자등록번호 10자리 (예: 123-45-67890)', hint:'국세청 사업자등록정보로 상호·납세 상태를 확인합니다.', param:'bno'},
+  patent:     {tab:'smPatent',     label:'특허 조회',   ic:'📄', ph:'특허 키워드 또는 출원인 (예: 스마트팜)',      hint:'KIPRIS에서 특허·실용신안을 검색합니다.',           param:'query'},
+  support:    {tab:'smSupport',    label:'지원사업 조회', ic:'🎯', ph:'지원사업 키워드 (예: 창업, 수출, R&D)',       hint:'정부 지원사업 공고(기업마당)를 검색합니다.',        param:'query'},
+  procurement:{tab:'smProcurement',label:'조달공고 조회', ic:'📢', ph:'입찰공고 키워드 (예: 시스템 구축)',            hint:'나라장터 입찰공고(최근 30일)를 검색합니다.',        param:'query'},
+};
+async function _loadAssistStatus(){
+  if(_assistStatus) return _assistStatus;
+  try{ const r=await fetch('/api/assist/status'); _assistStatus=await r.json(); }
+  catch(e){ _assistStatus={}; }
+  return _assistStatus;
+}
+async function openAssist(kind){
+  const cfg=ASSIST_CFG[kind]; if(!cfg) return;
+  _assistMode=kind;
+  if(typeof wsBackToList==='function') wsBackToList();   // 작업공간 창이 열려있으면 목록으로
+  document.querySelector('.main-content').classList.add('assist-on');
+  // 메뉴 활성: 현재 공공조회 항목만(내규똑똑 등 검색 모드 활성 해제)
+  document.querySelectorAll('.sm-item.active').forEach(el=>el.classList.remove('active'));
+  const tab=document.getElementById(cfg.tab); if(tab) tab.classList.add('active');
+  await _loadAssistStatus();
+  const ok=!!(_assistStatus&&_assistStatus[kind]);
+  const p=document.getElementById('assistantPanel');
+  p.innerHTML=
+    `<div class="assist-head"><span class="assist-h-ic">${cfg.ic}</span>`+
+    `<span class="assist-h-t">${escHtml(cfg.label)}</span>`+
+    `<span class="assist-h-hint">${escHtml(cfg.hint)}</span>`+
+    `<span class="assist-api-badge ${ok?'ok':'no'}">${ok?'API 연결됨':'서비스키 필요'}</span></div>`+
+    `<div class="assist-search">`+
+      `<input id="assistInput" class="sinput" placeholder="${escHtml(cfg.ph)}" `+
+      `${kind==='company'?'inputmode="numeric" ':''}onkeydown="if(event.key==='Enter')runAssist()" aria-label="${escHtml(cfg.label)} 검색어">`+
+      `<button class="sbtn" onclick="runAssist()">조회</button></div>`+
+    `<div id="assistResults" class="assist-results"></div>`;
+  const inp=document.getElementById('assistInput'); if(inp) inp.focus();
+}
+function closeAssist(){
+  _assistMode=null;
+  const mc=document.querySelector('.main-content'); if(mc) mc.classList.remove('assist-on');
+  Object.values(ASSIST_CFG).forEach(c=>{ const t=document.getElementById(c.tab); if(t) t.classList.remove('active'); });
+}
+async function runAssist(){
+  const kind=_assistMode; if(!kind) return;
+  const cfg=ASSIST_CFG[kind];
+  const box=document.getElementById('assistResults'); if(!box) return;
+  const val=(document.getElementById('assistInput')||{}).value||'';
+  const q=val.trim();
+  if(!q){ box.innerHTML=`<div class="assist-note">검색어를 입력하세요.</div>`; return; }
+  box.innerHTML=`<div class="assist-loading"><div class="spinner"></div><span>조회 중...</span></div>`;
+  try{
+    const r=await fetch(`/api/assist/${kind}?${cfg.param}=${encodeURIComponent(q)}`);
+    const d=await r.json();
+    box.innerHTML=_renderAssist(d, kind);
+  }catch(e){
+    box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`;
+  }
+}
+function _renderAssist(d, kind){
+  if(d && d.need_key){
+    const url=d.apply_url?`<a href="${escHtml(d.apply_url)}" target="_blank" rel="noopener">서비스키 발급 안내 →</a>`:'';
+    return `<div class="assist-note">🔑 <b>${escHtml(d.provider||'')}</b> 서비스키가 설정되지 않았습니다.<br>`+
+           `관리자가 환경변수(<code>${escHtml(ASSIST_ENV_LABEL[kind]||'')}</code>)를 설정하면 조회할 수 있습니다.<br>${url}</div>`;
+  }
+  if(!d || d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'조회에 실패했습니다.')}</div>`;
+  const items=d.items||[];
+  if(!items.length) return `<div class="assist-note">결과가 없습니다.</div>`;
+  const cards=items.map(it=>{
+    const sub=it.subtitle?`<span class="assist-card-sub">${escHtml(it.subtitle)}</span>`:'';
+    const meta=(it.meta||[]).filter(m=>m&&m[1]&&m[1]!=='-')
+      .map(m=>`<span><b>${escHtml(m[0])}</b>${escHtml(String(m[1]))}</span>`).join('');
+    const link=it.url?`<a class="assist-card-link" href="${escHtml(it.url)}" target="_blank" rel="noopener">바로가기 →</a>`:'';
+    return `<div class="assist-card"><div class="assist-card-h"><span class="assist-card-t">${escHtml(it.title||'')}</span>${sub}</div>`+
+           (meta?`<div class="assist-card-meta">${meta}</div>`:'')+`${link}</div>`;
+  }).join('');
+  const cnt=`<div style="font-size:12px;color:var(--mu);margin-bottom:4px;">${items.length}건</div>`;
+  return cnt+cards;
+}
+const ASSIST_ENV_LABEL={company:'DATA_GO_KR_KEY',patent:'KIPRIS_API_KEY',support:'BIZINFO_API_KEY',procurement:'DATA_GO_KR_KEY'};
+
 function setMode(m){
+  if(_assistMode) closeAssist();   // 업무 도우미에서 일반 검색 모드로 복귀
   mode=m;
   // 좌측 메뉴 패널의 활성 표시(기존 상단 토글은 메뉴로 이동)
   const _sm={internal:'smInternal',law:'smLaw',scenario:'smScenario'};
@@ -8338,10 +8465,10 @@ async function scoreAndReorderAsync(laws, keywords){
   <!-- Footer -->
   <footer style="text-align:center;padding:28px 0 20px;color:var(--ht);font-size:12px;border-top:1px solid var(--bd);margin-top:24px;background:var(--sf);">
     <div style="margin-bottom:6px;">
-      <span style="font-weight:700;color:var(--g);font-size:14px;">KOAT 내규&국가법령 종합 검색 서비스</span>
+      <span style="font-weight:700;color:var(--g);font-size:14px;">농진원 업무 도우미</span>
     </div>
     <div style="margin-bottom:4px;">
-      법제처 국가법령정보 OpenAPI + 사규(내규) MCP 연동 · 내규↔법령 연계 종합 검색
+      내규똑똑 · 국가법령 · 기업 · 특허 · 지원사업 · 조달 통합 업무 지원
     </div>
     <div>
       © 2025 <strong>kimjs</strong> · Powered by
