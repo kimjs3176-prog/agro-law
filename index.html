@@ -61,6 +61,19 @@ body:not(.dark) .sm-div{background:rgba(0,0,0,.1);}
 .sm-item.sm-icon{gap:0;padding:8px 10px;}
 .sm-item.sm-icon .sm-ic{font-size:15px;}
 .sm-item.sm-icon .ai-active-badge{margin-left:2px;}
+/* ── AI 시나리오 진입 버튼(내규·법령 페이지 내부) ── */
+.scen-entry{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin:10px 0 2px;
+  padding:12px 16px;border:1px solid var(--bd);border-radius:12px;background:var(--gl);cursor:pointer;
+  font-family:var(--font);transition:.14s;}
+.scen-entry:hover{border-color:var(--g);box-shadow:var(--shadow);}
+.scen-entry-ic{font-size:16px;color:var(--gp);flex-shrink:0;}
+.scen-entry-t{font-size:13.5px;font-weight:800;color:var(--gp);flex-shrink:0;}
+.scen-entry-sub{font-size:12px;color:var(--mu);font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.scen-entry-go{font-size:15px;color:var(--gp);font-weight:800;flex-shrink:0;}
+.scen-back{display:inline-flex;align-items:center;gap:4px;margin-bottom:10px;padding:6px 12px;border:1px solid var(--bd);
+  border-radius:999px;background:var(--sf);color:var(--mu);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font);transition:.12s;}
+.scen-back:hover{color:var(--tx);border-color:var(--g);}
+@media(max-width:640px){ .scen-entry-sub{display:none;} }
 /* ── 업무 도우미(공공조회) 결과 패널 ── */
 .assist-api-badge{font-size:11px;font-weight:700;padding:4px 11px;border-radius:999px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
 .assist-api-badge[hidden]{display:none;}
@@ -1688,7 +1701,6 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     <div class="sm-sec sm-primary">
       <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="사내 규정(내규) 스마트 검색"><span class="sm-ic">📋</span><span>내규똑똑</span></button>
       <button class="sm-item" id="smLaw" onclick="setMode('law')" title="국가법령 조회"><span class="sm-ic">📖</span><span>법령 조회</span></button>
-      <button class="sm-item" id="smScenario" onclick="setMode('scenario')" title="실무 시나리오 AI 검색(API 키 필요)"><span class="sm-ic">✦</span><span>시나리오</span></button>
       <span class="sm-div" aria-hidden="true"></span>
       <button class="sm-item" id="smCompany" onclick="openAssist('company')" title="사업자등록 상태 조회(국세청)"><span class="sm-ic">🏢</span><span>기업</span></button>
       <button class="sm-item" id="smPatent" onclick="openAssist('patent')" title="특허·실용신안 검색(KIPRIS)"><span class="sm-ic">📄</span><span>특허</span></button>
@@ -1716,6 +1728,13 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <input id="q" class="sinput" style="padding-left:40px;" aria-label="검색어 입력" placeholder="🔍  내규 검색 (예: 직무발명, 여비)" onkeydown="if(event.key==='Enter')doSearch()">
       <button id="sbtn" class="sbtn" onclick="doSearch()">검색</button>
     </div>
+    <!-- AI 시나리오 진입 (내규·법령 페이지 내부에 배치) -->
+    <button id="scenarioEntry" class="scen-entry" style="display:none;" onclick="setMode('scenario')" title="업무 상황을 문장으로 물어보면 AI가 근거 법령·조문을 제안합니다">
+      <span class="scen-entry-ic">✦</span>
+      <span class="scen-entry-t">AI 시나리오 검색</span>
+      <span class="scen-entry-sub">업무 상황을 문장으로 물어보면 근거 법령·조문을 찾아드려요</span>
+      <span class="scen-entry-go">→</span>
+    </button>
     <!-- 내규 카테고리 바로가기 (내규·통합 모드일 때 표시) -->
     <div id="internalExamples" style="display:none;">
       <div class="qlabel">내규 카테고리 바로가기</div>
@@ -1723,6 +1742,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
     <!-- 시나리오 예시 칩 (시나리오 모드일 때만 표시) -->
     <div id="scenarioExamples" style="display:none;">
+      <button class="scen-back" onclick="setMode(_scenReturn||'internal')">← 검색으로 돌아가기</button>
       <div class="scen-apikey-note">
         ⚠ 시나리오 검색은 <b>AI가 답변을 생성</b>합니다. 작동하려면 먼저 상단
         <button class="scen-apikey-link" onclick="openAiModal()">✦ AI 설정</button>
@@ -1995,7 +2015,7 @@ function setAgency(ag){
 
 // ── 검색 모드 ──
 // ── 업무 도우미(공공 API 조회): 기업·특허·지원사업·조달 ──────────────────────
-let _assistMode=null, _assistStatus=null;
+let _assistMode=null, _assistStatus=null, _scenReturn='internal';
 const ASSIST_CFG={
   company:    {tab:'smCompany',    label:'기업 조회',   ic:'🏢', ph:'사업자등록번호 10자리 (예: 123-45-67890)', hint:'국세청 사업자등록정보로 상호·납세 상태를 확인합니다.', param:'bno'},
   patent:     {tab:'smPatent',     label:'특허 조회',   ic:'📄', ph:'특허 키워드 또는 출원인 (예: 스마트팜)',      hint:'KIPRIS에서 특허·실용신안을 검색합니다.',           param:'query'},
@@ -2076,15 +2096,20 @@ const ASSIST_ENV_LABEL={company:'DATA_GO_KR_KEY',patent:'KIPRIS_API_KEY',support
 
 function setMode(m){
   if(_assistMode) closeAssist();   // 업무 도우미에서 일반 검색 모드로 복귀
+  // 시나리오는 내규·법령 페이지 안에서 진입 → 돌아갈 페이지 기억
+  if(m==='scenario' && (mode==='internal'||mode==='law')) _scenReturn=mode;
   mode=m;
-  // 좌측 메뉴 패널의 활성 표시(기존 상단 토글은 메뉴로 이동)
-  const _sm={internal:'smInternal',law:'smLaw',scenario:'smScenario'};
+  // 좌측 메뉴 패널의 활성 표시(시나리오는 메뉴에서 빠져 활성 항목 없음)
+  const _sm={internal:'smInternal',law:'smLaw'};
   Object.entries(_sm).forEach(([k,id])=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active', m===k); });
 
   const examples    = document.getElementById('scenarioExamples');
   const intExamples = document.getElementById('internalExamples');
   const qlabel      = document.getElementById('qlabelDefault');
   const chipsWrap   = document.getElementById('chips');
+  const scenEntry   = document.getElementById('scenarioEntry');
+  // 시나리오 진입 버튼: 내규·법령 페이지에서만 노출
+  if(scenEntry) scenEntry.style.display = (m==='internal'||m==='law') ? '' : 'none';
   // 모드별 보조 UI: 내규→카테고리 칩, 법령→자주 찾는 법령, 시나리오→예시 질문
   examples.style.display = (m==='scenario') ? '' : 'none';
   if(intExamples){
