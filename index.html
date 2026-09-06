@@ -206,10 +206,10 @@ body.dark .cpat-b.reg{background:rgba(34,197,94,.16);color:#6ee7a0;}
 .exp-vatrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .exp-mini{font-size:11.5px;font-weight:700;padding:5px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--sf);color:var(--g);cursor:pointer;}
 .exp-mini:hover{border-color:var(--g);}
-/* 여비 행 */
-.exp-trhd,.exp-trow{display:grid;grid-template-columns:120px 1fr 92px 26px;gap:6px;align-items:center;}
-.exp-trhd{font-size:10.5px;font-weight:700;color:var(--mu);margin-bottom:5px;padding:0 2px;}
-.exp-trow{margin-bottom:6px;}
+/* 여비 행 — 건별 일자·출장지·금액(1행) + 출장목적(2행) */
+.exp-trow{display:grid;grid-template-columns:22px 118px 1fr 96px 26px;gap:5px;align-items:center;border:1px solid var(--bd);border-radius:9px;padding:7px 8px;margin-bottom:7px;}
+.exp-trn{font-size:11px;font-weight:800;color:var(--gp);text-align:center;}
+.exp-trow .tc{grid-column:2/-1;}
 .exp-tin{font-size:12.5px!important;padding:7px 8px!important;}
 .exp-trdel{border:1px solid var(--bd);background:var(--sf);color:var(--mu);border-radius:6px;width:26px;height:30px;cursor:pointer;font-size:12px;}
 .exp-trdel:hover:not(:disabled){border-color:#f04452;color:#f04452;}
@@ -231,8 +231,9 @@ body.dark .exp-limit.ok{background:rgba(34,197,94,.16);color:#6ee7a0;} body.dark
 .expd-title{font-size:12px;font-weight:800;color:var(--mu);letter-spacing:.3px;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--bd);}
 .expd-tag{display:inline-block;font-size:12px;font-weight:800;color:var(--gp);background:var(--gl);border-radius:7px;padding:3px 11px;margin-bottom:12px;}
 .expd-lines{display:flex;flex-direction:column;gap:9px;}
-.expd-line{display:flex;gap:12px;font-size:13.5px;line-height:1.55;}
-.expd-k{flex-shrink:0;min-width:78px;color:var(--mu);font-weight:700;}
+.expd-line{display:flex;gap:10px;font-size:13.5px;line-height:1.55;}
+.expd-mk{flex-shrink:0;font-weight:800;color:var(--gp);min-width:18px;}
+.expd-k{flex-shrink:0;min-width:72px;color:var(--mu);font-weight:700;}
 .expd-v{color:var(--tx);font-weight:500;white-space:pre-wrap;word-break:break-word;}
 .expd-tbl{width:100%;border-collapse:collapse;margin:12px 0 6px;font-size:12.5px;}
 .expd-tbl th,.expd-tbl td{border:1px solid var(--bd);padding:7px 9px;text-align:center;}
@@ -2768,9 +2769,10 @@ const EXP_METHODS=['계좌이체','현금','법인카드','어음','기타'];
 const EXP_PER_LIMIT=50000;    // 업무추진비 1인당 한도
 let _expState=null, _expPlain='', _expRendering=false;
 function _today(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+const _GANADA=['가','나','다','라','마','바','사','아','자','차','카','타','파','하'];
 function _expDefault(){ return {type:'general',
   general:{vendor:'',bno:'',ceo:'',desc:'',budget:'',supply:'',vat:'',method:'계좌이체',bank:'',holder:'',account:''},
-  travel:{name:'',dept:'',purpose:'',rows:[{date:_today(),content:'',amt:''}]},
+  travel:{name:'',dept:'',rows:[{date:_today(),place:'',content:'',amt:''}]},
   promo:{date:_today(),work:'',place:'',people:'',names:'',total:''}}; }
 function _expLoadState(){ try{ const s=JSON.parse(localStorage.getItem(EXP_KEY)||'null'); if(s&&s.type){ const d=_expDefault(); return Object.assign(d,s,{general:Object.assign(d.general,s.general),travel:Object.assign(d.travel,s.travel),promo:Object.assign(d.promo,s.promo)}); } }catch(e){} return _expDefault(); }
 function _expSaveState(){ try{ localStorage.setItem(EXP_KEY, JSON.stringify(_expState)); }catch(e){} }
@@ -2844,19 +2846,20 @@ function _expRenderFields(){
         `<div class="exp-frow"><label>예금주<input id="gHolder" value="${_ev(g.holder)}"></label>`+
         `<label>계좌번호<input id="gAccount" value="${_ev(g.account)}"></label></div></div>`;
   } else if(t==='travel'){
-    const tv=_expState.travel; if(!tv.rows||!tv.rows.length) tv.rows=[{date:_today(),content:'',amt:''}];
+    const tv=_expState.travel; if(!tv.rows||!tv.rows.length) tv.rows=[{date:_today(),place:'',content:'',amt:''}];
     const rows=tv.rows.map((r,i)=>`<div class="exp-trow">`+
+      `<span class="exp-trn">${i+1}</span>`+
       `<input class="exp-tin td" id="tvDate${i}" type="date" value="${_ev(r.date)}">`+
-      `<input class="exp-tin tc" id="tvContent${i}" value="${_ev(r.content)}" placeholder="출장내용(구간·용무)">`+
-      `<input class="exp-tin ta" id="tvAmt${i}" inputmode="numeric" value="${_ev(r.amt)}" placeholder="금액">`+
-      `<button type="button" class="exp-trdel" onclick="_expTravelDel(${i})" title="행 삭제" ${tv.rows.length<=1?'disabled':''}>✕</button></div>`).join('');
+      `<input class="exp-tin tp" id="tvPlace${i}" value="${_ev(r.place)}" placeholder="출장지">`+
+      `<input class="exp-tin ta" id="tvAmt${i}" inputmode="numeric" value="${_ev(r.amt)}" placeholder="금액(원)">`+
+      `<button type="button" class="exp-trdel" onclick="_expTravelDel(${i})" title="행 삭제" ${tv.rows.length<=1?'disabled':''}>✕</button>`+
+      `<input class="exp-tin tc" id="tvContent${i}" value="${_ev(r.content)}" placeholder="출장목적 / 용무">`+
+      `</div>`).join('');
     box.innerHTML=
-      `<div class="exp-fg"><div class="exp-fgt">출장 정보</div><div class="exp-frow">`+
-        `<label>출장자<input id="tvName" value="${_ev(tv.name)}"></label>`+
-        `<label>소속<input id="tvDept" value="${_ev(tv.dept)}" placeholder="예: 기술사업부"></label></div>`+
-        `<label class="exp-full">출장목적<textarea id="tvPurpose" rows="2" placeholder="예: 스마트팜 실증 현장점검 및 간담회 참석">${_ev(tv.purpose)}</textarea></label></div>`+
-      `<div class="exp-fg"><div class="exp-fgt">출장 내역 <span class="exp-hint2">다건이면 행을 추가하세요</span></div>`+
-        `<div class="exp-trhd"><span class="td">일자</span><span class="tc">출장내용</span><span class="ta">금액(원)</span><span class="tx"></span></div>`+
+      `<div class="exp-fg"><div class="exp-fgt">출장자</div><div class="exp-frow">`+
+        `<label>성명<input id="tvName" value="${_ev(tv.name)}"></label>`+
+        `<label>소속<input id="tvDept" value="${_ev(tv.dept)}" placeholder="예: 기술사업부"></label></div></div>`+
+      `<div class="exp-fg"><div class="exp-fgt">출장 내역 <span class="exp-hint2">건별 일자·출장지·목적·금액 (다건이면 행 추가)</span></div>`+
         `<div id="tvRows">${rows}</div>`+
         `<button type="button" class="exp-addrow" onclick="_expTravelAdd()">＋ 행 추가</button></div>`;
   } else {
@@ -2885,16 +2888,16 @@ function _expSync(){
       supply:g('gSupply'),vat:g('gVat'),method:g('gMethod'),bank:g('gBank'),holder:g('gHolder'),account:g('gAccount')};
   } else if(t==='travel'){
     const n=(_expState.travel.rows||[]).length;
-    const rows=[]; for(let i=0;i<n;i++){ rows.push({date:g('tvDate'+i),content:g('tvContent'+i),amt:g('tvAmt'+i)}); }
-    _expState.travel={name:g('tvName'),dept:g('tvDept'),purpose:g('tvPurpose'),rows:rows.length?rows:_expState.travel.rows};
+    const rows=[]; for(let i=0;i<n;i++){ rows.push({date:g('tvDate'+i),place:g('tvPlace'+i),content:g('tvContent'+i),amt:g('tvAmt'+i)}); }
+    _expState.travel={name:g('tvName'),dept:g('tvDept'),rows:rows.length?rows:_expState.travel.rows};
   } else {
     _expState.promo={date:g('pmDate'),work:g('pmWork'),place:g('pmPlace'),people:g('pmPeople'),names:g('pmNames'),total:g('pmTotal')};
   }
 }
 function _expVatAuto(){ _expSync(); _expState.general.vat=String(Math.round(_digits(_expState.general.supply)*0.1));
   const el=document.getElementById('gVat'); if(el) el.value=_expState.general.vat; _expUpdate(); _expSaveState(); }
-function _expTravelAdd(){ _expSync(); _expState.travel.rows.push({date:_today(),content:'',amt:''}); _expRenderFields(); _expUpdate(); _expSaveState(); }
-function _expTravelDel(i){ _expSync(); _expState.travel.rows.splice(i,1); if(!_expState.travel.rows.length) _expState.travel.rows=[{date:_today(),content:'',amt:''}]; _expRenderFields(); _expUpdate(); _expSaveState(); }
+function _expTravelAdd(){ _expSync(); _expState.travel.rows.push({date:_today(),place:'',content:'',amt:''}); _expRenderFields(); _expUpdate(); _expSaveState(); }
+function _expTravelDel(i){ _expSync(); _expState.travel.rows.splice(i,1); if(!_expState.travel.rows.length) _expState.travel.rows=[{date:_today(),place:'',content:'',amt:''}]; _expRenderFields(); _expUpdate(); _expSaveState(); }
 function _expBuild(){
   const t=_expState.type; let html='', text='';
   if(t==='general'){
@@ -2902,22 +2905,22 @@ function _expBuild(){
     const vendor=[g.vendor||'—', g.bno&&('사업자 '+g.bno), g.ceo&&('대표 '+g.ceo)].filter(Boolean).join(', ');
     const acct=[g.bank,g.account,g.holder&&('예금주 '+g.holder)].filter(Boolean).join(' ');
     const amt=`일금 ${_hanAmount(total)}원정 (${_won(total)})`+((sup&&vat)?`  [공급가액 ${_won(sup)} + 부가세 ${_won(vat)}]`:'');
-    const L=[['거래처',vendor],['거래내용',g.desc],['지출과목',g.budget],['금액',amt],['결제방식',[g.method,acct&&('('+acct+')')].filter(Boolean).join(' ')]];
-    html=`<div class="expd-tag">일반 지출</div>`+_expLines(L);
-    text='[일반 지출]\n'+L.filter(x=>x[1]).map(x=>`· ${x[0]}: ${x[1]}`).join('\n');
+    const L=[['거래처',vendor],['거래내용',g.desc],['지출과목',g.budget],['금액',amt],['결제방식',[g.method,acct&&('('+acct+')')].filter(Boolean).join(' ')]].filter(x=>x[1]);
+    html=`<div class="expd-tag">일반 지출</div>`+_expLines(L,true);
+    text='[일반 지출]\n'+L.map((x,i)=>`${_GANADA[i]||'·'}. ${x[0]}: ${x[1]}`).join('\n');
   } else if(t==='travel'){
-    const tv=_expState.travel; const rows=(tv.rows||[]).filter(r=>r.content||r.amt||r.date);
+    const tv=_expState.travel; const rows=(tv.rows||[]).filter(r=>r.content||r.amt||r.date||r.place);
     const total=rows.reduce((a,r)=>a+_digits(r.amt),0);
-    const head=[['출장자',[tv.name, tv.dept&&('('+tv.dept+')')].filter(Boolean).join(' ')],['출장목적',tv.purpose]];
-    const trHtml=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${_ev(_fmtKDate(r.date))}</td><td class="tl">${_ev(r.content)}</td><td class="tr">${_won(_digits(r.amt))}</td></tr>`).join('')
-      || `<tr><td colspan="4" class="expd-empty">출장 내역을 입력하세요</td></tr>`;
-    html=`<div class="expd-tag">여비(출장비)</div>`+_expLines(head)+
-      `<table class="expd-tbl"><thead><tr><th>순번</th><th>일자</th><th>출장내용</th><th>금액</th></tr></thead>`+
-      `<tbody>${trHtml}</tbody><tfoot><tr><td colspan="3">합계</td><td class="tr">${_won(total)}</td></tr></tfoot></table>`+
+    const head=[['출장자',[tv.name, tv.dept&&('('+tv.dept+')')].filter(Boolean).join(' ')]].filter(x=>x[1]);
+    const trHtml=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${_ev(_fmtKDate(r.date))}</td><td>${_ev(r.place)}</td><td class="tl">${_ev(r.content)}</td><td class="tr">${_won(_digits(r.amt))}</td></tr>`).join('')
+      || `<tr><td colspan="5" class="expd-empty">출장 내역을 입력하세요</td></tr>`;
+    html=`<div class="expd-tag">여비(출장비)</div>`+(head.length?_expLines(head):'')+
+      `<table class="expd-tbl"><thead><tr><th>순번</th><th>일자</th><th>출장지</th><th>출장목적</th><th>금액</th></tr></thead>`+
+      `<tbody>${trHtml}</tbody><tfoot><tr><td colspan="4">합계</td><td class="tr">${_won(total)}</td></tr></tfoot></table>`+
       `<div class="expd-sum">합계 일금 ${_hanAmount(total)}원정 (${_won(total)})</div>`;
-    const tlines=rows.map((r,i)=>`  ${i+1}) ${_fmtKDate(r.date)} | ${r.content||''} | ${_won(_digits(r.amt))}`).join('\n');
-    text='[여비(출장비) 지출]\n'+head.filter(x=>x[1]).map(x=>`· ${x[0]}: ${x[1]}`).join('\n')+
-      `\n· 출장내역\n${tlines||'  (내역 없음)'}\n· 합계: 일금 ${_hanAmount(total)}원정 (${_won(total)})`;
+    const tlines=rows.map((r,i)=>`  ${i+1}) ${_fmtKDate(r.date)} | ${r.place||'-'} | ${r.content||'-'} | ${_won(_digits(r.amt))}`).join('\n');
+    text='[여비(출장비) 지출]\n'+head.map(x=>`· ${x[0]}: ${x[1]}`).join('\n')+
+      `${head.length?'\n':''}· 출장내역 (일자 | 출장지 | 목적 | 금액)\n${tlines||'  (내역 없음)'}\n· 합계: 일금 ${_hanAmount(total)}원정 (${_won(total)})`;
   } else {
     const pm=_expState.promo; const people=_digits(pm.people), total=_digits(pm.total);
     const per=people>0?Math.floor(total/people):0; const over=per>EXP_PER_LIMIT;
@@ -2933,8 +2936,10 @@ function _expBuild(){
   }
   return {html, text};
 }
-function _expLines(list){
-  return `<div class="expd-lines">`+list.filter(x=>x[1]).map(x=>`<div class="expd-line"><span class="expd-k">${_ev(x[0])}</span><span class="expd-v">${_ev(x[1])}</span></div>`).join('')+`</div>`;
+function _expLines(list, numbered){
+  return `<div class="expd-lines">`+list.filter(x=>x[1]).map((x,i)=>`<div class="expd-line">`+
+    (numbered?`<span class="expd-mk">${_GANADA[i]||''}.</span>`:'')+
+    `<span class="expd-k">${_ev(x[0])}</span><span class="expd-v">${_ev(x[1])}</span></div>`).join('')+`</div>`;
 }
 function _expUpdate(){
   const doc=document.getElementById('expDoc'); if(!doc) return;
