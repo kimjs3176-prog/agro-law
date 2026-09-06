@@ -100,6 +100,41 @@ body.dark .stgl.active{background:#20222a;}
 .assist-note a{color:var(--g);font-weight:700;text-decoration:none;}
 .assist-note a:hover{text-decoration:underline;}
 .assist-loading{display:flex;align-items:center;justify-content:center;gap:8px;padding:24px;color:var(--mu);font-size:13px;}
+/* ── 특허 조회: 필터 + 목록 + 상세 ── */
+.pat-filters{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+.pat-frow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.pat-flabel{font-size:12px;font-weight:800;color:var(--mu);flex-shrink:0;}
+.pat-appl{display:flex;flex-wrap:wrap;gap:6px;}
+.pat-chip{font-size:12.5px;font-weight:700;color:var(--mu);background:var(--sf);border:1px solid var(--bd);border-radius:999px;padding:6px 13px;cursor:pointer;font-family:var(--font);transition:.12s;}
+.pat-chip:hover{border-color:var(--g);color:var(--tx);}
+.pat-chip.active{background:var(--gl);border-color:transparent;color:var(--gp);}
+.pat-inp{padding:9px 12px;border:1px solid var(--bd);border-radius:9px;font-size:13px;background:var(--sf);color:var(--tx);outline:none;font-family:var(--font);}
+.pat-inp:focus{border-color:var(--g);box-shadow:var(--shadow-focus);}
+.pat-frow2{gap:8px;}
+.pat-frow2 .pat-inp:first-of-type{flex:1;min-width:160px;}
+.pat-year{width:120px;flex-shrink:0;}
+.pat-sel{padding:9px 12px;border:1px solid var(--bd);border-radius:9px;font-size:13px;background:var(--sf);color:var(--tx);cursor:pointer;font-family:var(--font);flex-shrink:0;}
+.pat-tilde{color:var(--mu);flex-shrink:0;}
+.pat-count{font-size:12px;color:var(--mu);margin-bottom:8px;}
+.pat-list{display:flex;flex-direction:column;gap:8px;}
+.pat-row{display:block;width:100%;text-align:left;background:var(--sf);border:1px solid var(--bd);border-radius:11px;padding:12px 14px;cursor:pointer;font-family:var(--font);transition:.12s;}
+.pat-row:hover{border-color:var(--g);box-shadow:var(--shadow);}
+.pat-row-t{font-size:13.5px;font-weight:700;color:var(--tx);line-height:1.45;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px;}
+.pat-badge{font-size:10.5px;font-weight:800;color:var(--gp);background:var(--gl);border-radius:5px;padding:1px 7px;flex-shrink:0;}
+.pat-row-m{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;}
+.pat-row-appl{color:var(--g);font-weight:700;}
+.pat-row-meta{color:var(--mu);}
+.pat-back{display:inline-flex;align-items:center;gap:4px;margin-bottom:12px;padding:6px 12px;border:1px solid var(--bd);border-radius:999px;background:var(--sf);color:var(--mu);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font);}
+.pat-back:hover{color:var(--tx);border-color:var(--g);}
+.pat-detail{background:var(--sf);border:1px solid var(--bd);border-radius:12px;box-shadow:var(--shadow);padding:16px 18px;}
+.pat-d-title{font-size:15px;font-weight:800;color:var(--tx);line-height:1.5;margin-bottom:12px;word-break:keep-all;}
+.pat-d-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px 18px;margin-bottom:2px;}
+.pat-d-row{display:flex;gap:10px;font-size:12.5px;}
+.pat-d-k{color:var(--mu);font-weight:700;flex-shrink:0;min-width:56px;}
+.pat-d-v{color:var(--tx);word-break:break-word;}
+.pat-d-abs{margin-top:10px;padding-top:12px;border-top:1px solid var(--bd);}
+.pat-d-abs p{font-size:12.5px;line-height:1.8;color:var(--tx);margin-top:6px;white-space:pre-wrap;}
+@media(max-width:640px){ .pat-year{width:88px;} .pat-frow2 .pat-inp:first-of-type{min-width:120px;} }
 .reg-sem-badge{font-size:10.5px;font-weight:800;color:#fff;background:#7c3aed;
   border-radius:5px;padding:2px 7px;white-space:nowrap;}
 .art-sem-badge{font-size:9.5px;font-weight:800;color:#fff;background:#7c3aed;
@@ -2031,17 +2066,96 @@ async function openAssist(kind){
   await _loadAssistStatus();
   const ok=!!(_assistStatus&&_assistStatus[kind]);
   const p=document.getElementById('assistantPanel');
-  p.innerHTML=
-    `<div class="assist-head"><span class="assist-h-ic">${cfg.ic}</span>`+
+  const head=`<div class="assist-head"><span class="assist-h-ic">${cfg.ic}</span>`+
     `<span class="assist-h-t">${escHtml(cfg.label)}</span>`+
     `<span class="assist-h-hint">${escHtml(cfg.hint)}</span>`+
-    `<span class="assist-api-badge ${ok?'ok':'no'}">${ok?'API 연결됨':'서비스키 필요'}</span></div>`+
+    `<span class="assist-api-badge ${ok?'ok':'no'}">${ok?'API 연결됨':'서비스키 필요'}</span></div>`;
+  if(kind==='patent'){                       // 특허: 출원인·기간·상태 필터 + 목록
+    _patLast=null;
+    p.innerHTML=head+_patFiltersHtml()+`<div id="patResults" class="pat-results"></div>`;
+    const pq=document.getElementById('patQuery'); if(pq) pq.focus();
+    return;
+  }
+  p.innerHTML=head+
     `<div class="assist-search">`+
       `<input id="assistInput" class="sinput" placeholder="${escHtml(cfg.ph)}" `+
       `${kind==='company'?'inputmode="numeric" ':''}onkeydown="if(event.key==='Enter')runAssist()" aria-label="${escHtml(cfg.label)} 검색어">`+
       `<button class="sbtn" onclick="runAssist()">조회</button></div>`+
     `<div id="assistResults" class="assist-results"></div>`;
   const inp=document.getElementById('assistInput'); if(inp) inp.focus();
+}
+// ── 특허 조회: 출원인 프리셋·기간·상태 필터 + 목록/상세 ──
+const PAT_APPLICANTS=['농촌진흥청','농림축산검역본부','국립농산물품질관리원','국립종자원','농업기술원'];
+const PAT_STATUS=[['','전체 상태'],['R','등록'],['A','공개'],['J','거절'],['F','소멸'],['C','취하'],['I','무효'],['G','포기']];
+let _patLast=null;
+function _patFiltersHtml(){
+  const chips=PAT_APPLICANTS.map((a,i)=>
+    `<button class="pat-chip${i===0?' active':''}" data-v="${argAttr(a)}" onclick="_patApplPick(this)">${escHtml(a==='농업기술원'?'농업기술원(각 도)':a)}</button>`).join('');
+  const opts=PAT_STATUS.map(([v,l])=>`<option value="${v}">${escHtml(l)}</option>`).join('');
+  return `<div class="pat-filters">`+
+    `<div class="pat-frow"><span class="pat-flabel">출원인</span><div class="pat-appl" id="patAppl">${chips}</div></div>`+
+    `<div class="pat-frow pat-frow2">`+
+      `<input id="patQuery" class="pat-inp" placeholder="키워드(발명의 명칭 등, 선택)" onkeydown="if(event.key==='Enter')runPatent()">`+
+      `<select id="patStatus" class="pat-sel" aria-label="특허 상태">${opts}</select>`+
+      `<input id="patFrom" class="pat-inp pat-year" inputmode="numeric" maxlength="4" placeholder="출원 시작(YYYY)">`+
+      `<span class="pat-tilde">~</span>`+
+      `<input id="patTo" class="pat-inp pat-year" inputmode="numeric" maxlength="4" placeholder="종료(YYYY)">`+
+      `<button class="sbtn" onclick="runPatent()">조회</button>`+
+    `</div></div>`;
+}
+function _patApplPick(btn){
+  document.querySelectorAll('#patAppl .pat-chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function runPatent(){
+  const box=document.getElementById('patResults'); if(!box) return;
+  const appl=(document.querySelector('#patAppl .pat-chip.active')||{}).dataset;
+  const p=new URLSearchParams();
+  if(appl&&appl.v) p.set('applicant',appl.v);
+  const q=((document.getElementById('patQuery')||{}).value||'').trim(); if(q) p.set('query',q);
+  const st=(document.getElementById('patStatus')||{}).value||''; if(st) p.set('status',st);
+  const from=((document.getElementById('patFrom')||{}).value||'').replace(/\D/g,''); if(from) p.set('date_from',from);
+  const to=((document.getElementById('patTo')||{}).value||'').replace(/\D/g,''); if(to) p.set('date_to',to);
+  box.innerHTML=`<div class="assist-loading"><div class="spinner"></div><span>특허 조회 중...</span></div>`;
+  fetch('/api/assist/patent?'+p.toString()).then(r=>r.json()).then(d=>{ _patLast=d; box.innerHTML=_renderPatentList(d); })
+    .catch(e=>{ box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
+}
+function _renderPatentList(d){
+  if(d&&d.need_key){
+    const url=d.apply_url?`<a href="${escHtml(d.apply_url)}" target="_blank" rel="noopener">서비스키 발급 안내 →</a>`:'';
+    return `<div class="assist-note">🔑 <b>${escHtml(d.provider||'')}</b> 서비스키가 설정되지 않았습니다.<br>관리자가 환경변수(<code>KIPRIS_API_KEY</code>)를 설정하면 조회할 수 있습니다.<br>${url}</div>`;
+  }
+  if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'조회에 실패했습니다.')}</div>`;
+  const items=d.items||[];
+  if(!items.length) return `<div class="assist-note">조건에 맞는 특허가 없습니다.</div>`;
+  const rows=items.map(it=>{
+    const st=it.status?`<span class="pat-badge">${escHtml(it.status)}</span>`:'';
+    const metaBits=[it.appno&&('출원 '+it.appno), it.appdate&&_fmtDate(it.appdate), it.regno&&('등록 '+it.regno)].filter(Boolean).map(escHtml).join(' · ');
+    return `<button class="pat-row" onclick="patDetail('${argAttr(it.appno||'')}')" title="상세 보기">`+
+      `<div class="pat-row-t">${escHtml(it.title||'(제목 없음)')}${st}</div>`+
+      `<div class="pat-row-m"><span class="pat-row-appl">${escHtml(it.applicant||'')}</span>${metaBits?'<span class="pat-row-meta">'+metaBits+'</span>':''}</div></button>`;
+  }).join('');
+  const total=d.total&&d.total!==String(items.length)?` / 총 ${escHtml(d.total)}건`:'';
+  return `<div class="pat-count">${items.length}건 표시${total}</div><div class="pat-list">${rows}</div>`;
+}
+function _fmtDate(s){ s=String(s||'').replace(/\D/g,''); return s.length>=8?`${s.slice(0,4)}.${s.slice(4,6)}.${s.slice(6,8)}`:s; }
+function patDetail(appno){
+  const box=document.getElementById('patResults'); if(!box||!appno) return;
+  box.innerHTML=`<button class="pat-back" onclick="patBackToList()">← 목록으로</button><div class="assist-loading"><div class="spinner"></div><span>상세 불러오는 중...</span></div>`;
+  fetch('/api/assist/patent/detail?appno='+encodeURIComponent(appno)).then(r=>r.json()).then(d=>{ box.innerHTML=`<button class="pat-back" onclick="patBackToList()">← 목록으로</button>`+_renderPatentDetail(d); })
+    .catch(e=>{ box.innerHTML=`<button class="pat-back" onclick="patBackToList()">← 목록으로</button><div class="assist-note">상세를 불러오지 못했습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
+}
+function patBackToList(){ const box=document.getElementById('patResults'); if(box) box.innerHTML=_renderPatentList(_patLast||{success:true,items:[]}); }
+function _renderPatentDetail(d){
+  if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'상세 정보를 찾지 못했습니다.')}</div>`;
+  const t=d.detail||{};
+  const rows=[['출원번호',t.appno],['출원일',_fmtDate(t.appdate)],['공개번호',t.openno],['공개일',_fmtDate(t.opendate)],
+    ['등록번호',t.regno],['등록일',_fmtDate(t.regdate)],['상태',t.status],['출원인',t.applicant],['발명자',t.inventor],
+    ['대리인',t.agent],['IPC',t.ipc]].filter(r=>r[1]);
+  const meta=rows.map(r=>`<div class="pat-d-row"><span class="pat-d-k">${escHtml(r[0])}</span><span class="pat-d-v">${escHtml(String(r[1]))}</span></div>`).join('');
+  const abs=t.abstract?`<div class="pat-d-abs"><div class="pat-d-k">요약</div><p>${escHtml(t.abstract)}</p></div>`:'';
+  const link=t.appno?`<a class="assist-card-link" href="https://www.kipris.or.kr/khome/search/searchResult.do?query=${encodeURIComponent(t.appno)}" target="_blank" rel="noopener">KIPRIS에서 원문 보기 →</a>`:'';
+  return `<div class="pat-detail"><div class="pat-d-title">${escHtml(t.title||'(제목 없음)')}</div><div class="pat-d-grid">${meta}</div>${abs}${link}</div>`;
 }
 function closeAssist(){
   _assistMode=null;

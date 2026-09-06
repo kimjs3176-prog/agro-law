@@ -4679,23 +4679,47 @@ def assist_company():
 
 @app.route("/api/assist/patent")
 def assist_patent():
-    """특허 조회 — KIPRIS Plus 특허·실용신안 검색."""
+    """특허 조회 — KIPRIS Plus 특허·실용신안 검색(출원인·기간·상태 필터, 목록형).
+
+    쿼리 파라미터: applicant(출원인), query(자유검색어), status(등록상태 코드),
+    date_from/date_to(출원일 YYYY 또는 YYYYMMDD), page.
+    상태 코드(lastvalue): R 등록·A 공개·J 거절·F 소멸·C 취하·I 무효·G 포기(빈값=전체).
+    """
     key = _assist_key("patent")
     if not key:
         return _assist_need_key("patent")
-    query = request.args.get("query", "").strip()
     applicant = request.args.get("applicant", "").strip()
-    if not query and not applicant:
-        return jsonify({"success": False, "error": "검색어 또는 출원인을 입력하세요."})
+    query = request.args.get("query", "").strip()
+    status = request.args.get("status", "").strip()
+    df = re.sub(r"\D", "", request.args.get("date_from", ""))
+    dt = re.sub(r"\D", "", request.args.get("date_to", ""))
+    page = re.sub(r"\D", "", request.args.get("page", "1")) or "1"
+    if not applicant and not query:
+        return jsonify({"success": False, "error": "출원인 또는 검색어를 입력하세요."})
     base = "http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice"
     try:
-        if applicant and not query:
-            endpoint, params = f"{base}/getAdvancedSearch", {"applicant": applicant}
-        else:
-            endpoint, params = f"{base}/getWordSearch", {"word": query or applicant}
-        params.update({"ServiceKey": key, "numOfRows": "20", "pageNo": "1"})
-        r = _SESSION.get(endpoint, params=params, timeout=15)
+        params = {"ServiceKey": key, "numOfRows": "30", "pageNo": page,
+                  "patent": "true", "utility": "true", "sortSpec": "AD", "descSort": "true"}
+        if applicant:
+            params["applicant"] = applicant
+        if query:
+            params["word"] = query
+        if status:
+            params["lastvalue"] = status
+        # 출원일 범위(YYYY→YYYY0101/YYYY1231). KIPRIS 는 'YYYYMMDD~YYYYMMDD' 형식.
+        def _d(v, end=False):
+            if not v:
+                return ""
+            return v[:8] if len(v) >= 8 else v + ("1231" if end else "0101")
+        a, b = _d(df), _d(dt, True)
+        if a or b:
+            params["applicationDate"] = f"{a or '00000000'}~{b or '99991231'}"
+        r = _SESSION.get(f"{base}/getAdvancedSearch", params=params, timeout=20)
         root = _xml_fromstring(r.content)
+        total = ""
+        te = root.find(".//totalCount")
+        if te is not None:
+            total = (te.text or "").strip()
         items = []
         for it in root.iter("item"):
             def g(*tags):
@@ -4704,16 +4728,73 @@ def assist_patent():
                     if el is not None and (el.text or "").strip():
                         return el.text.strip()
                 return ""
+            appno = g("applicationNumber", "ApplicationNumber")
             items.append({
                 "title": g("inventionTitle", "InventionName", "articleName") or "(제목 없음)",
-                "subtitle": g("applicantName", "Applicant"),
-                "meta": [["출원번호", g("applicationNumber", "ApplicationNumber")],
-                         ["출원일", g("applicationDate", "ApplicationDate")],
-                         ["상태", g("registerStatus", "RegistrationStatus")]],
-                "url": ""})
-        return jsonify({"success": True, "count": len(items), "items": items})
+                "applicant": g("applicantName", "Applicant"),
+                "appno": appno,
+                "appdate": g("applicationDate", "ApplicationDate"),
+                "regno": g("registerNumber", "RegistrationNumber"),
+                "status": g("registerStatus", "RegistrationStatus", "lastValue"),
+                "ipc": g("ipcNumber", "InternationalpatentclassificationNumber")})
+        return jsonify({"success": True, "count": len(items),
+                        "total": total or str(len(items)), "items": items})
     except Exception as e:
         return jsonify({"success": False, "error": f"조회 실패: {e}"})
+
+@app.route("/api/assist/patent/detail")
+def assist_patent_detail():
+    """특허 상세 — KIPRIS Plus 서지상세정보(출원번호 기준)."""
+    key = _assist_key("patent")
+    if not key:
+        return _assist_need_key("patent")
+    appno = re.sub(r"\D", "", request.args.get("appno", ""))
+    if not appno:
+        return jsonify({"success": False, "error": "출원번호가 필요합니다."})
+    base = "http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice"
+    try:
+        r = _SESSION.get(f"{base}/getBibliographyDetailInfoSearch",
+                         params={"applicationNumber": appno, "ServiceKey": key}, timeout=20)
+        root = _xml_fromstring(r.content)
+
+        def first(*tags):
+            for t in tags:
+                el = root.find(f".//{t}")
+                if el is not None and (el.text or "").strip():
+                    return el.text.strip()
+            return ""
+
+        def joined(container_tag, name_tag):
+            vals = []
+            for el in root.iter(name_tag):
+                v = (el.text or "").strip()
+                if v and v not in vals:
+                    vals.append(v)
+            return " · ".join(vals)
+
+        detail = {
+            "title": first("inventionTitle", "InventionName", "articleName"),
+            "appno": first("applicationNumber") or appno,
+            "appdate": first("applicationDate"),
+            "openno": first("openNumber", "publicationNumber"),
+            "opendate": first("openDate", "publicationDate"),
+            "regno": first("registerNumber", "registrationNumber"),
+            "regdate": first("registerDate", "registrationDate"),
+            "status": first("registerStatus", "lastValue", "registrationLastStatus"),
+            "applicant": joined("applicantInfoArray", "name") or first("applicantName"),
+            "inventor": joined("inventorInfoArray", "name") or first("inventorName"),
+            "agent": first("agentName"),
+            "ipc": joined("ipcInfoArray", "ipcNumber") or first("ipcNumber"),
+            "abstract": first("astrtCont", "abstractContent", "abstract"),
+        }
+        detail["url"] = ("https://www.kipris.or.kr/khome/search/searchResult.do"
+                         if not appno else
+                         f"https://www.kipris.or.kr/khome/main/base/BasePatentSearch.do")
+        if not any(v for k, v in detail.items() if k not in ("url",)):
+            return jsonify({"success": False, "error": "상세 정보를 찾지 못했습니다."})
+        return jsonify({"success": True, "detail": detail})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"상세 조회 실패: {e}"})
 
 @app.route("/api/assist/support")
 def assist_support():
