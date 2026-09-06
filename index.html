@@ -61,19 +61,14 @@ body:not(.dark) .sm-div{background:rgba(0,0,0,.1);}
 .sm-item.sm-icon{gap:0;padding:8px 10px;}
 .sm-item.sm-icon .sm-ic{font-size:15px;}
 .sm-item.sm-icon .ai-active-badge{margin-left:2px;}
-/* ── AI 시나리오 진입 버튼(내규·법령 페이지 내부) ── */
-.scen-entry{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin:10px 0 2px;
-  padding:12px 16px;border:1px solid var(--bd);border-radius:12px;background:var(--gl);cursor:pointer;
-  font-family:var(--font);transition:.14s;}
-.scen-entry:hover{border-color:var(--g);box-shadow:var(--shadow);}
-.scen-entry-ic{font-size:16px;color:var(--gp);flex-shrink:0;}
-.scen-entry-t{font-size:13.5px;font-weight:800;color:var(--gp);flex-shrink:0;}
-.scen-entry-sub{font-size:12px;color:var(--mu);font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.scen-entry-go{font-size:15px;color:var(--gp);font-weight:800;flex-shrink:0;}
-.scen-back{display:inline-flex;align-items:center;gap:4px;margin-bottom:10px;padding:6px 12px;border:1px solid var(--bd);
-  border-radius:999px;background:var(--sf);color:var(--mu);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font);transition:.12s;}
-.scen-back:hover{color:var(--tx);border-color:var(--g);}
-@media(max-width:640px){ .scen-entry-sub{display:none;} }
+/* ── 검색 유형 토글(키워드 ↔ AI 시나리오) ── */
+.search-toggle{display:inline-flex;background:var(--bg);border:1px solid var(--bd);border-radius:11px;padding:3px;gap:2px;margin:0 0 12px;}
+.stgl{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:none;background:transparent;border-radius:8px;
+  font-size:13px;font-weight:700;color:var(--mu);cursor:pointer;font-family:var(--font);white-space:nowrap;transition:.14s;}
+.stgl:hover{color:var(--tx);}
+.stgl.active{background:var(--sf);color:var(--gp);box-shadow:var(--shadow);}
+.stgl-ic{font-size:13px;}
+body.dark .stgl.active{background:#20222a;}
 /* ── 업무 도우미(공공조회) 결과 패널 ── */
 .assist-api-badge{font-size:11px;font-weight:700;padding:4px 11px;border-radius:999px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
 .assist-api-badge[hidden]{display:none;}
@@ -1723,18 +1718,16 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     <div class="tabs" id="agencyTabs">
       <button class="fav-tab-btn" id="favTabBtn" onclick="toggleFavTab()">☆ 즐겨찾기 <span id="favCount"></span></button>
     </div>
+    <!-- 검색 유형 토글: 키워드 검색 ↔ AI 시나리오 (내규·법령 페이지 내부) -->
+    <div class="search-toggle" id="searchToggle" role="tablist" aria-label="검색 유형">
+      <button class="stgl active" id="stglKw" role="tab" onclick="if(mode==='scenario')setMode(_scenReturn)"><span class="stgl-ic">🔍</span>키워드 검색</button>
+      <button class="stgl" id="stglScen" role="tab" onclick="setMode('scenario')" title="업무 상황을 문장으로 물어보면 근거 법령·조문을 제안합니다"><span class="stgl-ic">✦</span>AI 시나리오</button>
+    </div>
     <!-- 검색창 -->
     <div class="srow">
       <input id="q" class="sinput" style="padding-left:40px;" aria-label="검색어 입력" placeholder="🔍  내규 검색 (예: 직무발명, 여비)" onkeydown="if(event.key==='Enter')doSearch()">
       <button id="sbtn" class="sbtn" onclick="doSearch()">검색</button>
     </div>
-    <!-- AI 시나리오 진입 (내규·법령 페이지 내부에 배치) -->
-    <button id="scenarioEntry" class="scen-entry" style="display:none;" onclick="setMode('scenario')" title="업무 상황을 문장으로 물어보면 AI가 근거 법령·조문을 제안합니다">
-      <span class="scen-entry-ic">✦</span>
-      <span class="scen-entry-t">AI 시나리오 검색</span>
-      <span class="scen-entry-sub">업무 상황을 문장으로 물어보면 근거 법령·조문을 찾아드려요</span>
-      <span class="scen-entry-go">→</span>
-    </button>
     <!-- 내규 카테고리 바로가기 (내규·통합 모드일 때 표시) -->
     <div id="internalExamples" style="display:none;">
       <div class="qlabel">내규 카테고리 바로가기</div>
@@ -1742,7 +1735,6 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
     <!-- 시나리오 예시 칩 (시나리오 모드일 때만 표시) -->
     <div id="scenarioExamples" style="display:none;">
-      <button class="scen-back" onclick="setMode(_scenReturn||'internal')">← 검색으로 돌아가기</button>
       <div class="scen-apikey-note">
         ⚠ 시나리오 검색은 <b>AI가 답변을 생성</b>합니다. 작동하려면 먼저 상단
         <button class="scen-apikey-link" onclick="openAiModal()">✦ AI 설정</button>
@@ -2107,9 +2099,10 @@ function setMode(m){
   const intExamples = document.getElementById('internalExamples');
   const qlabel      = document.getElementById('qlabelDefault');
   const chipsWrap   = document.getElementById('chips');
-  const scenEntry   = document.getElementById('scenarioEntry');
-  // 시나리오 진입 버튼: 내규·법령 페이지에서만 노출
-  if(scenEntry) scenEntry.style.display = (m==='internal'||m==='law') ? '' : 'none';
+  // 검색 유형 토글 활성 표시(키워드 ↔ AI 시나리오)
+  const stKw=document.getElementById('stglKw'), stScen=document.getElementById('stglScen');
+  if(stKw)   stKw.classList.toggle('active', m!=='scenario');
+  if(stScen) stScen.classList.toggle('active', m==='scenario');
   // 모드별 보조 UI: 내규→카테고리 칩, 법령→자주 찾는 법령, 시나리오→예시 질문
   examples.style.display = (m==='scenario') ? '' : 'none';
   if(intExamples){
