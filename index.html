@@ -139,6 +139,10 @@ body.dark .stgl.active{background:#20222a;}
 .pat-d-v{color:var(--tx);word-break:break-word;}
 .pat-d-abs{margin-top:10px;padding-top:12px;border-top:1px solid var(--bd);}
 .pat-d-abs p{font-size:12.5px;line-height:1.8;color:var(--tx);margin-top:6px;white-space:pre-wrap;}
+/* 기업 상세: 표(그리드) 형식 — 셀 사이 얇은 구분선 */
+.comp-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1px;background:var(--bd);border:1px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:0;}
+.comp-grid .pat-d-row{background:var(--sf);padding:10px 13px;gap:12px;align-items:baseline;}
+.comp-grid .pat-d-k{min-width:92px;}
 @media(max-width:640px){ .pat-year{width:88px;} .pat-frow2 .pat-inp:first-of-type{min-width:120px;} }
 .reg-sem-badge{font-size:10.5px;font-weight:800;color:#fff;background:#7c3aed;
   border-radius:5px;padding:2px 7px;white-space:nowrap;}
@@ -2049,7 +2053,7 @@ function setAgency(ag){
 // ── 업무 도우미(공공 API 조회): 기업·특허·지원사업·조달 ──────────────────────
 let _assistMode=null, _assistStatus=null, _scenReturn='internal';
 const ASSIST_CFG={
-  company:    {tab:'smCompany',    label:'기업 조회',   ic:'🏢', ph:'사업자등록번호 10자리 (예: 123-45-67890)', hint:'국세청 사업자등록정보로 상호·납세 상태를 확인합니다.', param:'bno'},
+  company:    {tab:'smCompany',    label:'기업 조회',   ic:'🏢', ph:'회사명 · 사업자등록번호 · 대표자명 등', hint:'회사명·사업자번호·대표자명 등으로 기업 정보를 검색합니다.', param:'query'},
   patent:     {tab:'smPatent',     label:'특허 조회',   ic:'📄', ph:'특허 키워드 또는 출원인 (예: 스마트팜)',      hint:'KIPRIS에서 특허·실용신안을 검색합니다.',           param:'query'},
   support:    {tab:'smSupport',    label:'지원사업 조회', ic:'🎯', ph:'지원사업 키워드 (예: 창업, 수출, R&D)',       hint:'정부 지원사업 공고(기업마당)를 검색합니다.',        param:'query'},
   procurement:{tab:'smProcurement',label:'조달공고 조회', ic:'📢', ph:'입찰공고 키워드 (예: 시스템 구축)',            hint:'나라장터 입찰공고(최근 30일)를 검색합니다.',        param:'query'},
@@ -2079,6 +2083,14 @@ async function openAssist(kind){
     _patLast=null;
     p.innerHTML=head+_patFiltersHtml()+`<div id="patResults" class="pat-results"></div>`;
     const pq=document.getElementById('patQuery'); if(pq) pq.focus();
+    return;
+  }
+  if(kind==='company'){                      // 기업: 통합 키워드 검색 + 목록 + 상세 그리드
+    _compLast=null;
+    p.innerHTML=head+
+      `<div class="assist-search"><input id="compQuery" class="sinput" placeholder="회사명 · 사업자등록번호 · 대표자명 등" onkeydown="if(event.key==='Enter')runCompany()" aria-label="기업 검색어"><button class="sbtn" onclick="runCompany()">조회</button></div>`+
+      `<div id="compResults" class="pat-results"></div>`;
+    const cq=document.getElementById('compQuery'); if(cq) cq.focus();
     return;
   }
   p.innerHTML=head+
@@ -2111,6 +2123,52 @@ function _patFiltersHtml(){
 function _patApplPick(btn){
   document.querySelectorAll('#patAppl .pat-chip').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
+}
+// ── 기업 조회: 통합 키워드 검색 + 목록 + 상세 그리드 ──
+let _compLast=null;
+function _fmtBno(b){ b=String(b||'').replace(/\D/g,''); return b.length===10?`${b.slice(0,3)}-${b.slice(3,5)}-${b.slice(5)}`:b; }
+function runCompany(){
+  const box=document.getElementById('compResults'); if(!box) return;
+  const q=((document.getElementById('compQuery')||{}).value||'').trim();
+  if(!q){ box.innerHTML=`<div class="assist-note">회사명·사업자번호·대표자명 등 검색어를 입력하세요.</div>`; return; }
+  box.innerHTML=`<div class="assist-loading"><div class="spinner"></div><span>기업 조회 중...</span></div>`;
+  fetch('/api/assist/company?query='+encodeURIComponent(q)).then(r=>r.json()).then(d=>{ _compLast=d; box.innerHTML=_renderCompanyList(d); })
+    .catch(e=>{ box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
+}
+function _renderCompanyList(d){
+  if(d&&d.need_key){
+    const url=d.apply_url?`<a href="${escHtml(d.apply_url)}" target="_blank" rel="noopener">서비스키 발급 안내 →</a>`:'';
+    return `<div class="assist-note">🔑 <b>${escHtml(d.provider||'')}</b> 서비스키가 설정되지 않았습니다.<br>관리자가 환경변수(<code>BIZNO_API_KEY</code>)를 설정하면 조회할 수 있습니다.<br>${url}</div>`;
+  }
+  if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'조회에 실패했습니다.')}</div>`;
+  const items=d.items||[];
+  if(!items.length) return `<div class="assist-note">조건에 맞는 기업이 없습니다.</div>`;
+  const rows=items.map(it=>{
+    const meta=[it.bno&&_fmtBno(it.bno), it.biz, it.addr].filter(Boolean).map(escHtml).join(' · ');
+    const bnoArg=argAttr(it.bno||''), nmArg=encodeURIComponent(it.name||'');
+    return `<button class="pat-row" onclick="compDetail('${bnoArg}','${nmArg}')" title="상세 보기">`+
+      `<div class="pat-row-t">${escHtml(it.name||'(상호 미상)')}</div>`+
+      `<div class="pat-row-m">${it.ceo?'<span class="pat-row-appl">대표 '+escHtml(it.ceo)+'</span>':''}${meta?'<span class="pat-row-meta">'+meta+'</span>':''}</div></button>`;
+  }).join('');
+  const total=d.total&&d.total!==String(items.length)?` / 총 ${escHtml(d.total)}건`:'';
+  return `<div class="pat-count">${items.length}건 표시${total}</div><div class="pat-list">${rows}</div>`;
+}
+function compDetail(bno, nameEnc){
+  const box=document.getElementById('compResults'); if(!box) return;
+  const back=`<button class="pat-back" onclick="compBackToList()">← 목록으로</button>`;
+  const qs=(bno&&bno.replace(/\D/g,'').length>=10)?('bno='+encodeURIComponent(bno)):('query='+encodeURIComponent(decodeURIComponent(nameEnc||'')));
+  box.innerHTML=back+`<div class="assist-loading"><div class="spinner"></div><span>상세 불러오는 중...</span></div>`;
+  fetch('/api/assist/company/detail?'+qs).then(r=>r.json()).then(d=>{ box.innerHTML=back+_renderCompanyDetail(d); })
+    .catch(e=>{ box.innerHTML=back+`<div class="assist-note">상세를 불러오지 못했습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
+}
+function compBackToList(){ const box=document.getElementById('compResults'); if(box) box.innerHTML=_renderCompanyList(_compLast||{success:true,items:[]}); }
+function _renderCompanyDetail(d){
+  if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'상세 정보를 찾지 못했습니다.')}</div>`;
+  const t=d.detail||{};
+  const fields=(t.fields||[]).filter(f=>f&&f[1]);
+  if(!fields.length) return `<div class="assist-note">표시할 상세 정보가 없습니다.</div>`;
+  const grid=fields.map(f=>`<div class="pat-d-row"><span class="pat-d-k">${escHtml(f[0])}</span><span class="pat-d-v">${escHtml(String(f[1]))}</span></div>`).join('');
+  return `<div class="pat-detail"><div class="pat-d-title">${escHtml(t.name||'(상호 미상)')}</div><div class="pat-d-grid comp-grid">${grid}</div></div>`;
 }
 function runPatent(){
   const box=document.getElementById('patResults'); if(!box) return;

@@ -4618,23 +4618,67 @@ def debug_law_xml():
 # ══════════════════════════════════════════════════════════════════════════
 # 업무 도우미 — 공공 API 프록시 (기업/특허/지원사업/조달)
 # 서비스키는 환경변수로 주입한다. 키 미설정 시 need_key 응답으로 UI가 안내한다.
-#   DATA_GO_KR_KEY  : 공공데이터포털 서비스키 (기업 상태조회·나라장터 입찰공고)
+#   BIZNO_API_KEY   : 비즈노 기업정보 API 키 (기업 통합검색: 회사명·사업자번호·대표자)
+#   DATA_GO_KR_KEY  : 공공데이터포털 서비스키 (국세청 사업자상태 보조·나라장터 입찰공고)
 #   KIPRIS_API_KEY  : 키프리스 플러스 서비스키 (특허·상표·디자인)
 #   BIZINFO_API_KEY : 기업마당 인증키(crtfcKey) (정부 지원사업 공고)
 # 참고: yybmion/public-apis-4Kr
 # ══════════════════════════════════════════════════════════════════════════
-_ASSIST_ENV = {"company": "DATA_GO_KR_KEY", "patent": "KIPRIS_API_KEY",
+_ASSIST_ENV = {"company": "BIZNO_API_KEY", "patent": "KIPRIS_API_KEY",
                "support": "BIZINFO_API_KEY", "procurement": "DATA_GO_KR_KEY"}
 _ASSIST_APPLY = {
-    "company":     "https://www.data.go.kr/data/15081808/openapi.do",
+    "company":     "https://bizno.net/openapi",
     "patent":      "https://plus.kipris.or.kr/portal/main/main.do",
     "support":     "https://www.bizinfo.go.kr/",
     "procurement": "https://www.data.go.kr/data/15129394/openapi.do",
 }
 _ASSIST_PROVIDER = {
-    "company": "국세청 사업자등록정보", "patent": "특허청 KIPRIS",
+    "company": "비즈노 기업정보", "patent": "특허청 KIPRIS",
     "support": "기업마당(중소벤처기업부)", "procurement": "조달청 나라장터",
 }
+# 비즈노 응답 필드명(계정/버전에 따라 다를 수 있어 후보를 넓게 잡는다)
+_BIZNO_NAME = ("company", "companyName", "cmpnm", "corpNm", "bizNm", "name", "상호")
+_BIZNO_CEO  = ("ceonm", "ceoNm", "ceo", "reprNm", "repName", "대표자")
+_BIZNO_BNO  = ("bno", "bizno", "brno", "businessNumber", "b_no", "사업자등록번호")
+_BIZNO_ADDR = ("addr", "address", "adres", "roadAddr", "주소")
+_BIZNO_BIZ  = ("bizcond", "bizType", "biztype", "industry", "업태", "종목")
+# 상세 그리드 라벨(알려진 키 → 한글). 없는 키는 원본 키를 그대로 노출.
+_BIZNO_LABELS = {
+    "company": "상호", "companyName": "상호", "corpNm": "상호", "cmpnm": "상호",
+    "ceonm": "대표자", "ceoNm": "대표자", "ceo": "대표자", "reprNm": "대표자",
+    "bno": "사업자등록번호", "bizno": "사업자등록번호", "brno": "사업자등록번호", "b_no": "사업자등록번호",
+    "corpno": "법인등록번호", "corpNo": "법인등록번호", "cno": "법인등록번호",
+    "addr": "주소", "address": "주소", "adres": "주소", "roadAddr": "도로명주소",
+    "bizcond": "업태", "bizType": "종목", "biztype": "종목", "bizitem": "종목",
+    "tel": "전화번호", "hp": "휴대전화", "fax": "팩스", "email": "이메일", "homepage": "홈페이지",
+    "estbDt": "설립일", "establishDate": "설립일", "empCnt": "종업원수", "empcnt": "종업원수",
+    "capital": "자본금", "sales": "매출액", "sector": "산업분류", "jibunAddr": "지번주소",
+}
+# 그리드 우선 표시 순서(라벨 기준)
+_BIZNO_ORDER = ["상호", "대표자", "사업자등록번호", "법인등록번호", "업태", "종목",
+                "산업분류", "설립일", "종업원수", "자본금", "매출액",
+                "주소", "도로명주소", "지번주소", "전화번호", "휴대전화", "팩스",
+                "이메일", "홈페이지"]
+
+def _bz(row, keys):
+    for k in keys:
+        v = row.get(k)
+        if v not in (None, "", []):
+            return str(v).strip()
+    return ""
+
+def _bizno_search(key, q, page="1", rows="30"):
+    """비즈노 통합검색 → 원본 레코드 리스트."""
+    r = _SESSION.get("https://bizno.net/api/fapi",
+                     params={"key": key, "gb": "1", "q": q, "type": "json",
+                             "pg": page, "onePageCnt": rows}, timeout=15)
+    d = r.json() or {}
+    rows_ = (d.get("items") or d.get("list") or d.get("data")
+             or (d.get("result") or {}).get("items") or [])
+    if isinstance(rows_, dict):
+        rows_ = rows_.get("item") or [rows_]
+    total = d.get("totalCount") or d.get("total") or d.get("cnt") or len(rows_)
+    return (rows_ if isinstance(rows_, list) else []), str(total)
 
 def _assist_key(kind: str) -> str:
     return (os.environ.get(_ASSIST_ENV.get(kind, ""), "") or "").strip()
@@ -4652,30 +4696,88 @@ def assist_status():
     return jsonify({k: bool(_assist_key(k))
                     for k in ("company", "patent", "support", "procurement")})
 
+def _nts_status(bno):
+    """국세청 사업자등록 상태(계속/휴업/폐업) — DATA_GO_KR_KEY 있을 때만."""
+    gk = (os.environ.get("DATA_GO_KR_KEY", "") or "").strip()
+    bno = re.sub(r"\D", "", bno or "")
+    if not gk or len(bno) != 10:
+        return {}
+    try:
+        r = _SESSION.post("https://api.odcloud.kr/api/nts-businessman/v1/status",
+                          params={"serviceKey": gk}, json={"b_no": [bno]}, timeout=12)
+        rows = (r.json() or {}).get("data") or []
+        if rows:
+            row = rows[0]
+            return {"납세자 상태": row.get("b_stt") or "", "과세유형": row.get("tax_type") or "",
+                    "폐업일": row.get("end_dt") or ""}
+    except Exception:
+        pass
+    return {}
+
 @app.route("/api/assist/company")
 def assist_company():
-    """기업 조회 — 국세청 사업자등록 상태조회(odcloud)."""
+    """기업 조회 — 비즈노 통합검색(회사명·사업자번호·대표자명 등 키워드)."""
     key = _assist_key("company")
     if not key:
         return _assist_need_key("company")
-    bno = re.sub(r"[^0-9]", "", request.args.get("bno", ""))
-    if len(bno) != 10:
-        return jsonify({"success": False, "error": "사업자등록번호 10자리를 입력하세요."})
+    query = request.args.get("query", "").strip()
+    page = re.sub(r"\D", "", request.args.get("page", "1")) or "1"
+    if not query:
+        return jsonify({"success": False,
+                        "error": "회사명·사업자등록번호·대표자명 등 검색어를 입력하세요."})
     try:
-        r = _SESSION.post("https://api.odcloud.kr/api/nts-businessman/v1/status",
-                          params={"serviceKey": key}, json={"b_no": [bno]}, timeout=15)
-        rows = (r.json() or {}).get("data") or []
-        if not rows:
-            return jsonify({"success": True, "count": 0, "items": []})
-        row = rows[0]
-        title = "-".join([bno[:3], bno[3:5], bno[5:]])
-        meta = [["납세자 상태", row.get("b_stt") or row.get("b_stt_cd") or "-"],
-                ["과세유형", row.get("tax_type") or "-"],
-                ["폐업일", row.get("end_dt") or "-"]]
-        return jsonify({"success": True, "count": 1, "items": [
-            {"title": title, "subtitle": row.get("tax_type", ""), "meta": meta, "url": ""}]})
+        rows, total = _bizno_search(key, query, page)
+        items = []
+        for row in rows[:30]:
+            name = _bz(row, _BIZNO_NAME)
+            bno = re.sub(r"\D", "", _bz(row, _BIZNO_BNO))
+            items.append({
+                "name": name or "(상호 미상)",
+                "ceo": _bz(row, _BIZNO_CEO),
+                "bno": bno,
+                "addr": _bz(row, _BIZNO_ADDR),
+                "biz": _bz(row, _BIZNO_BIZ)})
+        return jsonify({"success": True, "count": len(items),
+                        "total": total or str(len(items)), "items": items})
     except Exception as e:
         return jsonify({"success": False, "error": f"조회 실패: {e}"})
+
+@app.route("/api/assist/company/detail")
+def assist_company_detail():
+    """기업 상세 — 비즈노 레코드 전체를 그리드용 필드로 정규화(+국세청 상태 보조)."""
+    key = _assist_key("company")
+    if not key:
+        return _assist_need_key("company")
+    bno = re.sub(r"\D", "", request.args.get("bno", ""))
+    query = request.args.get("query", "").strip()
+    q = bno or query
+    if not q:
+        return jsonify({"success": False, "error": "검색어 또는 사업자번호가 필요합니다."})
+    try:
+        rows, _ = _bizno_search(key, q, "1")
+        rec = rows[0] if rows else None
+        if not rec:
+            return jsonify({"success": False, "error": "기업 정보를 찾지 못했습니다."})
+        name = _bz(rec, _BIZNO_NAME)
+        rbno = re.sub(r"\D", "", _bz(rec, _BIZNO_BNO)) or bno
+        # 라벨링 + 우선순위 정렬 (알려지지 않은 키는 원본 키로 노출)
+        labeled = {}
+        for k, v in rec.items():
+            if v in (None, "", []) or isinstance(v, (dict, list)):
+                continue
+            labeled[_BIZNO_LABELS.get(k, k)] = str(v).strip()
+        labeled.update(_nts_status(rbno))     # 국세청 상태 보조
+        fields, seen = [], set()
+        for lab in _BIZNO_ORDER:
+            if lab in labeled and lab not in seen:
+                fields.append([lab, labeled[lab]]); seen.add(lab)
+        for lab, v in labeled.items():
+            if lab not in seen:
+                fields.append([lab, v]); seen.add(lab)
+        return jsonify({"success": True,
+                        "detail": {"name": name or "(상호 미상)", "bno": rbno, "fields": fields}})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"상세 조회 실패: {e}"})
 
 @app.route("/api/assist/patent")
 def assist_patent():
