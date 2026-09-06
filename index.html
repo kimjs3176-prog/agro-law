@@ -116,6 +116,11 @@ body.dark .stgl.active{background:#20222a;}
 .pat-sel{padding:9px 12px;border:1px solid var(--bd);border-radius:9px;font-size:13px;background:var(--sf);color:var(--tx);cursor:pointer;font-family:var(--font);flex-shrink:0;}
 .pat-tilde{color:var(--mu);flex-shrink:0;}
 .pat-count{font-size:12px;color:var(--mu);margin-bottom:8px;}
+.pat-listhd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.pat-listhd .pat-count{margin-bottom:0;}
+.pat-xlsx{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border:1px solid var(--bd);border-radius:8px;background:var(--sf);color:var(--gp);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.12s;}
+.pat-xlsx:hover{border-color:var(--g);background:var(--gl);}
+.pat-xlsx:disabled{opacity:.6;cursor:progress;}
 .pat-list{display:flex;flex-direction:column;gap:8px;}
 .pat-row{display:block;width:100%;text-align:left;background:var(--sf);border:1px solid var(--bd);border-radius:11px;padding:12px 14px;cursor:pointer;font-family:var(--font);transition:.12s;}
 .pat-row:hover{border-color:var(--g);box-shadow:var(--shadow);}
@@ -2087,7 +2092,7 @@ async function openAssist(kind){
 // ── 특허 조회: 출원인 프리셋·기간·상태 필터 + 목록/상세 ──
 const PAT_APPLICANTS=['농촌진흥청','농림축산검역본부','국립농산물품질관리원','국립종자원','농업기술원'];
 const PAT_STATUS=[['','전체 상태'],['R','등록'],['A','공개'],['J','거절'],['F','소멸'],['C','취하'],['I','무효'],['G','포기']];
-let _patLast=null;
+let _patLast=null, _patParams='';
 function _patFiltersHtml(){
   const chips=PAT_APPLICANTS.map((a,i)=>
     `<button class="pat-chip${i===0?' active':''}" data-v="${argAttr(a)}" onclick="_patApplPick(this)">${escHtml(a==='농업기술원'?'농업기술원(각 도)':a)}</button>`).join('');
@@ -2116,6 +2121,7 @@ function runPatent(){
   const st=(document.getElementById('patStatus')||{}).value||''; if(st) p.set('status',st);
   const from=((document.getElementById('patFrom')||{}).value||'').replace(/\D/g,''); if(from) p.set('date_from',from);
   const to=((document.getElementById('patTo')||{}).value||'').replace(/\D/g,''); if(to) p.set('date_to',to);
+  _patParams=p.toString();                 // 엑셀 내보내기에서 동일 필터 재사용
   box.innerHTML=`<div class="assist-loading"><div class="spinner"></div><span>특허 조회 중...</span></div>`;
   fetch('/api/assist/patent?'+p.toString()).then(r=>r.json()).then(d=>{ _patLast=d; box.innerHTML=_renderPatentList(d); })
     .catch(e=>{ box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
@@ -2136,7 +2142,38 @@ function _renderPatentList(d){
       `<div class="pat-row-m"><span class="pat-row-appl">${escHtml(it.applicant||'')}</span>${metaBits?'<span class="pat-row-meta">'+metaBits+'</span>':''}</div></button>`;
   }).join('');
   const total=d.total&&d.total!==String(items.length)?` / 총 ${escHtml(d.total)}건`:'';
-  return `<div class="pat-count">${items.length}건 표시${total}</div><div class="pat-list">${rows}</div>`;
+  return `<div class="pat-listhd"><span class="pat-count">${items.length}건 표시${total}</span>`+
+         `<button class="pat-xlsx" onclick="exportPatents(this)" title="현재 필터의 전체 결과를 엑셀(CSV)로 저장">⬇ 엑셀 다운로드</button></div>`+
+         `<div class="pat-list">${rows}</div>`;
+}
+// 현재 필터의 특허 전체 결과를 여러 페이지로 모아 엑셀(CSV)로 저장
+async function exportPatents(btn){
+  if(!_patParams){ return; }
+  const orig=btn?btn.textContent:'';
+  if(btn){ btn.disabled=true; btn.textContent='내보내는 중...'; }
+  try{
+    const ROWS=200, MAXPAGES=25;            // 안전 상한(최대 5000건)
+    let all=[], total=0;
+    for(let pg=1; pg<=MAXPAGES; pg++){
+      const r=await fetch(`/api/assist/patent?${_patParams}&rows=${ROWS}&page=${pg}`);
+      const d=await r.json();
+      if(!d || d.success===false || d.need_key){
+        if(pg===1){ alert((d&&d.error)||'내보낼 데이터가 없습니다.'); return; }
+        break;
+      }
+      const items=d.items||[];
+      if(!items.length) break;
+      all=all.concat(items);
+      total=parseInt(d.total||'0',10)||all.length;
+      if(btn) btn.textContent=`내보내는 중... (${all.length}${total?'/'+total:''})`;
+      if(all.length>=total || items.length<ROWS) break;
+    }
+    if(!all.length){ alert('내보낼 데이터가 없습니다.'); return; }
+    const header=['제목','출원인','출원번호','출원일','등록번호','상태','IPC'];
+    const rows=all.map(it=>[it.title||'', it.applicant||'', it.appno||'', _fmtDate(it.appdate), it.regno||'', it.status||'', it.ipc||'']);
+    _downloadCSV(header, rows, '특허목록');
+  }catch(e){ alert('내보내기 실패: '+(e.message||e)); }
+  finally{ if(btn){ btn.disabled=false; btn.textContent=orig||'⬇ 엑셀 다운로드'; } }
 }
 function _fmtDate(s){ s=String(s||'').replace(/\D/g,''); return s.length>=8?`${s.slice(0,4)}.${s.slice(4,6)}.${s.slice(6,8)}`:s; }
 function patDetail(appno){

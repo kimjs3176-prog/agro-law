@@ -4694,11 +4694,13 @@ def assist_patent():
     df = re.sub(r"\D", "", request.args.get("date_from", ""))
     dt = re.sub(r"\D", "", request.args.get("date_to", ""))
     page = re.sub(r"\D", "", request.args.get("page", "1")) or "1"
+    rows = re.sub(r"\D", "", request.args.get("rows", "30")) or "30"
+    rows = str(max(1, min(500, int(rows))))     # KIPRIS numOfRows 상한 보호
     if not applicant and not query:
         return jsonify({"success": False, "error": "출원인 또는 검색어를 입력하세요."})
     base = "http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice"
     try:
-        params = {"ServiceKey": key, "numOfRows": "30", "pageNo": page,
+        params = {"ServiceKey": key, "numOfRows": rows, "pageNo": page,
                   "patent": "true", "utility": "true", "sortSpec": "AD", "descSort": "true"}
         if applicant:
             params["applicant"] = applicant
