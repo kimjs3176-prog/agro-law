@@ -26,7 +26,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .topbar{background:rgba(255,255,255,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.06);padding:0 24px;display:flex;align-items:center;height:60px;gap:10px;position:sticky;top:0;z-index:200;box-shadow:0 1px 0 rgba(0,0,0,.04);}
 .logo{width:32px;height:32px;background:var(--g);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:800;flex-shrink:0;box-shadow:0 2px 8px rgba(94,106,210,.35);}
 .brand{font-size:17px;font-weight:800;letter-spacing:-.5px;color:var(--tx);}.brand-sub{font-size:11px;color:var(--mu);font-weight:500;letter-spacing:.1px;}
-.apibadge{margin-left:auto;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;background:var(--gl);color:var(--gd);}
+.apibadge{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;background:var(--gl);color:var(--gd);}
+.tb-tools{margin-left:auto;display:flex;align-items:center;gap:1px;}
+.tb-tool{display:inline-flex;align-items:center;gap:5px;padding:7px 11px;border:none;background:transparent;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--mu);cursor:pointer;text-decoration:none;font-family:var(--font);transition:.12s;position:relative;white-space:nowrap;}
+.tb-tool:hover{background:var(--bg);color:var(--tx);}
+.tb-tool.active{background:var(--gl);color:var(--gp);}
+.tb-ic{font-size:15px;line-height:1;}
+.tb-cnt{font-size:10.5px;font-weight:800;color:var(--gd);}
+.tb-tool .ai-active-badge{position:absolute;top:4px;right:4px;}
 /* 레이아웃 */
 .main{max-width:min(1680px,96vw);margin:0 auto;padding:20px 28px 40px;}
 @media(min-width:1800px){.main{max-width:1800px;}}
@@ -134,6 +141,16 @@ body.dark .stgl.active{background:#20222a;}
 .pat-list{display:flex;flex-direction:column;gap:8px;}
 .pat-row{display:block;width:100%;text-align:left;background:var(--sf);border:1px solid var(--bd);border-radius:11px;padding:12px 14px;cursor:pointer;font-family:var(--font);transition:.12s;}
 .pat-row:hover{border-color:var(--g);box-shadow:var(--shadow);}
+.pat-rw{position:relative;}
+.pat-rw .pat-row{padding-right:38px;}
+.pat-fav{position:absolute;top:9px;right:9px;width:28px;height:28px;border:none;background:transparent;font-size:17px;line-height:1;color:var(--ht);cursor:pointer;border-radius:7px;}
+.pat-fav:hover{background:var(--gl);}
+.pat-fav.on{color:#f5b301;}
+.det-fav{margin-left:auto;font-size:12px;font-weight:700;padding:5px 11px;border:1px solid var(--bd);border-radius:999px;background:var(--sf);color:var(--mu);cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.det-fav:hover{border-color:#f5b301;color:#b8860b;}
+.det-fav.on{background:#fff8e6;border-color:#f5b301;color:#b8860b;}
+body.dark .det-fav.on{background:rgba(245,179,1,.16);color:#fbbf24;}
+.fav-due{display:inline-block;font-size:12px;font-weight:700;color:var(--mu);padding:6px 0;}
 .pat-row-t{font-size:13.5px;font-weight:700;color:var(--tx);line-height:1.45;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px;}
 .pat-badge{font-size:10.5px;font-weight:800;color:var(--gp);background:var(--gl);border-radius:5px;padding:1px 7px;flex-shrink:0;}
 .pat-row-m{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;}
@@ -1034,6 +1051,7 @@ body.dark .int-law-chip{background:#161920;color:#b7bdf0;}
   .sb-label{display:none;}
   .settings-btn{padding:7px 9px;font-size:15px;margin-left:2px;}
   .apibadge{font-size:10px;padding:3px 9px;}
+  .tb-tools{display:none;}   /* 모바일은 하단 내비게이션으로 대체 */
   .main{padding:12px 12px 76px;}
   .spanel{padding:16px 16px 14px;border-radius:16px;}
   .tabs{gap:5px;flex-wrap:wrap;}
@@ -1946,9 +1964,15 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     <span class="brand-en" style="font-size:10px;color:#9ca3af;margin-left:6px;font-weight:500;letter-spacing:.5px;">Work Assistant</span><br>
     <span class="brand-sub">내규똑똑 · 법령 · 기업 · 특허 · 지원사업 · 조달 통합 지원</span>
   </div>
+  <div class="tb-tools">
+    <button class="tb-tool" id="tbFav" onclick="toggleFavTab()" title="즐겨찾기"><span class="tb-ic">☆</span><span class="tb-tl">즐겨찾기</span><span id="tbFavCount" class="tb-cnt"></span></button>
+    <button class="tb-tool" onclick="openCollModal()" title="컬렉션"><span class="tb-ic">📁</span><span class="tb-tl">컬렉션</span></button>
+    <button class="tb-tool" onclick="openStatPanel()" title="검색 통계"><span class="tb-ic">📊</span><span class="tb-tl">통계</span></button>
+    <a class="tb-tool" href="/upload" title="내규 업로드"><span class="tb-ic">📤</span><span class="tb-tl">업로드</span></a>
+    <button class="tb-tool" onclick="openAiModal()" title="AI 설정"><span class="tb-ic">✦</span><span class="tb-tl">AI 설정</span><span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
+  </div>
   <span class="apibadge" id="badge">● 확인 중</span>
   <button class="dark-btn" id="darkBtn" onclick="toggleDark()" title="다크모드" aria-label="다크 모드 전환">🌙</button>
-  <!-- 통계·컬렉션·업로드·AI설정은 좌측 메뉴 패널로 이동 -->
 </div>
 
 <!-- 통계 패널 -->
@@ -1984,13 +2008,6 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
         <span class="sm-glabel">업무도구</span>
         <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 본문 작성"><span class="sm-ic">🧾</span><span>지출결의서</span></button>
       </div>
-    </div>
-    <div class="sm-sec sm-tools">
-      <button class="sm-item sm-icon" onclick="toggleFavTab()" title="즐겨찾기" aria-label="즐겨찾기"><span class="sm-ic">☆</span></button>
-      <button class="sm-item sm-icon" onclick="openCollModal()" title="컬렉션" aria-label="컬렉션"><span class="sm-ic">📁</span></button>
-      <button class="sm-item sm-icon" onclick="openStatPanel()" title="통계" aria-label="통계"><span class="sm-ic">📊</span></button>
-      <a class="sm-item sm-icon" href="/upload" title="내규 업로드" aria-label="내규 업로드"><span class="sm-ic">📤</span></a>
-      <button class="sm-item sm-icon" onclick="openAiModal()" title="AI 설정" aria-label="AI 설정"><span class="sm-ic">✦</span><span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
     </div>
   </aside>
   <div class="main-content">
@@ -2463,9 +2480,12 @@ function _compRowsHtml(){
   const rows=arr.map(it=>{
     const meta=[it.bno&&_fmtBno(it.bno), it.biz, it.addr].filter(Boolean).map(escHtml).join(' · ');
     const bnoArg=argAttr(it.bno||''), nmArg=encodeURIComponent(it.name||'');
-    return `<button class="pat-row" onclick="compDetail('${bnoArg}','${nmArg}')" title="상세 보기">`+
+    const favItem={type:'company',name:it.name||'',subtitle:it.bno?('사업자 '+_fmtBno(it.bno)):(it.ceo?('대표 '+it.ceo):''),bno:it.bno||'',url:''};
+    const on=favHas(favItem);
+    return `<div class="pat-rw"><button class="pat-row" onclick="compDetail('${bnoArg}','${nmArg}')" title="상세 보기">`+
       `<div class="pat-row-t">${escHtml(it.name||'(상호 미상)')}</div>`+
-      `<div class="pat-row-m">${it.ceo?'<span class="pat-row-appl">대표 '+escHtml(it.ceo)+'</span>':''}${meta?'<span class="pat-row-meta">'+meta+'</span>':''}</div></button>`;
+      `<div class="pat-row-m">${it.ceo?'<span class="pat-row-appl">대표 '+escHtml(it.ceo)+'</span>':''}${meta?'<span class="pat-row-meta">'+meta+'</span>':''}</div></button>`+
+      `<button class="pat-fav${on?' on':''}" data-fav="${_favData(favItem)}" data-style="row" onclick="favToggleEl(this)" title="즐겨찾기" aria-pressed="${on}">${on?'★':'☆'}</button></div>`;
   }).join('');
   return `<div class="pat-count">${arr.length}건 표시${total}</div><div class="pat-list">${rows}</div>`;
 }
@@ -2564,7 +2584,10 @@ function _renderCompanyDetail(d){
   const fields=(t.fields||[]).filter(f=>f&&f[1]);
   if(!fields.length&&!t.finance) return `<div class="assist-note">표시할 상세 정보가 없습니다.</div>`;
   const grid=fields.map(f=>`<div class="pat-d-row"><span class="pat-d-k">${escHtml(f[0])}</span><span class="pat-d-v">${_compVal(f[0],f[1])}</span></div>`).join('');
-  return `<div class="pat-detail"><div class="pat-d-title">${escHtml(t.name||'(상호 미상)')}${_compStatusBadge(fields)}</div>`+
+  const favItem={type:'company',name:t.name||'',subtitle:t.bno?('사업자 '+_fmtBno(t.bno)):'',bno:t.bno||'',url:''};
+  const favOn=favHas(favItem);
+  const favBtn=`<button class="det-fav${favOn?' on':''}" data-fav="${_favData(favItem)}" onclick="favToggleEl(this)" aria-pressed="${favOn}">${favOn?'★ 즐겨찾기됨':'☆ 즐겨찾기'}</button>`;
+  return `<div class="pat-detail"><div class="pat-d-title">${escHtml(t.name||'(상호 미상)')}${_compStatusBadge(fields)}${favBtn}</div>`+
     _renderCompStats(t.stats)+
     `<div class="pat-d-grid comp-grid">${grid}</div>`+
     _renderCompSkills(t.skills)+
@@ -2682,20 +2705,17 @@ function _oppId(kind,it){
   try{ return 'o'+btoa(unescape(encodeURIComponent(raw))).replace(/[^A-Za-z0-9]/g,''); }
   catch(e){ return 'o'+raw.replace(/[^A-Za-z0-9]/g,''); }
 }
-function _oppStars(){ try{ return JSON.parse(localStorage.getItem('oppStars')||'{}'); }catch(e){ return {}; } }
-function _oppSaveStars(o){ try{ localStorage.setItem('oppStars', JSON.stringify(o)); }catch(e){} }
-function _oppIsStar(id){ return !!_oppStars()[id]; }
+// 지원사업·조달 ★ = 통합 즐겨찾기(내규·법령 등과 동일 저장소). 마감일은 캘린더에 사용.
+function _oppFavItem(it){ return {type:it.kind, name:it.title||'', subtitle:it.subtitle||'', url:it.url||'', end:it.end||'', endText:it.endText||''}; }
+function _oppIsStar(id){ const it=_oppItemMap[id]; return it?favHas(_oppFavItem(it)):false; }
 function _oppToggleStar(id, btn){
-  const o=_oppStars();
-  if(o[id]){ delete o[id]; }
-  else { const it=_oppItemMap[id]; if(it) o[id]={kind:it.kind,title:it.title||'',end:it.end||'',url:it.url||'',subtitle:it.subtitle||'',endText:it.endText||''}; }
-  _oppSaveStars(o);
-  const on=!!o[id];
-  if(btn){ btn.classList.toggle('on',on); btn.textContent=on?'★':'☆'; btn.setAttribute('aria-pressed',on); }
+  const it=_oppItemMap[id]; if(!it) return;
+  const added=toggleFavItem(_oppFavItem(it));
+  if(btn){ btn.classList.toggle('on',added); btn.textContent=added?'★':'☆'; btn.setAttribute('aria-pressed',added); }
   _oppUpdateStarUI();
 }
 function _oppUpdateStarUI(){
-  const n=Object.keys(_oppStars()).length;
+  const n=getFavs().filter(f=>f.type==='support'||f.type==='procurement').length;
   const c=document.getElementById('oppStarCnt'); if(c) c.textContent=n;
   const b=document.getElementById('oppIcs'); if(b) b.classList.toggle('has', n>0);
 }
@@ -2790,8 +2810,9 @@ function _downloadICS(events){
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 function _oppExportICS(){
-  const evs=Object.values(_oppStars()).filter(s=>s.end&&String(s.end).length>=8);
-  if(!evs.length){ alert('관심함에 담긴 항목 중 마감일이 있는 공고가 없습니다.\n목록에서 ☆를 눌러 담아주세요.'); return; }
+  const evs=getFavs().filter(f=>(f.type==='support'||f.type==='procurement')&&f.end&&String(f.end).length>=8)
+    .map(f=>({title:f.name, subtitle:f.subtitle, url:f.url, end:f.end, endText:f.endText}));
+  if(!evs.length){ alert('즐겨찾기에 담긴 지원사업·조달 공고 중 마감일이 있는 항목이 없습니다.\n목록에서 ☆를 눌러 담아주세요.'); return; }
   _downloadICS(evs);
 }
 function _oppExportCSV(kind){
@@ -2828,9 +2849,13 @@ function _renderPatentList(d){
   const rows=items.map(it=>{
     const st=it.status?`<span class="pat-badge">${escHtml(it.status)}</span>`:'';
     const metaBits=[it.appno&&('출원 '+it.appno), it.appdate&&_fmtDate(it.appdate), it.regno&&('등록 '+it.regno)].filter(Boolean).map(escHtml).join(' · ');
-    return `<button class="pat-row" onclick="patDetail('${argAttr(it.appno||'')}')" title="상세 보기">`+
+    const kurl=it.appno?`https://www.kipris.or.kr/khome/search/searchResult.do?query=${encodeURIComponent(it.appno)}`:'';
+    const favItem={type:'patent',name:it.title||'',subtitle:it.applicant||'',appno:it.appno||'',url:kurl};
+    const on=favHas(favItem);
+    return `<div class="pat-rw"><button class="pat-row" onclick="patDetail('${argAttr(it.appno||'')}')" title="상세 보기">`+
       `<div class="pat-row-t">${escHtml(it.title||'(제목 없음)')}${st}</div>`+
-      `<div class="pat-row-m"><span class="pat-row-appl">${escHtml(it.applicant||'')}</span>${metaBits?'<span class="pat-row-meta">'+metaBits+'</span>':''}</div></button>`;
+      `<div class="pat-row-m"><span class="pat-row-appl">${escHtml(it.applicant||'')}</span>${metaBits?'<span class="pat-row-meta">'+metaBits+'</span>':''}</div></button>`+
+      `<button class="pat-fav${on?' on':''}" data-fav="${_favData(favItem)}" data-style="row" onclick="favToggleEl(this)" title="즐겨찾기" aria-pressed="${on}">${on?'★':'☆'}</button></div>`;
   }).join('');
   const total=d.total&&d.total!==String(items.length)?` / 총 ${escHtml(d.total)}건`:'';
   return `<div class="pat-listhd"><span class="pat-count">${items.length}건 표시${total}</span>`+
@@ -2883,8 +2908,12 @@ function _renderPatentDetail(d){
     ['대리인',t.agent],['IPC',t.ipc]].filter(r=>r[1]);
   const meta=rows.map(r=>`<div class="pat-d-row"><span class="pat-d-k">${escHtml(r[0])}</span><span class="pat-d-v">${escHtml(String(r[1]))}</span></div>`).join('');
   const abs=t.abstract?`<div class="pat-d-abs"><div class="pat-d-k">요약</div><p>${escHtml(t.abstract)}</p></div>`:'';
-  const link=t.appno?`<a class="assist-card-link" href="https://www.kipris.or.kr/khome/search/searchResult.do?query=${encodeURIComponent(t.appno)}" target="_blank" rel="noopener">KIPRIS에서 원문 보기 →</a>`:'';
-  return `<div class="pat-detail"><div class="pat-d-title">${escHtml(t.title||'(제목 없음)')}</div><div class="pat-d-grid">${meta}</div>${abs}${link}</div>`;
+  const kurl=t.appno?`https://www.kipris.or.kr/khome/search/searchResult.do?query=${encodeURIComponent(t.appno)}`:'';
+  const link=kurl?`<a class="assist-card-link" href="${escHtml(kurl)}" target="_blank" rel="noopener">KIPRIS에서 원문 보기 →</a>`:'';
+  const favItem={type:'patent',name:t.title||'',subtitle:t.applicant||'',appno:t.appno||'',url:kurl};
+  const favOn=favHas(favItem);
+  const favBtn=`<button class="det-fav${favOn?' on':''}" data-fav="${_favData(favItem)}" onclick="favToggleEl(this)" aria-pressed="${favOn}">${favOn?'★ 즐겨찾기됨':'☆ 즐겨찾기'}</button>`;
+  return `<div class="pat-detail"><div class="pat-d-title">${escHtml(t.title||'(제목 없음)')}${favBtn}</div><div class="pat-d-grid">${meta}</div>${abs}${link}</div>`;
 }
 function closeAssist(){
   _assistMode=null;
@@ -5906,30 +5935,41 @@ async function loadFavs(){
   const favs = getFavs();
   const el = document.getElementById('favCount');
   if(el) el.textContent = favs.length ? `(${favs.length})` : '';
+  const tb = document.getElementById('tbFavCount');
+  if(tb) tb.textContent = favs.length ? `(${favs.length})` : '';
   return favs;
 }
 
-// 즐겨찾기 식별: 이름 + 내규/법령 구분(같은 이름의 내규·법령이 충돌하지 않도록).
-// 구버전 저장분은 type이 없거나 부정확 → 내규 여부만 비교(법령 세부 구분은 무시).
+// 즐겨찾기 식별: 유형 버킷 + 이름 + 링크(사업자·출원번호). 모든 조회 유형 지원.
 const _isIntFav = t => String(t||'')==='internal';
-function _favEq(f, name, type){
-  return f.name === name && _isIntFav(f.type) === _isIntFav(type);
-}
-// 이름+구분 기준: 있으면 제거, 없으면 추가(최신 앞, 최대 30개)
-async function toggleFav(name, org, type, url){
+function _favBucket(type){ const t=String(type||'');
+  if(t==='internal') return 'internal';
+  if(['company','patent','support','procurement'].indexOf(t)>=0) return t;
+  return 'law'; }
+function _favKey(f){ return _favBucket(f.type)+'|'+(f.name||'')+'|'+(f.url||f.bno||f.appno||''); }
+function _favEq(a, b){ return _favKey(a)===_favKey(b); }
+function favHas(item){ return getFavs().some(f=>_favEq(f,item)); }
+// 항목 토글(최신 앞, 최대 60개)
+function toggleFavItem(item){
   const arr = getFavs();
-  const idx = arr.findIndex(f => _favEq(f, name, type));
+  const i = arr.findIndex(f=>_favEq(f,item));
   let added;
-  if(idx >= 0){ arr.splice(idx, 1); added = false; }
-  else {
-    arr.unshift({name, org: org||'', type: type||'법률', url: url||''});
-    if(arr.length > 30) arr.length = 30;
-    added = true;
-  }
-  _saveFavs(arr);
-  await loadFavs();
+  if(i>=0){ arr.splice(i,1); added=false; }
+  else { arr.unshift(Object.assign({savedAt:new Date().toISOString().slice(0,10)}, item)); if(arr.length>60) arr.length=60; added=true; }
+  _saveFavs(arr); loadFavs(); if(typeof favMode!=='undefined' && favMode) renderFavList();
   return added;
 }
+// 레거시 호환(내규·법령 카드/패널)
+function toggleFav(name, org, type, url){ return toggleFavItem({type:type||'법률', name, subtitle:org||'', url:url||''}); }
+// data-fav 속성 기반 범용 토글 버튼(기업·특허 등)
+function _favData(item){ return escHtml(JSON.stringify(item)); }
+function favToggleEl(btn){ if(!btn) return; let item; try{ item=JSON.parse(btn.dataset.fav||'{}'); }catch(e){ return; }
+  const added=toggleFavItem(item); btn.classList.toggle('on',added); btn.setAttribute('aria-pressed',added);
+  if(btn.dataset.style==='row') btn.textContent=added?'★':'☆';
+  else btn.innerHTML=added?'★ 즐겨찾기됨':'☆ 즐겨찾기'; }
+// 즐겨찾기에서 조회 도구 다시 열기
+function favOpenCompany(name){ Promise.resolve(openAssist('company')).then(()=>{ const q=document.getElementById('compQuery'); if(q){ q.value=name; runCompany(); } }); }
+function favOpenPatent(name){ Promise.resolve(openAssist('patent')).then(()=>{ const q=document.getElementById('patQuery'); if(q){ q.value=name; runPatent(); } }); }
 
 // 서버 의존 제거 — localStorage 마이그레이션만 보장(하위 호환용 no-op)
 async function syncLocalFavsToServer(){ getFavs(); }
@@ -5955,8 +5995,7 @@ async function toggleFavInternalPanel(){
   if(favMode) renderFavList();
 }
 async function updateFavBtnInternal(name){
-  const favs = await loadFavs();
-  const isFav = favs.some(f => _favEq(f, name, 'internal'));
+  const isFav = favHas({type:'internal', name});
   const btn = document.getElementById('fpFavBtnInt');
   if(btn){ btn.textContent = isFav ? '★' : '☆'; btn.classList.toggle('active', isFav); }
 }
@@ -5964,8 +6003,10 @@ async function updateFavBtnInternal(name){
 async function toggleFavTab(){
   favMode = !favMode;
   const btn = document.getElementById('favTabBtn');
-  btn.classList.toggle('active', favMode);
-  renderAgencyInfo(); // 즐겨찾기 모드에서는 숨김, 해제 시 복원
+  if(btn) btn.classList.toggle('active', favMode);
+  const tb = document.getElementById('tbFav'); if(tb) tb.classList.toggle('active', favMode);
+  if(typeof closeAssist==='function' && _assistMode) closeAssist();   // 도우미 화면이면 닫고 즐겨찾기 표시
+  renderAgencyInfo();
   if(favMode){
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
     renderFavList();
@@ -5974,47 +6015,51 @@ async function toggleFavTab(){
   }
 }
 
+const _FAV_TYPE_LABEL={internal:'내규', law:'법령', company:'기업', patent:'특허', support:'지원사업', procurement:'조달'};
 async function renderFavList(){
   const favs = await loadFavs();
-  document.getElementById('fbar').style.display='none';
-  document.getElementById('pagination').innerHTML='';
+  const fbar=document.getElementById('fbar'); if(fbar) fbar.style.display='none';
+  const pag=document.getElementById('pagination'); if(pag) pag.innerHTML='';
   if(!favs.length){
-    document.getElementById('results').innerHTML='<div class="fav-empty">⭐ 즐겨찾기한 법령이 없습니다.<br>법령 카드의 ☆ 버튼을 눌러 추가하세요.</div>';
+    document.getElementById('results').innerHTML='<div class="fav-empty">⭐ 즐겨찾기가 없습니다.<br>내규·법령·기업·특허·지원사업·조달 등 각 조회 결과의 ☆ 버튼으로 담아보세요.</div>';
     setStatus('');
     return;
   }
   setStatus(`즐겨찾기 ${favs.length}건`);
   document.getElementById('results').innerHTML=favs.map((f,i)=>{
-    const isInt=_isIntFav(f.type);
-    const openBtn=isInt
-      ? `<button class="abtn primary" onclick="wsOpen('${argAttr(f.name)}','internal')">📄 규정 전문 보기</button>`
-      : `<button class="abtn primary" onclick="wsOpen('${argAttr(f.name)}','law','${argAttr(f.url)}')">📄 조문 전문 보기</button>`
-        +`<a class="abtn" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ 법제처</a>`;
+    const bkt=_favBucket(f.type);
+    const label=bkt==='law'?(f.type||'법령'):(_FAV_TYPE_LABEL[bkt]||'기타');
+    const sub=f.subtitle||f.org||'';
+    let open='';
+    if(bkt==='internal') open=`<button class="abtn primary" onclick="wsOpen('${argAttr(f.name)}','internal')">📄 규정 전문 보기</button>`;
+    else if(bkt==='law') open=`<button class="abtn primary" onclick="wsOpen('${argAttr(f.name)}','law','${argAttr(f.url)}')">📄 조문 전문 보기</button>`+(f.url?`<a class="abtn" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ 법제처</a>`:'');
+    else if(bkt==='company') open=`<button class="abtn primary" onclick="favOpenCompany('${argAttr(f.name)}')">🏢 기업 다시 조회</button>`;
+    else if(bkt==='patent') open=`<button class="abtn primary" onclick="favOpenPatent('${argAttr(f.name)}')">📄 특허 다시 조회</button>`+(f.url?`<a class="abtn" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ KIPRIS</a>`:'');
+    else open=(f.url?`<a class="abtn primary" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ 공고 바로가기</a>`:'')+((f.endText||f.end)?`<span class="fav-due">마감 ${escHtml(f.endText||f.end)}</span>`:'');
     return `
     <div class="card" id="fc${i}">
       <div class="card-head" onclick="toggleCard2('fc${i}')">
-        <span class="ltype${isInt?' ltype-int':''}">${escHtml(isInt?'내규':(f.type||'법률'))}</span>
+        <span class="ltype${bkt==='internal'?' ltype-int':''}">${escHtml(label)}</span>
         <span class="lname">${escHtml(f.name)}</span>
-        <span class="lorg">${escHtml(f.org||'')}</span>
-        <button class="fav-btn active" onclick="event.stopPropagation();removeFav('${argAttr(f.name)}','${argAttr(f.type||'')}');renderFavList();" title="즐겨찾기 제거" style="margin-left:auto;">★</button>
+        <span class="lorg">${escHtml(sub)}</span>
+        <button class="fav-btn active" onclick="event.stopPropagation();removeFavAt(${i});" title="즐겨찾기 제거" style="margin-left:auto;">★</button>
         <span class="arrow" style="font-size:11px;color:var(--ht);margin-left:4px;">▼</span>
       </div>
-      <div class="card-body">
-        <div class="actions">
-          ${openBtn}
-        </div>
-      </div>
+      <div class="card-body"><div class="actions">${open}</div></div>
     </div>`;
   }).join('');
 }
 
 function toggleCard2(id){document.getElementById(id).classList.toggle('open');}
 
+function removeFavAt(i){
+  const arr = getFavs();
+  if(i>=0 && i<arr.length){ arr.splice(i,1); _saveFavs(arr); loadFavs(); renderFavList(); }
+}
+// 레거시 호환(이름·유형으로 제거)
 async function removeFav(name, type){
-  const arr = getFavs().filter(f => !_favEq(f, name, type));
-  _saveFavs(arr);
-  await loadFavs();
-  await renderFavList();
+  const arr = getFavs().filter(f => !_favEq(f, {type, name}));
+  _saveFavs(arr); await loadFavs();
 }
 
 async function updateFavBtn(panelName){
