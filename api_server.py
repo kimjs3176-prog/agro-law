@@ -4847,7 +4847,7 @@ _DART_COMPANY_FIELDS = {      # company.json 필드 → 그리드 라벨
 _COMP_GRID_ORDER = ["상호", "영문상호", "대표자", "사업자등록번호", "법인등록번호",
                     "법인구분", "상장여부", "상장시장", "종목명", "종목코드",
                     "주요사업", "업종코드", "종업원수", "설립일", "결산월",
-                    "납세자 상태", "과세유형", "폐업일",
+                    "납세자 상태", "과세유형", "폐업일", "감사인", "주거래은행",
                     "주소", "전화번호", "팩스", "홈페이지", "공시(DART)"]
 
 # ── 금융위원회 기업기본정보(공공데이터포털) — 회사명 검색 주 소스 ──────────────
@@ -4856,10 +4856,11 @@ _COMP_GRID_ORDER = ["상호", "영문상호", "대표자", "사업자등록번�
 _FSC_BASE = ("https://apis.data.go.kr/1160100/service/"
              "GetCorpBasicInfoService_V2/getCorpOutline_V2")
 _FSC_FIELDS = {              # getCorpOutline_V2 필드 → 그리드 라벨
-    "corpNm": "상호", "enpRprfNm": "대표자", "corpRegMrktDcdNm": "상장시장",
-    "enpMainBizNm": "주요사업", "enpEmpeCnt": "종업원수", "enpEstbDt": "설립일",
-    "enpBsadr": "주소", "enpTlno": "전화번호", "enpHmpgUrl": "홈페이지",
-    "enpStacMm": "결산월",
+    "corpNm": "상호", "corpEngNm": "영문상호", "enpRprfNm": "대표자",
+    "corpRegMrktDcdNm": "상장시장", "enpMainBizNm": "주요사업",
+    "enpEmpeCnt": "종업원수", "enpEstbDt": "설립일", "enpStacMm": "결산월",
+    "enpBsadr": "주소", "enpTlno": "전화번호", "enpFxno": "팩스",
+    "enpHmpgUrl": "홈페이지", "actnAudpnNm": "감사인", "enpMntrBnkNm": "주거래은행",
 }
 
 def _fsc_company(key, corp_nm=None, crno=None, rows="30"):
@@ -4905,6 +4906,64 @@ def _fsc_labeled(rec):
     out["상장여부"] = ("상장" if mkt and mkt not in ("기타", "비상장", "해당없음", "기타법인")
                     else "비상장")
     return out
+
+# ── 금융위원회 기업재무정보(공공데이터포털) — 요약재무제표 ────────────────────
+_FSC_FIN_BASE = ("https://apis.data.go.kr/1160100/service/"
+                 "GetFinaStatInfoService_V2/getSummFinaStat_V2")
+# 지표 라벨 → 응답 후보 필드명(버전차 대비 여러 후보). 값은 원(₩).
+_FSC_FIN_METRICS = [
+    ("매출액",   ("enpSaleAmt", "saleAmt", "revenue")),
+    ("영업이익", ("enpBzopPft", "bzopPft", "operatingProfit")),
+    ("당기순이익", ("enpCrtmNpf", "crtmNpf", "netIncome", "thstrmNpf")),
+    ("자산총계", ("enpTastAmt", "tastAmt", "totalAssets")),
+    ("부채총계", ("enpTdbtAmt", "tdbtAmt", "totalDebt", "totalLiabilities")),
+    ("자본총계", ("enpTcptAmt", "tcptAmt", "totalCapital", "totalEquity")),
+    ("자본금",   ("enpCptlAmt", "cptlAmt", "capital")),
+]
+
+def _fsc_financials(key, crno):
+    """금융위 요약재무제표(법인등록번호 기준) → DART finance와 동일 형태 dict|None."""
+    crno = re.sub(r"\D", "", str(crno or ""))
+    if not key or not crno:
+        return None
+    try:
+        r = _SESSION.get(_FSC_FIN_BASE, params={"serviceKey": key, "pageNo": "1",
+                         "numOfRows": "30", "resultType": "json", "crno": crno}, timeout=15)
+        j = r.json() or {}
+    except Exception:
+        return None
+    items = (((j.get("response") or {}).get("body") or {}).get("items") or [])
+    if isinstance(items, dict):
+        items = items.get("item") or []
+    if isinstance(items, dict):
+        items = [items]
+    if not isinstance(items, list) or not items:
+        return None
+    yr = lambda x: re.sub(r"\D", "", str(x.get("bizYear") or ""))[:4]
+    # 연결(있으면) 우선, 최신 사업연도 순
+    conso = [x for x in items if "연결" in str(x.get("fnclDcdNm") or x.get("fnclGrpDcdNm") or "")]
+    rows = sorted(conso or items, key=yr, reverse=True)
+    cur = rows[0]
+    prev = next((x for x in rows[1:] if yr(x) and yr(x) != yr(cur)), None)
+
+    def pick(row, keys):
+        if not row:
+            return None
+        for k in keys:
+            n = _num(row.get(k))
+            if n is not None:
+                return n
+        return None
+    out = []
+    for label, keys in _FSC_FIN_METRICS:
+        c = pick(cur, keys)
+        if c is not None:
+            out.append({"name": label, "cur": c, "prev": pick(prev, keys)})
+    if not out:
+        return None
+    fs = str(cur.get("fnclDcdNm") or cur.get("fnclGrpDcdNm") or "").strip()
+    return {"year": yr(cur), "report": "요약재무제표", "fs": fs,
+            "source": "금융위 공공데이터", "items": out}
 
 def _dart_company(key, corp_code):
     """corp_code → DART 기업개황(company.json) 라벨 dict. 실패 시 {}.
@@ -5034,18 +5093,24 @@ def assist_company_detail():
             if rec is None and query:
                 recs, _ = _fsc_company(gk, corp_nm=query, rows="10")
                 rec = (recs[0] if recs else None)
+        crno = corp if (corp and len(corp) >= 11) else ""
         if rec:
             lb = _fsc_labeled(rec)
             name = lb.get("상호") or query
             if not bno and lb.get("_bno"):
                 bno = lb["_bno"]
+            if not crno and lb.get("_crno"):
+                crno = lb["_crno"]
             labeled.update({k: v for k, v in lb.items() if not k.startswith("_")})
         # 국세청 사업자상태(공공데이터포털)
         if bno:
             labeled.update(_nts_status(bno))
             labeled.setdefault("사업자등록번호", _fmtbno_disp(bno))
-        # DART 재무(선택) — DART 키가 유효할 때만 회사명으로 매칭해 보강
-        if dk and (name or query):
+        # 재무: 금융위 요약재무제표(공공데이터포털) 우선 — 법인등록번호 기준
+        if gk and crno:
+            finance = _fsc_financials(gk, crno)
+        # DART 재무(선택 폴백) — 금융위 재무가 없고 DART 키가 유효할 때만
+        if finance is None and dk and (name or query):
             try:
                 hit = _dart_find_corp(dk, name or query)
                 if hit:
@@ -5078,10 +5143,24 @@ def assist_company_detail():
                     rr = (sales["cur"] - sales["prev"]) / abs(sales["prev"]) * 100
                     sub = f"전년비 {'+' if rr >= 0 else ''}{rr:.1f}%"
                 stats.append({"label": "최근 매출액", "value": _won_short(sales["cur"]), "sub": sub})
-            op = next((it for it in finance["items"] if it["name"] == "영업이익"), None)
+            def _fin(nm):
+                return next((it for it in finance["items"] if it["name"] == nm), None)
+            op = _fin("영업이익")
             if op and op.get("cur") is not None:
+                margin = ""
+                if sales and sales.get("cur"):
+                    margin = f"영업이익률 {op['cur']/sales['cur']*100:.1f}%"
                 stats.append({"label": "영업이익", "value": _won_short(op["cur"]),
-                              "sub": f"{finance.get('year','')} {finance.get('fs','')}".strip()})
+                              "sub": margin or f"{finance.get('year','')} {finance.get('fs','')}".strip()})
+            netp = _fin("당기순이익")
+            if netp and netp.get("cur") is not None:
+                stats.append({"label": "당기순이익", "value": _won_short(netp["cur"]),
+                              "sub": f"{finance.get('year','')} 기준"})
+            debt, cap = _fin("부채총계"), _fin("자본총계")
+            if debt and cap and cap.get("cur"):
+                stats.append({"label": "부채비율",
+                              "value": f"{debt['cur']/cap['cur']*100:.0f}%",
+                              "sub": "부채총계/자본총계"})
         emp = labeled.get("종업원수")
         if emp:
             stats.append({"label": "종업원수", "value": (emp + "명") if emp.isdigit() else emp, "sub": ""})
@@ -5096,7 +5175,12 @@ def assist_company_detail():
             detail["stats"] = stats
         if skills:
             detail["skills"] = skills
-        return jsonify({"success": True, "detail": detail})
+        resp = {"success": True, "detail": detail}
+        if request.args.get("debug"):
+            resp["_debug"] = {"crno": crno, "fsc_matched": bool(rec),
+                              "finance_source": (finance or {}).get("source", ""),
+                              "field_count": len(fields)}
+        return jsonify(resp)
     except Exception as e:
         return jsonify({"success": False, "error": f"상세 조회 실패: {e}"})
 

@@ -2000,7 +2000,6 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
         <span class="sm-glabel">공공DB</span>
         <button class="sm-item" id="smCompany" onclick="openAssist('company')" title="기업 통합검색(회사명·사업자번호·대표자)"><span class="sm-ic">🏢</span><span>기업</span></button>
         <button class="sm-item" id="smPatent" onclick="openAssist('patent')" title="특허·실용신안 검색(KIPRIS)"><span class="sm-ic">📄</span><span>특허</span></button>
-        <button class="sm-item" id="smProcurement" onclick="openAssist('procurement')" title="나라장터 입찰공고(조달청)"><span class="sm-ic">📢</span><span>조달공고</span></button>
         <button class="sm-item" id="smSupport" onclick="openAssist('support')" title="정부 지원사업 공고(공공데이터포털)"><span class="sm-ic">🎯</span><span>지원사업</span></button>
       </div>
       <span class="sm-div" aria-hidden="true"></span>
@@ -2560,8 +2559,10 @@ function _renderFinance(fin){
       `<span class="fin-v">${escHtml(_fmtWon(it.cur))}</span>`+
       `<span class="fin-p">${it.prev!=null?'전기 '+escHtml(_fmtWon(it.prev)):''} ${d}</span></div>`;
   }).join('');
+  const src=fin.source||'DART';
+  const meta=[fin.year?fin.year+'년':'', fin.report||'', fin.fs||'', '출처 '+src].filter(Boolean).join(' · ');
   return `<div class="fin-box"><div class="fin-hd">💰 재무 요약`+
-    `<span class="fin-meta">${escHtml(fin.year)}년 ${escHtml(fin.report||'')} · ${escHtml(fin.fs||'')} · 출처 DART</span></div>`+
+    `<span class="fin-meta">${escHtml(meta)}</span></div>`+
     `<div class="fin-grid">${rows}</div></div>`;
 }
 function _compStatusBadge(fields){
