@@ -149,24 +149,27 @@ body.dark .stgl.active{background:#20222a;}
 .pat-xlsx{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border:1px solid var(--bd);border-radius:8px;background:var(--sf);color:var(--gp);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.12s;}
 .pat-xlsx:hover{border-color:var(--g);background:var(--gl);}
 .pat-xlsx:disabled{opacity:.6;cursor:progress;}
-.pat-list{display:flex;flex-direction:column;gap:8px;}
-.pat-row{display:block;width:100%;text-align:left;background:var(--sf);border:1px solid var(--bd);border-radius:11px;padding:12px 14px;cursor:pointer;font-family:var(--font);transition:.12s;}
-.pat-row:hover{border-color:var(--g);box-shadow:var(--shadow);}
-.pat-rw{position:relative;}
-.pat-rw .pat-row{padding-right:38px;}
-.pat-fav{position:absolute;top:9px;right:9px;width:28px;height:28px;border:none;background:transparent;font-size:17px;line-height:1;color:var(--ht);cursor:pointer;border-radius:7px;}
-.pat-fav:hover{background:var(--gl);}
+/* 특허 목록 — 심플 목록형(구분선 기반 플랫 리스트) */
+.pat-list{display:flex;flex-direction:column;border:1px solid var(--bd);border-radius:12px;overflow:hidden;background:var(--card);}
+.pat-rw{position:relative;display:flex;align-items:center;border-bottom:1px solid var(--bd);}
+.pat-rw:last-child{border-bottom:none;}
+.pat-rw:hover{background:var(--gl);}
+.pat-row{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;background:transparent;border:none;padding:10px 6px 10px 14px;cursor:pointer;font-family:var(--font);}
+.pat-fav{flex-shrink:0;align-self:stretch;width:38px;border:none;background:transparent;font-size:16px;line-height:1;color:var(--ht);cursor:pointer;}
+.pat-fav:hover{color:#f5b301;}
 .pat-fav.on{color:#f5b301;}
 .det-fav{margin-left:auto;font-size:12px;font-weight:700;padding:5px 11px;border:1px solid var(--bd);border-radius:999px;background:var(--sf);color:var(--mu);cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .det-fav:hover{border-color:#f5b301;color:#b8860b;}
 .det-fav.on{background:#fff8e6;border-color:#f5b301;color:#b8860b;}
 body.dark .det-fav.on{background:rgba(245,179,1,.16);color:#fbbf24;}
 .fav-due{display:inline-block;font-size:12px;font-weight:700;color:var(--mu);padding:6px 0;}
-.pat-row-t{font-size:13.5px;font-weight:700;color:var(--tx);line-height:1.45;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px;}
+.pat-row-t{font-size:13.5px;font-weight:700;color:var(--tx);line-height:1.4;display:flex;align-items:center;gap:8px;min-width:0;}
+.pat-row-t .pat-ttl{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .pat-badge{font-size:10.5px;font-weight:800;color:var(--gp);background:var(--gl);border-radius:5px;padding:1px 7px;flex-shrink:0;}
-.pat-row-m{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;}
+.pat-row-m{display:flex;gap:6px 10px;flex-wrap:wrap;font-size:11.5px;align-items:center;}
 .pat-row-appl{color:var(--g);font-weight:700;}
 .pat-row-meta{color:var(--mu);}
+.pat-list .pat-sb{font-size:10.5px;padding:1px 8px;}
 .pat-back{display:inline-flex;align-items:center;gap:4px;margin-bottom:12px;padding:6px 12px;border:1px solid var(--bd);border-radius:999px;background:var(--sf);color:var(--mu);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font);}
 .pat-back:hover{color:var(--tx);border-color:var(--g);}
 .pat-detail{background:var(--sf);border:1px solid var(--bd);border-radius:12px;box-shadow:var(--shadow);padding:16px 18px;}
@@ -1288,6 +1291,19 @@ body.dark .scenario-caution{background:#451a03;border-color:#b45309;color:#fde68
 .fav-tab-btn:hover{border-color:#f5a623;color:#f5a623;}
 .fav-tab-btn.active{background:#fff8ec;border-color:#f5a623;color:#b36b00;font-weight:700;}
 .fav-empty{text-align:center;padding:30px;color:var(--ht);font-size:13px;}
+/* 즐겨찾기 폴더 */
+.fav-tools{display:flex;gap:8px;align-items:center;margin:0 0 14px;flex-wrap:wrap;}
+.fav-newfolder{flex:1;min-width:140px;max-width:260px;height:34px;padding:0 12px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--fg);font-size:13px;}
+.fav-newfolder:focus{outline:none;border-color:var(--g);box-shadow:var(--shadow-focus);}
+.fav-group{margin:0 0 18px;}
+.fav-group-head{display:flex;align-items:center;gap:8px;padding:6px 2px 8px;border-bottom:1.5px solid var(--bd);margin-bottom:10px;}
+.fav-group-name{font-size:13px;font-weight:800;color:var(--fg);letter-spacing:-.01em;}
+.fav-group-cnt{font-size:11px;font-weight:700;color:var(--g);background:var(--gl);padding:1px 8px;border-radius:999px;}
+.fav-group-del{margin-left:auto;width:24px;height:24px;border:1px solid var(--bd);border-radius:6px;background:transparent;color:var(--ht);cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;transition:.15s;}
+.fav-group-del:hover{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,.08);}
+.fav-group-empty{font-size:12px;color:var(--ht);padding:8px 4px 4px;}
+.fav-move{margin-left:auto;height:30px;max-width:150px;padding:0 8px;border:1px solid var(--bd);border-radius:7px;background:var(--card);color:var(--mu);font-size:12px;cursor:pointer;}
+.fav-move:focus{outline:none;border-color:var(--g);}
 /* AI 설정 모달 */
 .ai-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;display:none;align-items:center;justify-content:center;}
 .ai-modal-bg.show{display:flex;}
@@ -1759,9 +1775,6 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   <button class="mnav-btn" onclick="toggleFavTab()">
     <span class="mnav-icon">☆</span>즐겨찾기
   </button>
-  <button class="mnav-btn" onclick="openCollModal()">
-    <span class="mnav-icon">📁</span>컬렉션
-  </button>
   <button class="mnav-btn" onclick="openStatPanel()">
     <span class="mnav-icon">📊</span>통계
   </button>
@@ -1997,7 +2010,6 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   </div>
   <div class="tb-tools">
     <button class="tb-tool" id="tbFav" onclick="toggleFavTab()" title="즐겨찾기"><span class="tb-ic" data-icon="fav"></span><span class="tb-tl">즐겨찾기</span><span id="tbFavCount" class="tb-cnt"></span></button>
-    <button class="tb-tool" onclick="openCollModal()" title="컬렉션"><span class="tb-ic" data-icon="collection"></span><span class="tb-tl">컬렉션</span></button>
     <button class="tb-tool" onclick="openStatPanel()" title="검색 통계"><span class="tb-ic" data-icon="stats"></span><span class="tb-tl">통계</span></button>
     <a class="tb-tool" href="/upload" title="내규 업로드"><span class="tb-ic" data-icon="upload"></span><span class="tb-tl">업로드</span></a>
     <button class="tb-tool" onclick="openAiModal()" title="AI 설정"><span class="tb-ic" data-icon="ai"></span><span class="tb-tl">AI 설정</span><span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
@@ -2848,10 +2860,18 @@ function _oppCard(kind, it, q){
   if(it.endText||it.end) rows.push(['접수마감', _fmtDT(it.endText||it.end), active]);
   const grid=rows.map(r=>`<div class="opp-grow"><span class="opp-gk">${escHtml(r[0])}</span><span class="opp-gv${r[2]?' opp-due':''}">${escHtml(String(r[1]))}</span></div>`).join('');
   const tags=(it.tags||[]).length?`<div class="opp-tags">${it.tags.map(t=>`<span class="opp-htag">#${escHtml(String(t).replace(/^#/,''))}</span>`).join('')}</div>`:'';
-  const btns=`<div class="opp-btns">`+
-    (it.url?`<a class="opp-btn" href="${escHtml(it.url)}" target="_blank" rel="noopener">공고 원문</a>`:'')+
-    (it.applyUrl?`<a class="opp-btn primary" href="${escHtml(it.applyUrl)}" target="_blank" rel="noopener">신청 바로가기 →</a>`:'')+
-    `</div>`;
+  // 공고 원문·신청 바로가기가 동일 URL(K-Startup 상세페이지)로 중복되는 경우 버튼 1개로 통합
+  const _norm=u=>String(u||'').trim().replace(/\/+$/,'');
+  const primaryUrl=it.applyUrl||it.url;
+  const sameLink=it.url&&it.applyUrl&&_norm(it.url)===_norm(it.applyUrl);
+  let btnHtml='';
+  if(sameLink||(!it.url!==!it.applyUrl)){
+    if(primaryUrl) btnHtml=`<a class="opp-btn primary" href="${escHtml(primaryUrl)}" target="_blank" rel="noopener">공고 상세 보기 →</a>`;
+  } else {
+    btnHtml=(it.url?`<a class="opp-btn" href="${escHtml(it.url)}" target="_blank" rel="noopener">공고 원문</a>`:'')+
+      (it.applyUrl?`<a class="opp-btn primary" href="${escHtml(it.applyUrl)}" target="_blank" rel="noopener">신청 바로가기 →</a>`:'');
+  }
+  const btns=`<div class="opp-btns">${btnHtml}</div>`;
   return `<div class="opp-card${dd&&dd.cls==='done'?' is-done':''}">${star}`+
     `<div class="opp-card-h">${ddBadge}${statusB}${orgB}</div>`+
     `<div class="opp-card-t">${_oppHi(it.title||'',q)}</div>`+
@@ -2928,8 +2948,8 @@ function _renderPatentList(d){
     const kurl=_kiprisUrl(it.appno);
     const favItem={type:'patent',name:it.title||'',subtitle:it.applicant||'',appno:it.appno||'',url:kurl};
     const on=favHas(favItem);
-    return `<div class="pat-rw"><button class="pat-row" onclick="patDetail('${argAttr(it.appno||'')}')" title="상세 보기">`+
-      `<div class="pat-row-t">${escHtml(it.title||'(제목 없음)')}${st}</div>`+
+    return `<div class="pat-rw"><button class="pat-row" onclick="patDetail('${argAttr(it.appno||'')}')" title="${escHtml(it.title||'상세 보기')}">`+
+      `<div class="pat-row-t"><span class="pat-ttl">${escHtml(it.title||'(제목 없음)')}</span>${st}</div>`+
       `<div class="pat-row-m"><span class="pat-row-appl">${escHtml(it.applicant||'')}</span>${metaBits?'<span class="pat-row-meta">'+metaBits+'</span>':''}</div></button>`+
       `<button class="pat-fav${on?' on':''}" data-fav="${_favData(favItem)}" data-style="row" onclick="favToggleEl(this)" title="즐겨찾기" aria-pressed="${on}">${on?'★':'☆'}</button></div>`;
   }).join('');
@@ -3887,7 +3907,6 @@ function buildRegCards(items, kw, kind){
     // 내규 카드에도 즐겨찾기·컬렉션 저장 버튼 제공(type:'internal', url은 비워 이름으로 재열람)
     const saveBtns = kind==='internal'
       ? `<button class="abtn reg-fav-btn" title="즐겨찾기에 추가" onclick="cardFavToggle(this,'${argAttr(name)}','${orgEsc}','internal','')">☆ 즐겨찾기</button>`
-        + `<button class="abtn" title="컬렉션에 추가" onclick="addItemToCollection('${argAttr(name)}','${orgEsc}','','internal')">📁 컬렉션</button>`
       : '';
     // 내규 개정이력·최신 개정일 메타
     const revMeta = kind==='internal' ? _buildRevMeta(it, arts, i) : '';
@@ -6107,6 +6126,31 @@ function _saveFavs(arr){ try{ localStorage.setItem(_FAV_KEY, JSON.stringify(arr)
 // 기존 호출부 호환용 별칭
 function getLocalFavs(){ return getFavs(); }
 
+// ── 즐겨찾기 폴더(구 '컬렉션' 흡수) ─────────────────────────────────────────
+const _FAV_FOLDERS_KEY='koat_fav_folders';
+function getFavFolders(){ try{ const a=JSON.parse(localStorage.getItem(_FAV_FOLDERS_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch{ return []; } }
+function saveFavFolders(a){ try{ localStorage.setItem(_FAV_FOLDERS_KEY, JSON.stringify(a)); }catch{} }
+function _favAddFolder(name){ name=String(name||'').trim(); if(!name) return false; const a=getFavFolders(); if(a.indexOf(name)>=0) return false; a.push(name); saveFavFolders(a); return true; }
+function _favRemoveFolder(name){ saveFavFolders(getFavFolders().filter(x=>x!==name));
+  const favs=getFavs(); let ch=false; favs.forEach(f=>{ if(f.folder===name){ f.folder=''; ch=true; } }); if(ch) _saveFavs(favs); }
+function _favSetItemFolder(i, folder){ const favs=getFavs(); if(i>=0&&i<favs.length){ favs[i].folder=folder||''; _saveFavs(favs); } }
+// 구 컬렉션(lawCollections) → 즐겨찾기 폴더로 1회 이관(데이터 보존)
+function _migrateCollections(){
+  if(localStorage.getItem('koat_coll_migrated')==='1') return;
+  let colls=[]; try{ colls=JSON.parse(localStorage.getItem('lawCollections')||'[]'); }catch{}
+  if(Array.isArray(colls) && colls.length){
+    const favs=getFavs(), folders=getFavFolders(), today=new Date().toISOString().slice(0,10);
+    colls.forEach(c=>{ const fn=String(c.name||'').trim(); if(!fn) return;
+      if(folders.indexOf(fn)<0) folders.push(fn);
+      (c.laws||[]).forEach(l=>{ const item={type:l.type||'law', name:l.name||'', subtitle:l.org||'', url:l.url||'', folder:fn, savedAt:l.addedAt||today};
+        const ex=favs.find(f=>_favEq(f,item));
+        if(ex){ if(!ex.folder) ex.folder=fn; } else favs.push(item); }); });
+    _saveFavs(favs); saveFavFolders(folders);
+  }
+  try{ localStorage.removeItem('lawCollections'); }catch{}
+  try{ localStorage.setItem('koat_coll_migrated','1'); }catch{}
+}
+
 async function loadFavs(){
   const favs = getFavs();
   const el = document.getElementById('favCount');
@@ -6131,7 +6175,7 @@ function toggleFavItem(item){
   const i = arr.findIndex(f=>_favEq(f,item));
   let added;
   if(i>=0){ arr.splice(i,1); added=false; }
-  else { arr.unshift(Object.assign({savedAt:new Date().toISOString().slice(0,10)}, item)); if(arr.length>60) arr.length=60; added=true; }
+  else { arr.unshift(Object.assign({savedAt:new Date().toISOString().slice(0,10)}, item)); if(arr.length>200) arr.length=200; added=true; }
   _saveFavs(arr); loadFavs(); if(typeof favMode!=='undefined' && favMode) renderFavList();
   return added;
 }
@@ -6192,27 +6236,33 @@ async function toggleFavTab(){
 }
 
 const _FAV_TYPE_LABEL={internal:'내규', law:'법령', company:'기업', patent:'특허', support:'지원사업', procurement:'조달'};
-async function renderFavList(){
-  const favs = await loadFavs();
-  const fbar=document.getElementById('fbar'); if(fbar) fbar.style.display='none';
-  const pag=document.getElementById('pagination'); if(pag) pag.innerHTML='';
-  if(!favs.length){
-    document.getElementById('results').innerHTML='<div class="fav-empty">⭐ 즐겨찾기가 없습니다.<br>내규·법령·기업·특허·지원사업·조달 등 각 조회 결과의 ☆ 버튼으로 담아보세요.</div>';
-    setStatus('');
-    return;
-  }
-  setStatus(`즐겨찾기 ${favs.length}건`);
-  document.getElementById('results').innerHTML=favs.map((f,i)=>{
-    const bkt=_favBucket(f.type);
-    const label=bkt==='law'?(f.type||'법령'):(_FAV_TYPE_LABEL[bkt]||'기타');
-    const sub=f.subtitle||f.org||'';
-    let open='';
-    if(bkt==='internal') open=`<button class="abtn primary" onclick="wsOpen('${argAttr(f.name)}','internal')">📄 규정 전문 보기</button>`;
-    else if(bkt==='law') open=`<button class="abtn primary" onclick="wsOpen('${argAttr(f.name)}','law','${argAttr(f.url)}')">📄 조문 전문 보기</button>`+(f.url?`<a class="abtn" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ 법제처</a>`:'');
-    else if(bkt==='company') open=`<button class="abtn primary" onclick="favOpenCompany('${argAttr(f.name)}')">🏢 기업 다시 조회</button>`;
-    else if(bkt==='patent') open=`<button class="abtn primary" onclick="favOpenPatent('${argAttr(f.name)}')">📄 특허 다시 조회</button>`+(f.url?`<a class="abtn" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ KIPRIS</a>`:'');
-    else open=(f.url?`<a class="abtn primary" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ 공고 바로가기</a>`:'')+((f.endText||f.end)?`<span class="fav-due">마감 ${escHtml(f.endText||f.end)}</span>`:'');
-    return `
+// 즐겨찾기 폴더 UI 조작 ──────────────────────────────────────────────
+function _favNewFolder(){
+  const inp=document.getElementById('favNewFolderInp'); if(!inp) return;
+  const name=String(inp.value||'').trim(); if(!name){ inp.focus(); return; }
+  if(_favAddFolder(name)) { inp.value=''; renderFavList(); }
+  else { inp.select(); }
+}
+function _favDelFolder(name){
+  if(!confirm(`'${name}' 폴더를 삭제할까요?\n(폴더 안 즐겨찾기는 '미분류'로 이동, 항목은 유지됩니다.)`)) return;
+  _favRemoveFolder(name); renderFavList();
+}
+function _favMoveItem(i, sel){ _favSetItemFolder(i, sel && sel.value || ''); renderFavList(); }
+function _favItemCard(f, i, folderOpts){
+  const bkt=_favBucket(f.type);
+  const label=bkt==='law'?(f.type||'법령'):(_FAV_TYPE_LABEL[bkt]||'기타');
+  const sub=f.subtitle||f.org||'';
+  let open='';
+  if(bkt==='internal') open=`<button class="abtn primary" onclick="wsOpen('${argAttr(f.name)}','internal')">📄 규정 전문 보기</button>`;
+  else if(bkt==='law') open=`<button class="abtn primary" onclick="wsOpen('${argAttr(f.name)}','law','${argAttr(f.url)}')">📄 조문 전문 보기</button>`+(f.url?`<a class="abtn" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ 법제처</a>`:'');
+  else if(bkt==='company') open=`<button class="abtn primary" onclick="favOpenCompany('${argAttr(f.name)}')">🏢 기업 다시 조회</button>`;
+  else if(bkt==='patent') open=`<button class="abtn primary" onclick="favOpenPatent('${argAttr(f.name)}')">📄 특허 다시 조회</button>`+(f.url?`<a class="abtn" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ KIPRIS</a>`:'');
+  else open=(f.url?`<a class="abtn primary" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ 공고 바로가기</a>`:'')+((f.endText||f.end)?`<span class="fav-due">마감 ${escHtml(f.endText||f.end)}</span>`:'');
+  const cur=String(f.folder||'');
+  const sel=`<select class="fav-move" title="폴더 이동" onclick="event.stopPropagation()" onchange="_favMoveItem(${i},this)">`
+    +`<option value=""${cur?'':' selected'}>📂 미분류</option>`
+    +folderOpts.map(fn=>`<option value="${escAttr(fn)}"${fn===cur?' selected':''}>📁 ${escHtml(fn)}</option>`).join('')+`</select>`;
+  return `
     <div class="card" id="fc${i}">
       <div class="card-head" onclick="toggleCard2('fc${i}')">
         <span class="ltype${bkt==='internal'?' ltype-int':''}">${escHtml(label)}</span>
@@ -6221,9 +6271,52 @@ async function renderFavList(){
         <button class="fav-btn active" onclick="event.stopPropagation();removeFavAt(${i});" title="즐겨찾기 제거" style="margin-left:auto;">★</button>
         <span class="arrow" style="font-size:11px;color:var(--ht);margin-left:4px;">▼</span>
       </div>
-      <div class="card-body"><div class="actions">${open}</div></div>
+      <div class="card-body"><div class="actions">${open}${sel}</div></div>
     </div>`;
-  }).join('');
+}
+async function renderFavList(){
+  const favs = await loadFavs();
+  const fbar=document.getElementById('fbar'); if(fbar) fbar.style.display='none';
+  const pag=document.getElementById('pagination'); if(pag) pag.innerHTML='';
+  // 폴더 목록: 저장된 폴더 + 항목이 참조하는 폴더 병합
+  const folders=getFavFolders().slice();
+  favs.forEach(f=>{ const fn=String(f.folder||''); if(fn && folders.indexOf(fn)<0) folders.push(fn); });
+  const toolbar=`<div class="fav-tools">
+    <input id="favNewFolderInp" class="fav-newfolder" type="text" placeholder="새 폴더 이름" maxlength="30"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();_favNewFolder();}">
+    <button class="abtn primary" onclick="_favNewFolder()">＋ 폴더 추가</button>
+  </div>`;
+  if(!favs.length && !folders.length){
+    document.getElementById('results').innerHTML=toolbar+'<div class="fav-empty">⭐ 즐겨찾기가 없습니다.<br>내규·법령·기업·특허·지원사업 등 각 조회 결과의 ☆ 버튼으로 담고,<br>폴더를 만들어 항목별로 분류할 수 있어요.</div>';
+    setStatus('');
+    return;
+  }
+  setStatus(`즐겨찾기 ${favs.length}건${folders.length?` · 폴더 ${folders.length}개`:''}`);
+  // index 유지한 채 그룹핑
+  const idx=favs.map((f,i)=>i);
+  const inFolder=fn=> idx.filter(i=>String(favs[i].folder||'')===fn);
+  let html=toolbar;
+  folders.forEach(fn=>{
+    const items=inFolder(fn);
+    html+=`<div class="fav-group">
+      <div class="fav-group-head">
+        <span class="fav-group-name">📁 ${escHtml(fn)}</span>
+        <span class="fav-group-cnt">${items.length}</span>
+        <button class="fav-group-del" onclick="_favDelFolder('${argAttr(fn)}')" title="폴더 삭제">×</button>
+      </div>`;
+    html+= items.length? items.map(i=>_favItemCard(favs[i],i,folders)).join('')
+      : `<div class="fav-group-empty">이 폴더에 담긴 즐겨찾기가 없습니다. 항목의 폴더 선택에서 이곳으로 옮겨보세요.</div>`;
+    html+=`</div>`;
+  });
+  const loose=inFolder('');
+  if(loose.length){
+    html+=`<div class="fav-group">
+      <div class="fav-group-head">
+        <span class="fav-group-name">📂 미분류</span>
+        <span class="fav-group-cnt">${loose.length}</span>
+      </div>`+loose.map(i=>_favItemCard(favs[i],i,folders)).join('')+`</div>`;
+  }
+  document.getElementById('results').innerHTML=html;
 }
 
 function toggleCard2(id){document.getElementById(id).classList.toggle('open');}
@@ -6903,6 +6996,7 @@ function _hydrateIcons(root){
 }
 document.addEventListener('DOMContentLoaded',()=>{
   _hydrateIcons();
+  try{ _migrateCollections(); }catch(_){}
   // ── 이벤트 위임: 클릭 ──────────────────────────────────────────────────
   document.addEventListener('click', e=>{
     // 작업공간(그리드) 창 내부의 참조 클릭 → 새 창(패널)으로 추가 열기
@@ -9390,9 +9484,8 @@ function removeLawFromColl(ci, li){
 }
 
 // renderPage에서 컬렉션 추가 버튼 포함
-function makeCollBtnHtml(name, org, url){
-  return `<button class="abtn" onclick="addLawToCollection('${argAttr(name)}','${argAttr(org||'')}','${argAttr(url)}')">📁 컬렉션</button>`;
-}
+// 컬렉션 기능은 즐겨찾기 폴더로 통합됨 — 카드 버튼 비활성(레거시 호출 안전)
+function makeCollBtnHtml(name, org, url){ return ''; }
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ③ 법령 관계 네트워크 시각화
