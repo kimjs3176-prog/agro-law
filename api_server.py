@@ -5221,31 +5221,30 @@ def assist_patent():
     if not applicant and not query:
         return jsonify({"success": False, "error": "출원인 또는 검색어를 입력하세요."})
     base = "http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice"
-    try:
+
+    # 출원일 범위(YYYY→YYYY0101/YYYY1231). KIPRIS 는 'YYYYMMDD~YYYYMMDD' 형식.
+    def _d(v, end=False):
+        if not v:
+            return ""
+        return v[:8] if len(v) >= 8 else v + ("1231" if end else "0101")
+    a, b = _d(df), _d(dt, True)
+
+    def _search(query_field):
+        """query_field: 검색어를 넣을 KIPRIS 필드명('inventionTitle' 정밀 / 'word' 자유). None=검색어 미사용."""
         params = {"ServiceKey": key, "numOfRows": rows, "pageNo": page,
                   "patent": "true", "utility": "true", "sortSpec": "AD", "descSort": "true"}
         if applicant:
             params["applicant"] = applicant
-        if query:
-            # 자유검색(word)은 요약·청구항까지 걸려 무관한 결과가 많으므로
-            # 발명의 명칭(inventionTitle) 중심으로 매칭해 관련도를 높인다.
-            params["inventionTitle"] = query
+        if query and query_field:
+            params[query_field] = query
         if status:
             params["lastvalue"] = status
-        # 출원일 범위(YYYY→YYYY0101/YYYY1231). KIPRIS 는 'YYYYMMDD~YYYYMMDD' 형식.
-        def _d(v, end=False):
-            if not v:
-                return ""
-            return v[:8] if len(v) >= 8 else v + ("1231" if end else "0101")
-        a, b = _d(df), _d(dt, True)
         if a or b:
             params["applicationDate"] = f"{a or '00000000'}~{b or '99991231'}"
         r = _SESSION.get(f"{base}/getAdvancedSearch", params=params, timeout=20)
         root = _xml_fromstring(r.content)
-        total = ""
         te = root.find(".//totalCount")
-        if te is not None:
-            total = (te.text or "").strip()
+        total = (te.text or "").strip() if te is not None else ""
         items = []
         for it in root.iter("item"):
             def g(*tags):
@@ -5254,23 +5253,37 @@ def assist_patent():
                     if el is not None and (el.text or "").strip():
                         return el.text.strip()
                 return ""
-            appno = g("applicationNumber", "ApplicationNumber")
             items.append({
                 "title": g("inventionTitle", "InventionName", "articleName") or "(제목 없음)",
                 "applicant": g("applicantName", "Applicant"),
-                "appno": appno,
+                "appno": g("applicationNumber", "ApplicationNumber"),
                 "appdate": g("applicationDate", "ApplicationDate"),
                 "regno": g("registerNumber", "RegistrationNumber"),
                 "status": g("registerStatus", "RegistrationStatus", "lastValue"),
                 "ipc": g("ipcNumber", "InternationalpatentclassificationNumber")})
+        return r, root, total, items, params
+
+    try:
+        # 1차: 발명의 명칭(inventionTitle) 정밀 매칭 — 관련도 높은 결과 우선.
+        # 2차: 결과가 없고 검색어가 있으면 자유검색(word, 명칭+요약+청구항)으로 폴백.
+        #      (긴 제목 전체를 붙여넣는 경우 명칭 완전일치가 어려워 0건이 되던 문제 대응)
+        field = "inventionTitle" if query else None
+        r, root, total, items, params = _search(field)
+        fell_back = False
+        if query and not items:
+            r2, root2, total2, items2, params2 = _search("word")
+            if items2:
+                r, root, total, items, params = r2, root2, total2, items2, params2
+                fell_back = True
         resp = {"success": True, "count": len(items),
-                "total": total or str(len(items)), "items": items}
+                "total": total or str(len(items)), "items": items,
+                "matchMode": ("word" if fell_back else ("title" if query else "all"))}
         if request.args.get("debug"):         # 배포 진단: KIPRIS 응답 원문 요약
             def _t(tag):
                 el = root.find(f".//{tag}")
                 return (el.text or "").strip() if el is not None else ""
             resp["_debug"] = {"http": r.status_code, "totalCount": total,
-                              "item_count": len(items),
+                              "item_count": len(items), "fell_back": fell_back,
                               "successYN": _t("successYN") or _t("resultCode"),
                               "resultMsg": _t("resultMsg") or _t("errMsg"),
                               "sent": {k: ("<redacted>" if k == "ServiceKey" else v)
