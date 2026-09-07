@@ -21,7 +21,16 @@
   --mark-bg:#bbf7d0;--mark-fg:#14532d;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:var(--font);background:var(--bg);color:var(--tx);}
+body{font-family:var(--font);background:var(--bg);color:var(--tx);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;letter-spacing:-.006em;}
+/* 접근성: 모션 최소화 요청 시 전환·애니메이션·호버 이동 제거 */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important;}
+  *:hover{transform:none!important;}
+}
+/* 라인 SVG 아이콘 홀더 */
+.sm-ic,.tb-ic,.assist-h-ic{display:inline-flex;align-items:center;justify-content:center;}
+.sm-ic svg,.tb-ic svg,.assist-h-ic svg,.tree-toggle svg{display:block;}
+.tree-toggle [data-icon]{display:inline-flex;font-size:19px;line-height:1;}
 /* 상단바 — Toss blur topbar */
 .topbar{background:rgba(255,255,255,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.06);padding:0 24px;display:flex;align-items:center;height:60px;gap:10px;position:sticky;top:0;z-index:200;box-shadow:0 1px 0 rgba(0,0,0,.04);}
 .logo{width:32px;height:32px;background:var(--g);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:800;flex-shrink:0;box-shadow:0 2px 8px rgba(37,110,244,.35);}
@@ -436,7 +445,7 @@ body.dark .opp-gv.opp-due{color:#fca5a5;}
 .spanel{background:var(--sf);border-radius:20px;padding:24px 24px 20px;margin-bottom:20px;box-shadow:var(--shadow-md);}
 /* 기관 탭 */
 .tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
-.tab{padding:7px 18px;border-radius:999px;border:1.5px solid #e5e8ec;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:var(--mu);transition:all .18s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;}
+.tab{padding:7px 18px;border-radius:999px;border:1.5px solid #e5e8ec;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:var(--mu);transition:all .18s cubic-bezier(.4,0,.2,1);white-space:nowrap;}
 .tab:hover{border-color:var(--g);color:var(--g);background:var(--gl);}
 .tab.active{background:var(--g);border-color:var(--g);color:#fff;box-shadow:0 2px 10px rgba(37,110,244,.28);}
 /* 모드 토글 */
@@ -458,15 +467,15 @@ body.dark .opp-gv.opp-due{color:#fca5a5;}
 body.dark .scen-apikey-note{color:#fcd9a3;background:#3a2a12;border-color:#5a4520;}
 /* 검색창 — large Toss style */
 .srow{display:flex;gap:10px;}
-.sinput{flex:1;min-width:0;padding:14px 18px;border:2px solid transparent;border-radius:14px;font-size:15px;background:#f1f3f6;color:var(--tx);outline:none;transition:all .2s cubic-bezier(.34,1.56,.64,1);font-family:var(--font);}
+.sinput{flex:1;min-width:0;padding:14px 18px;border:2px solid transparent;border-radius:14px;font-size:15px;background:#f1f3f6;color:var(--tx);outline:none;transition:all .2s cubic-bezier(.4,0,.2,1);font-family:var(--font);}
 .sinput:focus{border-color:var(--g);background:#fff;box-shadow:var(--shadow-focus);}
 .sinput::placeholder{color:#b0bac6;}
-.sbtn{padding:12px 26px;border-radius:14px;border:none;background:var(--g);color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:all .18s cubic-bezier(.34,1.56,.64,1);letter-spacing:-.2px;box-shadow:0 2px 10px rgba(37,110,244,.3);}
+.sbtn{padding:12px 26px;border-radius:14px;border:none;background:var(--g);color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:all .18s cubic-bezier(.4,0,.2,1);letter-spacing:-.2px;box-shadow:0 2px 10px rgba(37,110,244,.3);}
 .sbtn:hover{background:var(--gd);transform:translateY(-1px);box-shadow:0 4px 16px rgba(37,110,244,.4);}.sbtn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 /* 자주찾는 법령 */
 .qlabel{font-size:11px;color:var(--ht);margin:14px 0 8px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;}
 .chips{display:flex;gap:6px;flex-wrap:wrap;}
-.chip{padding:6px 14px;border-radius:999px;border:none;font-size:12px;font-weight:600;cursor:pointer;color:var(--g);background:var(--gl);transition:all .18s cubic-bezier(.34,1.56,.64,1);}
+.chip{padding:6px 14px;border-radius:999px;border:none;font-size:12px;font-weight:600;cursor:pointer;color:var(--g);background:var(--gl);transition:all .18s cubic-bezier(.4,0,.2,1);}
 .chip:hover{background:var(--g);color:#fff;transform:translateY(-1px);box-shadow:0 2px 8px rgba(37,110,244,.25);}
 .chip.loading{opacity:.5;}
 /* 최근 검색어 */
@@ -488,7 +497,7 @@ body.dark .scen-apikey-note{color:#fcd9a3;background:#3a2a12;border-color:#5a452
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 /* 법령 카드 — Toss style, no border */
 .results{display:flex;flex-direction:column;gap:0;}
-.card{background:var(--sf);border:none;border-radius:16px;overflow:hidden;transition:box-shadow .22s cubic-bezier(.34,1.56,.64,1),transform .22s cubic-bezier(.34,1.56,.64,1);box-shadow:var(--shadow);margin-bottom:12px;}
+.card{background:var(--sf);border:none;border-radius:16px;overflow:hidden;transition:box-shadow .22s cubic-bezier(.4,0,.2,1),transform .22s cubic-bezier(.4,0,.2,1);box-shadow:var(--shadow);margin-bottom:12px;}
 .card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);}
 .card-head{display:flex;align-items:center;gap:10px;padding:18px 20px;cursor:pointer;user-select:none;}
 .card-head:hover{background:rgba(249,250,251,.7);}
@@ -507,7 +516,7 @@ body.dark .scen-apikey-note{color:#fcd9a3;background:#3a2a12;border-color:#5a452
 .mval{font-size:13px;font-weight:600;color:var(--tx);}
 /* 액션 버튼 */
 .actions{display:flex;gap:8px;flex-wrap:wrap;}
-.abtn{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;border-radius:10px;border:none;font-size:13px;cursor:pointer;text-decoration:none;color:var(--mu);background:#f1f3f6;transition:all .18s cubic-bezier(.34,1.56,.64,1);font-weight:600;font-family:var(--font);}
+.abtn{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;border-radius:10px;border:none;font-size:13px;cursor:pointer;text-decoration:none;color:var(--mu);background:#f1f3f6;transition:all .18s cubic-bezier(.4,0,.2,1);font-weight:600;font-family:var(--font);}
 .abtn:hover{background:#e5e8ef;color:var(--tx);}
 .abtn.primary{background:var(--g);color:#fff;box-shadow:0 2px 8px rgba(37,110,244,.3);}
 .abtn.primary:hover{background:var(--gd);box-shadow:0 4px 14px rgba(37,110,244,.4);transform:translateY(-1px);}
@@ -634,7 +643,7 @@ body.dark mark{color:#1f2937;}
 .rel-section-hd{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--tx);margin-bottom:8px;}
 .rel-cnt{font-size:11px;font-weight:600;color:var(--mu);background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:1px 8px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
 .rel-list{display:flex;flex-direction:column;gap:7px;}
-.rel-item{display:block;text-decoration:none;background:var(--sf);border-radius:var(--rs);padding:10px 12px;box-shadow:0 1px 4px rgba(0,0,0,.06);transition:all .15s cubic-bezier(.34,1.56,.64,1);border:1px solid transparent;}
+.rel-item{display:block;text-decoration:none;background:var(--sf);border-radius:var(--rs);padding:10px 12px;box-shadow:0 1px 4px rgba(0,0,0,.06);transition:all .15s cubic-bezier(.4,0,.2,1);border:1px solid transparent;}
 .rel-item:hover{box-shadow:var(--shadow-md);transform:translateY(-1px);border-color:var(--gl);}
 .rel-item-main{display:flex;align-items:center;gap:7px;}
 .rel-title{font-size:13px;font-weight:600;color:var(--tx);flex:1;min-width:0;line-height:1.4;}
@@ -657,7 +666,7 @@ body.dark mark{color:#1f2937;}
 .agc-blabel{font-size:11px;font-weight:700;color:var(--ht);letter-spacing:.4px;text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;gap:6px;}
 .agc-hint{font-size:10px;font-weight:500;color:var(--g);background:var(--sf);padding:1px 7px;border-radius:999px;text-transform:none;letter-spacing:0;}
 .agc-chips{display:flex;gap:6px;flex-wrap:wrap;}
-.agc-chip{padding:7px 13px;border-radius:999px;border:1px solid transparent;font-size:12px;font-weight:600;cursor:pointer;background:var(--sf);color:var(--tx);transition:all .18s cubic-bezier(.34,1.56,.64,1);box-shadow:0 1px 4px rgba(0,0,0,.06);text-align:left;line-height:1.35;}
+.agc-chip{padding:7px 13px;border-radius:999px;border:1px solid transparent;font-size:12px;font-weight:600;cursor:pointer;background:var(--sf);color:var(--tx);transition:all .18s cubic-bezier(.4,0,.2,1);box-shadow:0 1px 4px rgba(0,0,0,.06);text-align:left;line-height:1.35;}
 .agc-chip:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);}
 .agc-chip.reg{color:var(--gp);}
 .agc-chip.reg:hover{background:var(--g);color:#fff;}
@@ -671,7 +680,7 @@ body.dark mark{color:#1f2937;}
 .wc-hero-t b{color:var(--g);}
 .wc-hero-s{font-size:13px;color:var(--mu);margin-top:7px;}
 .wc-modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px;}
-.wc-mode{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;padding:16px;border-radius:16px;border:1.5px solid transparent;background:var(--sf);box-shadow:var(--shadow);cursor:pointer;transition:all .18s cubic-bezier(.34,1.56,.64,1);font-family:var(--font);}
+.wc-mode{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;padding:16px;border-radius:16px;border:1.5px solid transparent;background:var(--sf);box-shadow:var(--shadow);cursor:pointer;transition:all .18s cubic-bezier(.4,0,.2,1);font-family:var(--font);}
 .wc-mode:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:#c7dcfb;}
 .wc-mode.active{border-color:var(--g);background:var(--gl);}
 .wc-mode-ic{font-size:22px;line-height:1;}
@@ -690,13 +699,13 @@ body.dark mark{color:#1f2937;}
 /* ── 내규(사규) 검색 결과 ── */
 .int-wrap{display:flex;flex-direction:column;gap:12px;}
 .int-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.int-badge{font-size:12px;font-weight:700;color:#7c3aed;background:#f3e8ff;padding:4px 11px;border-radius:999px;}
+.int-badge{font-size:12px;font-weight:700;color:var(--gp);background:var(--gl);padding:4px 11px;border-radius:999px;}
 .int-q{font-size:15px;font-weight:700;color:var(--tx);}
 .int-src{margin-left:auto;font-size:11px;color:var(--ht);background:var(--sf);border-radius:999px;padding:3px 10px;box-shadow:0 1px 4px rgba(0,0,0,.05);}
 .int-laws{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:12px 14px;border-radius:14px;background:var(--gl);border:1px solid #dbeafe;}
 .int-laws-lbl{font-size:12px;font-weight:800;color:var(--gp);}
 .int-laws-none{color:var(--mu);font-size:12px;font-weight:500;background:var(--bg);border-color:transparent;}
-.int-law-chip{font-size:12px;font-weight:700;color:var(--g);background:var(--sf);border:none;border-radius:999px;padding:5px 12px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);transition:all .15s cubic-bezier(.34,1.56,.64,1);}
+.int-law-chip{font-size:12px;font-weight:700;color:var(--g);background:var(--sf);border:none;border-radius:999px;padding:5px 12px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);transition:all .15s cubic-bezier(.4,0,.2,1);}
 .int-law-chip:hover{background:var(--g);color:#fff;transform:translateY(-1px);}
 .int-law-more{font-size:12px;font-weight:700;color:var(--mu);background:transparent;border:1px dashed var(--bd);border-radius:999px;padding:5px 12px;cursor:pointer;}
 .int-law-more:hover{color:var(--tx);border-color:var(--g);}
@@ -714,9 +723,9 @@ body.dark mark{color:#1f2937;}
 .int-uni-lawlbl{font-size:11px;font-weight:800;color:var(--gp);margin-left:4px;}
 .int-uni-err{border-color:#fca5a5;}
 /* 내규 카테고리 칩 */
-.chip.int-cat{background:#f3e8ff;color:#7c3aed;}
-.chip.int-cat:hover{background:#7c3aed;color:#fff;box-shadow:0 2px 8px rgba(124,58,237,.3);}
-body.dark .chip.int-cat{background:#2e1065;color:#c4b5fd;}
+.chip.int-cat{background:var(--gl);color:var(--gp);}
+.chip.int-cat:hover{background:var(--g);color:#fff;box-shadow:0 2px 8px rgba(37,110,244,.22);}
+body.dark .chip.int-cat{background:rgba(37,110,244,.15);color:#7fb3fb;}
 .int-badge-law{background:var(--gl)!important;color:var(--gp)!important;}
 body.dark .int-badge-law{background:#13294d!important;color:#aecbfd!important;}
 
@@ -801,8 +810,8 @@ body.dark .ws-art-b{color:#c9ccd2;}
 .reg-card{margin-bottom:12px;}
 .reg-head{cursor:default;flex-wrap:wrap;gap:8px;}
 .reg-head:hover{background:transparent;}
-.ltype-int{color:#7c3aed;background:#f3e8ff;}
-body.dark .ltype-int{color:#c4b5fd;background:#2e1065;}
+.ltype-int{color:var(--gp);background:var(--gl);}
+body.dark .ltype-int{color:#7fb3fb;background:rgba(37,110,244,.15);}
 .reg-badge{font-size:11px;font-weight:700;color:var(--g);background:var(--gl);padding:3px 9px;border-radius:999px;white-space:nowrap;}
 body.dark .reg-badge{background:#13294d;color:#aecbfd;}
 .reg-head .lname{flex:1 1 40%;min-width:150px;word-break:keep-all;overflow-wrap:anywhere;}
@@ -1051,7 +1060,7 @@ body.dark .rel-notice{color:var(--tx);background:#13294d;}
 body.dark .rel-badge.prec{background:#1e2440;color:#a5b4fc;}
 body.dark .rel-badge.ordin{background:#0c3226;color:#6ee7b7;}
 body.dark .wc-mode.active{background:rgba(37,110,244,.16);}
-body.dark .int-badge{background:#2e1065;color:#c4b5fd;}
+body.dark .int-badge{background:rgba(37,110,244,.15);color:#7fb3fb;}
 body.dark .int-laws{background:#13294d;border-color:#22344f;}
 body.dark .int-laws-lbl{color:#aecbfd;}
 body.dark .int-laws-none{background:#161920;color:var(--mu);}
@@ -1275,7 +1284,7 @@ body.dark .scenario-caution{background:#451a03;border-color:#b45309;color:#fde68
 .hist-date{color:var(--mu);white-space:nowrap;flex-shrink:0;}
 .hist-desc{color:var(--tx);}
 /* 즐겨찾기 탭 */
-.fav-tab-btn{padding:7px 16px;border-radius:999px;border:1.5px solid #e5e8ec;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:var(--mu);transition:all .18s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:4px;}
+.fav-tab-btn{padding:7px 16px;border-radius:999px;border:1.5px solid #e5e8ec;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:var(--mu);transition:all .18s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;gap:4px;}
 .fav-tab-btn:hover{border-color:#f5a623;color:#f5a623;}
 .fav-tab-btn.active{background:#fff8ec;border-color:#f5a623;color:#b36b00;font-weight:700;}
 .fav-empty{text-align:center;padding:30px;color:var(--ht);font-size:13px;}
@@ -1980,18 +1989,18 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 
 <!-- 상단바 -->
 <div class="topbar">
-  <button class="tree-toggle" onclick="openInternalTree()" title="내규 전체 목록" aria-label="내규 전체 목록 열기">📚</button>
+  <button class="tree-toggle" onclick="openInternalTree()" title="내규 전체 목록" aria-label="내규 전체 목록 열기"><span data-icon="tree"></span></button>
   <div>
     <span class="brand"><span class="brand-full">KOAT Work Place</span><span class="brand-short">KOAT</span></span>
     <span class="brand-en" style="font-size:10px;color:#9ca3af;margin-left:6px;font-weight:500;letter-spacing:.5px;">Work Assistant</span><br>
     <span class="brand-sub">내규똑똑 · 법령 · 기업 · 특허 · 지원사업 · 조달 통합 지원</span>
   </div>
   <div class="tb-tools">
-    <button class="tb-tool" id="tbFav" onclick="toggleFavTab()" title="즐겨찾기"><span class="tb-ic">☆</span><span class="tb-tl">즐겨찾기</span><span id="tbFavCount" class="tb-cnt"></span></button>
-    <button class="tb-tool" onclick="openCollModal()" title="컬렉션"><span class="tb-ic">📁</span><span class="tb-tl">컬렉션</span></button>
-    <button class="tb-tool" onclick="openStatPanel()" title="검색 통계"><span class="tb-ic">📊</span><span class="tb-tl">통계</span></button>
-    <a class="tb-tool" href="/upload" title="내규 업로드"><span class="tb-ic">📤</span><span class="tb-tl">업로드</span></a>
-    <button class="tb-tool" onclick="openAiModal()" title="AI 설정"><span class="tb-ic">✦</span><span class="tb-tl">AI 설정</span><span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
+    <button class="tb-tool" id="tbFav" onclick="toggleFavTab()" title="즐겨찾기"><span class="tb-ic" data-icon="fav"></span><span class="tb-tl">즐겨찾기</span><span id="tbFavCount" class="tb-cnt"></span></button>
+    <button class="tb-tool" onclick="openCollModal()" title="컬렉션"><span class="tb-ic" data-icon="collection"></span><span class="tb-tl">컬렉션</span></button>
+    <button class="tb-tool" onclick="openStatPanel()" title="검색 통계"><span class="tb-ic" data-icon="stats"></span><span class="tb-tl">통계</span></button>
+    <a class="tb-tool" href="/upload" title="내규 업로드"><span class="tb-ic" data-icon="upload"></span><span class="tb-tl">업로드</span></a>
+    <button class="tb-tool" onclick="openAiModal()" title="AI 설정"><span class="tb-ic" data-icon="ai"></span><span class="tb-tl">AI 설정</span><span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
   </div>
   <span class="apibadge" id="badge">● 확인 중</span>
   <button class="dark-btn" id="darkBtn" onclick="toggleDark()" title="다크모드" aria-label="다크 모드 전환">🌙</button>
@@ -2014,20 +2023,20 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     <div class="sm-sec sm-primary">
       <div class="sm-group">
         <span class="sm-glabel">규정조회</span>
-        <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="사내 규정(내규) 스마트 검색"><span class="sm-ic">📋</span><span>내규똑똑</span></button>
-        <button class="sm-item" id="smLaw" onclick="setMode('law')" title="국가법령 조회"><span class="sm-ic">📖</span><span>법령 조회</span></button>
+        <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="사내 규정(내규) 스마트 검색"><span class="sm-ic" data-icon="internal"></span><span>내규똑똑</span></button>
+        <button class="sm-item" id="smLaw" onclick="setMode('law')" title="국가법령 조회"><span class="sm-ic" data-icon="law"></span><span>법령 조회</span></button>
       </div>
       <span class="sm-div" aria-hidden="true"></span>
       <div class="sm-group">
         <span class="sm-glabel">공공DB</span>
-        <button class="sm-item" id="smCompany" onclick="openAssist('company')" title="기업 통합검색(회사명·사업자번호·대표자)"><span class="sm-ic">🏢</span><span>기업</span></button>
-        <button class="sm-item" id="smPatent" onclick="openAssist('patent')" title="특허·실용신안 검색(KIPRIS)"><span class="sm-ic">📄</span><span>특허</span></button>
-        <button class="sm-item" id="smSupport" onclick="openAssist('support')" title="정부 지원사업 공고(공공데이터포털)"><span class="sm-ic">🎯</span><span>지원사업</span></button>
+        <button class="sm-item" id="smCompany" onclick="openAssist('company')" title="기업 통합검색(회사명·사업자번호·대표자)"><span class="sm-ic" data-icon="company"></span><span>기업</span></button>
+        <button class="sm-item" id="smPatent" onclick="openAssist('patent')" title="특허·실용신안 검색(KIPRIS)"><span class="sm-ic" data-icon="patent"></span><span>특허</span></button>
+        <button class="sm-item" id="smSupport" onclick="openAssist('support')" title="정부 지원사업 공고(공공데이터포털)"><span class="sm-ic" data-icon="support"></span><span>지원사업</span></button>
       </div>
       <span class="sm-div" aria-hidden="true"></span>
       <div class="sm-group">
         <span class="sm-glabel">업무도구</span>
-        <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 본문 작성"><span class="sm-ic">🧾</span><span>지출결의서</span></button>
+        <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 본문 작성"><span class="sm-ic" data-icon="expense"></span><span>지출결의서</span></button>
       </div>
     </div>
   </aside>
@@ -2354,7 +2363,7 @@ async function openAssist(kind){
   await _loadAssistStatus();
   const ok=!!(_assistStatus&&_assistStatus[kind]);
   const p=document.getElementById('assistantPanel');
-  const head=`<div class="assist-head"><span class="assist-h-ic">${cfg.ic}</span>`+
+  const head=`<div class="assist-head"><span class="assist-h-ic">${_icon(kind)||cfg.ic}</span>`+
     `<span class="assist-h-t">${escHtml(cfg.label)}</span>`+
     `<span class="assist-h-hint">${escHtml(cfg.hint)}</span>`+
     `<span class="assist-api-badge ${ok?'ok':'no'}">${ok?'API 연결됨':'서비스키 필요'}</span></div>`;
@@ -6860,7 +6869,30 @@ async function loadCmpLaw(col){
 }
 
 // 비교 패널 두 열 스크롤 동기화
+// ── 아이콘 세트(일관된 라인 SVG) — 이모지 대신 시각 언어 통일 ──────────────
+const _ICON_P={
+  internal:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 14l1.8 1.8L14.5 12"/>',
+  law:'<path d="M12 3v18"/><path d="M6 7h12"/><path d="M8 7l-3 6a3 3 0 0 0 6 0z"/><path d="M16 7l3 6a3 3 0 0 1-6 0z"/><path d="M8 21h8"/>',
+  company:'<path d="M4 21V5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v16"/><path d="M13 9h6a1 1 0 0 1 1 1v11"/><path d="M3 21h18"/><path d="M7 8h2M7 12h2M7 16h2M16 13h1M16 17h1"/>',
+  patent:'<circle cx="12" cy="9" r="6"/><path d="M9 14.2V21l3-1.8 3 1.8v-6.8"/>',
+  support:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="0.6" fill="currentColor" stroke="none"/>',
+  expense:'<path d="M6 3h12v18l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3-2 1.3z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+  fav:'<path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8 6.8 19.5l1-5.8L3.6 9.6l5.8-.8z"/>',
+  collection:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  stats:'<path d="M3 21h18"/><rect x="5" y="11" width="3.2" height="7" rx="1"/><rect x="10.4" y="6" width="3.2" height="12" rx="1"/><rect x="15.8" y="9" width="3.2" height="9" rx="1"/>',
+  upload:'<path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
+  ai:'<path d="M12 3l1.5 4.2L18 9l-4.5 1.8L12 15l-1.5-4.2L6 9l4.5-1.8z"/><path d="M18.5 14l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7z"/>',
+  tree:'<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.1"/><circle cx="4" cy="12" r="1.1"/><circle cx="4" cy="18" r="1.1"/>'
+};
+function _icon(name){
+  const p=_ICON_P[name]; if(!p) return '';
+  return '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
+}
+function _hydrateIcons(root){
+  (root||document).querySelectorAll('[data-icon]').forEach(el=>{ const s=_icon(el.getAttribute('data-icon')); if(s) el.innerHTML=s; });
+}
 document.addEventListener('DOMContentLoaded',()=>{
+  _hydrateIcons();
   // ── 이벤트 위임: 클릭 ──────────────────────────────────────────────────
   document.addEventListener('click', e=>{
     // 작업공간(그리드) 창 내부의 참조 클릭 → 새 창(패널)으로 추가 열기
