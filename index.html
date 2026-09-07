@@ -40,6 +40,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .sm-sec.sm-tools{margin-left:auto;}
 .sm-sec.sm-tools::before{content:'';width:1px;height:20px;background:rgba(0,0,0,.1);margin:0 4px 0 0;flex-shrink:0;}
 .sm-label{font-size:10px;font-weight:800;color:var(--ht);letter-spacing:.06em;padding:0 6px 0 2px;flex-shrink:0;}
+.sm-group{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.sm-glabel{font-size:10px;font-weight:800;color:var(--ht);letter-spacing:.04em;padding:0 5px 0 2px;white-space:nowrap;flex-shrink:0;}
 .sm-item{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border:none;background:transparent;
   border-radius:999px;font-size:13px;font-weight:600;color:var(--mu);cursor:pointer;white-space:nowrap;
   text-decoration:none;transition:.12s;}
@@ -1931,7 +1933,6 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 <!-- 상단바 -->
 <div class="topbar">
   <button class="tree-toggle" onclick="openInternalTree()" title="내규 전체 목록" aria-label="내규 전체 목록 열기">📚</button>
-  <div class="logo" style="font-size:12px;font-weight:900;letter-spacing:-1px;">농진</div>
   <div>
     <span class="brand"><span class="brand-full">농진원 업무 도우미</span><span class="brand-short">업무 도우미</span></span>
     <span class="brand-en" style="font-size:10px;color:#9ca3af;margin-left:6px;font-weight:500;letter-spacing:.5px;">Work Assistant</span><br>
@@ -1957,15 +1958,24 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   <!-- 좌측 메뉴 패널: 내규똑똑(메인)·법령·시나리오 + 공공조회 + 도구 -->
   <aside class="side-menu" id="sideMenu" aria-label="주요 메뉴">
     <div class="sm-sec sm-primary">
-      <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="사내 규정(내규) 스마트 검색"><span class="sm-ic">📋</span><span>내규똑똑</span></button>
-      <button class="sm-item" id="smLaw" onclick="setMode('law')" title="국가법령 조회"><span class="sm-ic">📖</span><span>법령 조회</span></button>
+      <div class="sm-group">
+        <span class="sm-glabel">규정조회</span>
+        <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="사내 규정(내규) 스마트 검색"><span class="sm-ic">📋</span><span>내규똑똑</span></button>
+        <button class="sm-item" id="smLaw" onclick="setMode('law')" title="국가법령 조회"><span class="sm-ic">📖</span><span>법령 조회</span></button>
+      </div>
       <span class="sm-div" aria-hidden="true"></span>
-      <button class="sm-item" id="smCompany" onclick="openAssist('company')" title="사업자등록 상태 조회(국세청)"><span class="sm-ic">🏢</span><span>기업</span></button>
-      <button class="sm-item" id="smPatent" onclick="openAssist('patent')" title="특허·실용신안 검색(KIPRIS)"><span class="sm-ic">📄</span><span>특허</span></button>
-      <button class="sm-item" id="smSupport" onclick="openAssist('support')" title="정부 지원사업 공고(기업마당)"><span class="sm-ic">🎯</span><span>지원사업</span></button>
-      <button class="sm-item" id="smProcurement" onclick="openAssist('procurement')" title="나라장터 입찰공고(조달청)"><span class="sm-ic">📢</span><span>조달공고</span></button>
+      <div class="sm-group">
+        <span class="sm-glabel">공공DB</span>
+        <button class="sm-item" id="smCompany" onclick="openAssist('company')" title="기업 통합검색(회사명·사업자번호·대표자)"><span class="sm-ic">🏢</span><span>기업</span></button>
+        <button class="sm-item" id="smPatent" onclick="openAssist('patent')" title="특허·실용신안 검색(KIPRIS)"><span class="sm-ic">📄</span><span>특허</span></button>
+        <button class="sm-item" id="smProcurement" onclick="openAssist('procurement')" title="나라장터 입찰공고(조달청)"><span class="sm-ic">📢</span><span>조달공고</span></button>
+        <button class="sm-item" id="smSupport" onclick="openAssist('support')" title="정부 지원사업 공고(기업마당)"><span class="sm-ic">🎯</span><span>지원사업</span></button>
+      </div>
       <span class="sm-div" aria-hidden="true"></span>
-      <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 작성·인쇄"><span class="sm-ic">🧾</span><span>지출결의서</span></button>
+      <div class="sm-group">
+        <span class="sm-glabel">업무도구</span>
+        <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 본문 작성"><span class="sm-ic">🧾</span><span>지출결의서</span></button>
+      </div>
     </div>
     <div class="sm-sec sm-tools">
       <button class="sm-item sm-icon" onclick="toggleFavTab()" title="즐겨찾기" aria-label="즐겨찾기"><span class="sm-ic">☆</span></button>
