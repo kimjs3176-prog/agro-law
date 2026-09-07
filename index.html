@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>KOAT 내규&국가법령 종합 검색 서비스</title>
+<title>농진원 업무 도우미</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.min.css">
 <style>:root{
   /* Linear 참조 팔레트 (인디고 액센트 · 하프라인 보더 · 저채도 뉴트럴) */
@@ -26,7 +26,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .topbar{background:rgba(255,255,255,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.06);padding:0 24px;display:flex;align-items:center;height:60px;gap:10px;position:sticky;top:0;z-index:200;box-shadow:0 1px 0 rgba(0,0,0,.04);}
 .logo{width:32px;height:32px;background:var(--g);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:800;flex-shrink:0;box-shadow:0 2px 8px rgba(94,106,210,.35);}
 .brand{font-size:17px;font-weight:800;letter-spacing:-.5px;color:var(--tx);}.brand-sub{font-size:11px;color:var(--mu);font-weight:500;letter-spacing:.1px;}
-.apibadge{margin-left:auto;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;background:var(--gl);color:var(--gd);}
+.apibadge{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;background:var(--gl);color:var(--gd);}
+.tb-tools{margin-left:auto;display:flex;align-items:center;gap:1px;}
+.tb-tool{display:inline-flex;align-items:center;gap:5px;padding:7px 11px;border:none;background:transparent;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--mu);cursor:pointer;text-decoration:none;font-family:var(--font);transition:.12s;position:relative;white-space:nowrap;}
+.tb-tool:hover{background:var(--bg);color:var(--tx);}
+.tb-tool.active{background:var(--gl);color:var(--gp);}
+.tb-ic{font-size:15px;line-height:1;}
+.tb-cnt{font-size:10.5px;font-weight:800;color:var(--gd);}
+.tb-tool .ai-active-badge{position:absolute;top:4px;right:4px;}
 /* 레이아웃 */
 .main{max-width:min(1680px,96vw);margin:0 auto;padding:20px 28px 40px;}
 @media(min-width:1800px){.main{max-width:1800px;}}
@@ -40,6 +47,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .sm-sec.sm-tools{margin-left:auto;}
 .sm-sec.sm-tools::before{content:'';width:1px;height:20px;background:rgba(0,0,0,.1);margin:0 4px 0 0;flex-shrink:0;}
 .sm-label{font-size:10px;font-weight:800;color:var(--ht);letter-spacing:.06em;padding:0 6px 0 2px;flex-shrink:0;}
+.sm-group{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.sm-glabel{font-size:10px;font-weight:800;color:var(--ht);letter-spacing:.04em;padding:0 5px 0 2px;white-space:nowrap;flex-shrink:0;}
 .sm-item{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border:none;background:transparent;
   border-radius:999px;font-size:13px;font-weight:600;color:var(--mu);cursor:pointer;white-space:nowrap;
   text-decoration:none;transition:.12s;}
@@ -54,6 +63,308 @@ body.dark .sm-sec.sm-tools::before{background:rgba(255,255,255,.14);}
   .sm-tools{display:none;}   /* 모바일은 하단 내비게이션으로 대체 */
   .sm-item{padding:7px 12px;font-size:12.5px;}
 }
+/* ── 메뉴 정리: 주요 기능(좌, 아이콘+텍스트) + 도구(우, 아이콘) ── */
+.sm-primary{flex-wrap:wrap;gap:4px;}
+.sm-div{width:1px;height:18px;background:var(--bd);margin:0 7px;flex-shrink:0;}
+body:not(.dark) .sm-div{background:rgba(0,0,0,.1);}
+.sm-item.sm-icon{gap:0;padding:8px 10px;}
+.sm-item.sm-icon .sm-ic{font-size:15px;}
+.sm-item.sm-icon .ai-active-badge{margin-left:2px;}
+/* ── 검색 유형 토글(키워드 ↔ AI 시나리오) ── */
+.search-toggle{display:inline-flex;background:var(--bg);border:1px solid var(--bd);border-radius:11px;padding:3px;gap:2px;margin:0 0 12px;}
+.stgl{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:none;background:transparent;border-radius:8px;
+  font-size:13px;font-weight:700;color:var(--mu);cursor:pointer;font-family:var(--font);white-space:nowrap;transition:.14s;}
+.stgl:hover{color:var(--tx);}
+.stgl.active{background:var(--sf);color:var(--gp);box-shadow:var(--shadow);}
+.stgl-ic{font-size:13px;}
+body.dark .stgl.active{background:#20222a;}
+/* ── 업무 도우미(공공조회) 결과 패널 ── */
+.assist-api-badge{font-size:11px;font-weight:700;padding:4px 11px;border-radius:999px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
+.assist-api-badge[hidden]{display:none;}
+.assist-api-badge::before{content:'●';font-size:8px;}
+.assist-api-badge.ok{background:var(--gl);color:var(--gd);}
+.assist-api-badge.no{background:var(--amber-l);color:#b45309;}
+/* 도우미 조회 패널 — assist-on 일 때만 노출하고 일반 검색 영역은 숨김 */
+#assistantPanel{display:none;}
+.main-content.assist-on > *:not(#assistantPanel){display:none;}
+.main-content.assist-on > #assistantPanel{display:block;}
+.assist-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:2px 0 14px;}
+.assist-head .assist-api-badge{margin-left:auto;align-self:center;}
+.assist-h-ic{font-size:20px;align-self:center;}
+.assist-h-t{font-size:17px;font-weight:800;color:var(--tx);letter-spacing:-.3px;}
+.assist-h-hint{font-size:12.5px;color:var(--mu);}
+.assist-search{display:flex;gap:8px;margin-bottom:16px;max-width:620px;}
+.assist-search .sinput{flex:1;min-width:0;}
+.assist-results{display:flex;flex-direction:column;gap:10px;}
+.assist-card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;}
+.assist-card-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:7px;}
+.assist-card-t{font-size:14px;font-weight:700;color:var(--tx);line-height:1.4;word-break:keep-all;}
+.assist-card-sub{font-size:12px;color:var(--mu);font-weight:600;}
+.assist-card-meta{display:flex;flex-wrap:wrap;gap:5px 16px;font-size:12.5px;color:var(--tx);}
+.assist-card-meta b{color:var(--mu);font-weight:600;margin-right:4px;}
+.assist-card-link{display:inline-block;margin-top:9px;font-size:12.5px;font-weight:700;color:var(--g);text-decoration:none;}
+.assist-card-link:hover{text-decoration:underline;}
+.assist-note{padding:18px 16px;border:1px dashed var(--bd);border-radius:12px;background:var(--bg);text-align:center;color:var(--mu);font-size:13px;line-height:1.8;}
+.assist-note b{color:var(--tx);font-weight:700;}
+.assist-note a{color:var(--g);font-weight:700;text-decoration:none;}
+.assist-note a:hover{text-decoration:underline;}
+.assist-loading{display:flex;align-items:center;justify-content:center;gap:8px;padding:24px;color:var(--mu);font-size:13px;}
+/* ── 특허 조회: 필터 + 목록 + 상세 ── */
+.pat-filters{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+.pat-frow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.pat-flabel{font-size:12px;font-weight:800;color:var(--mu);flex-shrink:0;}
+.pat-appl{display:flex;flex-wrap:wrap;gap:6px;}
+.pat-chip{font-size:12.5px;font-weight:700;color:var(--mu);background:var(--sf);border:1px solid var(--bd);border-radius:999px;padding:6px 13px;cursor:pointer;font-family:var(--font);transition:.12s;}
+.pat-chip:hover{border-color:var(--g);color:var(--tx);}
+.pat-chip.active{background:var(--gl);border-color:transparent;color:var(--gp);}
+/* 상태 칩: 활성 시 상태별 색상 */
+.pat-schip{padding:6px 12px;}
+.pat-schip.active{color:#fff;}
+.pat-schip.active.s-all{background:var(--g);}
+.pat-schip.active.s-R{background:#16a34a;}
+.pat-schip.active.s-A{background:#2563eb;}
+.pat-schip.active.s-J,.pat-schip.active.s-F,.pat-schip.active.s-I,.pat-schip.active.s-C,.pat-schip.active.s-G{background:#dc2626;}
+.pat-pdiv{width:1px;height:18px;background:var(--bd);margin:0 3px;align-self:center;}
+.pat-inp{padding:9px 12px;border:1px solid var(--bd);border-radius:9px;font-size:13px;background:var(--sf);color:var(--tx);outline:none;font-family:var(--font);}
+.pat-inp:focus{border-color:var(--g);box-shadow:var(--shadow-focus);}
+.pat-frow2{gap:8px;max-width:620px;}
+.pat-frow2 .pat-inp:first-of-type{flex:1;min-width:160px;}
+.pat-year{width:120px;flex-shrink:0;}
+.pat-sel{padding:9px 12px;border:1px solid var(--bd);border-radius:9px;font-size:13px;background:var(--sf);color:var(--tx);cursor:pointer;font-family:var(--font);flex-shrink:0;}
+.pat-tilde{color:var(--mu);flex-shrink:0;}
+.pat-count{font-size:12px;color:var(--mu);margin-bottom:8px;}
+.pat-listhd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.pat-listhd .pat-count{margin-bottom:0;}
+.pat-xlsx{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border:1px solid var(--bd);border-radius:8px;background:var(--sf);color:var(--gp);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.12s;}
+.pat-xlsx:hover{border-color:var(--g);background:var(--gl);}
+.pat-xlsx:disabled{opacity:.6;cursor:progress;}
+.pat-list{display:flex;flex-direction:column;gap:8px;}
+.pat-row{display:block;width:100%;text-align:left;background:var(--sf);border:1px solid var(--bd);border-radius:11px;padding:12px 14px;cursor:pointer;font-family:var(--font);transition:.12s;}
+.pat-row:hover{border-color:var(--g);box-shadow:var(--shadow);}
+.pat-rw{position:relative;}
+.pat-rw .pat-row{padding-right:38px;}
+.pat-fav{position:absolute;top:9px;right:9px;width:28px;height:28px;border:none;background:transparent;font-size:17px;line-height:1;color:var(--ht);cursor:pointer;border-radius:7px;}
+.pat-fav:hover{background:var(--gl);}
+.pat-fav.on{color:#f5b301;}
+.det-fav{margin-left:auto;font-size:12px;font-weight:700;padding:5px 11px;border:1px solid var(--bd);border-radius:999px;background:var(--sf);color:var(--mu);cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.det-fav:hover{border-color:#f5b301;color:#b8860b;}
+.det-fav.on{background:#fff8e6;border-color:#f5b301;color:#b8860b;}
+body.dark .det-fav.on{background:rgba(245,179,1,.16);color:#fbbf24;}
+.fav-due{display:inline-block;font-size:12px;font-weight:700;color:var(--mu);padding:6px 0;}
+.pat-row-t{font-size:13.5px;font-weight:700;color:var(--tx);line-height:1.45;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px;}
+.pat-badge{font-size:10.5px;font-weight:800;color:var(--gp);background:var(--gl);border-radius:5px;padding:1px 7px;flex-shrink:0;}
+.pat-row-m{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;}
+.pat-row-appl{color:var(--g);font-weight:700;}
+.pat-row-meta{color:var(--mu);}
+.pat-back{display:inline-flex;align-items:center;gap:4px;margin-bottom:12px;padding:6px 12px;border:1px solid var(--bd);border-radius:999px;background:var(--sf);color:var(--mu);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font);}
+.pat-back:hover{color:var(--tx);border-color:var(--g);}
+.pat-detail{background:var(--sf);border:1px solid var(--bd);border-radius:12px;box-shadow:var(--shadow);padding:16px 18px;}
+.pat-d-title{font-size:15px;font-weight:800;color:var(--tx);line-height:1.5;margin-bottom:12px;word-break:keep-all;display:flex;align-items:center;flex-wrap:wrap;gap:8px;}
+.comp-badge{font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;line-height:1.7;white-space:nowrap;}
+.comp-badge.ok{background:#e7f6ec;color:#137a3e;}
+.comp-badge.rest{background:#fdf2dc;color:#8a5a00;}
+.comp-badge.closed{background:#fde6e6;color:#c0342b;}
+body.dark .comp-badge.ok{background:rgba(34,197,94,.18);color:#6ee7a0;}
+body.dark .comp-badge.rest{background:rgba(245,158,11,.18);color:#fbbf24;}
+body.dark .comp-badge.closed{background:rgba(239,68,68,.2);color:#fca5a5;}
+.pat-d-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px 18px;margin-bottom:2px;}
+.pat-d-row{display:flex;gap:10px;font-size:12.5px;}
+.pat-d-k{color:var(--mu);font-weight:700;flex-shrink:0;min-width:56px;}
+.pat-d-v{color:var(--tx);word-break:break-word;}
+.pat-d-abs{margin-top:10px;padding-top:12px;border-top:1px solid var(--bd);}
+.pat-d-abs p{font-size:12.5px;line-height:1.8;color:var(--tx);margin-top:6px;white-space:pre-wrap;}
+/* 기업 상세: 표(그리드) 형식 — 셀 사이 얇은 구분선 */
+.comp-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1px;background:var(--bd);border:1px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:0;}
+.comp-grid .pat-d-row{background:var(--sf);padding:10px 13px;gap:12px;align-items:baseline;}
+.comp-grid .pat-d-k{min-width:92px;}
+.comp-fbar{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--bd);}
+.comp-qf{margin-left:auto;flex:0 1 220px;min-width:150px;}
+.comp-fbar .pat-chip b{color:inherit;font-weight:800;margin-left:2px;opacity:.75;}
+.comp-link{color:var(--g);text-decoration:none;font-weight:600;}
+.comp-link:hover{text-decoration:underline;}
+.fin-box{margin-top:14px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;}
+.fin-hd{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 13px;font-weight:700;font-size:13px;background:var(--gl);color:var(--gp);}
+.fin-meta{font-weight:500;font-size:11px;color:var(--mu);}
+.fin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1px;background:var(--bd);}
+.fin-row{background:var(--sf);padding:10px 13px;display:flex;flex-direction:column;gap:3px;}
+.fin-k{font-size:12px;color:var(--mu);}
+.fin-v{font-size:15px;font-weight:700;}
+.fin-p{font-size:11px;color:var(--mu);display:flex;gap:6px;align-items:center;}
+.fin-yoy{font-weight:700;}
+.fin-yoy.up{color:#dc2626;} .fin-yoy.dn{color:#2563eb;}
+body.dark .fin-yoy.up{color:#f87171;} body.dark .fin-yoy.dn{color:#60a5fa;}
+/* 기업 상세 — 요약 지표 타일·업종·연계 특허 */
+.comp-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:12px 0 4px;}
+.comp-stat{background:var(--gl);border-radius:12px;padding:12px 14px;}
+.cs-label{font-size:11.5px;color:var(--mu);font-weight:600;}
+.cs-value{font-size:19px;font-weight:900;color:var(--gp);letter-spacing:-.5px;margin-top:3px;line-height:1.1;}
+.cs-sub{font-size:11px;color:var(--mu);margin-top:3px;font-weight:600;}
+.comp-sec{margin-top:16px;}
+.comp-sec-h{font-size:13px;font-weight:800;color:var(--tx);display:flex;align-items:center;gap:7px;margin-bottom:9px;}
+.comp-sec-n{font-size:11px;font-weight:700;color:var(--gd);background:var(--gl);border-radius:999px;padding:1px 9px;}
+.comp-skills{display:flex;flex-wrap:wrap;gap:6px;}
+.comp-skill{font-size:12.5px;font-weight:600;color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 11px;background:var(--sf);}
+.cpat-list{display:flex;flex-direction:column;gap:8px;}
+.cpat-card{border:1px solid var(--bd);border-radius:10px;padding:11px 13px;background:var(--sf);}
+.cpat-h{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.cpat-b{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;}
+.cpat-b.reg{background:#e7f6ec;color:#137a3e;} .cpat-b.open{background:var(--gl);color:var(--gp);}
+body.dark .cpat-b.reg{background:rgba(34,197,94,.16);color:#6ee7a0;}
+.cpat-no{margin-left:auto;font-size:11.5px;color:var(--ht);font-variant-numeric:tabular-nums;}
+.cpat-t{font-size:13.5px;font-weight:700;color:var(--tx);line-height:1.45;word-break:keep-all;}
+.cpat-m{font-size:11.5px;color:var(--mu);margin-top:5px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.cpat-date{color:var(--ht);}
+.cpat-more{display:inline-block;margin-top:10px;font-size:12.5px;font-weight:700;color:var(--g);text-decoration:none;}
+.cpat-more:hover{text-decoration:underline;}
+/* ── 지출결의서 본문 작성기 ── */
+.exp-segset{display:inline-flex;background:var(--gl);border-radius:10px;padding:3px;gap:2px;margin:10px 0 14px;}
+.exp-seg{font-size:13px;font-weight:700;padding:7px 18px;border:none;border-radius:8px;background:transparent;color:var(--mu);cursor:pointer;font-family:var(--font);transition:.12s;}
+.exp-seg:hover{color:var(--gp);}
+.exp-seg.active{background:var(--sf);color:var(--gp);box-shadow:0 1px 3px rgba(17,18,23,.1);}
+.exp-wrap{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:18px;align-items:start;}
+.exp-form{display:flex;flex-direction:column;gap:12px;}
+.exp-fg{border:1px solid var(--bd);border-radius:12px;padding:11px 13px;background:var(--sf);}
+.exp-fgt{font-size:12px;font-weight:800;color:var(--gp);margin-bottom:8px;}
+.exp-hint2{font-size:10.5px;font-weight:500;color:var(--mu);margin-left:6px;}
+.exp-frow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.exp-frow:last-child{margin-bottom:0;}
+.exp-form label{flex:1 1 130px;display:flex;flex-direction:column;gap:4px;font-size:11.5px;font-weight:600;color:var(--mu);min-width:0;}
+.exp-form label.exp-full{flex-basis:100%;margin-bottom:8px;}
+.exp-form input,.exp-form select,.exp-form textarea{font-family:var(--font);font-size:13px;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;outline:none;width:100%;box-sizing:border-box;}
+.exp-form input:focus,.exp-form select:focus,.exp-form textarea:focus{border-color:var(--g);box-shadow:0 0 0 3px var(--gl);}
+.exp-form textarea{resize:vertical;}
+.exp-vatrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.exp-mini{font-size:11.5px;font-weight:700;padding:5px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--sf);color:var(--g);cursor:pointer;}
+.exp-mini:hover{border-color:var(--g);}
+/* 여비 행 — 건별 일자·출장지·금액(1행) + 출장목적(2행) */
+.exp-trow{display:grid;grid-template-columns:22px 118px 1fr 96px 26px;gap:5px;align-items:center;border:1px solid var(--bd);border-radius:9px;padding:7px 8px;margin-bottom:7px;}
+.exp-trn{font-size:11px;font-weight:800;color:var(--gp);text-align:center;}
+.exp-trow .tc{grid-column:2/-1;}
+.exp-tin{font-size:12.5px!important;padding:7px 8px!important;}
+.exp-trdel{border:1px solid var(--bd);background:var(--sf);color:var(--mu);border-radius:6px;width:26px;height:30px;cursor:pointer;font-size:12px;}
+.exp-trdel:hover:not(:disabled){border-color:#f04452;color:#f04452;}
+.exp-trdel:disabled{opacity:.35;cursor:default;}
+.exp-addrow{margin-top:4px;font-size:12px;font-weight:700;padding:7px 12px;border:1px dashed var(--bd);border-radius:8px;background:transparent;color:var(--g);cursor:pointer;width:100%;}
+.exp-addrow:hover{border-color:var(--g);background:var(--gl);}
+.exp-limit{margin-top:8px;font-size:12px;font-weight:700;padding:7px 10px;border-radius:8px;background:var(--bg);color:var(--mu);}
+.exp-limit.ok{background:#e7f6ec;color:#137a3e;} .exp-limit.over{background:#fde6e6;color:#c0342b;}
+body.dark .exp-limit.ok{background:rgba(34,197,94,.16);color:#6ee7a0;} body.dark .exp-limit.over{background:rgba(239,68,68,.18);color:#fca5a5;}
+.exp-actions{display:flex;gap:8px;margin-top:4px;}
+.exp-print{flex:1;font-size:13.5px;font-weight:800;padding:11px;border:none;border-radius:10px;background:var(--g);color:#fff;cursor:pointer;}
+.exp-print:hover{background:var(--gd);}
+.exp-mini2{font-size:13px;font-weight:700;padding:11px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);cursor:pointer;}
+.exp-mini2:hover{border-color:var(--g);color:var(--g);}
+.exp-clear{font-size:13px;font-weight:700;padding:11px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--mu);cursor:pointer;}
+.exp-preview{position:sticky;top:8px;}
+/* 본문 문서 카드 */
+.exp-doc{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:20px 22px;box-shadow:var(--shadow);max-width:640px;}
+.expd-title{font-size:12px;font-weight:800;color:var(--mu);letter-spacing:.3px;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--bd);}
+.expd-tag{display:inline-block;font-size:12px;font-weight:800;color:var(--gp);background:var(--gl);border-radius:7px;padding:3px 11px;margin-bottom:12px;}
+.expd-lines{display:flex;flex-direction:column;gap:9px;}
+.expd-line{display:flex;gap:10px;font-size:13.5px;line-height:1.55;}
+.expd-mk{flex-shrink:0;font-weight:800;color:var(--gp);min-width:18px;}
+.expd-k{flex-shrink:0;min-width:72px;color:var(--mu);font-weight:700;}
+.expd-v{color:var(--tx);font-weight:500;white-space:pre-wrap;word-break:break-word;}
+.expd-tbl{width:100%;border-collapse:collapse;margin:12px 0 6px;font-size:12.5px;}
+.expd-tbl th,.expd-tbl td{border:1px solid var(--bd);padding:7px 9px;text-align:center;}
+.expd-tbl th{background:var(--gl);color:var(--gp);font-weight:700;}
+.expd-tbl td.tl{text-align:left;} .expd-tbl td.tr{text-align:right;font-variant-numeric:tabular-nums;}
+.expd-tbl tfoot td{font-weight:800;background:var(--bg);}
+.expd-empty{color:var(--mu);font-weight:500;}
+.expd-sum{font-size:13.5px;font-weight:800;color:var(--gp);text-align:right;margin-top:4px;}
+.expd-warn{margin-top:12px;font-size:12.5px;font-weight:700;color:#c0342b;background:#fde6e6;border-radius:8px;padding:9px 11px;}
+body.dark .expd-warn{background:rgba(239,68,68,.18);color:#fca5a5;}
+/* 업무추진비 표 양식(공문서 스타일) */
+.pmt{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px;}
+.pmt th,.pmt td{border:1px solid #9aa0a8;padding:8px 11px;vertical-align:middle;color:var(--tx);line-height:1.5;}
+.pmt th{background:#eef0f3;font-weight:700;width:96px;text-align:center;white-space:nowrap;}
+.pmt td{text-align:center;}
+.pmt tr:nth-child(1) td,.pmt tr:nth-child(2) td,.pmt tr:nth-child(4) td,.pmt tr:nth-child(6) td{text-align:left;}
+body.dark .pmt th,body.dark .pmt td{border-color:rgba(255,255,255,.22);}
+body.dark .pmt th{background:rgba(255,255,255,.08);}
+@media(max-width:820px){ .exp-wrap{grid-template-columns:1fr;} .exp-preview{position:static;} }
+/* 인쇄: 본문만 출력 */
+@media print{
+  body *{visibility:hidden!important;}
+  #expDoc,#expDoc *{visibility:visible!important;}
+  #expDoc{position:absolute!important;left:0;top:0;width:100%;max-width:none;border:none;box-shadow:none;padding:8mm 4mm;margin:0;}
+  @page{size:A4;margin:14mm;}
+}
+/* 기회 레이더(지원사업·조달) */
+.opp-presets{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px;}
+.opp-chip{font-size:12px;font-weight:600;padding:5px 11px;border:1px solid var(--bd);border-radius:999px;background:var(--sf);color:var(--tx);cursor:pointer;transition:.12s;}
+.opp-chip:hover{border-color:var(--g);color:var(--g);}
+.opp-chip.active{background:var(--g);color:#fff;border-color:var(--g);}
+.opp-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:8px 0 4px;padding-bottom:8px;border-bottom:1px solid var(--bd);}
+.opp-sorts,.opp-tools{display:flex;gap:6px;flex-wrap:wrap;}
+.opp-sort{font-size:12px;font-weight:600;padding:5px 10px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--mu);cursor:pointer;}
+.opp-sort:hover{color:var(--tx);}
+.opp-sort.active{background:var(--gl);color:var(--gp);}
+.opp-tool{font-size:12px;font-weight:700;padding:5px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--sf);color:var(--tx);cursor:pointer;}
+.opp-tool:hover{border-color:var(--g);color:var(--g);}
+.opp-tool#oppIcs.has{border-color:var(--g);color:var(--g);background:var(--gl);}
+.opp-cnt{display:inline-block;min-width:18px;text-align:center;font-size:11px;padding:0 5px;border-radius:999px;background:var(--g);color:#fff;margin-left:2px;}
+.opp-count{font-size:12px;color:var(--mu);margin:8px 0 6px;}
+.opp-active{color:var(--g);}
+.opp-list{display:flex;flex-direction:column;gap:8px;}
+.opp-card{position:relative;border:1px solid var(--bd);border-radius:10px;padding:11px 40px 11px 13px;background:var(--sf);transition:.12s;}
+.opp-card:hover{border-color:var(--g);box-shadow:0 1px 6px rgba(94,106,210,.08);}
+.opp-card.is-done{opacity:.6;}
+.opp-star{position:absolute;top:8px;right:8px;width:28px;height:28px;border:none;background:transparent;font-size:18px;line-height:1;color:var(--ht);cursor:pointer;border-radius:6px;}
+.opp-star:hover{background:var(--gl);}
+.opp-star.on{color:#f5b301;}
+.opp-card-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px;}
+.opp-dd{font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;white-space:nowrap;letter-spacing:.2px;}
+.opp-dd.urgent{background:#fde6e6;color:#c0342b;}
+.opp-dd.soon{background:#fdf2dc;color:#8a5a00;}
+.opp-dd.far{background:#e8eaf6;color:#3a41a8;}
+.opp-dd.done{background:#eceef1;color:#8a8f98;}
+.opp-dd.none{background:#eceef1;color:#8a8f98;font-weight:600;}
+body.dark .opp-dd.urgent{background:rgba(239,68,68,.2);color:#fca5a5;}
+body.dark .opp-dd.soon{background:rgba(245,158,11,.18);color:#fbbf24;}
+body.dark .opp-dd.far{background:rgba(94,106,210,.2);color:#b7bdf0;}
+body.dark .opp-dd.done,body.dark .opp-dd.none{background:rgba(255,255,255,.08);color:#8a8f98;}
+.opp-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:#e7f6ec;color:#137a3e;}
+body.dark .opp-tag{background:rgba(34,197,94,.16);color:#6ee7a0;}
+.opp-card-t{font-size:14px;font-weight:700;color:var(--tx);line-height:1.45;word-break:keep-all;}
+.opp-card-t mark{background:var(--mark-bg,#fff3bf);color:inherit;padding:0 1px;border-radius:2px;}
+.opp-card-sub{font-size:12px;color:var(--mu);margin-top:3px;}
+.opp-card-meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:11.5px;color:var(--mu);}
+.opp-card-meta b{color:var(--tx);font-weight:600;margin-right:3px;}
+.opp-card .assist-card-link{display:inline-block;margin-top:8px;font-size:12px;font-weight:600;color:var(--g);text-decoration:none;}
+.opp-card .assist-card-link:hover{text-decoration:underline;}
+/* 기회 레이더 — 필터·리치 카드 */
+.opp-filters{display:flex;flex-direction:column;gap:8px;margin:10px 0 4px;}
+.opp-frow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.opp-flabel{font-size:11.5px;font-weight:700;color:var(--mu);flex-shrink:0;min-width:52px;}
+.opp-segset{display:inline-flex;background:var(--gl);border-radius:9px;padding:3px;gap:2px;flex-wrap:wrap;}
+.opp-seg{font-size:12px;font-weight:700;padding:5px 12px;border:none;border-radius:7px;background:transparent;color:var(--mu);cursor:pointer;font-family:var(--font);transition:.12s;}
+.opp-seg:hover{color:var(--gp);}
+.opp-seg.active{background:var(--sf);color:var(--gp);box-shadow:0 1px 3px rgba(17,18,23,.1);}
+.opp-toggle{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--tx);cursor:pointer;user-select:none;}
+.opp-toggle input{position:absolute;opacity:0;width:0;height:0;}
+.opp-tg-track{width:36px;height:20px;border-radius:999px;background:var(--bd);position:relative;transition:.15s;flex-shrink:0;}
+.opp-tg-track::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.2);}
+.opp-toggle input:checked+.opp-tg-track{background:var(--g);}
+.opp-toggle input:checked+.opp-tg-track::after{transform:translateX(16px);}
+.opp-badge-e{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:#e7f0ff;color:#1d4ed8;}
+body.dark .opp-badge-e{background:rgba(59,130,246,.2);color:#93c5fd;}
+.opp-type{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;border:1px solid var(--bd);color:var(--mu);}
+.opp-no{margin-left:8px;color:var(--ht);}
+.opp-grid{display:grid;grid-template-columns:1fr;gap:1px;background:var(--bd);border:1px solid var(--bd);border-radius:9px;overflow:hidden;margin-top:9px;}
+.opp-grow{display:flex;gap:10px;background:var(--sf);padding:7px 11px;font-size:12.5px;}
+.opp-gk{color:var(--mu);min-width:96px;flex-shrink:0;font-weight:600;}
+.opp-gv{color:var(--tx);font-weight:600;}
+.opp-gv.opp-due{color:#c0342b;font-weight:800;}
+body.dark .opp-gv.opp-due{color:#fca5a5;}
+.opp-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;}
+.opp-htag{font-size:11px;font-weight:600;color:var(--gp);background:var(--gl);border-radius:6px;padding:2px 7px;}
+.opp-btns{display:flex;gap:7px;margin-top:11px;flex-wrap:wrap;}
+.opp-btn{font-size:12px;font-weight:700;padding:7px 13px;border-radius:8px;border:1px solid var(--bd);background:var(--sf);color:var(--tx);text-decoration:none;transition:.12s;}
+.opp-btn:hover{border-color:var(--g);color:var(--g);}
+.opp-btn.primary{background:var(--g);border-color:var(--g);color:#fff;}
+.opp-btn.primary:hover{background:var(--gd);color:#fff;}
+@media(max-width:640px){ .pat-year{width:88px;} .pat-frow2 .pat-inp:first-of-type{min-width:120px;} .opp-bar{flex-direction:column;align-items:stretch;} }
 .reg-sem-badge{font-size:10.5px;font-weight:800;color:#fff;background:#7c3aed;
   border-radius:5px;padding:2px 7px;white-space:nowrap;}
 .art-sem-badge{font-size:9.5px;font-weight:800;color:#fff;background:#7c3aed;
@@ -740,6 +1051,7 @@ body.dark .int-law-chip{background:#161920;color:#b7bdf0;}
   .sb-label{display:none;}
   .settings-btn{padding:7px 9px;font-size:15px;margin-left:2px;}
   .apibadge{font-size:10px;padding:3px 9px;}
+  .tb-tools{display:none;}   /* 모바일은 하단 내비게이션으로 대체 */
   .main{padding:12px 12px 76px;}
   .spanel{padding:16px 16px 14px;border-radius:16px;}
   .tabs{gap:5px;flex-wrap:wrap;}
@@ -794,6 +1106,31 @@ body.dark .int-law-chip{background:#161920;color:#b7bdf0;}
   .fp-left{min-width:0;}
   .cmp-body{grid-template-columns:1fr;}
   .cmp-col:first-child{display:none;}
+  /* ── 상단 메뉴: 가로 스크롤 한 줄 ── */
+  .sm-primary{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .sm-primary::-webkit-scrollbar{display:none;}
+  .sm-primary .sm-item{flex:0 0 auto;font-size:12.5px;padding:7px 10px;}
+  .side-menu{padding:6px 8px;}
+  /* ── 업무 도우미 패널: 폭 제한 해제·검색창 풀폭 ── */
+  .assist-search,.pat-frow2{max-width:none;}
+  .assist-head{gap:4px;margin-bottom:10px;}
+  .assist-h-hint{flex-basis:100%;}
+  .pat-flabel{min-width:44px;font-size:11px;}
+  .pat-chip{font-size:12px;padding:5px 10px;}
+  .pat-appl{gap:5px;}
+  .pat-year{width:84px;}
+  .opp-bar{gap:6px;} .opp-sort,.opp-tool{font-size:11.5px;padding:6px 9px;}
+  .opp-card{padding:11px 36px 11px 12px;}
+  .opp-grid,.comp-grid,.fin-grid{grid-template-columns:1fr;}
+  .comp-fbar .comp-qf{margin-left:0;flex-basis:100%;}
+  /* ── 지출결의서: 여비 행 세로 정렬·표 가로 스크롤 ── */
+  .exp-segset{width:100%;} .exp-seg{flex:1;text-align:center;padding:8px 6px;}
+  .exp-trow{display:flex;flex-wrap:wrap;gap:5px;}
+  .exp-trn{flex:0 0 100%;text-align:left;}
+  .exp-trow .td{flex:1 1 45%;} .exp-trow .tp{flex:1 1 45%;} .exp-trow .ta{flex:1 1 60%;} .exp-trow .tc{flex:1 1 100%;grid-column:auto;}
+  .exp-doc{padding:16px 14px;}
+  .exp-preview{overflow-x:auto;}
+  .expd-tbl{min-width:440px;}
   /* 하단 탭바 */
   .mobile-nav{display:flex;}
 }
@@ -1622,15 +1959,20 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 <!-- 상단바 -->
 <div class="topbar">
   <button class="tree-toggle" onclick="openInternalTree()" title="내규 전체 목록" aria-label="내규 전체 목록 열기">📚</button>
-  <div class="logo" style="font-size:11px;font-weight:900;letter-spacing:-.5px;">KOAT</div>
   <div>
-    <span class="brand"><span class="brand-full">KOAT 내규&국가법령 종합 검색</span><span class="brand-short">KOAT 종합검색</span></span>
-    <span class="brand-en" style="font-size:10px;color:#9ca3af;margin-left:6px;font-weight:500;letter-spacing:.5px;">Integrated Legal Search</span><br>
-    <span class="brand-sub">사규(내규) 검색 · 국가법령 연계</span>
+    <span class="brand"><span class="brand-full">KOAT Work Place</span><span class="brand-short">KOAT</span></span>
+    <span class="brand-en" style="font-size:10px;color:#9ca3af;margin-left:6px;font-weight:500;letter-spacing:.5px;">Work Assistant</span><br>
+    <span class="brand-sub">내규똑똑 · 법령 · 기업 · 특허 · 지원사업 · 조달 통합 지원</span>
+  </div>
+  <div class="tb-tools">
+    <button class="tb-tool" id="tbFav" onclick="toggleFavTab()" title="즐겨찾기"><span class="tb-ic">☆</span><span class="tb-tl">즐겨찾기</span><span id="tbFavCount" class="tb-cnt"></span></button>
+    <button class="tb-tool" onclick="openCollModal()" title="컬렉션"><span class="tb-ic">📁</span><span class="tb-tl">컬렉션</span></button>
+    <button class="tb-tool" onclick="openStatPanel()" title="검색 통계"><span class="tb-ic">📊</span><span class="tb-tl">통계</span></button>
+    <a class="tb-tool" href="/upload" title="내규 업로드"><span class="tb-ic">📤</span><span class="tb-tl">업로드</span></a>
+    <button class="tb-tool" onclick="openAiModal()" title="AI 설정"><span class="tb-ic">✦</span><span class="tb-tl">AI 설정</span><span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
   </div>
   <span class="apibadge" id="badge">● 확인 중</span>
   <button class="dark-btn" id="darkBtn" onclick="toggleDark()" title="다크모드" aria-label="다크 모드 전환">🌙</button>
-  <!-- 통계·컬렉션·업로드·AI설정은 좌측 메뉴 패널로 이동 -->
 </div>
 
 <!-- 통계 패널 -->
@@ -1645,28 +1987,41 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 </div>
 
 <div class="main">
-  <!-- 좌측 메뉴 패널: 검색 모드(내규/법령/시나리오) + 도구 -->
+  <!-- 좌측 메뉴 패널: 내규똑똑(메인)·법령·시나리오 + 공공조회 + 도구 -->
   <aside class="side-menu" id="sideMenu" aria-label="주요 메뉴">
-    <div class="sm-sec">
-      <div class="sm-label">검색</div>
-      <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="사내 규정(내규) 검색"><span class="sm-ic">📋</span><span>내규 검색</span></button>
-      <button class="sm-item" id="smLaw" onclick="setMode('law')" title="국가법령 조회"><span class="sm-ic">📖</span><span>법령 조회</span></button>
-      <button class="sm-item" id="smScenario" onclick="setMode('scenario')" title="실무 시나리오 AI 검색(API 키 필요)"><span class="sm-ic">✦</span><span>시나리오</span></button>
-    </div>
-    <div class="sm-sec sm-tools">
-      <div class="sm-label">도구</div>
-      <button class="sm-item" onclick="toggleFavTab()"><span class="sm-ic">☆</span><span>즐겨찾기</span></button>
-      <button class="sm-item" onclick="openCollModal()"><span class="sm-ic">📁</span><span>컬렉션</span></button>
-      <button class="sm-item" onclick="openStatPanel()"><span class="sm-ic">📊</span><span>통계</span></button>
-      <a class="sm-item" href="/upload" title="개정된 내규를 업로드해 최신본으로 반영"><span class="sm-ic">📤</span><span>내규 업로드</span></a>
-      <button class="sm-item" onclick="openAiModal()"><span class="sm-ic">✦</span><span>AI 설정</span> <span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
+    <div class="sm-sec sm-primary">
+      <div class="sm-group">
+        <span class="sm-glabel">규정조회</span>
+        <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="사내 규정(내규) 스마트 검색"><span class="sm-ic">📋</span><span>내규똑똑</span></button>
+        <button class="sm-item" id="smLaw" onclick="setMode('law')" title="국가법령 조회"><span class="sm-ic">📖</span><span>법령 조회</span></button>
+      </div>
+      <span class="sm-div" aria-hidden="true"></span>
+      <div class="sm-group">
+        <span class="sm-glabel">공공DB</span>
+        <button class="sm-item" id="smCompany" onclick="openAssist('company')" title="기업 통합검색(회사명·사업자번호·대표자)"><span class="sm-ic">🏢</span><span>기업</span></button>
+        <button class="sm-item" id="smPatent" onclick="openAssist('patent')" title="특허·실용신안 검색(KIPRIS)"><span class="sm-ic">📄</span><span>특허</span></button>
+        <button class="sm-item" id="smProcurement" onclick="openAssist('procurement')" title="나라장터 입찰공고(조달청)"><span class="sm-ic">📢</span><span>조달공고</span></button>
+        <button class="sm-item" id="smSupport" onclick="openAssist('support')" title="정부 지원사업 공고(공공데이터포털)"><span class="sm-ic">🎯</span><span>지원사업</span></button>
+      </div>
+      <span class="sm-div" aria-hidden="true"></span>
+      <div class="sm-group">
+        <span class="sm-glabel">업무도구</span>
+        <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 본문 작성"><span class="sm-ic">🧾</span><span>지출결의서</span></button>
+      </div>
     </div>
   </aside>
   <div class="main-content">
+  <!-- 업무 도우미 조회 패널(기본 숨김, 상단 바에서 열림) -->
+  <section class="assist-panel" id="assistantPanel" aria-label="업무 도우미 조회"></section>
   <div class="spanel">
     <!-- 기관 탭 (동적 렌더링) -->
     <div class="tabs" id="agencyTabs">
       <button class="fav-tab-btn" id="favTabBtn" onclick="toggleFavTab()">☆ 즐겨찾기 <span id="favCount"></span></button>
+    </div>
+    <!-- 검색 유형 토글: 키워드 검색 ↔ AI 시나리오 (내규·법령 페이지 내부) -->
+    <div class="search-toggle" id="searchToggle" role="tablist" aria-label="검색 유형">
+      <button class="stgl active" id="stglKw" role="tab" onclick="if(mode==='scenario')setMode(_scenReturn)"><span class="stgl-ic">🔍</span>키워드 검색</button>
+      <button class="stgl" id="stglScen" role="tab" onclick="setMode('scenario')" title="업무 상황을 문장으로 물어보면 근거 법령·조문을 제안합니다"><span class="stgl-ic">✦</span>AI 시나리오</button>
     </div>
     <!-- 검색창 -->
     <div class="srow">
@@ -1951,16 +2306,959 @@ function setAgency(ag){
 }
 
 // ── 검색 모드 ──
+// ── 업무 도우미(공공 API 조회): 기업·특허·지원사업·조달 ──────────────────────
+let _assistMode=null, _assistStatus=null, _scenReturn='internal';
+const ASSIST_CFG={
+  company:    {tab:'smCompany',    label:'기업 조회',   ic:'🏢', ph:'회사명(DART) 또는 사업자등록번호(10자리)', hint:'DART 기업개황·재무와 국세청 사업자상태(공공데이터포털)를 함께 조회합니다.', param:'query'},
+  patent:     {tab:'smPatent',     label:'특허 조회',   ic:'📄', ph:'특허 키워드 또는 출원인 (예: 스마트팜)',      hint:'KIPRIS에서 특허·실용신안을 검색합니다.',           param:'query'},
+  support:    {tab:'smSupport',    label:'지원사업 조회', ic:'🎯', ph:'지원사업 키워드 (예: 스마트팜, 수출, R&D)',    hint:'정부 지원사업 공고(공공데이터포털) — 마감임박·관심일정 관리.', param:'query', oppty:true,
+               presets:['스마트팜','청년·귀농','수출','R&D','기자재·시설','교육','자금','판로']},
+  procurement:{tab:'smProcurement',label:'조달공고 조회', ic:'📢', ph:'입찰공고 키워드 (예: 시설, 용역)',             hint:'나라장터 입찰공고(최근 30일) — 마감임박·관심일정 관리.', param:'query', oppty:true,
+               presets:['농업','스마트팜','시설·공사','용역','기자재','시스템','연구']},
+};
+async function _loadAssistStatus(){
+  if(_assistStatus) return _assistStatus;
+  try{ const r=await fetch('/api/assist/status'); _assistStatus=await r.json(); }
+  catch(e){ _assistStatus={}; }
+  return _assistStatus;
+}
+async function openAssist(kind){
+  const cfg=ASSIST_CFG[kind]; if(!cfg) return;
+  _assistMode=kind;
+  if(typeof wsBackToList==='function') wsBackToList();   // 작업공간 창이 열려있으면 목록으로
+  document.querySelector('.main-content').classList.add('assist-on');
+  // 메뉴 활성: 현재 공공조회 항목만(내규똑똑 등 검색 모드 활성 해제)
+  document.querySelectorAll('.sm-item.active').forEach(el=>el.classList.remove('active'));
+  const tab=document.getElementById(cfg.tab); if(tab) tab.classList.add('active');
+  await _loadAssistStatus();
+  const ok=!!(_assistStatus&&_assistStatus[kind]);
+  const p=document.getElementById('assistantPanel');
+  const head=`<div class="assist-head"><span class="assist-h-ic">${cfg.ic}</span>`+
+    `<span class="assist-h-t">${escHtml(cfg.label)}</span>`+
+    `<span class="assist-h-hint">${escHtml(cfg.hint)}</span>`+
+    `<span class="assist-api-badge ${ok?'ok':'no'}">${ok?'API 연결됨':'서비스키 필요'}</span></div>`;
+  if(kind==='patent'){                       // 특허: 출원인·기간·상태 필터 + 목록
+    _patLast=null;
+    p.innerHTML=head+_patFiltersHtml()+`<div id="patResults" class="pat-results"></div>`;
+    const pq=document.getElementById('patQuery'); if(pq) pq.focus();
+    return;
+  }
+  if(kind==='company'){                      // 기업: 통합 키워드 검색 + 목록 + 상세 그리드
+    _compLast=null; _compScope='all'; _compFilter={region:'',q:'',sort:'rel'};
+    const scopes=[['all','전체'],['name','회사명'],['bno','사업자번호']];
+    const sc=scopes.map(([v,l],i)=>`<button class="pat-chip${i===0?' active':''}" data-v="${v}" onclick="_compScopePick(this)">${l}</button>`).join('');
+    p.innerHTML=head+
+      `<div class="pat-frow" style="margin-bottom:10px;"><span class="pat-flabel">검색 대상</span><div class="pat-appl" id="compScope">${sc}</div></div>`+
+      `<div class="assist-search"><input id="compQuery" class="sinput" placeholder="회사명(DART) 또는 사업자등록번호(10자리)" onkeydown="if(event.key==='Enter')runCompany()" aria-label="기업 검색어"><button class="sbtn" onclick="runCompany()">조회</button></div>`+
+      `<div id="compResults" class="pat-results"></div>`;
+    const cq=document.getElementById('compQuery'); if(cq) cq.focus();
+    return;
+  }
+  if(cfg.oppty){                             // 지원사업·조달: 기회 레이더(마감임박·관심일정)
+    _oppInit(kind, head, cfg); return;
+  }
+  p.innerHTML=head+
+    `<div class="assist-search">`+
+      `<input id="assistInput" class="sinput" placeholder="${escHtml(cfg.ph)}" `+
+      `${kind==='company'?'inputmode="numeric" ':''}onkeydown="if(event.key==='Enter')runAssist()" aria-label="${escHtml(cfg.label)} 검색어">`+
+      `<button class="sbtn" onclick="runAssist()">조회</button></div>`+
+    `<div id="assistResults" class="assist-results"></div>`;
+  const inp=document.getElementById('assistInput'); if(inp) inp.focus();
+}
+// ── 특허 조회: 출원인 프리셋·기간·상태 필터 + 목록/상세 ──
+const PAT_APPLICANTS=['농촌진흥청','농림축산검역본부','국립농산물품질관리원','국립종자원','농업기술원'];
+const PAT_STATUS=[['','전체 상태'],['R','등록'],['A','공개'],['J','거절'],['F','소멸'],['C','취하'],['I','무효'],['G','포기']];
+const PAT_CODE_LABEL={R:'등록',A:'공개',J:'거절',F:'소멸',C:'취하',I:'무효',G:'포기'};
+let _patLast=null, _patParams='', _patStatuses=[];   // 다중 선택 상태 코드
+function _patStatusMatch(it){
+  if(!_patStatuses.length) return true;
+  const s=String(it&&it.status||'');
+  return _patStatuses.some(code=>{ const l=PAT_CODE_LABEL[code]||''; return l&&s.indexOf(l)>=0; });
+}
+function _patFiltersHtml(){
+  const appl=PAT_APPLICANTS.map((a,i)=>
+    `<button class="pat-chip${i===0?' active':''}" data-v="${argAttr(a)}" onclick="_patApplPick(this)">${escHtml(a==='농업기술원'?'농업기술원(각 도)':a)}</button>`).join('');
+  const stat=PAT_STATUS.map(([v,l],i)=>
+    `<button class="pat-chip pat-schip s-${v||'all'}${i===0?' active':''}" data-v="${v}" onclick="_patStatusPick(this)">${escHtml(l)}</button>`).join('');
+  return `<div class="pat-filters">`+
+    `<div class="pat-frow"><span class="pat-flabel">출원인</span><div class="pat-appl" id="patAppl">${appl}</div></div>`+
+    `<div class="pat-frow"><span class="pat-flabel">상태</span><div class="pat-appl" id="patStatus">${stat}</div></div>`+
+    `<div class="pat-frow"><span class="pat-flabel">기간</span><div class="pat-appl" id="patPeriod">`+
+      `<button class="pat-chip active" data-y="0" onclick="_patPeriod(0,this)">전체</button>`+
+      `<button class="pat-chip" data-y="1" onclick="_patPeriod(1,this)">최근 1년</button>`+
+      `<button class="pat-chip" data-y="2" onclick="_patPeriod(2,this)">최근 2년</button>`+
+      `<button class="pat-chip" data-y="3" onclick="_patPeriod(3,this)">최근 3년</button>`+
+      `<span class="pat-pdiv"></span>`+
+      `<input id="patFrom" class="pat-inp pat-year" inputmode="numeric" maxlength="4" placeholder="시작(YYYY)" oninput="_patPeriodManual()">`+
+      `<span class="pat-tilde">~</span>`+
+      `<input id="patTo" class="pat-inp pat-year" inputmode="numeric" maxlength="4" placeholder="종료(YYYY)" oninput="_patPeriodManual()">`+
+    `</div></div>`+
+    `<div class="pat-frow pat-frow2">`+
+      `<input id="patQuery" class="pat-inp" placeholder="키워드(발명의 명칭 등, 선택)" onkeydown="if(event.key==='Enter')runPatent()">`+
+      `<button class="sbtn" onclick="runPatent()">조회</button>`+
+    `</div></div>`;
+}
+function _patApplPick(btn){
+  document.querySelectorAll('#patAppl .pat-chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function _patStatusPick(btn){
+  const cont=document.getElementById('patStatus'); if(!cont) return;
+  const allBtn=cont.querySelector('.pat-chip[data-v=""]');
+  if(!btn.dataset.v){                          // '전체 상태' → 나머지 해제
+    cont.querySelectorAll('.pat-chip').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  } else {                                     // 개별 상태 토글(다중 선택)
+    if(allBtn) allBtn.classList.remove('active');
+    btn.classList.toggle('active');
+    if(!cont.querySelector('.pat-chip.active') && allBtn) allBtn.classList.add('active');
+  }
+}
+function _patPeriod(y, btn){
+  document.querySelectorAll('#patPeriod .pat-chip').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const yr=new Date().getFullYear();
+  const f=document.getElementById('patFrom'), t=document.getElementById('patTo');
+  if(y===0){ if(f)f.value=''; if(t)t.value=''; }
+  else { if(f)f.value=String(yr-y+1); if(t)t.value=String(yr); }
+}
+function _patPeriodManual(){ document.querySelectorAll('#patPeriod .pat-chip').forEach(b=>b.classList.remove('active')); }
+// ── 기업 조회: 통합 키워드 검색 + 결과 필터(지역·정렬·결과내검색) + 상세 ──
+let _compLast=null, _compScope='all', _compFilter={region:'',q:'',sort:'rel'};
+const COMP_SIDO=[['서울','서울'],['부산','부산'],['대구','대구'],['인천','인천'],['광주','광주'],['대전','대전'],['울산','울산'],['세종','세종'],['경기','경기'],['강원','강원'],['충북','충청북'],['충남','충청남'],['전북','전라북'],['전남','전라남'],['경북','경상북'],['경남','경상남'],['제주','제주']];
+function _compSido(addr){ addr=String(addr||''); for(const [lab,pat] of COMP_SIDO){ if(addr.indexOf(lab)>=0||addr.indexOf(pat)>=0) return lab; } return addr?'기타':''; }
+function _fmtBno(b){ b=String(b||'').replace(/\D/g,''); return b.length===10?`${b.slice(0,3)}-${b.slice(3,5)}-${b.slice(5)}`:b; }
+function _compScopePick(btn){ document.querySelectorAll('#compScope .pat-chip').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); _compScope=btn.dataset.v||'all';
+  const cq=document.getElementById('compQuery'); if(cq) cq.placeholder=({all:'회사명(DART) 또는 사업자등록번호(10자리)',name:'회사명 입력(DART 등재 법인)',bno:'사업자등록번호(숫자 10자리)'})[_compScope]||'회사명 또는 사업자등록번호'; }
+function runCompany(){
+  const box=document.getElementById('compResults'); if(!box) return;
+  let q=((document.getElementById('compQuery')||{}).value||'').trim();
+  if(_compScope==='bno') q=q.replace(/\D/g,'');   // 사업자번호는 숫자만
+  if(!q){ box.innerHTML=`<div class="assist-note">회사명(DART) 또는 사업자등록번호를 입력하세요.</div>`; return; }
+  _compFilter={region:'',q:'',sort:'rel'};
+  box.innerHTML=`<div class="assist-loading"><div class="spinner"></div><span>기업 조회 중...</span></div>`;
+  fetch('/api/assist/company?query='+encodeURIComponent(q)).then(r=>r.json()).then(d=>{ _compLast=d; box.innerHTML=_renderCompanyList(d); })
+    .catch(e=>{ box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
+}
+function _renderCompanyList(d){
+  if(d&&d.need_key){
+    const url=d.apply_url?`<a href="${escHtml(d.apply_url)}" target="_blank" rel="noopener">서비스키 발급 안내 →</a>`:'';
+    return `<div class="assist-note">🔑 <b>${escHtml(d.provider||'')}</b> 서비스키가 설정되지 않았습니다.<br>관리자가 환경변수(<code>DART_API_KEY</code> 또는 <code>DATA_GO_KR_KEY</code>)를 설정하면 조회할 수 있습니다.<br>${url}</div>`;
+  }
+  if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'조회에 실패했습니다.')}</div>`;
+  const items=d.items||[];
+  if(!items.length) return `<div class="assist-note">조건에 맞는 기업이 없습니다.</div>`;
+  // 지역 facet(주소에서 시도 추출) — 결과에 존재하는 지역만, 건수와 함께
+  const rc={}; items.forEach(it=>{ const s=_compSido(it.addr); if(s){ rc[s]=(rc[s]||0)+1; } });
+  const order=COMP_SIDO.map(x=>x[0]).concat('기타');
+  const regions=order.filter(r=>rc[r]);
+  const rchips=[`<button class="pat-chip${!_compFilter.region?' active':''}" onclick="_compRegionPick('',this)">전체 <b>${items.length}</b></button>`]
+    .concat(regions.map(r=>`<button class="pat-chip${_compFilter.region===r?' active':''}" onclick="_compRegionPick('${argAttr(r)}',this)">${escHtml(r)} <b>${rc[r]}</b></button>`)).join('');
+  const sorts=[['rel','관련도순'],['name','상호순']].map(([v,l])=>`<button class="pat-chip${_compFilter.sort===v?' active':''}" onclick="_compSortPick('${v}',this)">${l}</button>`).join('');
+  const bar=`<div class="comp-fbar">`+
+    (regions.length>1?`<div class="pat-frow"><span class="pat-flabel">지역</span><div class="pat-appl" id="compRegion">${rchips}</div></div>`:'')+
+    `<div class="pat-frow"><span class="pat-flabel">정렬</span><div class="pat-appl">${sorts}</div>`+
+      `<input id="compFilter2" class="pat-inp comp-qf" placeholder="결과 내 검색(상호·업종·주소)" value="${escHtml(_compFilter.q)}" oninput="_compRefresh()"></div>`+
+  `</div>`;
+  return bar+`<div id="compListBox">${_compRowsHtml()}</div>`;
+}
+function _compFiltered(){
+  const items=(_compLast&&_compLast.items)||[];
+  const q=(_compFilter.q||'').trim().toLowerCase();
+  let arr=items.filter(it=>{
+    if(_compFilter.region && _compSido(it.addr)!==_compFilter.region) return false;
+    if(q){ const hay=[it.name,it.ceo,it.bno,it.biz,it.addr].filter(Boolean).join(' ').toLowerCase(); if(hay.indexOf(q)<0) return false; }
+    return true;
+  });
+  if(_compFilter.sort==='name') arr=arr.slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'ko'));
+  return arr;
+}
+function _compRowsHtml(){
+  const arr=_compFiltered();
+  const total=_compLast&&_compLast.total&&_compLast.total!==String((_compLast.items||[]).length)?` / 총 ${escHtml(_compLast.total)}건`:'';
+  if(!arr.length) return `<div class="assist-note">필터 조건에 맞는 기업이 없습니다.</div>`;
+  const rows=arr.map(it=>{
+    const meta=[it.bno&&_fmtBno(it.bno), it.biz, it.addr].filter(Boolean).map(escHtml).join(' · ');
+    const corpArg=argAttr(it.corp||''), bnoArg=argAttr(it.bno||''), nmArg=encodeURIComponent(it.name||'');
+    const badges=(it.stock?'<span class="pat-row-appl">상장</span>':'')+(it.closed?'<span class="pat-row-appl" style="color:#d33">폐업</span>':'');
+    const favItem={type:'company',name:it.name||'',subtitle:it.bno?('사업자 '+_fmtBno(it.bno)):(it.stock?'상장법인':''),bno:it.bno||'',url:''};
+    const on=favHas(favItem);
+    return `<div class="pat-rw"><button class="pat-row" onclick="compDetail('${corpArg}','${bnoArg}','${nmArg}')" title="상세 보기">`+
+      `<div class="pat-row-t">${escHtml(it.name||'(상호 미상)')}</div>`+
+      `<div class="pat-row-m">${it.ceo?'<span class="pat-row-appl">대표 '+escHtml(it.ceo)+'</span>':''}${badges}${meta?'<span class="pat-row-meta">'+meta+'</span>':''}</div></button>`+
+      `<button class="pat-fav${on?' on':''}" data-fav="${_favData(favItem)}" data-style="row" onclick="favToggleEl(this)" title="즐겨찾기" aria-pressed="${on}">${on?'★':'☆'}</button></div>`;
+  }).join('');
+  return `<div class="pat-count">${arr.length}건 표시${total}</div><div class="pat-list">${rows}</div>`;
+}
+function _compRefresh(){ _compFilter.q=((document.getElementById('compFilter2')||{}).value||''); const box=document.getElementById('compListBox'); if(box) box.innerHTML=_compRowsHtml(); }
+function _compRegionPick(r,btn){ _compFilter.region=(_compFilter.region===r)?'':r; document.querySelectorAll('#compRegion .pat-chip').forEach(b=>b.classList.remove('active')); if(btn&&_compFilter.region===r) btn.classList.add('active'); else if(!_compFilter.region){ const all=document.querySelector('#compRegion .pat-chip'); if(all) all.classList.add('active'); } _compRefresh(); }
+function _compSortPick(s,btn){ _compFilter.sort=s; if(btn){ btn.parentElement.querySelectorAll('.pat-chip').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } _compRefresh(); }
+function compDetail(corp, bno, nameEnc){
+  const box=document.getElementById('compResults'); if(!box) return;
+  const back=`<button class="pat-back" onclick="compBackToList()">← 목록으로</button>`;
+  const nm=decodeURIComponent(nameEnc||'');
+  const parts=[];
+  if(corp) parts.push('corp='+encodeURIComponent(corp));
+  if(bno&&bno.replace(/\D/g,'').length>=10) parts.push('bno='+encodeURIComponent(bno.replace(/\D/g,'')));
+  if(!corp&&nm) parts.push('query='+encodeURIComponent(nm));
+  const qs=parts.join('&');
+  box.innerHTML=back+`<div class="assist-loading"><div class="spinner"></div><span>상세 불러오는 중...</span></div>`;
+  fetch('/api/assist/company/detail?'+qs).then(r=>r.json()).then(d=>{
+    box.innerHTML=back+_renderCompanyDetail(d);
+    const nm=(d&&d.detail&&d.detail.name)||decodeURIComponent(nameEnc||'');
+    if(nm&&nm!=='(상호 미상)') _loadCompPatents(nm);
+  }).catch(e=>{ box.innerHTML=back+`<div class="assist-note">상세를 불러오지 못했습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
+}
+// 연계 특허/지식재산권 — 회사명을 출원인으로 KIPRIS 검색(있을 때만 표시)
+function _loadCompPatents(name){
+  const box=document.getElementById('compPatents'); if(!box) return;
+  fetch('/api/assist/patent?applicant='+encodeURIComponent(name)+'&rows=8')
+    .then(r=>r.json()).then(d=>{ box.innerHTML=_renderCompPatents(d, name); })
+    .catch(()=>{ box.hidden=true; });
+}
+function _renderCompPatents(d, name){
+  if(!d||d.need_key||d.success===false||!(d.items||[]).length) return '';  // 조용히 생략
+  const items=d.items.slice(0,8);
+  const cards=items.map(it=>{
+    const reg=/등록/.test(it.status||'')||it.regno;
+    const badge=reg?`<span class="cpat-b reg">등록특허</span>`:`<span class="cpat-b open">공개특허</span>`;
+    const no=it.regno||it.appno||'';
+    const date=reg&&it.regno?('등록 '+_fmtDate(it.appdate)):('출원 '+_fmtDate(it.appdate));
+    return `<div class="cpat-card"><div class="cpat-h">${badge}<span class="cpat-no">${escHtml(no)}</span></div>`+
+      `<div class="cpat-t">${escHtml(it.title||'')}</div>`+
+      `<div class="cpat-m">${it.applicant?'출원인 '+escHtml(it.applicant):''}${it.appdate?'<span class="cpat-date">'+escHtml(date)+'</span>':''}</div></div>`;
+  }).join('');
+  const totalTxt=d.total&&d.total!==String(items.length)?`총 ${escHtml(d.total)}건`:`${items.length}건`;
+  const kiprisUrl='https://www.kipris.or.kr/khome/search/searchResult.do?query='+encodeURIComponent(name);
+  return `<div class="comp-sec"><div class="comp-sec-h">💡 연계 특허 및 지식재산권 <span class="comp-sec-n">${totalTxt}</span></div>`+
+    `<div class="cpat-list">${cards}</div>`+
+    `<a class="cpat-more" href="${escHtml(kiprisUrl)}" target="_blank" rel="noopener">KIPRIS 연계특허 전체보기 ↗</a></div>`;
+}
+function compBackToList(){ const box=document.getElementById('compResults'); if(box) box.innerHTML=_renderCompanyList(_compLast||{success:true,items:[]}); }
+function _compVal(k,v){
+  const s=String(v);
+  if(/^https?:\/\//i.test(s)) return `<a href="${escHtml(s)}" target="_blank" rel="noopener" class="comp-link">바로가기 ↗</a>`;
+  return escHtml(s);
+}
+function _fmtWon(n){
+  if(n===null||n===undefined||n==='') return '';
+  const neg=n<0; let a=Math.abs(Number(n)); if(!isFinite(a)) return String(n);
+  const jo=Math.floor(a/1e12), eok=Math.floor((a%1e12)/1e8), man=Math.floor((a%1e8)/1e4);
+  let parts=[]; if(jo)parts.push(jo+'조'); if(eok)parts.push(eok+'억'); if(!jo&&man)parts.push(man+'만');
+  const txt=parts.length?parts.join(' ')+'원':a.toLocaleString('ko-KR')+'원';
+  return (neg?'-':'')+txt;
+}
+function _renderFinance(fin){
+  if(!fin||!(fin.items||[]).length) return '';
+  const rows=fin.items.map(it=>{
+    let d=''; if(it.cur!=null&&it.prev!=null&&it.prev!==0){
+      const r=(it.cur-it.prev)/Math.abs(it.prev)*100; const up=r>=0;
+      d=`<span class="fin-yoy ${up?'up':'dn'}">${up?'▲':'▼'} ${Math.abs(r).toFixed(1)}%</span>`;
+    }
+    return `<div class="fin-row"><span class="fin-k">${escHtml(it.name)}</span>`+
+      `<span class="fin-v">${escHtml(_fmtWon(it.cur))}</span>`+
+      `<span class="fin-p">${it.prev!=null?'전기 '+escHtml(_fmtWon(it.prev)):''} ${d}</span></div>`;
+  }).join('');
+  return `<div class="fin-box"><div class="fin-hd">💰 재무 요약`+
+    `<span class="fin-meta">${escHtml(fin.year)}년 ${escHtml(fin.report||'')} · ${escHtml(fin.fs||'')} · 출처 DART</span></div>`+
+    `<div class="fin-grid">${rows}</div></div>`;
+}
+function _compStatusBadge(fields){
+  const get=n=>(fields.find(f=>f[0]===n)||[])[1]||'';
+  const s=String(get('납세자 상태')), end=String(get('폐업일'));
+  if(!s) return '';
+  let cls='ok', label=s;
+  if(/폐업/.test(s)){ cls='closed'; label='폐업'+(end?` (${escHtml(end.replace(/(\d{4})(\d{2})(\d{2})/,'$1.$2.$3'))})`:''); }
+  else if(/휴업/.test(s)){ cls='rest'; label='휴업'; }
+  else if(/계속|정상|영업/.test(s)){ cls='ok'; label='영업 중'; }
+  return `<span class="comp-badge ${cls}">${cls==='closed'?'⛔':cls==='rest'?'⏸':'●'} ${label}</span>`;
+}
+function _renderCompStats(stats){
+  if(!stats||!stats.length) return '';
+  const tiles=stats.map(s=>`<div class="comp-stat"><div class="cs-label">${escHtml(s.label)}</div>`+
+    `<div class="cs-value">${escHtml(s.value)}</div>${s.sub?`<div class="cs-sub">${escHtml(s.sub)}</div>`:''}</div>`).join('');
+  return `<div class="comp-stats">${tiles}</div>`;
+}
+function _renderCompSkills(skills){
+  if(!skills||!skills.length) return '';
+  const chips=skills.filter(Boolean).slice(0,6).map(s=>`<span class="comp-skill">${escHtml(s)}</span>`).join('');
+  return `<div class="comp-sec"><div class="comp-sec-h">🏷️ 주요 업종</div><div class="comp-skills">${chips}</div></div>`;
+}
+function _renderCompanyDetail(d){
+  if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'상세 정보를 찾지 못했습니다.')}</div>`;
+  const t=d.detail||{};
+  const fields=(t.fields||[]).filter(f=>f&&f[1]);
+  if(!fields.length&&!t.finance) return `<div class="assist-note">표시할 상세 정보가 없습니다.</div>`;
+  const grid=fields.map(f=>`<div class="pat-d-row"><span class="pat-d-k">${escHtml(f[0])}</span><span class="pat-d-v">${_compVal(f[0],f[1])}</span></div>`).join('');
+  const favItem={type:'company',name:t.name||'',subtitle:t.bno?('사업자 '+_fmtBno(t.bno)):'',bno:t.bno||'',url:''};
+  const favOn=favHas(favItem);
+  const favBtn=`<button class="det-fav${favOn?' on':''}" data-fav="${_favData(favItem)}" onclick="favToggleEl(this)" aria-pressed="${favOn}">${favOn?'★ 즐겨찾기됨':'☆ 즐겨찾기'}</button>`;
+  return `<div class="pat-detail"><div class="pat-d-title">${escHtml(t.name||'(상호 미상)')}${_compStatusBadge(fields)}${favBtn}</div>`+
+    _renderCompStats(t.stats)+
+    `<div class="pat-d-grid comp-grid">${grid}</div>`+
+    _renderCompSkills(t.skills)+
+    _renderFinance(t.finance)+
+    `<div id="compPatents" class="comp-pat-slot"></div></div>`;
+}
+// ── 기회 레이더: 지원사업·조달 공통(마감임박·적합도·관심 캘린더) ──
+let _oppLast={}, _oppSort='deadline', _oppItemMap={};
+let _oppType='servc', _oppMethod='', _oppOpenOnly=false;   // 조달: 유형·계약방식 / 지원: 접수중만
+const OPP_AGRI=['농업','농촌','농산물','스마트팜','원예','축산','종자','농기계','귀농','청년농','친환경','식품','농가','재배','작물','과수','농진','기술보급','시설원예','임업'];
+const PROC_TYPES=[['servc','용역'],['thng','물품'],['cnstwk','공사'],['frgcpt','외자']];
+const PROC_METHODS=[['','전체'],['일반경쟁','일반경쟁'],['제한경쟁','제한경쟁'],['수의','수의계약'],['협상','협상']];
+function _oppFilterHtml(kind, cfg){
+  if(kind==='procurement'){
+    const t=PROC_TYPES.map(([v,l])=>`<button class="opp-seg${v==='servc'?' active':''}" data-v="${v}" onclick="_oppSetType('${v}')">${l}</button>`).join('');
+    const m=PROC_METHODS.map(([v,l])=>`<button class="opp-seg${v===''?' active':''}" data-v="${argAttr(v)}" onclick="_oppSetMethod('${argAttr(v)}')">${l}</button>`).join('');
+    return `<div class="opp-filters">`+
+      `<div class="opp-frow"><span class="opp-flabel">공고 유형</span><div class="opp-segset" id="oppTypeSet">${t}</div></div>`+
+      `<div class="opp-frow"><span class="opp-flabel">계약 방식</span><div class="opp-segset" id="oppMethodSet">${m}</div></div>`+
+    `</div>`;
+  }
+  // 지원사업: 접수중만 보기 토글 + 분야 프리셋
+  const chips=(cfg.presets||[]).map(pv=>`<button class="opp-chip" onclick="_oppPreset('${kind}',this)">${escHtml(pv)}</button>`).join('');
+  return `<div class="opp-filters">`+
+    `<div class="opp-frow"><label class="opp-toggle"><input type="checkbox" id="oppOpen" onchange="_oppToggleOpen('${kind}')"><span class="opp-tg-track"></span>접수중만 보기</label></div>`+
+    `<div class="opp-presets">${chips}</div>`+
+  `</div>`;
+}
+function _oppInit(kind, head, cfg){
+  _oppLast[kind]=null; _oppSort='deadline'; _oppType='servc'; _oppMethod=''; _oppOpenOnly=false;
+  const p=document.getElementById('assistantPanel');
+  p.innerHTML=head+
+    `<div class="assist-search"><input id="oppQuery" class="sinput" placeholder="${escHtml(cfg.ph)}" onkeydown="if(event.key==='Enter')runOppty('${kind}')" aria-label="${escHtml(cfg.label)} 검색어"><button class="sbtn" onclick="runOppty('${kind}')">조회</button></div>`+
+    _oppFilterHtml(kind, cfg)+
+    `<div class="opp-bar">`+
+      `<div class="opp-sorts">`+
+        `<button class="opp-sort active" data-s="deadline" onclick="_oppSetSort('deadline','${kind}')">⏰ 마감임박순</button>`+
+        `<button class="opp-sort" data-s="relevance" onclick="_oppSetSort('relevance','${kind}')">🌾 적합도순</button>`+
+        `<button class="opp-sort" data-s="default" onclick="_oppSetSort('default','${kind}')">최신순</button>`+
+      `</div>`+
+      `<div class="opp-tools">`+
+        `<button class="opp-tool" id="oppIcs" onclick="_oppExportICS()" title="관심함에 담은 공고의 마감일을 캘린더(.ics)로 내보내 Outlook·구글 캘린더에 등록">📅 관심 일정 <span id="oppStarCnt" class="opp-cnt">0</span></button>`+
+        `<button class="opp-tool" onclick="_oppExportCSV('${kind}')" title="현재 목록 엑셀(CSV) 저장">⬇ 엑셀</button>`+
+      `</div>`+
+    `</div>`+
+    `<div id="oppResults" class="opp-results"></div>`;
+  _oppUpdateStarUI();
+  runOppty(kind);
+}
+function _oppPreset(kind, btn){
+  document.querySelectorAll('.opp-presets .opp-chip').forEach(b=>b.classList.toggle('active',b===btn));
+  const q=document.getElementById('oppQuery'); if(q) q.value=(btn.textContent||'').replace(/·/g,' ');
+  runOppty(kind);
+}
+function _oppSetType(v){
+  _oppType=v;
+  document.querySelectorAll('#oppTypeSet .opp-seg').forEach(b=>b.classList.toggle('active',b.dataset.v===v));
+  runOppty('procurement');
+}
+function _oppSetMethod(v){
+  _oppMethod=v;
+  document.querySelectorAll('#oppMethodSet .opp-seg').forEach(b=>b.classList.toggle('active',b.dataset.v===v));
+  const box=document.getElementById('oppResults'); if(box&&_oppLast['procurement']) box.innerHTML=_renderOppty('procurement');
+}
+function _oppToggleOpen(kind){
+  _oppOpenOnly=!!(document.getElementById('oppOpen')||{}).checked;
+  const box=document.getElementById('oppResults'); if(box&&_oppLast[kind]) box.innerHTML=_renderOppty(kind);
+}
+async function runOppty(kind){
+  const box=document.getElementById('oppResults'); if(!box) return;
+  const q=((document.getElementById('oppQuery')||{}).value||'').trim();
+  box.innerHTML=`<div class="assist-loading"><div class="spinner"></div><span>공고 조회 중...</span></div>`;
+  try{
+    let url=`/api/assist/${kind}?query=${encodeURIComponent(q)}`;
+    if(kind==='procurement') url+=`&type=${encodeURIComponent(_oppType)}`;
+    const r=await fetch(url);
+    const d=await r.json(); d._q=q; d._kind=kind; _oppLast[kind]=d;
+    box.innerHTML=_renderOppty(kind);
+  }catch(e){ box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; }
+}
+function _fmtDT(s){ s=String(s||'').replace(/(\d{4})(\d{2})(\d{2})(\d{2})?(\d{2})?/, (m,y,mo,d,h,mi)=>`${y}.${mo}.${d}`+(h?` ${h}:${mi||'00'}`:'')); return s; }
+function _dday(end){
+  end=String(end||''); if(end.length<8) return null;
+  const y=+end.slice(0,4), m=+end.slice(4,6)-1, d=+end.slice(6,8);
+  const due=new Date(y,m,d); if(isNaN(due.getTime())) return null;
+  const t=new Date(); t.setHours(0,0,0,0); due.setHours(0,0,0,0);
+  const n=Math.round((due-t)/86400000);
+  if(n<0) return {n,label:'마감',cls:'done'};
+  if(n===0) return {n,label:'오늘 마감',cls:'urgent'};
+  if(n<=7) return {n,label:'D-'+n,cls:'urgent'};
+  if(n<=14) return {n,label:'D-'+n,cls:'soon'};
+  return {n,label:'D-'+n,cls:'far'};
+}
+function _oppAgri(t){ t=String(t||''); return OPP_AGRI.some(k=>t.indexOf(k)>=0); }
+function _oppScore(it){
+  const t=(it.title||'')+' '+(it.subtitle||'');
+  let s=0; OPP_AGRI.forEach(k=>{ if(t.indexOf(k)>=0) s+=2; });
+  if(it._dd&&it._dd.n>=0&&it._dd.n<=14) s+=3;
+  return s;
+}
+function _oppSortItems(items){
+  const val=it=>{ const dd=it._dd; if(dd) return dd.n>=0?dd.n:200000+(-dd.n); return 100000; };
+  const arr=items.slice();
+  if(_oppSort==='deadline') arr.sort((a,b)=>val(a)-val(b));
+  else if(_oppSort==='relevance') arr.sort((a,b)=>(b._score-a._score)||(val(a)-val(b)));
+  return arr;
+}
+function _oppHi(text,q){
+  const e=escHtml(text||''); q=(q||'').trim(); if(!q) return e;
+  try{ const re=new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'); return e.replace(re,'<mark>$1</mark>'); }
+  catch(_){ return e; }
+}
+function _oppId(kind,it){
+  const raw=kind+'|'+(it.bidNo||'')+'|'+(it.end||'')+'|'+(it.title||'').slice(0,40);
+  try{ return 'o'+btoa(unescape(encodeURIComponent(raw))).replace(/[^A-Za-z0-9]/g,''); }
+  catch(e){ return 'o'+raw.replace(/[^A-Za-z0-9]/g,''); }
+}
+// 지원사업·조달 ★ = 통합 즐겨찾기(내규·법령 등과 동일 저장소). 마감일은 캘린더에 사용.
+function _oppFavItem(it){ return {type:it.kind, name:it.title||'', subtitle:it.subtitle||'', url:it.url||'', end:it.end||'', endText:it.endText||''}; }
+function _oppIsStar(id){ const it=_oppItemMap[id]; return it?favHas(_oppFavItem(it)):false; }
+function _oppToggleStar(id, btn){
+  const it=_oppItemMap[id]; if(!it) return;
+  const added=toggleFavItem(_oppFavItem(it));
+  if(btn){ btn.classList.toggle('on',added); btn.textContent=added?'★':'☆'; btn.setAttribute('aria-pressed',added); }
+  _oppUpdateStarUI();
+}
+function _oppUpdateStarUI(){
+  const n=getFavs().filter(f=>f.type==='support'||f.type==='procurement').length;
+  const c=document.getElementById('oppStarCnt'); if(c) c.textContent=n;
+  const b=document.getElementById('oppIcs'); if(b) b.classList.toggle('has', n>0);
+}
+function _oppSetSort(s,kind){
+  _oppSort=s;
+  document.querySelectorAll('.opp-sort').forEach(b=>b.classList.toggle('active',b.dataset.s===s));
+  const box=document.getElementById('oppResults'); if(box&&_oppLast[kind]) box.innerHTML=_renderOppty(kind);
+}
+function _renderOppty(kind){
+  const d=_oppLast[kind];
+  if(d&&d.need_key){
+    const url=d.apply_url?`<a href="${escHtml(d.apply_url)}" target="_blank" rel="noopener">서비스키 발급 안내 →</a>`:'';
+    return `<div class="assist-note">🔑 <b>${escHtml(d.provider||'')}</b> 서비스키가 설정되지 않았습니다.<br>관리자가 환경변수(<code>${escHtml(ASSIST_ENV_LABEL[kind]||'')}</code>)를 설정하면 조회할 수 있습니다.<br>${url}</div>`;
+  }
+  if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'조회에 실패했습니다.')}</div>`;
+  let items=(d.items||[]).slice();
+  const total0=items.length;
+  const q=d._q||'';
+  items.forEach(it=>{ it._dd=_dday(it.end); it._score=_oppScore(it); });
+  // 클라이언트 필터: 계약방식(조달)·접수중만
+  if(kind==='procurement'&&_oppMethod) items=items.filter(it=>String(it.method||'').indexOf(_oppMethod)>=0);
+  if(_oppOpenOnly) items=items.filter(it=>it._dd&&it._dd.n>=0);
+  if(!items.length) return `<div class="assist-note">${total0?'조건에 맞는 공고가 없습니다. 필터를 완화해보세요.':'결과가 없습니다. 키워드를 바꾸거나 필터를 바꿔보세요.'}</div>`;
+  items=_oppSortItems(items);
+  _oppItemMap={};
+  const cards=items.map(it=>_oppCard(kind,it,q)).join('');
+  const active=items.filter(it=>it._dd&&it._dd.n>=0).length;
+  const sortLabel=_oppSort==='deadline'?'마감임박순':(_oppSort==='relevance'?'적합도순':'최신순');
+  const head=`<div class="opp-count">${items.length}건 · <b class="opp-active">진행 ${active}건</b> · ${escHtml(sortLabel)}</div>`;
+  return head+`<div class="opp-list">${cards}</div>`;
+}
+function _oppCard(kind, it, q){
+  const id=_oppId(kind,it); _oppItemMap[id]=Object.assign({kind},it);
+  const dd=it._dd;
+  const ddBadge=dd?`<span class="opp-dd ${dd.cls}">${escHtml(dd.label)}</span>`:`<span class="opp-dd none">기간 확인</span>`;
+  const on=_oppIsStar(id);
+  const star=`<button class="opp-star${on?' on':''}" onclick="_oppToggleStar('${argAttr(id)}',this)" title="관심함에 담기(캘린더 내보내기 대상)" aria-pressed="${on}">${on?'★':'☆'}</button>`;
+  const active=dd&&dd.n>=0;
+  if(kind==='procurement'){
+    const statusB=active?`<span class="opp-badge-e">전자입찰 진행중</span>`:'';
+    const typeB=it.type?`<span class="opp-type">${escHtml(it.type)}</span>`:'';
+    const rows=[];
+    if(it.est||it.budget) rows.push(['추정가격/배정예산', it.est||it.budget]);
+    if(it.method) rows.push(['계약방법', it.method]);
+    if(it.openDt) rows.push(['개찰일시', _fmtDT(it.openDt)]);
+    const grid=rows.map(r=>`<div class="opp-grow"><span class="opp-gk">${escHtml(r[0])}</span><span class="opp-gv">${escHtml(String(r[1]))}</span></div>`).join('');
+    const sub=(it.subtitle||it.bidNo)?`<div class="opp-card-sub">${it.subtitle?escHtml(it.subtitle):''}${it.bidNo?`<span class="opp-no">공고번호 ${escHtml(it.bidNo)}</span>`:''}</div>`:'';
+    const link=it.url?`<a class="assist-card-link" href="${escHtml(it.url)}" target="_blank" rel="noopener">공고 바로가기 →</a>`:'';
+    return `<div class="opp-card${dd&&dd.cls==='done'?' is-done':''}">${star}`+
+      `<div class="opp-card-h">${ddBadge}${statusB}${typeB}</div>`+
+      `<div class="opp-card-t">${_oppHi(it.title||'',q)}</div>${sub}`+
+      (grid?`<div class="opp-grid">${grid}</div>`:'')+link+`</div>`;
+  }
+  // 지원사업
+  const statusB=active?`<span class="opp-badge-e">접수중</span>`:'';
+  const orgB=it.subtitle?`<span class="opp-type">${escHtml(it.subtitle)}</span>`:'';
+  const rows=[];
+  if(it.target) rows.push(['지원대상', it.target]);
+  if(it.field) rows.push(['분야', it.field]);
+  if(it.endText||it.end) rows.push(['접수마감', _fmtDT(it.endText||it.end), active]);
+  const grid=rows.map(r=>`<div class="opp-grow"><span class="opp-gk">${escHtml(r[0])}</span><span class="opp-gv${r[2]?' opp-due':''}">${escHtml(String(r[1]))}</span></div>`).join('');
+  const tags=(it.tags||[]).length?`<div class="opp-tags">${it.tags.map(t=>`<span class="opp-htag">#${escHtml(String(t).replace(/^#/,''))}</span>`).join('')}</div>`:'';
+  const btns=`<div class="opp-btns">`+
+    (it.url?`<a class="opp-btn" href="${escHtml(it.url)}" target="_blank" rel="noopener">공고 원문</a>`:'')+
+    (it.applyUrl?`<a class="opp-btn primary" href="${escHtml(it.applyUrl)}" target="_blank" rel="noopener">신청 바로가기 →</a>`:'')+
+    `</div>`;
+  return `<div class="opp-card${dd&&dd.cls==='done'?' is-done':''}">${star}`+
+    `<div class="opp-card-h">${ddBadge}${statusB}${orgB}</div>`+
+    `<div class="opp-card-t">${_oppHi(it.title||'',q)}</div>`+
+    (grid?`<div class="opp-grid">${grid}</div>`:'')+tags+btns+`</div>`;
+}
+function _downloadICS(events){
+  const pad=n=>String(n).padStart(2,'0');
+  const now=new Date();
+  const stamp=now.getUTCFullYear()+pad(now.getUTCMonth()+1)+pad(now.getUTCDate())+'T'+pad(now.getUTCHours())+pad(now.getUTCMinutes())+pad(now.getUTCSeconds())+'Z';
+  const esc=s=>String(s||'').replace(/([,;\\])/g,'\\$1').replace(/\r?\n/g,'\\n');
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//농진원 업무 도우미//기회 레이더//KO','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  events.forEach((e,i)=>{
+    const s=String(e.end); const y=+s.slice(0,4),m=+s.slice(4,6)-1,d=+s.slice(6,8);
+    const nd=new Date(y,m,d+1); const endStr=nd.getFullYear()+pad(nd.getMonth()+1)+pad(nd.getDate());
+    lines.push('BEGIN:VEVENT','UID:oppty-'+i+'-'+s+'@nongjin','DTSTAMP:'+stamp,
+      'DTSTART;VALUE=DATE:'+s,'DTEND;VALUE=DATE:'+endStr,
+      'SUMMARY:'+esc('[마감] '+(e.title||'')),
+      'DESCRIPTION:'+esc((e.subtitle?e.subtitle+'\n':'')+(e.endText?e.endText+'\n':'')+(e.url||'')));
+    if(e.url) lines.push('URL:'+esc(e.url));
+    lines.push('BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:'+esc('내일 마감: '+(e.title||'')),'END:VALARM','END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  const blob=new Blob([lines.join('\r\n')],{type:'text/calendar;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='기회일정_'+new Date().toISOString().slice(0,10)+'.ics';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+function _oppExportICS(){
+  const evs=getFavs().filter(f=>(f.type==='support'||f.type==='procurement')&&f.end&&String(f.end).length>=8)
+    .map(f=>({title:f.name, subtitle:f.subtitle, url:f.url, end:f.end, endText:f.endText}));
+  if(!evs.length){ alert('즐겨찾기에 담긴 지원사업·조달 공고 중 마감일이 있는 항목이 없습니다.\n목록에서 ☆를 눌러 담아주세요.'); return; }
+  _downloadICS(evs);
+}
+function _oppExportCSV(kind){
+  const d=_oppLast[kind]; const items=(d&&d.items)||[];
+  if(!items.length){ alert('내보낼 목록이 없습니다.'); return; }
+  const fd=v=>String(v||'').replace(/(\d{4})(\d{2})(\d{2})/,'$1.$2.$3');
+  const header=['공고명','기관','마감일','신청/마감정보','링크'];
+  const rows=items.map(it=>[it.title||'', it.subtitle||'', fd(it.end), it.endText||'', it.url||'']);
+  _downloadCSV(header, rows, kind==='support'?'지원사업목록':'조달공고목록');
+}
+function runPatent(){
+  const box=document.getElementById('patResults'); if(!box) return;
+  const appl=(document.querySelector('#patAppl .pat-chip.active')||{}).dataset;
+  const p=new URLSearchParams();
+  if(appl&&appl.v) p.set('applicant',appl.v);
+  const q=((document.getElementById('patQuery')||{}).value||'').trim(); if(q) p.set('query',q);
+  _patStatuses=[...document.querySelectorAll('#patStatus .pat-chip.active')].map(b=>b.dataset.v).filter(Boolean);
+  if(_patStatuses.length===1) p.set('status',_patStatuses[0]);   // 단일=서버필터, 다중=결과필터
+  const from=((document.getElementById('patFrom')||{}).value||'').replace(/\D/g,''); if(from) p.set('date_from',from);
+  const to=((document.getElementById('patTo')||{}).value||'').replace(/\D/g,''); if(to) p.set('date_to',to);
+  _patParams=p.toString();                 // 엑셀 내보내기에서 동일 필터 재사용
+  box.innerHTML=`<div class="assist-loading"><div class="spinner"></div><span>특허 조회 중...</span></div>`;
+  fetch('/api/assist/patent?'+p.toString()).then(r=>r.json()).then(d=>{ _patLast=d; box.innerHTML=_renderPatentList(d); })
+    .catch(e=>{ box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
+}
+function _renderPatentList(d){
+  if(d&&d.need_key){
+    const url=d.apply_url?`<a href="${escHtml(d.apply_url)}" target="_blank" rel="noopener">서비스키 발급 안내 →</a>`:'';
+    return `<div class="assist-note">🔑 <b>${escHtml(d.provider||'')}</b> 서비스키가 설정되지 않았습니다.<br>관리자가 환경변수(<code>KIPRIS_API_KEY</code>)를 설정하면 조회할 수 있습니다.<br>${url}</div>`;
+  }
+  if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'조회에 실패했습니다.')}</div>`;
+  const items=(d.items||[]).filter(_patStatusMatch);   // 다중 상태 선택 시 결과 필터
+  if(!items.length) return `<div class="assist-note">조건에 맞는 특허가 없습니다.</div>`;
+  const rows=items.map(it=>{
+    const st=it.status?`<span class="pat-badge">${escHtml(it.status)}</span>`:'';
+    const metaBits=[it.appno&&('출원 '+it.appno), it.appdate&&_fmtDate(it.appdate), it.regno&&('등록 '+it.regno)].filter(Boolean).map(escHtml).join(' · ');
+    const kurl=it.appno?`https://www.kipris.or.kr/khome/search/searchResult.do?query=${encodeURIComponent(it.appno)}`:'';
+    const favItem={type:'patent',name:it.title||'',subtitle:it.applicant||'',appno:it.appno||'',url:kurl};
+    const on=favHas(favItem);
+    return `<div class="pat-rw"><button class="pat-row" onclick="patDetail('${argAttr(it.appno||'')}')" title="상세 보기">`+
+      `<div class="pat-row-t">${escHtml(it.title||'(제목 없음)')}${st}</div>`+
+      `<div class="pat-row-m"><span class="pat-row-appl">${escHtml(it.applicant||'')}</span>${metaBits?'<span class="pat-row-meta">'+metaBits+'</span>':''}</div></button>`+
+      `<button class="pat-fav${on?' on':''}" data-fav="${_favData(favItem)}" data-style="row" onclick="favToggleEl(this)" title="즐겨찾기" aria-pressed="${on}">${on?'★':'☆'}</button></div>`;
+  }).join('');
+  const total=d.total&&d.total!==String(items.length)?` / 총 ${escHtml(d.total)}건`:'';
+  return `<div class="pat-listhd"><span class="pat-count">${items.length}건 표시${total}</span>`+
+         `<button class="pat-xlsx" onclick="exportPatents(this)" title="현재 필터의 전체 결과를 엑셀(CSV)로 저장">⬇ 엑셀 다운로드</button></div>`+
+         `<div class="pat-list">${rows}</div>`;
+}
+// 현재 필터의 특허 전체 결과를 여러 페이지로 모아 엑셀(CSV)로 저장
+async function exportPatents(btn){
+  if(!_patParams){ return; }
+  const orig=btn?btn.textContent:'';
+  if(btn){ btn.disabled=true; btn.textContent='내보내는 중...'; }
+  try{
+    const ROWS=200, MAXPAGES=25;            // 안전 상한(최대 5000건)
+    let all=[], total=0;
+    for(let pg=1; pg<=MAXPAGES; pg++){
+      const r=await fetch(`/api/assist/patent?${_patParams}&rows=${ROWS}&page=${pg}`);
+      const d=await r.json();
+      if(!d || d.success===false || d.need_key){
+        if(pg===1){ alert((d&&d.error)||'내보낼 데이터가 없습니다.'); return; }
+        break;
+      }
+      const items=d.items||[];
+      if(!items.length) break;
+      all=all.concat(items);
+      total=parseInt(d.total||'0',10)||all.length;
+      if(btn) btn.textContent=`내보내는 중... (${all.length}${total?'/'+total:''})`;
+      if(all.length>=total || items.length<ROWS) break;
+    }
+    all=all.filter(_patStatusMatch);            // 다중 상태 선택 시 결과 필터 적용
+    if(!all.length){ alert('내보낼 데이터가 없습니다.'); return; }
+    const header=['제목','출원인','출원번호','출원일','등록번호','상태','IPC'];
+    const rows=all.map(it=>[it.title||'', it.applicant||'', it.appno||'', _fmtDate(it.appdate), it.regno||'', it.status||'', it.ipc||'']);
+    _downloadCSV(header, rows, '특허목록');
+  }catch(e){ alert('내보내기 실패: '+(e.message||e)); }
+  finally{ if(btn){ btn.disabled=false; btn.textContent=orig||'⬇ 엑셀 다운로드'; } }
+}
+function _fmtDate(s){ s=String(s||'').replace(/\D/g,''); return s.length>=8?`${s.slice(0,4)}.${s.slice(4,6)}.${s.slice(6,8)}`:s; }
+function patDetail(appno){
+  const box=document.getElementById('patResults'); if(!box||!appno) return;
+  box.innerHTML=`<button class="pat-back" onclick="patBackToList()">← 목록으로</button><div class="assist-loading"><div class="spinner"></div><span>상세 불러오는 중...</span></div>`;
+  fetch('/api/assist/patent/detail?appno='+encodeURIComponent(appno)).then(r=>r.json()).then(d=>{ box.innerHTML=`<button class="pat-back" onclick="patBackToList()">← 목록으로</button>`+_renderPatentDetail(d); })
+    .catch(e=>{ box.innerHTML=`<button class="pat-back" onclick="patBackToList()">← 목록으로</button><div class="assist-note">상세를 불러오지 못했습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
+}
+function patBackToList(){ const box=document.getElementById('patResults'); if(box) box.innerHTML=_renderPatentList(_patLast||{success:true,items:[]}); }
+function _renderPatentDetail(d){
+  if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'상세 정보를 찾지 못했습니다.')}</div>`;
+  const t=d.detail||{};
+  const rows=[['출원번호',t.appno],['출원일',_fmtDate(t.appdate)],['공개번호',t.openno],['공개일',_fmtDate(t.opendate)],
+    ['등록번호',t.regno],['등록일',_fmtDate(t.regdate)],['상태',t.status],['출원인',t.applicant],['발명자',t.inventor],
+    ['대리인',t.agent],['IPC',t.ipc]].filter(r=>r[1]);
+  const meta=rows.map(r=>`<div class="pat-d-row"><span class="pat-d-k">${escHtml(r[0])}</span><span class="pat-d-v">${escHtml(String(r[1]))}</span></div>`).join('');
+  const abs=t.abstract?`<div class="pat-d-abs"><div class="pat-d-k">요약</div><p>${escHtml(t.abstract)}</p></div>`:'';
+  const kurl=t.appno?`https://www.kipris.or.kr/khome/search/searchResult.do?query=${encodeURIComponent(t.appno)}`:'';
+  const link=kurl?`<a class="assist-card-link" href="${escHtml(kurl)}" target="_blank" rel="noopener">KIPRIS에서 원문 보기 →</a>`:'';
+  const favItem={type:'patent',name:t.title||'',subtitle:t.applicant||'',appno:t.appno||'',url:kurl};
+  const favOn=favHas(favItem);
+  const favBtn=`<button class="det-fav${favOn?' on':''}" data-fav="${_favData(favItem)}" onclick="favToggleEl(this)" aria-pressed="${favOn}">${favOn?'★ 즐겨찾기됨':'☆ 즐겨찾기'}</button>`;
+  return `<div class="pat-detail"><div class="pat-d-title">${escHtml(t.title||'(제목 없음)')}${favBtn}</div><div class="pat-d-grid">${meta}</div>${abs}${link}</div>`;
+}
+function closeAssist(){
+  _assistMode=null;
+  const mc=document.querySelector('.main-content'); if(mc) mc.classList.remove('assist-on');
+  Object.values(ASSIST_CFG).forEach(c=>{ const t=document.getElementById(c.tab); if(t) t.classList.remove('active'); });
+  const ex=document.getElementById('smExpense'); if(ex) ex.classList.remove('active');
+}
+
+// ── 지출결의서 본문 작성기 — 구분(일반·여비·업무추진비)별 ERP 본문 생성 ────────
+// 전체 서식은 ERP에 있으므로 '본문에 붙여넣을 내용'만 만들어 복사/인쇄한다.
+const EXP_KEY='expenseBody';
+const EXP_METHODS=['계좌이체','현금','법인카드','어음','기타'];
+const EXP_PER_LIMIT=50000;    // 업무추진비 1인당 한도
+let _expState=null, _expPlain='', _expRich='', _expRendering=false;
+function _wonGeum(n){ return '금'+(Math.round(Number(n)||0)).toLocaleString('ko-KR')+'원'; }
+function _dotDate(iso){ const m=String(iso||'').match(/(\d{4})-(\d{2})-(\d{2})/); return m?`${m[1]}. ${+m[2]}. ${+m[3]}.`:String(iso||''); }
+function _today(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+const _GANADA=['가','나','다','라','마','바','사','아','자','차','카','타','파','하'];
+function _expDefault(){ return {type:'general',
+  general:{vendor:'',bno:'',ceo:'',desc:'',budget:'',supply:'',vat:'',method:'계좌이체',bank:'',holder:'',account:''},
+  travel:{name:'',dept:'',rows:[{date:_today(),place:'',content:'',amt:''}]},
+  promo:{basis:'',purpose:'',date:_today(),place:'',targets:'',people:'',total:'',note:''}}; }
+function _expLoadState(){ try{ const s=JSON.parse(localStorage.getItem(EXP_KEY)||'null'); if(s&&s.type){ const d=_expDefault(); return Object.assign(d,s,{general:Object.assign(d.general,s.general),travel:Object.assign(d.travel,s.travel),promo:Object.assign(d.promo,s.promo)}); } }catch(e){} return _expDefault(); }
+function _expSaveState(){ try{ localStorage.setItem(EXP_KEY, JSON.stringify(_expState)); }catch(e){} }
+function _won(n){ return '₩'+(Math.round(Number(n)||0)).toLocaleString('ko-KR'); }
+function _digits(v){ return parseInt(String(v||'').replace(/[^\d]/g,''),10)||0; }
+function _hanAmount(n){
+  n=Math.floor(Math.abs(Number(n))||0); if(n===0) return '영';
+  const dig=['','일','이','삼','사','오','육','칠','팔','구'];
+  const su=['','십','백','천'], bu=['','만','억','조','경'];
+  let res='', gi=0;
+  while(n>0){ let part=n%10000; n=Math.floor(n/10000);
+    if(part){ let s='',p=part,u=0; while(p>0){ const d=p%10; if(d) s=dig[d]+su[u]+s; p=Math.floor(p/10); u++; } res=s+bu[gi]+res; }
+    gi++; }
+  return res;
+}
+function _fmtKDate(iso){ const m=String(iso||'').match(/(\d{4})-(\d{2})-(\d{2})/); return m?`${m[1]}.${m[2]}.${m[3]}`:String(iso||''); }
+function openExpense(){
+  if(typeof wsBackToList==='function') wsBackToList();
+  document.querySelector('.main-content').classList.add('assist-on');
+  document.querySelectorAll('.sm-item.active').forEach(el=>el.classList.remove('active'));
+  const tab=document.getElementById('smExpense'); if(tab) tab.classList.add('active');
+  _assistMode='expense';
+  _expState=_expLoadState();
+  const T=[['general','일반'],['travel','여비'],['promo','업무추진비']];
+  const seg=T.map(([v,l])=>`<button class="exp-seg${_expState.type===v?' active':''}" onclick="_expSetType('${v}')">${l}</button>`).join('');
+  const p=document.getElementById('assistantPanel');
+  p.innerHTML=`<div class="assist-head"><span class="assist-h-ic">🧾</span>`+
+    `<span class="assist-h-t">지출결의서 본문 작성</span>`+
+    `<span class="assist-h-hint">구분을 고르고 입력하면 ERP 본문에 붙여넣을 내용이 완성됩니다. 서식은 ERP를 사용하세요.</span></div>`+
+    `<div class="exp-segset" id="expSeg">${seg}</div>`+
+    `<div class="exp-wrap">`+
+      `<div class="exp-form" id="expForm"><div id="expFields"></div>`+
+        `<div class="exp-actions"><button class="exp-print" onclick="_expCopy(this)">📋 본문 복사</button>`+
+          `<button class="exp-mini2" onclick="downloadHwpx(this)" title="표 서식을 한글(.hwpx) 파일로 저장">📄 한글(.hwpx)</button>`+
+          `<button class="exp-mini2" onclick="printExpense()">🖨 인쇄</button>`+
+          `<button class="exp-clear" onclick="_expReset()">초기화</button></div>`+
+      `</div>`+
+      `<div class="exp-preview"><div class="exp-doc" id="expDoc"></div></div>`+
+    `</div>`;
+  const form=document.getElementById('expForm');
+  if(form){ const h=()=>{ if(_expRendering) return; _expSync(); _expUpdate(); _expSaveState(); };
+    form.addEventListener('input', h); form.addEventListener('change', h); }
+  _expRenderFields(); _expUpdate();
+}
+function _expSetType(t){ _expSync(); _expState.type=t; _expSaveState();
+  document.querySelectorAll('#expSeg .exp-seg').forEach((b,i)=>b.classList.toggle('active',['general','travel','promo'][i]===t));
+  _expRenderFields(); _expUpdate();
+}
+function _ev(v){ return escHtml(v==null?'':String(v)); }
+function _expRenderFields(){
+  const box=document.getElementById('expFields'); if(!box) return;
+  if(document.activeElement&&box.contains(document.activeElement)) try{document.activeElement.blur();}catch(e){}
+  _expRendering=true;
+  const t=_expState.type;
+  if(t==='general'){
+    const g=_expState.general; const methods=EXP_METHODS.map(m=>`<option${g.method===m?' selected':''}>${m}</option>`).join('');
+    box.innerHTML=
+      `<div class="exp-fg"><div class="exp-fgt">거래처</div><div class="exp-frow">`+
+        `<label>거래처(상호)<input id="gVendor" value="${_ev(g.vendor)}" placeholder="예: (주)그린애그로텍"></label>`+
+        `<label>사업자등록번호<input id="gBno" value="${_ev(g.bno)}" placeholder="000-00-00000"></label></div>`+
+        `<div class="exp-frow"><label>대표자<input id="gCeo" value="${_ev(g.ceo)}"></label></div></div>`+
+      `<div class="exp-fg"><div class="exp-fgt">거래 내용</div>`+
+        `<label class="exp-full">거래내용(적요)<textarea id="gDesc" rows="2" placeholder="예: 스마트팜 실증 기자재 구매">${_ev(g.desc)}</textarea></label>`+
+        `<div class="exp-frow"><label>지출과목(예산과목)<input id="gBudget" value="${_ev(g.budget)}" placeholder="예: 자산취득비"></label></div></div>`+
+      `<div class="exp-fg"><div class="exp-fgt">금액</div><div class="exp-frow">`+
+        `<label>공급가액(원)<input id="gSupply" inputmode="numeric" value="${_ev(g.supply)}"></label>`+
+        `<label>부가세(원)<input id="gVat" inputmode="numeric" value="${_ev(g.vat)}"></label></div>`+
+        `<div class="exp-vatrow"><button type="button" class="exp-mini" onclick="_expVatAuto()">부가세 10% 자동</button></div></div>`+
+      `<div class="exp-fg"><div class="exp-fgt">지급</div><div class="exp-frow">`+
+        `<label>결제방식<select id="gMethod">${methods}</select></label>`+
+        `<label>은행<input id="gBank" value="${_ev(g.bank)}" placeholder="예: 농협"></label></div>`+
+        `<div class="exp-frow"><label>예금주<input id="gHolder" value="${_ev(g.holder)}"></label>`+
+        `<label>계좌번호<input id="gAccount" value="${_ev(g.account)}"></label></div></div>`;
+  } else if(t==='travel'){
+    const tv=_expState.travel; if(!tv.rows||!tv.rows.length) tv.rows=[{date:_today(),place:'',content:'',amt:''}];
+    const rows=tv.rows.map((r,i)=>`<div class="exp-trow">`+
+      `<span class="exp-trn">${i+1}</span>`+
+      `<input class="exp-tin td" id="tvDate${i}" type="date" value="${_ev(r.date)}">`+
+      `<input class="exp-tin tp" id="tvPlace${i}" value="${_ev(r.place)}" placeholder="출장지">`+
+      `<input class="exp-tin ta" id="tvAmt${i}" inputmode="numeric" value="${_ev(r.amt)}" placeholder="금액(원)">`+
+      `<button type="button" class="exp-trdel" onclick="_expTravelDel(${i})" title="행 삭제" ${tv.rows.length<=1?'disabled':''}>✕</button>`+
+      `<input class="exp-tin tc" id="tvContent${i}" value="${_ev(r.content)}" placeholder="출장목적 / 용무">`+
+      `</div>`).join('');
+    box.innerHTML=
+      `<div class="exp-fg"><div class="exp-fgt">출장자</div><div class="exp-frow">`+
+        `<label>성명<input id="tvName" value="${_ev(tv.name)}"></label>`+
+        `<label>소속<input id="tvDept" value="${_ev(tv.dept)}" placeholder="예: 기술사업부"></label></div></div>`+
+      `<div class="exp-fg"><div class="exp-fgt">출장 내역 <span class="exp-hint2">건별 일자·출장지·목적·금액 (다건이면 행 추가)</span></div>`+
+        `<div id="tvRows">${rows}</div>`+
+        `<button type="button" class="exp-addrow" onclick="_expTravelAdd()">＋ 행 추가</button></div>`;
+  } else {
+    const pm=_expState.promo;
+    box.innerHTML=
+      `<div class="exp-fg"><div class="exp-fgt">문서 정보</div>`+
+        `<label class="exp-full">관련근거<input id="pmBasis" value="${_ev(pm.basis)}" placeholder="관련 근거 문서·번호"></label>`+
+        `<label class="exp-full">집행목적<textarea id="pmPurpose" rows="2" placeholder="집행 목적">${_ev(pm.purpose)}</textarea></label></div>`+
+      `<div class="exp-fg"><div class="exp-fgt">일시·장소</div><div class="exp-frow">`+
+        `<label>일시<input id="pmDate" type="date" value="${_ev(pm.date)}"></label>`+
+        `<label>장소<input id="pmPlace" value="${_ev(pm.place)}" placeholder="집행 장소"></label></div></div>`+
+      `<div class="exp-fg"><div class="exp-fgt">집행대상 및 금액</div>`+
+        `<label class="exp-full">집행대상(참석자)<textarea id="pmTargets" rows="2" placeholder="참석자·소속·인원(총 N명)">${_ev(pm.targets)}</textarea></label>`+
+        `<div class="exp-frow"><label>참석인원(명·1인당 계산)<input id="pmPeople" inputmode="numeric" value="${_ev(pm.people)}"></label>`+
+        `<label>금액(원)<input id="pmTotal" inputmode="numeric" value="${_ev(pm.total)}"></label></div>`+
+        `<div class="exp-limit" id="pmLimit"></div></div>`+
+      `<div class="exp-fg"><div class="exp-fgt">비고</div>`+
+        `<label class="exp-full"><input id="pmNote" value="${_ev(pm.note)}" placeholder="(선택)"></label></div>`;
+  }
+  _expRendering=false;
+}
+function _expSync(){
+  const g=id=>((document.getElementById(id)||{}).value||'').trim();
+  const t=_expState.type;
+  // 렌더 중이거나 현재 구분의 입력이 DOM에 없으면 무시(다른 구분 상태 훼손 방지)
+  const anchor={general:'gVendor',travel:'tvName',promo:'pmDate'}[t];
+  if(_expRendering || (anchor && !document.getElementById(anchor))) return;
+  if(t==='general'){
+    _expState.general={vendor:g('gVendor'),bno:g('gBno'),ceo:g('gCeo'),desc:g('gDesc'),budget:g('gBudget'),
+      supply:g('gSupply'),vat:g('gVat'),method:g('gMethod'),bank:g('gBank'),holder:g('gHolder'),account:g('gAccount')};
+  } else if(t==='travel'){
+    const n=(_expState.travel.rows||[]).length;
+    const rows=[]; for(let i=0;i<n;i++){ rows.push({date:g('tvDate'+i),place:g('tvPlace'+i),content:g('tvContent'+i),amt:g('tvAmt'+i)}); }
+    _expState.travel={name:g('tvName'),dept:g('tvDept'),rows:rows.length?rows:_expState.travel.rows};
+  } else {
+    _expState.promo={basis:g('pmBasis'),purpose:g('pmPurpose'),date:g('pmDate'),place:g('pmPlace'),targets:g('pmTargets'),people:g('pmPeople'),total:g('pmTotal'),note:g('pmNote')};
+  }
+}
+function _expVatAuto(){ _expSync(); _expState.general.vat=String(Math.round(_digits(_expState.general.supply)*0.1));
+  const el=document.getElementById('gVat'); if(el) el.value=_expState.general.vat; _expUpdate(); _expSaveState(); }
+function _expTravelAdd(){ _expSync(); _expState.travel.rows.push({date:_today(),place:'',content:'',amt:''}); _expRenderFields(); _expUpdate(); _expSaveState(); }
+function _expTravelDel(i){ _expSync(); _expState.travel.rows.splice(i,1); if(!_expState.travel.rows.length) _expState.travel.rows=[{date:_today(),place:'',content:'',amt:''}]; _expRenderFields(); _expUpdate(); _expSaveState(); }
+function _expBuild(){
+  const t=_expState.type; let html='', text=''; _expRich='';
+  if(t==='general'){
+    const g=_expState.general; const sup=_digits(g.supply), vat=_digits(g.vat), total=sup+vat;
+    const vendor=[g.vendor||'—', g.bno&&('사업자 '+g.bno), g.ceo&&('대표 '+g.ceo)].filter(Boolean).join(', ');
+    const acct=[g.bank,g.account,g.holder&&('예금주 '+g.holder)].filter(Boolean).join(' ');
+    const amt=`일금 ${_hanAmount(total)}원정 (${_won(total)})`+((sup&&vat)?`  [공급가액 ${_won(sup)} + 부가세 ${_won(vat)}]`:'');
+    const L=[['거래처',vendor],['거래내용',g.desc],['지출과목',g.budget],['금액',amt],['결제방식',[g.method,acct&&('('+acct+')')].filter(Boolean).join(' ')]].filter(x=>x[1]);
+    html=`<div class="expd-tag">일반 지출</div>`+_expLines(L,true);
+    text='[일반 지출]\n'+L.map((x,i)=>`${_GANADA[i]||'·'}. ${x[0]}: ${x[1]}`).join('\n');
+  } else if(t==='travel'){
+    const tv=_expState.travel; const rows=(tv.rows||[]).filter(r=>r.content||r.amt||r.date||r.place);
+    const total=rows.reduce((a,r)=>a+_digits(r.amt),0);
+    const head=[['출장자',[tv.name, tv.dept&&('('+tv.dept+')')].filter(Boolean).join(' ')]].filter(x=>x[1]);
+    const trHtml=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${_ev(_fmtKDate(r.date))}</td><td>${_ev(r.place)}</td><td class="tl">${_ev(r.content)}</td><td class="tr">${_won(_digits(r.amt))}</td></tr>`).join('')
+      || `<tr><td colspan="5" class="expd-empty">출장 내역을 입력하세요</td></tr>`;
+    html=`<div class="expd-tag">여비(출장비)</div>`+(head.length?_expLines(head):'')+
+      `<table class="expd-tbl"><thead><tr><th>순번</th><th>일자</th><th>출장지</th><th>출장목적</th><th>금액</th></tr></thead>`+
+      `<tbody>${trHtml}</tbody><tfoot><tr><td colspan="4">합계</td><td class="tr">${_won(total)}</td></tr></tfoot></table>`+
+      `<div class="expd-sum">합계 일금 ${_hanAmount(total)}원정 (${_won(total)})</div>`;
+    const tlines=rows.map((r,i)=>`  ${i+1}) ${_fmtKDate(r.date)} | ${r.place||'-'} | ${r.content||'-'} | ${_won(_digits(r.amt))}`).join('\n');
+    text='[여비(출장비) 지출]\n'+head.map(x=>`· ${x[0]}: ${x[1]}`).join('\n')+
+      `${head.length?'\n':''}· 출장내역 (일자 | 출장지 | 목적 | 금액)\n${tlines||'  (내역 없음)'}\n· 합계: 일금 ${_hanAmount(total)}원정 (${_won(total)})`;
+  } else {
+    const pm=_expState.promo; const people=_digits(pm.people), total=_digits(pm.total);
+    const per=people>0?Math.floor(total/people):0; const over=per>EXP_PER_LIMIT;
+    const limitEl=document.getElementById('pmLimit');
+    if(limitEl){ limitEl.className='exp-limit '+(people&&total?(over?'over':'ok'):'');
+      limitEl.textContent=people&&total?`1인당 ${_wonGeum(per)} · 한도 ${_wonGeum(EXP_PER_LIMIT)} ${over?'초과 ⚠':'이내 ✔'}`:`1인당 한도 ${_wonGeum(EXP_PER_LIMIT)}`; }
+    // 첨부 표 양식: 관련근거 / 집행목적 / 일시·장소 / 집행대상 / 금액·1인당 / 비고
+    const rows=[
+      ['관련근거', pm.basis||'', null, null],
+      ['집행목적', pm.purpose||'', null, null],
+      ['일　시', _dotDate(pm.date), '장　소', pm.place||''],
+      ['집행대상', pm.targets||'', null, null],
+      ['금　액', total?_wonGeum(total):'', '1인당 지출액', (people&&total)?_wonGeum(per):''],
+      ['비　고', pm.note||'', null, null],
+    ];
+    const cell=v=>_ev(v)||'&nbsp;';
+    const trs=rows.map(r=> r[2]===null
+      ? `<tr><th>${_ev(r[0])}</th><td colspan="3">${cell(r[1])}</td></tr>`
+      : `<tr><th>${_ev(r[0])}</th><td>${cell(r[1])}</td><th>${_ev(r[2])}</th><td>${cell(r[3])}</td></tr>`).join('');
+    html=`<div class="expd-tag">업무추진비</div><table class="pmt">${trs}</table>`+
+      (over?`<div class="expd-warn">⚠ 1인당 지출액이 한도(${_wonGeum(EXP_PER_LIMIT)})를 초과했습니다. 인원 또는 금액을 확인하세요.</div>`:'');
+    // 붙여넣기용(HWP·ERP 리치에디터에 표 유지) — 인라인 스타일
+    const ci='border:1px solid #808080;padding:6px 10px;font-size:14px;vertical-align:middle;';
+    const ch='background:#efefef;font-weight:bold;text-align:center;white-space:nowrap;'+ci;
+    _expRich='<table style="border-collapse:collapse;width:100%">'+rows.map(r=> r[2]===null
+      ? `<tr><th style="${ch}">${_ev(r[0])}</th><td style="${ci}" colspan="3">${_ev(r[1])}</td></tr>`
+      : `<tr><th style="${ch}">${_ev(r[0])}</th><td style="${ci}">${_ev(r[1])}</td><th style="${ch}">${_ev(r[2])}</th><td style="${ci}">${_ev(r[3])}</td></tr>`).join('')+'</table>';
+    // 플레인 폴백
+    const P=[['관련근거',pm.basis],['집행목적',pm.purpose],
+      ['일시',_dotDate(pm.date)+(pm.place?('   장소: '+pm.place):'')],['집행대상',pm.targets],
+      ['금액',total?_wonGeum(total)+((people&&total)?`   (1인당 ${_wonGeum(per)})`:''):''],['비고',pm.note]];
+    text='[업무추진비 지출]\n'+P.filter(x=>x[1]).map(x=>`· ${x[0]}: ${x[1]}`).join('\n');
+  }
+  return {html, text};
+}
+function _expLines(list, numbered){
+  return `<div class="expd-lines">`+list.filter(x=>x[1]).map((x,i)=>`<div class="expd-line">`+
+    (numbered?`<span class="expd-mk">${_GANADA[i]||''}.</span>`:'')+
+    `<span class="expd-k">${_ev(x[0])}</span><span class="expd-v">${_ev(x[1])}</span></div>`).join('')+`</div>`;
+}
+function _expUpdate(){
+  const doc=document.getElementById('expDoc'); if(!doc) return;
+  const b=_expBuild(); _expPlain=b.text;
+  doc.innerHTML=`<div class="expd-title">지출결의서 본문</div>${b.html}`;
+}
+function _expCopy(btn){
+  const text=_expPlain||''; if(!text){ return; }
+  const done=()=>{ if(btn){ const o=btn.textContent; btn.textContent='✓ 복사됨'; setTimeout(()=>{btn.textContent=o;},1400); } };
+  if(_expRich && navigator.clipboard && window.ClipboardItem){   // 표 유지(리치) + 플레인 폴백
+    try{
+      const item=new ClipboardItem({'text/html':new Blob([_expRich],{type:'text/html'}),
+                                    'text/plain':new Blob([text],{type:'text/plain'})});
+      navigator.clipboard.write([item]).then(done).catch(()=>_expCopyFb(text,done));
+      return;
+    }catch(e){}
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done).catch(()=>_expCopyFb(text,done)); }
+  else _expCopyFb(text,done);
+}
+function _expCopyFb(text,done){ try{ const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done&&done(); }catch(e){ alert('복사 실패 — 본문을 직접 선택해 복사하세요.'); } }
+function printExpense(){ _expUpdate(); window.print(); }
+// 현재 구분의 본문을 한글(.hwpx) 표 파일로 생성
+function _expHwpxPayload(){
+  const t=_expState.type;
+  if(t==='promo'){
+    const pm=_expState.promo; const people=_digits(pm.people), total=_digits(pm.total);
+    const per=people>0?Math.floor(total/people):0; const g=n=>_wonGeum(n);
+    return {title:'지출결의서 (업무추진비)', filename:'지출결의서_업무추진비', colCnt:4, colWidths:[8000,15814,8000,15814], rows:[
+      [{t:'관련근거',hd:1},{t:pm.basis||'',cs:3}],
+      [{t:'집행목적',hd:1},{t:pm.purpose||'',cs:3}],
+      [{t:'일 시',hd:1},{t:_dotDate(pm.date)},{t:'장 소',hd:1},{t:pm.place||''}],
+      [{t:'집행대상',hd:1},{t:pm.targets||'',cs:3}],
+      [{t:'금 액',hd:1},{t:total?g(total):''},{t:'1인당 지출액',hd:1},{t:(people&&total)?g(per):''}],
+      [{t:'비 고',hd:1},{t:pm.note||'',cs:3}],
+    ]};
+  }
+  if(t==='general'){
+    const g=_expState.general; const sup=_digits(g.supply),vat=_digits(g.vat),total=sup+vat;
+    const vendor=[g.vendor,g.bno&&('사업자 '+g.bno),g.ceo&&('대표 '+g.ceo)].filter(Boolean).join(', ');
+    const acct=[g.bank,g.account,g.holder&&('예금주 '+g.holder)].filter(Boolean).join(' ');
+    const rows=[['거래처',vendor],['거래내용',g.desc||''],['지출과목',g.budget||''],
+      ['금액','일금 '+_hanAmount(total)+'원정 ('+_won(total)+')'],
+      ['결제방식',[g.method,acct&&('('+acct+')')].filter(Boolean).join(' ')]]
+      .map(r=>[{t:r[0],hd:1},{t:r[1]}]);
+    return {title:'지출결의서 (일반)', filename:'지출결의서_일반', colCnt:2, colWidths:[9000,38628], rows};
+  }
+  const tv=_expState.travel; const rws=(tv.rows||[]).filter(r=>r.content||r.amt||r.date||r.place);
+  const total=rws.reduce((a,r)=>a+_digits(r.amt),0); const rows=[];
+  rows.push([{t:'출장자',hd:1},{t:[tv.name,tv.dept&&('('+tv.dept+')')].filter(Boolean).join(' '),cs:4}]);
+  rows.push([{t:'순번',hd:1},{t:'일자',hd:1},{t:'출장지',hd:1},{t:'출장목적',hd:1},{t:'금액',hd:1}]);
+  rws.forEach((r,i)=>rows.push([{t:String(i+1)},{t:_fmtKDate(r.date)},{t:r.place||''},{t:r.content||''},{t:_won(_digits(r.amt))}]));
+  rows.push([{t:'합계',hd:1,cs:4},{t:_won(total)}]);
+  return {title:'지출결의서 (여비)', filename:'지출결의서_여비', colCnt:5, colWidths:[4000,9000,9000,17628,8000], rows};
+}
+function downloadHwpx(btn){
+  const payload=_expHwpxPayload(); if(!payload.rows.length) return;
+  const orig=btn?btn.textContent:''; if(btn){ btn.disabled=true; btn.textContent='생성 중...'; }
+  fetch('/api/expense/hwpx',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    .then(r=>{ if(!r.ok) return r.json().then(j=>{throw new Error(j.error||'생성 실패');}); return r.blob(); })
+    .then(blob=>{ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url;
+      a.download=(payload.filename||'지출결의서')+'.hwpx'; document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url); })
+    .catch(e=>alert('한글(.hwpx) 생성 실패: '+(e.message||e)))
+    .finally(()=>{ if(btn){ btn.disabled=false; btn.textContent=orig||'📄 한글(.hwpx)'; } });
+}
+function _expReset(){
+  if(!confirm('입력한 내용을 모두 지울까요?')) return;
+  try{ localStorage.removeItem(EXP_KEY); }catch(e){}
+  openExpense();
+}
+async function runAssist(){
+  const kind=_assistMode; if(!kind) return;
+  const cfg=ASSIST_CFG[kind];
+  const box=document.getElementById('assistResults'); if(!box) return;
+  const val=(document.getElementById('assistInput')||{}).value||'';
+  const q=val.trim();
+  if(!q){ box.innerHTML=`<div class="assist-note">검색어를 입력하세요.</div>`; return; }
+  box.innerHTML=`<div class="assist-loading"><div class="spinner"></div><span>조회 중...</span></div>`;
+  try{
+    const r=await fetch(`/api/assist/${kind}?${cfg.param}=${encodeURIComponent(q)}`);
+    const d=await r.json();
+    box.innerHTML=_renderAssist(d, kind);
+  }catch(e){
+    box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`;
+  }
+}
+function _renderAssist(d, kind){
+  if(d && d.need_key){
+    const url=d.apply_url?`<a href="${escHtml(d.apply_url)}" target="_blank" rel="noopener">서비스키 발급 안내 →</a>`:'';
+    return `<div class="assist-note">🔑 <b>${escHtml(d.provider||'')}</b> 서비스키가 설정되지 않았습니다.<br>`+
+           `관리자가 환경변수(<code>${escHtml(ASSIST_ENV_LABEL[kind]||'')}</code>)를 설정하면 조회할 수 있습니다.<br>${url}</div>`;
+  }
+  if(!d || d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'조회에 실패했습니다.')}</div>`;
+  const items=d.items||[];
+  if(!items.length) return `<div class="assist-note">결과가 없습니다.</div>`;
+  const cards=items.map(it=>{
+    const sub=it.subtitle?`<span class="assist-card-sub">${escHtml(it.subtitle)}</span>`:'';
+    const meta=(it.meta||[]).filter(m=>m&&m[1]&&m[1]!=='-')
+      .map(m=>`<span><b>${escHtml(m[0])}</b>${escHtml(String(m[1]))}</span>`).join('');
+    const link=it.url?`<a class="assist-card-link" href="${escHtml(it.url)}" target="_blank" rel="noopener">바로가기 →</a>`:'';
+    return `<div class="assist-card"><div class="assist-card-h"><span class="assist-card-t">${escHtml(it.title||'')}</span>${sub}</div>`+
+           (meta?`<div class="assist-card-meta">${meta}</div>`:'')+`${link}</div>`;
+  }).join('');
+  const cnt=`<div style="font-size:12px;color:var(--mu);margin-bottom:4px;">${items.length}건</div>`;
+  return cnt+cards;
+}
+const ASSIST_ENV_LABEL={company:'DART_API_KEY / DATA_GO_KR_KEY',patent:'KIPRIS_API_KEY',support:'BIZINFO_API_KEY',procurement:'DATA_GO_KR_KEY'};
+
 function setMode(m){
+  if(_assistMode) closeAssist();   // 업무 도우미에서 일반 검색 모드로 복귀
+  // 시나리오는 내규·법령 페이지 안에서 진입 → 돌아갈 페이지 기억
+  if(m==='scenario' && (mode==='internal'||mode==='law')) _scenReturn=mode;
   mode=m;
-  // 좌측 메뉴 패널의 활성 표시(기존 상단 토글은 메뉴로 이동)
-  const _sm={internal:'smInternal',law:'smLaw',scenario:'smScenario'};
+  // 좌측 메뉴 패널의 활성 표시(시나리오는 메뉴에서 빠져 활성 항목 없음)
+  const _sm={internal:'smInternal',law:'smLaw'};
   Object.entries(_sm).forEach(([k,id])=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active', m===k); });
 
   const examples    = document.getElementById('scenarioExamples');
   const intExamples = document.getElementById('internalExamples');
   const qlabel      = document.getElementById('qlabelDefault');
   const chipsWrap   = document.getElementById('chips');
+  // 검색 유형 토글 활성 표시(키워드 ↔ AI 시나리오)
+  const stKw=document.getElementById('stglKw'), stScen=document.getElementById('stglScen');
+  if(stKw)   stKw.classList.toggle('active', m!=='scenario');
+  if(stScen) stScen.classList.toggle('active', m==='scenario');
   // 모드별 보조 UI: 내규→카테고리 칩, 법령→자주 찾는 법령, 시나리오→예시 질문
   examples.style.display = (m==='scenario') ? '' : 'none';
   if(intExamples){
@@ -2061,36 +3359,11 @@ async function renderInternalDashboard(){
       </div>
       <div class="idb-pills" id="idbPills">${pills}</div>
     </div>
-    ${_dashQuickHtml(items)}
     <div class="idb-grid" id="idbGrid">${_dashGrid(items)}</div>
   </div>`;
 }
 // 규정을 RULE_TREE_ORDER 버킷으로 분류(그리드·pill 필터가 동일 기준을 쓰도록)
 function _dashBucket(it){ return RULE_TREE_ORDER.some(g=>g.key===it.category) ? it.category : '기타'; }
-// 빠른 접근 블록: 자주 본 규정(통계) + 최근 검색어
-function _dashQuickHtml(items){
-  let freq=[];
-  try{
-    const st=JSON.parse(localStorage.getItem('lawStats')||'{}');
-    const vw=st.view||{};
-    const titleByNorm=new Map(items.map(it=>[_rnorm(it.title||''), it.title]));
-    freq=Object.entries(vw).map(([name,c])=>({c:+c||0, title:titleByNorm.get(_rnorm(name))}))
-      .filter(x=>x.title).sort((a,b)=>b.c-a.c).slice(0,6);
-  }catch{}
-  const recents=(typeof getRecent==='function'?getRecent():[]).slice(0,8);
-  let rows='';
-  if(freq.length){
-    rows+=`<div class="idb-qrow"><span class="idb-qlab">⭐ 자주 본 규정</span>`+
-      freq.map(f=>`<button class="idb-qchip" onclick="wsOpen('${argAttr(f.title)}','internal')" title="${escHtml(f.title)}">`+
-        `<span class="idb-qtxt">${escHtml(f.title)}</span><span class="idb-qn">${f.c}</span></button>`).join('')+`</div>`;
-  }
-  if(recents.length){
-    rows+=`<div class="idb-qrow"><span class="idb-qlab">🕘 최근 검색어</span>`+
-      recents.map(r=>`<button class="idb-qchip" onclick="quick('${argAttr(r)}')" title="'${escHtml(r)}' 다시 검색">`+
-        `<span class="idb-qtxt">${escHtml(r)}</span></button>`).join('')+`</div>`;
-  }
-  return rows?`<div class="idb-quick">${rows}</div>`:'';
-}
 // 분류 pill 필터 — 클릭한 구분만 보기(다시 클릭하면 해제). 텍스트 필터와 함께 적용.
 let _dashCat='';
 function _dashCatFilter(key){
@@ -4713,30 +5986,41 @@ async function loadFavs(){
   const favs = getFavs();
   const el = document.getElementById('favCount');
   if(el) el.textContent = favs.length ? `(${favs.length})` : '';
+  const tb = document.getElementById('tbFavCount');
+  if(tb) tb.textContent = favs.length ? `(${favs.length})` : '';
   return favs;
 }
 
-// 즐겨찾기 식별: 이름 + 내규/법령 구분(같은 이름의 내규·법령이 충돌하지 않도록).
-// 구버전 저장분은 type이 없거나 부정확 → 내규 여부만 비교(법령 세부 구분은 무시).
+// 즐겨찾기 식별: 유형 버킷 + 이름 + 링크(사업자·출원번호). 모든 조회 유형 지원.
 const _isIntFav = t => String(t||'')==='internal';
-function _favEq(f, name, type){
-  return f.name === name && _isIntFav(f.type) === _isIntFav(type);
-}
-// 이름+구분 기준: 있으면 제거, 없으면 추가(최신 앞, 최대 30개)
-async function toggleFav(name, org, type, url){
+function _favBucket(type){ const t=String(type||'');
+  if(t==='internal') return 'internal';
+  if(['company','patent','support','procurement'].indexOf(t)>=0) return t;
+  return 'law'; }
+function _favKey(f){ return _favBucket(f.type)+'|'+(f.name||'')+'|'+(f.url||f.bno||f.appno||''); }
+function _favEq(a, b){ return _favKey(a)===_favKey(b); }
+function favHas(item){ return getFavs().some(f=>_favEq(f,item)); }
+// 항목 토글(최신 앞, 최대 60개)
+function toggleFavItem(item){
   const arr = getFavs();
-  const idx = arr.findIndex(f => _favEq(f, name, type));
+  const i = arr.findIndex(f=>_favEq(f,item));
   let added;
-  if(idx >= 0){ arr.splice(idx, 1); added = false; }
-  else {
-    arr.unshift({name, org: org||'', type: type||'법률', url: url||''});
-    if(arr.length > 30) arr.length = 30;
-    added = true;
-  }
-  _saveFavs(arr);
-  await loadFavs();
+  if(i>=0){ arr.splice(i,1); added=false; }
+  else { arr.unshift(Object.assign({savedAt:new Date().toISOString().slice(0,10)}, item)); if(arr.length>60) arr.length=60; added=true; }
+  _saveFavs(arr); loadFavs(); if(typeof favMode!=='undefined' && favMode) renderFavList();
   return added;
 }
+// 레거시 호환(내규·법령 카드/패널)
+function toggleFav(name, org, type, url){ return toggleFavItem({type:type||'법률', name, subtitle:org||'', url:url||''}); }
+// data-fav 속성 기반 범용 토글 버튼(기업·특허 등)
+function _favData(item){ return escHtml(JSON.stringify(item)); }
+function favToggleEl(btn){ if(!btn) return; let item; try{ item=JSON.parse(btn.dataset.fav||'{}'); }catch(e){ return; }
+  const added=toggleFavItem(item); btn.classList.toggle('on',added); btn.setAttribute('aria-pressed',added);
+  if(btn.dataset.style==='row') btn.textContent=added?'★':'☆';
+  else btn.innerHTML=added?'★ 즐겨찾기됨':'☆ 즐겨찾기'; }
+// 즐겨찾기에서 조회 도구 다시 열기
+function favOpenCompany(name){ Promise.resolve(openAssist('company')).then(()=>{ const q=document.getElementById('compQuery'); if(q){ q.value=name; runCompany(); } }); }
+function favOpenPatent(name){ Promise.resolve(openAssist('patent')).then(()=>{ const q=document.getElementById('patQuery'); if(q){ q.value=name; runPatent(); } }); }
 
 // 서버 의존 제거 — localStorage 마이그레이션만 보장(하위 호환용 no-op)
 async function syncLocalFavsToServer(){ getFavs(); }
@@ -4762,8 +6046,7 @@ async function toggleFavInternalPanel(){
   if(favMode) renderFavList();
 }
 async function updateFavBtnInternal(name){
-  const favs = await loadFavs();
-  const isFav = favs.some(f => _favEq(f, name, 'internal'));
+  const isFav = favHas({type:'internal', name});
   const btn = document.getElementById('fpFavBtnInt');
   if(btn){ btn.textContent = isFav ? '★' : '☆'; btn.classList.toggle('active', isFav); }
 }
@@ -4771,8 +6054,10 @@ async function updateFavBtnInternal(name){
 async function toggleFavTab(){
   favMode = !favMode;
   const btn = document.getElementById('favTabBtn');
-  btn.classList.toggle('active', favMode);
-  renderAgencyInfo(); // 즐겨찾기 모드에서는 숨김, 해제 시 복원
+  if(btn) btn.classList.toggle('active', favMode);
+  const tb = document.getElementById('tbFav'); if(tb) tb.classList.toggle('active', favMode);
+  if(typeof closeAssist==='function' && _assistMode) closeAssist();   // 도우미 화면이면 닫고 즐겨찾기 표시
+  renderAgencyInfo();
   if(favMode){
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
     renderFavList();
@@ -4781,47 +6066,51 @@ async function toggleFavTab(){
   }
 }
 
+const _FAV_TYPE_LABEL={internal:'내규', law:'법령', company:'기업', patent:'특허', support:'지원사업', procurement:'조달'};
 async function renderFavList(){
   const favs = await loadFavs();
-  document.getElementById('fbar').style.display='none';
-  document.getElementById('pagination').innerHTML='';
+  const fbar=document.getElementById('fbar'); if(fbar) fbar.style.display='none';
+  const pag=document.getElementById('pagination'); if(pag) pag.innerHTML='';
   if(!favs.length){
-    document.getElementById('results').innerHTML='<div class="fav-empty">⭐ 즐겨찾기한 법령이 없습니다.<br>법령 카드의 ☆ 버튼을 눌러 추가하세요.</div>';
+    document.getElementById('results').innerHTML='<div class="fav-empty">⭐ 즐겨찾기가 없습니다.<br>내규·법령·기업·특허·지원사업·조달 등 각 조회 결과의 ☆ 버튼으로 담아보세요.</div>';
     setStatus('');
     return;
   }
   setStatus(`즐겨찾기 ${favs.length}건`);
   document.getElementById('results').innerHTML=favs.map((f,i)=>{
-    const isInt=_isIntFav(f.type);
-    const openBtn=isInt
-      ? `<button class="abtn primary" onclick="wsOpen('${argAttr(f.name)}','internal')">📄 규정 전문 보기</button>`
-      : `<button class="abtn primary" onclick="wsOpen('${argAttr(f.name)}','law','${argAttr(f.url)}')">📄 조문 전문 보기</button>`
-        +`<a class="abtn" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ 법제처</a>`;
+    const bkt=_favBucket(f.type);
+    const label=bkt==='law'?(f.type||'법령'):(_FAV_TYPE_LABEL[bkt]||'기타');
+    const sub=f.subtitle||f.org||'';
+    let open='';
+    if(bkt==='internal') open=`<button class="abtn primary" onclick="wsOpen('${argAttr(f.name)}','internal')">📄 규정 전문 보기</button>`;
+    else if(bkt==='law') open=`<button class="abtn primary" onclick="wsOpen('${argAttr(f.name)}','law','${argAttr(f.url)}')">📄 조문 전문 보기</button>`+(f.url?`<a class="abtn" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ 법제처</a>`:'');
+    else if(bkt==='company') open=`<button class="abtn primary" onclick="favOpenCompany('${argAttr(f.name)}')">🏢 기업 다시 조회</button>`;
+    else if(bkt==='patent') open=`<button class="abtn primary" onclick="favOpenPatent('${argAttr(f.name)}')">📄 특허 다시 조회</button>`+(f.url?`<a class="abtn" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ KIPRIS</a>`:'');
+    else open=(f.url?`<a class="abtn primary" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ 공고 바로가기</a>`:'')+((f.endText||f.end)?`<span class="fav-due">마감 ${escHtml(f.endText||f.end)}</span>`:'');
     return `
     <div class="card" id="fc${i}">
       <div class="card-head" onclick="toggleCard2('fc${i}')">
-        <span class="ltype${isInt?' ltype-int':''}">${escHtml(isInt?'내규':(f.type||'법률'))}</span>
+        <span class="ltype${bkt==='internal'?' ltype-int':''}">${escHtml(label)}</span>
         <span class="lname">${escHtml(f.name)}</span>
-        <span class="lorg">${escHtml(f.org||'')}</span>
-        <button class="fav-btn active" onclick="event.stopPropagation();removeFav('${argAttr(f.name)}','${argAttr(f.type||'')}');renderFavList();" title="즐겨찾기 제거" style="margin-left:auto;">★</button>
+        <span class="lorg">${escHtml(sub)}</span>
+        <button class="fav-btn active" onclick="event.stopPropagation();removeFavAt(${i});" title="즐겨찾기 제거" style="margin-left:auto;">★</button>
         <span class="arrow" style="font-size:11px;color:var(--ht);margin-left:4px;">▼</span>
       </div>
-      <div class="card-body">
-        <div class="actions">
-          ${openBtn}
-        </div>
-      </div>
+      <div class="card-body"><div class="actions">${open}</div></div>
     </div>`;
   }).join('');
 }
 
 function toggleCard2(id){document.getElementById(id).classList.toggle('open');}
 
+function removeFavAt(i){
+  const arr = getFavs();
+  if(i>=0 && i<arr.length){ arr.splice(i,1); _saveFavs(arr); loadFavs(); renderFavList(); }
+}
+// 레거시 호환(이름·유형으로 제거)
 async function removeFav(name, type){
-  const arr = getFavs().filter(f => !_favEq(f, name, type));
-  _saveFavs(arr);
-  await loadFavs();
-  await renderFavList();
+  const arr = getFavs().filter(f => !_favEq(f, {type, name}));
+  _saveFavs(arr); await loadFavs();
 }
 
 async function updateFavBtn(panelName){
@@ -8338,14 +9627,17 @@ async function scoreAndReorderAsync(laws, keywords){
   <!-- Footer -->
   <footer style="text-align:center;padding:28px 0 20px;color:var(--ht);font-size:12px;border-top:1px solid var(--bd);margin-top:24px;background:var(--sf);">
     <div style="margin-bottom:6px;">
-      <span style="font-weight:700;color:var(--g);font-size:14px;">KOAT 내규&국가법령 종합 검색 서비스</span>
+      <span style="font-weight:700;color:var(--g);font-size:14px;">KOAT Work Place</span>
     </div>
-    <div style="margin-bottom:4px;">
-      법제처 국가법령정보 OpenAPI + 사규(내규) MCP 연동 · 내규↔법령 연계 종합 검색
+    <div style="margin-bottom:6px;">
+      내규똑똑 · 국가법령 · 기업 · 특허 · 지원사업 · 조달 통합 업무 지원
     </div>
-    <div>
-      © 2025 <strong>kimjs</strong> · Powered by
-      <a href="https://www.law.go.kr" target="_blank" style="color:var(--g);text-decoration:none;">법제처 국가법령정보센터</a>
+    <div style="line-height:1.7;max-width:760px;margin:0 auto;">
+      © 2026 <strong>kimjs</strong> · Powered by
+      <a href="https://www.law.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">법제처 국가법령정보센터</a> ·
+      <a href="https://plus.kipris.or.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">특허청 KIPRIS</a> ·
+      <a href="https://opendart.fss.or.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">금융감독원 DART</a> ·
+      <a href="https://www.data.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">공공데이터포털</a>
     </div>
   </footer>
 

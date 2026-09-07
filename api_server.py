@@ -4615,6 +4615,739 @@ def debug_law_xml():
         return str(e), 500
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 업무 도우미 — 공공 API 프록시 (기업/특허/지원사업/조달)
+# 서비스키는 환경변수로 주입한다. 키 미설정 시 need_key 응답으로 UI가 안내한다.
+#   DART_API_KEY    : DART 오픈API — 기업 회사명 검색·기업개황·재무 요약
+#   DATA_GO_KR_KEY  : 공공데이터포털 서비스키 (국세청 사업자상태·나라장터 입찰공고·지원사업)
+#   KIPRIS_API_KEY  : 키프리스 플러스 서비스키 (특허·상표·디자인)
+#   BIZINFO_API_KEY : 공공데이터포털(기업마당·중소벤처기업부) 인증키 (정부 지원사업 공고)
+# 기업조회는 DART(회사명 검색)와 공공데이터포털(국세청 사업자상태)을 함께 활용한다.
+# ══════════════════════════════════════════════════════════════════════════
+_ASSIST_ENV = {"company": "DART_API_KEY", "patent": "KIPRIS_API_KEY",
+               "support": "BIZINFO_API_KEY", "procurement": "DATA_GO_KR_KEY"}
+_ASSIST_APPLY = {
+    "company":     "https://opendart.fss.or.kr",
+    "patent":      "https://plus.kipris.or.kr/portal/main/main.do",
+    "support":     "https://www.data.go.kr/",
+    "procurement": "https://www.data.go.kr/data/15129394/openapi.do",
+}
+_ASSIST_PROVIDER = {
+    "company": "DART·공공데이터포털", "patent": "특허청 KIPRIS",
+    "support": "공공데이터포털", "procurement": "공공데이터포털(나라장터)",
+}
+
+def _fmtbno_disp(b):
+    """사업자등록번호 숫자 → 000-00-00000 표기."""
+    b = re.sub(r"\D", "", str(b or ""))
+    return f"{b[:3]}-{b[3:5]}-{b[5:]}" if len(b) == 10 else b
+
+def _fmtymd(v):
+    """YYYYMMDD → YYYY-MM-DD (그 외는 원본)."""
+    v = re.sub(r"\D", "", str(v or ""))
+    return f"{v[:4]}-{v[4:6]}-{v[6:8]}" if len(v) >= 8 else v
+
+def _assist_key(kind: str) -> str:
+    # 기업조회는 DART(회사명 검색) 또는 국세청 사업자상태(공공데이터포털) 중
+    # 하나만 있어도 조회 가능하다(둘 다 있으면 상세가 가장 풍부).
+    if kind == "company":
+        return (_dart_key()
+                or (os.environ.get("DATA_GO_KR_KEY", "") or "").strip())
+    return (os.environ.get(_ASSIST_ENV.get(kind, ""), "") or "").strip()
+
+def _assist_need_key(kind: str):
+    return jsonify({"success": False, "need_key": True,
+                    "provider": _ASSIST_PROVIDER.get(kind, ""),
+                    "apply_url": _ASSIST_APPLY.get(kind, ""),
+                    "message": "서비스키가 설정되지 않았습니다. 관리자에게 문의하거나 "
+                               "환경변수를 설정하세요."})
+
+@app.route("/api/assist/status")
+def assist_status():
+    """각 조회 기능의 서비스키 설정 여부(배지 표시용)."""
+    return jsonify({k: bool(_assist_key(k))
+                    for k in ("company", "patent", "support", "procurement")})
+
+def _nts_status(bno):
+    """국세청 사업자등록 상태(계속/휴업/폐업) — DATA_GO_KR_KEY 있을 때만."""
+    gk = (os.environ.get("DATA_GO_KR_KEY", "") or "").strip()
+    bno = re.sub(r"\D", "", bno or "")
+    if not gk or len(bno) != 10:
+        return {}
+    try:
+        r = _SESSION.post("https://api.odcloud.kr/api/nts-businessman/v1/status",
+                          params={"serviceKey": gk}, json={"b_no": [bno]}, timeout=12)
+        rows = (r.json() or {}).get("data") or []
+        if rows:
+            row = rows[0]
+            return {"납세자 상태": row.get("b_stt") or "", "과세유형": row.get("tax_type") or "",
+                    "폐업일": row.get("end_dt") or ""}
+    except Exception:
+        pass
+    return {}
+
+# ── DART(금융감독원 전자공시) 보조 조회 ─────────────────────────────────────
+# 상장·외부감사 대상 법인의 재무정보·기업개황을 회사명으로 매칭해 함께 보여준다.
+# DART_API_KEY(opendart 인증키) 미설정 시 이 블록은 조용히 건너뛴다.
+_DART_CORP = {"map": None, "at": 0.0}     # {정규화상호: [(corp_code, corp_name, stock), ...]}
+_DART_LOCK = threading.Lock()
+_DART_KEYACCTS = ["매출액", "영업이익", "당기순이익", "자산총계", "부채총계", "자본총계"]
+
+def _dart_key():
+    return (os.environ.get("DART_API_KEY", "") or "").strip()
+
+def _dart_norm(s):
+    """상호 정규화 — 법인격 표기·공백 제거 후 소문자."""
+    s = unicodedata.normalize("NFKC", str(s or ""))
+    s = re.sub(r"주식회사|유한회사|유한책임회사|합자회사|합명회사|재단법인|사단법인|\(주\)|㈜|\(유\)|㈜", "", s)
+    return re.sub(r"\s+", "", s).lower()
+
+def _dart_corp_map(key):
+    """corpCode.xml(zip) 1회 로드 → 정규화상호별 후보 목록. 24h 캐시."""
+    now = time.time()
+    if _DART_CORP["map"] is not None and (now - _DART_CORP["at"]) < 86400:
+        return _DART_CORP["map"]
+    with _DART_LOCK:
+        if _DART_CORP["map"] is not None and (time.time() - _DART_CORP["at"]) < 86400:
+            return _DART_CORP["map"]
+        m = {}
+        try:
+            r = _SESSION.get("https://opendart.fss.or.kr/api/corpCode.xml",
+                             params={"crtfcKey": key}, timeout=30)
+            zf = zipfile.ZipFile(_io.BytesIO(r.content))
+            root = _xml_fromstring(zf.read(zf.namelist()[0]))
+            for el in root.iter("list"):
+                cc = (el.findtext("corp_code") or "").strip()
+                nm = (el.findtext("corp_name") or "").strip()
+                sk = (el.findtext("stock_code") or "").strip()
+                if not cc or not nm:
+                    continue
+                m.setdefault(_dart_norm(nm), []).append((cc, nm, sk))
+        except Exception:
+            m = {}
+        # 로드 실패 시에도 캐시(빈 맵)로 잠깐 두어 매 요청 재시도 폭주를 막는다.
+        _DART_CORP["map"], _DART_CORP["at"] = m, time.time()
+        return m
+
+def _dart_find_corp(key, name):
+    """회사명 → (corp_code, corp_name, stock_code). 상장기업 우선, 정확 매칭만."""
+    cand = _dart_corp_map(key).get(_dart_norm(name)) or []
+    if not cand:
+        return None
+    listed = [c for c in cand if c[2]]        # stock_code 있는(상장) 후보 우선
+    return (listed or cand)[0]
+
+def _dart_search(key, q, limit=30):
+    """회사명(부분일치) → DART 후보 [(corp_code, corp_name, stock_code)].
+    정확 일치 → 부분 일치 순, 상장(종목코드 보유) 우선·상호 짧은 순."""
+    nq = _dart_norm(q)
+    if not nq:
+        return []
+    m = _dart_corp_map(key)
+    hits, seen = [], set()
+    for c in (m.get(nq) or []):               # 정확 일치 우선
+        if c[0] not in seen:
+            hits.append(c); seen.add(c[0])
+    for norm, lst in m.items():               # 부분 일치 보강
+        if norm == nq or nq not in norm:
+            continue
+        for c in lst:
+            if c[0] not in seen:
+                hits.append(c); seen.add(c[0])
+        if len(hits) >= limit * 4:
+            break
+    hits.sort(key=lambda c: (0 if c[2] else 1, len(c[1] or "")))
+    return hits[:limit]
+
+def _num(v):
+    try:
+        return int(re.sub(r"[^\d-]", "", str(v)))
+    except Exception:
+        return None
+
+def _dart_financials(key, corp_code):
+    """단일회사 주요계정(최근 사업연도) — 연결 우선, 없으면 재무제표."""
+    now = datetime.now()
+    for yr in (now.year - 1, now.year - 2):
+        try:
+            r = _SESSION.get("https://opendart.fss.or.kr/api/fnlttSinglAcnt.json",
+                             params={"crtfcKey": key, "corp_code": corp_code,
+                                     "bsns_year": str(yr), "reprt_code": "11011"},
+                             timeout=15)
+            d = r.json() or {}
+        except Exception:
+            continue
+        if d.get("status") != "000":
+            continue
+        rows = d.get("list") or []
+        fs = "CFS" if any(x.get("fs_div") == "CFS" for x in rows) else "OFS"
+        picked = {}
+        for x in rows:
+            if x.get("fs_div") != fs:
+                continue
+            nm = (x.get("account_nm") or "").strip()
+            if nm in _DART_KEYACCTS and nm not in picked:
+                picked[nm] = {"name": nm,
+                              "cur": _num(x.get("thstrm_amount")),
+                              "prev": _num(x.get("frmtrm_amount"))}
+        items = [picked[n] for n in _DART_KEYACCTS if n in picked]
+        if items:
+            return {"year": str(yr), "report": "사업보고서",
+                    "fs": "연결" if fs == "CFS" else "개별/별도", "items": items}
+    return None
+
+_DART_CLS = {"Y": "유가증권시장 상장", "K": "코스닥 상장", "N": "코넥스 상장", "E": "기타(외부감사 등)"}
+_DART_COMPANY_FIELDS = {      # company.json 필드 → 그리드 라벨
+    "corp_name": "상호", "corp_name_eng": "영문상호", "ceo_nm": "대표자",
+    "corp_cls": "법인구분", "jurir_no": "법인등록번호",
+    "adres": "주소", "hm_url": "홈페이지", "phn_no": "전화번호", "fax_no": "팩스",
+    "induty_code": "업종코드", "est_dt": "설립일", "acc_mt": "결산월",
+    "stock_name": "종목명", "stock_code": "종목코드",
+}
+# 상세 그리드 표시 순서(라벨 기준). 없는 라벨은 건너뛴다.
+_COMP_GRID_ORDER = ["상호", "영문상호", "대표자", "사업자등록번호", "법인등록번호",
+                    "법인구분", "상장여부", "종목명", "종목코드", "업종코드",
+                    "설립일", "결산월", "납세자 상태", "과세유형", "폐업일",
+                    "주소", "전화번호", "팩스", "홈페이지", "공시(DART)"]
+
+def _dart_company(key, corp_code):
+    """corp_code → DART 기업개황(company.json) 라벨 dict. 실패 시 {}.
+    사업자등록번호는 '_bno' 키로 함께 반환(국세청 상태 연계용)."""
+    try:
+        r = _SESSION.get("https://opendart.fss.or.kr/api/company.json",
+                         params={"crtfcKey": key, "corp_code": corp_code}, timeout=15)
+        d = r.json() or {}
+    except Exception:
+        return {}
+    if d.get("status") != "000":
+        return {}
+    out = {}
+    for k, lab in _DART_COMPANY_FIELDS.items():
+        v = (d.get(k) or "").strip()
+        if not v:
+            continue
+        if k == "corp_cls":
+            v = _DART_CLS.get(v, v)
+        elif k == "acc_mt":
+            v = f"{v}월"
+        elif k == "est_dt":
+            v = _fmtymd(v)
+        out[lab] = v
+    out["상장여부"] = "상장" if (d.get("stock_code") or "").strip() else "비상장"
+    out["공시(DART)"] = f"https://dart.fss.or.kr/dsae001/main.do?corp_code={corp_code}"
+    bno = re.sub(r"\D", "", d.get("bizr_no", "") or "")
+    if bno:
+        out["_bno"] = bno
+    return out
+
+@app.route("/api/assist/company")
+def assist_company():
+    """기업 조회 — DART 회사명 검색 / 국세청 사업자번호 상태(공공데이터포털).
+
+    · 사업자등록번호(10자리) → 국세청 사업자상태(계속/휴업/폐업) 단건.
+    · 그 외(회사명) → DART 등재 법인 후보 목록(상세에서 개황·재무 조회).
+    """
+    if not _assist_key("company"):
+        return _assist_need_key("company")
+    query = request.args.get("query", "").strip()
+    if not query:
+        return jsonify({"success": False,
+                        "error": "회사명 또는 사업자등록번호를 입력하세요."})
+    digits = re.sub(r"\D", "", query)
+    # 사업자등록번호(10자리, 숫자·구분기호만) → 국세청 상태 단건
+    if len(digits) == 10 and re.fullmatch(r"[\d\s-]+", query):
+        if not (os.environ.get("DATA_GO_KR_KEY", "") or "").strip():
+            return jsonify({"success": False, "mode": "bno",
+                            "error": "사업자등록번호 조회에는 공공데이터포털 서비스키(DATA_GO_KR_KEY)가 필요합니다."})
+        st = _nts_status(digits)
+        if not st:
+            return jsonify({"success": True, "count": 0, "items": [], "mode": "bno",
+                            "note": "국세청에 등록된 상태 정보가 없습니다."})
+        biz = " · ".join(v for v in (st.get("납세자 상태"), st.get("과세유형")) if v)
+        item = {"name": _fmtbno_disp(digits), "ceo": "", "bno": digits,
+                "addr": "", "biz": biz, "corp": "", "closed": bool(st.get("폐업일"))}
+        return jsonify({"success": True, "count": 1, "total": "1",
+                        "items": [item], "mode": "bno"})
+    # 회사명 → DART 후보
+    dk = _dart_key()
+    if not dk:
+        return jsonify({"success": False, "mode": "name",
+                        "error": "회사명 검색에는 DART 인증키가 필요합니다. "
+                                 "사업자등록번호(10자리)로 조회하거나 관리자에게 DART_API_KEY 설정을 요청하세요."})
+    try:
+        hits = _dart_search(dk, query)
+        items = [{"name": nm, "ceo": "", "bno": "", "addr": "",
+                  "biz": ("상장" if sk else ""), "corp": cc, "stock": sk}
+                 for cc, nm, sk in hits]
+        return jsonify({"success": True, "count": len(items),
+                        "total": str(len(items)), "items": items, "mode": "name"})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"조회 실패: {e}"})
+
+@app.route("/api/assist/company/detail")
+def assist_company_detail():
+    """기업 상세 — DART 기업개황·재무 + 국세청 사업자상태(공공데이터포털).
+
+    corp(=DART corp_code) 우선, 없으면 query(회사명)로 DART 매칭, bno(사업자번호)로
+    국세청 상태를 조회한다. 셋 다 없으면 오류.
+    """
+    if not _assist_key("company"):
+        return _assist_need_key("company")
+    corp = re.sub(r"[^0-9]", "", request.args.get("corp", ""))
+    bno = re.sub(r"\D", "", request.args.get("bno", ""))
+    query = request.args.get("query", "").strip()
+    if not (corp or bno or query):
+        return jsonify({"success": False, "error": "회사명·사업자번호 또는 기업코드가 필요합니다."})
+    dk = _dart_key()
+    try:
+        # corp_code 미지정 시 회사명으로 DART 매칭 시도
+        if not corp and dk and query:
+            hit = _dart_find_corp(dk, query)
+            if hit:
+                corp = hit[0]
+        name, labeled, finance = "", {}, None
+        if corp and dk:
+            ov = _dart_company(dk, corp)
+            if ov:
+                name = ov.get("상호") or query
+                if not bno and ov.get("_bno"):
+                    bno = ov["_bno"]
+                labeled.update({k: v for k, v in ov.items() if not k.startswith("_")})
+            finance = _dart_financials(dk, corp)
+        if bno:
+            labeled.update(_nts_status(bno))       # 국세청 사업자상태
+            labeled.setdefault("사업자등록번호", _fmtbno_disp(bno))
+        if not name:
+            name = query or (_fmtbno_disp(bno) if bno else "(상호 미상)")
+        if not labeled and not finance:
+            return jsonify({"success": False,
+                            "error": "기업 정보를 찾지 못했습니다. "
+                                     "DART 등재 회사명 또는 사업자등록번호를 확인하세요."})
+        # 필드 정렬(알려진 라벨 우선, 나머지는 원순서)
+        fields, seen = [], set()
+        for lab in _COMP_GRID_ORDER:
+            if lab in labeled and lab not in seen:
+                fields.append([lab, labeled[lab]]); seen.add(lab)
+        for lab, v in labeled.items():
+            if lab not in seen:
+                fields.append([lab, v]); seen.add(lab)
+        # 상단 요약 지표(실데이터만) — 매출액(전년비)·영업이익·사업자상태
+        stats = []
+        if finance:
+            sales = next((it for it in finance["items"] if it["name"] == "매출액"), None)
+            if sales and sales.get("cur") is not None:
+                sub = ""
+                if sales.get("prev"):
+                    rr = (sales["cur"] - sales["prev"]) / abs(sales["prev"]) * 100
+                    sub = f"전년비 {'+' if rr >= 0 else ''}{rr:.1f}%"
+                stats.append({"label": "최근 매출액", "value": _won_short(sales["cur"]), "sub": sub})
+            op = next((it for it in finance["items"] if it["name"] == "영업이익"), None)
+            if op and op.get("cur") is not None:
+                stats.append({"label": "영업이익", "value": _won_short(op["cur"]),
+                              "sub": f"{finance.get('year','')} {finance.get('fs','')}".strip()})
+        nts = labeled.get("납세자 상태")
+        if nts:
+            stats.append({"label": "사업자상태", "value": nts, "sub": labeled.get("과세유형", "")})
+        skills = [labeled[k] for k in ("업종코드", "법인구분") if labeled.get(k)]
+        detail = {"name": name, "bno": bno, "fields": fields}
+        if finance:
+            detail["finance"] = finance
+        if stats:
+            detail["stats"] = stats
+        if skills:
+            detail["skills"] = skills
+        return jsonify({"success": True, "detail": detail})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"상세 조회 실패: {e}"})
+
+@app.route("/api/assist/patent")
+def assist_patent():
+    """특허 조회 — KIPRIS Plus 특허·실용신안 검색(출원인·기간·상태 필터, 목록형).
+
+    쿼리 파라미터: applicant(출원인), query(자유검색어), status(등록상태 코드),
+    date_from/date_to(출원일 YYYY 또는 YYYYMMDD), page.
+    상태 코드(lastvalue): R 등록·A 공개·J 거절·F 소멸·C 취하·I 무효·G 포기(빈값=전체).
+    """
+    key = _assist_key("patent")
+    if not key:
+        return _assist_need_key("patent")
+    applicant = request.args.get("applicant", "").strip()
+    query = request.args.get("query", "").strip()
+    status = request.args.get("status", "").strip()
+    df = re.sub(r"\D", "", request.args.get("date_from", ""))
+    dt = re.sub(r"\D", "", request.args.get("date_to", ""))
+    page = re.sub(r"\D", "", request.args.get("page", "1")) or "1"
+    rows = re.sub(r"\D", "", request.args.get("rows", "30")) or "30"
+    rows = str(max(1, min(500, int(rows))))     # KIPRIS numOfRows 상한 보호
+    if not applicant and not query:
+        return jsonify({"success": False, "error": "출원인 또는 검색어를 입력하세요."})
+    base = "http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice"
+    try:
+        params = {"ServiceKey": key, "numOfRows": rows, "pageNo": page,
+                  "patent": "true", "utility": "true", "sortSpec": "AD", "descSort": "true"}
+        if applicant:
+            params["applicant"] = applicant
+        if query:
+            params["word"] = query
+        if status:
+            params["lastvalue"] = status
+        # 출원일 범위(YYYY→YYYY0101/YYYY1231). KIPRIS 는 'YYYYMMDD~YYYYMMDD' 형식.
+        def _d(v, end=False):
+            if not v:
+                return ""
+            return v[:8] if len(v) >= 8 else v + ("1231" if end else "0101")
+        a, b = _d(df), _d(dt, True)
+        if a or b:
+            params["applicationDate"] = f"{a or '00000000'}~{b or '99991231'}"
+        r = _SESSION.get(f"{base}/getAdvancedSearch", params=params, timeout=20)
+        root = _xml_fromstring(r.content)
+        total = ""
+        te = root.find(".//totalCount")
+        if te is not None:
+            total = (te.text or "").strip()
+        items = []
+        for it in root.iter("item"):
+            def g(*tags):
+                for t in tags:
+                    el = it.find(t)
+                    if el is not None and (el.text or "").strip():
+                        return el.text.strip()
+                return ""
+            appno = g("applicationNumber", "ApplicationNumber")
+            items.append({
+                "title": g("inventionTitle", "InventionName", "articleName") or "(제목 없음)",
+                "applicant": g("applicantName", "Applicant"),
+                "appno": appno,
+                "appdate": g("applicationDate", "ApplicationDate"),
+                "regno": g("registerNumber", "RegistrationNumber"),
+                "status": g("registerStatus", "RegistrationStatus", "lastValue"),
+                "ipc": g("ipcNumber", "InternationalpatentclassificationNumber")})
+        return jsonify({"success": True, "count": len(items),
+                        "total": total or str(len(items)), "items": items})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"조회 실패: {e}"})
+
+@app.route("/api/assist/patent/detail")
+def assist_patent_detail():
+    """특허 상세 — KIPRIS Plus 서지상세정보(출원번호 기준)."""
+    key = _assist_key("patent")
+    if not key:
+        return _assist_need_key("patent")
+    appno = re.sub(r"\D", "", request.args.get("appno", ""))
+    if not appno:
+        return jsonify({"success": False, "error": "출원번호가 필요합니다."})
+    base = "http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice"
+    try:
+        r = _SESSION.get(f"{base}/getBibliographyDetailInfoSearch",
+                         params={"applicationNumber": appno, "ServiceKey": key}, timeout=20)
+        root = _xml_fromstring(r.content)
+
+        def first(*tags):
+            for t in tags:
+                el = root.find(f".//{t}")
+                if el is not None and (el.text or "").strip():
+                    return el.text.strip()
+            return ""
+
+        def joined(container_tag, name_tag):
+            vals = []
+            for el in root.iter(name_tag):
+                v = (el.text or "").strip()
+                if v and v not in vals:
+                    vals.append(v)
+            return " · ".join(vals)
+
+        detail = {
+            "title": first("inventionTitle", "InventionName", "articleName"),
+            "appno": first("applicationNumber") or appno,
+            "appdate": first("applicationDate"),
+            "openno": first("openNumber", "publicationNumber"),
+            "opendate": first("openDate", "publicationDate"),
+            "regno": first("registerNumber", "registrationNumber"),
+            "regdate": first("registerDate", "registrationDate"),
+            "status": first("registerStatus", "lastValue", "registrationLastStatus"),
+            "applicant": joined("applicantInfoArray", "name") or first("applicantName"),
+            "inventor": joined("inventorInfoArray", "name") or first("inventorName"),
+            "agent": first("agentName"),
+            "ipc": joined("ipcInfoArray", "ipcNumber") or first("ipcNumber"),
+            "abstract": first("astrtCont", "abstractContent", "abstract"),
+        }
+        detail["url"] = ("https://www.kipris.or.kr/khome/search/searchResult.do"
+                         if not appno else
+                         f"https://www.kipris.or.kr/khome/main/base/BasePatentSearch.do")
+        if not any(v for k, v in detail.items() if k not in ("url",)):
+            return jsonify({"success": False, "error": "상세 정보를 찾지 못했습니다."})
+        return jsonify({"success": True, "detail": detail})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"상세 조회 실패: {e}"})
+
+def _pick_dates(s):
+    """문자열에서 날짜(YYYYMMDD·YYYY-MM-DD·YYYY.MM.DD 등)를 모두 추출."""
+    return [m.group(1) + m.group(2) + m.group(3)
+            for m in re.finditer(r"(20\d{2})\D?(\d{2})\D?(\d{2})", str(s or ""))]
+
+def _won_short(v):
+    """숫자(원) → '8억 4,000만원' 식 축약. 숫자 아니면 ''."""
+    digits = re.sub(r"[^\d]", "", str(v or ""))
+    if not digits:
+        return ""
+    n = int(digits)
+    jo, n2 = divmod(n, 10 ** 12)
+    eok, n3 = divmod(n2, 10 ** 8)
+    man = n3 // 10 ** 4
+    parts = []
+    if jo:
+        parts.append(f"{jo}조")
+    if eok:
+        parts.append(f"{eok:,}억")
+    if man and not jo:
+        parts.append(f"{man:,}만")
+    return (" ".join(parts) + "원") if parts else f"{n:,}원"
+
+@app.route("/api/assist/support")
+def assist_support():
+    """지원사업 조회 — 기업마당 bizinfo 지원사업 공고(마감일 파싱 포함)."""
+    key = _assist_key("support")
+    if not key:
+        return _assist_need_key("support")
+    query = request.args.get("query", "").strip()
+    try:
+        r = _SESSION.get("https://www.bizinfo.go.kr/uss/rss/bizinfoApi.do",
+                         params={"crtfcKey": key, "dataType": "json",
+                                 "searchCnt": "60", "hashtags": query}, timeout=15)
+        d = r.json() or {}
+        arr = d.get("jsonArray") or (d.get("response", {}) or {}).get("body", {}).get("items") or []
+        items = []
+        for row in (arr if isinstance(arr, list) else [arr])[:60]:
+            url = row.get("pblancUrl") or ""
+            if url and url.startswith("/"):
+                url = "https://www.bizinfo.go.kr" + url
+            apply_url = (row.get("rceptEngnHmpgUrl") or row.get("pcUrl")
+                         or row.get("rqutUrl") or "")
+            if apply_url and apply_url.startswith("/"):
+                apply_url = "https://www.bizinfo.go.kr" + apply_url
+            period = row.get("reqstBeginEndDe") or ""
+            ds = _pick_dates(period)
+            field = row.get("pldirSportRealmLclasCodeNm") or ""
+            target = (row.get("trgetNm") or row.get("bizTrgetNm") or "").strip()
+            tags = (row.get("hashtags") or "").strip()
+            taglist = [t for t in re.split(r"[,\s]+", tags) if t][:5]
+            items.append({
+                "title": row.get("pblancNm") or row.get("polcyNm") or "(공고명 없음)",
+                "subtitle": row.get("jrsdInsttNm") or row.get("excInsttNm") or "",
+                "begin": ds[0] if ds else "", "end": ds[-1] if ds else "",
+                "endText": period, "field": field, "target": target, "tags": taglist,
+                "applyUrl": apply_url,
+                "meta": [["신청기간", period or "-"], ["분야", field or "-"],
+                         ["지원대상", target or "-"]],
+                "url": url})
+        return jsonify({"success": True, "count": len(items), "items": items})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"조회 실패: {e}"})
+
+@app.route("/api/assist/procurement")
+def assist_procurement():
+    """조달공고 조회 — 조달청 나라장터 입찰공고정보(최근 30일)."""
+    key = _assist_key("procurement")
+    if not key:
+        return _assist_need_key("procurement")
+    query = request.args.get("query", "").strip()
+    # 공고 유형 → 나라장터 오퍼레이션(용역·물품·공사·외자)
+    _OPS = {"servc": "getBidPblancListInfoServc", "thng": "getBidPblancListInfoThng",
+            "cnstwk": "getBidPblancListInfoCnstwk", "frgcpt": "getBidPblancListInfoFrgcpt"}
+    _TYPE_LABEL = {"servc": "용역", "thng": "물품", "cnstwk": "공사", "frgcpt": "외자"}
+    btype = request.args.get("type", "servc").strip().lower()
+    if btype not in _OPS:
+        btype = "servc"
+    base = os.environ.get("PROCUREMENT_API_URL", "").strip()
+    if not base:
+        base = f"http://apis.data.go.kr/1230000/ad/BidPublicInfoService/{_OPS[btype]}"
+    end = time.strftime("%Y%m%d")
+    start = time.strftime("%Y%m%d", time.localtime(time.time() - 30 * 86400))
+    try:
+        params = {"serviceKey": key, "pageNo": "1", "numOfRows": "50", "type": "json",
+                  "inqryDiv": "1", "inqryBgnDt": start + "0000", "inqryEndDt": end + "2359"}
+        if query:
+            params["bidNtceNm"] = query
+        r = _SESSION.get(base, params=params, timeout=15)
+        body = (r.json() or {}).get("response", {}).get("body", {}) or {}
+        arr = body.get("items") or []
+        if isinstance(arr, dict):
+            arr = arr.get("item") or []
+        items = []
+        for row in (arr if isinstance(arr, list) else [arr])[:50]:
+            clse = row.get("bidClseDt") or ""
+            ntce = row.get("bidNtceDt") or ""
+            openg = row.get("opengDt") or ""
+            est = row.get("presmptPrce") or row.get("presmptPrceMoney") or ""
+            budget = row.get("asignBdgtAmt") or row.get("asignBdgtAmtMoney") or ""
+            method = (row.get("cntrctCnclsMthdNm") or row.get("bidMethdNm") or "").strip()
+            items.append({
+                "title": row.get("bidNtceNm") or "(공고명 없음)",
+                "subtitle": row.get("ntceInsttNm") or row.get("dminsttNm") or "",
+                "begin": (_pick_dates(ntce) or [""])[0], "end": (_pick_dates(clse) or [""])[0],
+                "endText": clse, "bidNo": row.get("bidNtceNo") or "",
+                "type": _TYPE_LABEL.get(btype, ""), "method": method,
+                "est": _won_short(est), "budget": _won_short(budget), "openDt": openg,
+                "meta": [["공고번호", row.get("bidNtceNo") or "-"],
+                         ["개찰일시", openg or "-"],
+                         ["입찰마감", clse or "-"]],
+                "url": row.get("bidNtceDtlUrl") or row.get("bidNtceUrl") or ""})
+        return jsonify({"success": True, "count": len(items), "items": items})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"조회 실패: {e}"})
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 지출결의서 본문 → 한글(.hwpx) 표 생성
+# 실제 내규 hwpx를 서식 베이스로 재사용(header/스타일 유지)하고 section0만 교체.
+# ══════════════════════════════════════════════════════════════════════════
+def _hwpx_base_bytes():
+    """HWPX 서식 베이스 바이트. 임베드 모듈 우선(서버리스 대응), 실패 시 내규 원본."""
+    try:
+        import base64 as _b64, hwpx_base
+        return _b64.b64decode(hwpx_base.BASE_HWPX_B64)
+    except Exception:
+        pass
+    import glob as _glob
+    here = os.path.dirname(os.path.abspath(__file__))
+    for cand in ([os.path.join(here, "regulations", "보직관리기준", "original.hwpx")]
+                 + sorted(_glob.glob(os.path.join(here, "regulations", "*", "original.hwpx")))):
+        if os.path.exists(cand):
+            with open(cand, "rb") as f:
+                return f.read()
+    return None
+
+def _hwpx_full_border(header_xml):
+    """4면 모두 선이 있는 borderFill id를 찾는다(표 테두리용). 없으면 '3'."""
+    for blk in re.findall(r'<hh:borderFill\b.*?</hh:borderFill>', header_xml, re.S):
+        idm = re.match(r'<hh:borderFill id="([0-9]+)"', blk)
+        if not idm:
+            continue
+        ok = 0
+        for side in ("leftBorder", "rightBorder", "topBorder", "bottomBorder"):
+            m = re.search(r'<hh:' + side + r'\b[^>]*type="([^"]+)"', blk)
+            if m and m.group(1) != "NONE":
+                ok += 1
+        if ok == 4:
+            return idm.group(1)
+    return "3"
+
+def _xesc(s):
+    return (str(s or "").replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;").replace('"', "&quot;"))
+
+def _hwpx_cell(text, col, row, cspan, width, height, bf, align):
+    para_h = "PARA_ALIGN_CENTER" if align == "center" else "PARA_ALIGN_LEFT"
+    return (
+        f'<hp:tc name="" header="0" hasMargin="1" protect="0" editable="0" dirty="0" borderFillIDRef="{bf}">'
+        f'<hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="CENTER" '
+        f'linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0">'
+        f'<hp:p id="0" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">'
+        f'<hp:run charPrIDRef="0"><hp:t>{_xesc(text)}</hp:t></hp:run>'
+        f'<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1000" textheight="1000" '
+        f'baseline="850" spacing="600" horzpos="0" horzsize="{width}" flags="393216"/></hp:linesegarray>'
+        f'</hp:p></hp:subList>'
+        f'<hp:cellAddr colAddr="{col}" rowAddr="{row}"/>'
+        f'<hp:cellSpan colSpan="{cspan}" rowSpan="1"/>'
+        f'<hp:cellSz width="{width}" height="{height}"/>'
+        f'<hp:cellMargin left="141" right="141" top="141" bottom="141"/></hp:tc>')
+
+def _hwpx_table(payload, bf):
+    col_w = payload.get("colWidths") or []
+    col_cnt = int(payload.get("colCnt") or (len(col_w) or 1))
+    rows = payload.get("rows") or []
+    rh = 1848
+    total_w = sum(col_w) if col_w else 47628
+    trs = []
+    for r, cells in enumerate(rows):
+        col = 0
+        tcs = []
+        for c in cells:
+            cs = int(c.get("cs") or 1)
+            w = sum(col_w[col:col + cs]) if col_w else int(total_w / max(1, col_cnt)) * cs
+            align = c.get("align") or ("center" if c.get("hd") else "left")
+            tcs.append(_hwpx_cell(c.get("t", ""), col, r, cs, w, rh, bf, align))
+            col += cs
+        trs.append("<hp:tr>" + "".join(tcs) + "</hp:tr>")
+    tbl = (
+        f'<hp:tbl id="0" zOrder="0" numberingType="TABLE" textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" '
+        f'lock="0" dropcapstyle="None" pageBreak="CELL" repeatHeader="0" rowCnt="{len(rows)}" colCnt="{col_cnt}" '
+        f'cellSpacing="0" borderFillIDRef="{bf}" noAdjust="0">'
+        f'<hp:sz width="{total_w}" widthRelTo="ABSOLUTE" height="{rh*len(rows)}" heightRelTo="ABSOLUTE" protect="0"/>'
+        f'<hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" '
+        f'vertRelTo="PARA" horzRelTo="PARA" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/>'
+        f'<hp:outMargin left="283" right="283" top="283" bottom="283"/>'
+        f'<hp:inMargin left="510" right="510" top="141" bottom="141"/>'
+        + "".join(trs) + '</hp:tbl>')
+    return (
+        '<hp:p id="0" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">'
+        f'<hp:run charPrIDRef="0">{tbl}</hp:run>'
+        '<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1000" textheight="1000" '
+        'baseline="850" spacing="600" horzpos="0" horzsize="47628" flags="393216"/></hp:linesegarray></hp:p>')
+
+def _hwpx_empty_para():
+    return ('<hp:p id="0" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">'
+            '<hp:run charPrIDRef="0"></hp:run>'
+            '<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1000" textheight="1000" '
+            'baseline="850" spacing="600" horzpos="0" horzsize="47628" flags="393216"/></hp:linesegarray></hp:p>')
+
+def _hwpx_build_section(base_sec, payload, bf):
+    m = re.search(r'<hs:sec\b[^>]*>', base_sec)
+    if not m:
+        raise ValueError("section root not found")
+    prefix = base_sec[:m.end()]                 # xml 선언 + <hs:sec ...>
+    body = base_sec[m.end():]
+    pi = body.find('<hp:p')
+    pj = body.find('</hp:p>', pi) + len('</hp:p>')
+    first_para = body[pi:pj]                     # secPr 문단(페이지 설정)
+    first_para = re.sub(r'<hp:t>.*?</hp:t>', '<hp:t></hp:t>', first_para, flags=re.S)
+    title = payload.get("title")
+    title_para = ""
+    if title:
+        title_para = (
+            '<hp:p id="0" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">'
+            f'<hp:run charPrIDRef="0"><hp:t>{_xesc(title)}</hp:t></hp:run>'
+            '<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1200" textheight="1200" '
+            'baseline="1020" spacing="600" horzpos="0" horzsize="47628" flags="393216"/></hp:linesegarray></hp:p>')
+    return (prefix + first_para + title_para + _hwpx_table(payload, bf)
+            + _hwpx_empty_para() + '</hs:sec>')
+
+@app.route("/api/expense/hwpx", methods=["POST"])
+def expense_hwpx():
+    """지출결의서 본문 표를 한글(.hwpx) 파일로 생성. 서식 베이스는 내규 hwpx 재사용."""
+    data = request.get_json(silent=True) or {}
+    if not (data.get("rows")):
+        return jsonify({"success": False, "error": "표 데이터가 없습니다."}), 400
+    base = _hwpx_base_bytes()
+    if not base:
+        return jsonify({"success": False, "error": "HWPX 기본 서식을 찾을 수 없습니다."}), 500
+    try:
+        zin = zipfile.ZipFile(_io.BytesIO(base), "r")
+        header = zin.read("Contents/header.xml").decode("utf-8", "ignore")
+        base_sec = zin.read("Contents/section0.xml").decode("utf-8", "ignore")
+        bf = _hwpx_full_border(header)
+        new_sec = _hwpx_build_section(base_sec, data, bf)
+        out = _io.BytesIO()
+        zout = zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED)
+        zi = zipfile.ZipInfo("mimetype")
+        zout.writestr(zi, "application/hwp+zip", compress_type=zipfile.ZIP_STORED)
+        for n in zin.namelist():
+            if n in ("mimetype", "Preview/PrvImage.png"):
+                continue
+            if n == "Contents/section0.xml":
+                zout.writestr(n, new_sec.encode("utf-8"))
+            else:
+                zout.writestr(n, zin.read(n))
+        zout.close(); zin.close()
+        fname = (data.get("filename") or "지출결의서") + ".hwpx"
+        from urllib.parse import quote as _q
+        return Response(out.getvalue(), mimetype="application/hwp+zip",
+                        headers={"Content-Disposition": "attachment; filename*=UTF-8''" + _q(fname)})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"HWPX 생성 실패: {e}"}), 500
+
+
 # ── 실행 ─────────────────────────────────────────────────────────────────────
 PORT = int(os.environ.get("PORT", 5100))
 
