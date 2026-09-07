@@ -1304,6 +1304,23 @@ body.dark .scenario-caution{background:#451a03;border-color:#b45309;color:#fde68
 .fav-group-empty{font-size:12px;color:var(--ht);padding:8px 4px 4px;}
 .fav-move{margin-left:auto;height:30px;max-width:150px;padding:0 8px;border:1px solid var(--bd);border-radius:7px;background:var(--card);color:var(--mu);font-size:12px;cursor:pointer;}
 .fav-move:focus{outline:none;border-color:var(--g);}
+/* 즐겨찾기 모달 */
+.fav-modal{width:min(600px,95vw);}
+.fav-modal-cnt{font-size:12px;font-weight:700;color:var(--g);}
+.fav-modal-foot{padding:10px 18px;border-top:1px solid var(--bd);font-size:11.5px;color:var(--ht);text-align:center;}
+.favm-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--card);cursor:pointer;transition:.12s;margin-bottom:8px;}
+.favm-item:hover{border-color:var(--g);background:var(--gl);}
+.favm-open{flex:1;min-width:0;display:flex;align-items:center;gap:9px;}
+.favm-main{min-width:0;flex:1;}
+.favm-name{font-size:13px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.favm-sub{font-size:11.5px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+.favm-go{font-size:15px;color:var(--ht);flex-shrink:0;}
+.favm-item:hover .favm-go{color:var(--g);}
+.favm-star{flex-shrink:0;width:30px;height:30px;border:none;background:transparent;font-size:15px;line-height:1;color:#f5b301;cursor:pointer;border-radius:7px;}
+.favm-star:hover{background:rgba(245,179,1,.14);}
+.favm-item .fav-move{max-width:130px;margin-left:0;}
+.favm-ltype{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;background:var(--gl);color:var(--gp);flex-shrink:0;}
+.favm-ltype.int{background:rgba(37,110,244,.15);color:#7fb3fb;}
 /* AI 설정 모달 */
 .ai-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;display:none;align-items:center;justify-content:center;}
 .ai-modal-bg.show{display:flex;}
@@ -1762,6 +1779,18 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
         <button class="coll-add-btn" onclick="createCollection()">만들기</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- 즐겨찾기 모달(별도 창) — 클릭 시 본문이 해당 카테고리로 이동해 항목을 표시 -->
+<div class="coll-modal-bg fav-modal-bg" id="favModalBg" role="dialog" aria-modal="true" aria-label="즐겨찾기" onclick="if(event.target===this)closeFavModal()">
+  <div class="coll-modal fav-modal">
+    <div class="coll-hd">
+      <span style="font-size:15px;font-weight:700;flex:1;">★ 즐겨찾기 <span id="favModalCount" class="fav-modal-cnt"></span></span>
+      <button class="fp-close" aria-label="닫기" onclick="closeFavModal()">✕</button>
+    </div>
+    <div class="coll-body" id="favModalBody"></div>
+    <div class="fav-modal-foot">클릭하면 해당 조회 화면으로 이동해 항목을 보여줍니다.</div>
   </div>
 </div>
 
@@ -3437,6 +3466,7 @@ function clearResults(){
   if(typeof wsBackToList==='function') wsBackToList();
   const fbar=document.getElementById('fbar'); if(fbar) fbar.style.display='none';
   const tb=document.getElementById('regToolbar'); if(tb){ tb.style.display='none'; tb.innerHTML=''; }
+  const rf=document.getElementById('resFilter'); if(rf){ rf.style.display='none'; rf.innerHTML=''; } _resFilter='';   // 이전 검색의 '분류' 필터 바 잔존 제거
   _currentResults=null;
   const pag=document.getElementById('pagination'); if(pag) pag.innerHTML='';
   const ir=document.getElementById('internalResults'); if(ir) ir.innerHTML='';
@@ -3466,6 +3496,7 @@ let _intDashItems=null;
 async function renderInternalDashboard(){
   const res=document.getElementById('results');
   if(!res) return;
+  const rf=document.getElementById('resFilter'); if(rf){ rf.style.display='none'; rf.innerHTML=''; } _resFilter='';   // 랜딩에는 결과 '분류' 필터 바 숨김
   res.innerHTML=`<div class="empty" style="padding:36px 20px;"><div class="spinner" style="margin:0 auto 10px;"></div><p>내규 목록 불러오는 중...</p></div>`;
   if(!_intDashItems){
     try{
@@ -6105,6 +6136,7 @@ async function checkStatus(){
 
 // ── 즐겨찾기 ──────────────────────────────────────────────────────────────────
 let favMode = false;
+let _favModalOpen = false;
 let currentPanelLaw = {name:'', url:''};
 
 // ── 즐겨찾기: 클라이언트 localStorage 저장(서버 메모리 대신) ──
@@ -6176,7 +6208,7 @@ function toggleFavItem(item){
   let added;
   if(i>=0){ arr.splice(i,1); added=false; }
   else { arr.unshift(Object.assign({savedAt:new Date().toISOString().slice(0,10)}, item)); if(arr.length>200) arr.length=200; added=true; }
-  _saveFavs(arr); loadFavs(); if(typeof favMode!=='undefined' && favMode) renderFavList();
+  _saveFavs(arr); loadFavs(); if(_favModalOpen) renderFavList();
   return added;
 }
 // 레거시 호환(내규·법령 카드/패널)
@@ -6187,9 +6219,10 @@ function favToggleEl(btn){ if(!btn) return; let item; try{ item=JSON.parse(btn.d
   const added=toggleFavItem(item); btn.classList.toggle('on',added); btn.setAttribute('aria-pressed',added);
   if(btn.dataset.style==='row') btn.textContent=added?'★':'☆';
   else btn.innerHTML=added?'★ 즐겨찾기됨':'☆ 즐겨찾기'; }
-// 즐겨찾기에서 조회 도구 다시 열기
+// 즐겨찾기에서 조회 도구 다시 열기(본문을 해당 카테고리로 이동시켜 항목 표시)
 function favOpenCompany(name){ Promise.resolve(openAssist('company')).then(()=>{ const q=document.getElementById('compQuery'); if(q){ q.value=name; runCompany(); } }); }
 function favOpenPatent(name){ Promise.resolve(openAssist('patent')).then(()=>{ const q=document.getElementById('patQuery'); if(q){ q.value=name; runPatent(); } }); }
+function favOpenOppty(kind, name){ Promise.resolve(openAssist(kind)).then(()=>{ const q=document.getElementById('oppQuery'); if(q){ q.value=name; runOppty(kind); } }); }
 
 // 서버 의존 제거 — localStorage 마이그레이션만 보장(하위 호환용 no-op)
 async function syncLocalFavsToServer(){ getFavs(); }
@@ -6201,7 +6234,7 @@ async function toggleFavFromPanel(){
   const btn = document.getElementById('fpFavBtn');
   btn.textContent = added ? '★' : '☆';
   btn.classList.toggle('active', added);
-  if(favMode) renderFavList();
+  if(_favModalOpen) renderFavList();
 }
 
 // 내규 전문 패널의 즐겨찾기 토글(type:'internal')
@@ -6212,7 +6245,7 @@ async function toggleFavInternalPanel(){
   const added = await toggleFav(name, '사내 규정', 'internal', '');
   const btn = document.getElementById('fpFavBtnInt');
   if(btn){ btn.textContent = added ? '★' : '☆'; btn.classList.toggle('active', added); }
-  if(favMode) renderFavList();
+  if(_favModalOpen) renderFavList();
 }
 async function updateFavBtnInternal(name){
   const isFav = favHas({type:'internal', name});
@@ -6220,19 +6253,34 @@ async function updateFavBtnInternal(name){
   if(btn){ btn.textContent = isFav ? '★' : '☆'; btn.classList.toggle('active', isFav); }
 }
 
-async function toggleFavTab(){
-  favMode = !favMode;
-  const btn = document.getElementById('favTabBtn');
-  if(btn) btn.classList.toggle('active', favMode);
-  const tb = document.getElementById('tbFav'); if(tb) tb.classList.toggle('active', favMode);
-  if(typeof closeAssist==='function' && _assistMode) closeAssist();   // 도우미 화면이면 닫고 즐겨찾기 표시
-  renderAgencyInfo();
-  if(favMode){
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-    renderFavList();
-  } else {
-    clearResults();
+// 즐겨찾기: 본문을 갈아엎지 않고 별도 창(모달)으로 연다.
+async function toggleFavTab(){ if(_favModalOpen) closeFavModal(); else openFavModal(); }
+function openFavModal(){
+  _favModalOpen=true;
+  const bg=document.getElementById('favModalBg'); if(bg) bg.classList.add('show');
+  document.getElementById('favTabBtn')?.classList.add('active');
+  document.getElementById('tbFav')?.classList.add('active');
+  renderFavList();
+}
+function closeFavModal(){
+  _favModalOpen=false;
+  const bg=document.getElementById('favModalBg'); if(bg) bg.classList.remove('show');
+  document.getElementById('favTabBtn')?.classList.remove('active');
+  document.getElementById('tbFav')?.classList.remove('active');
+}
+// 즐겨찾기 항목 클릭 → 본문을 해당 카테고리로 이동시켜 항목 표시 + 모달 닫기
+function _favOpenItem(i){
+  const f=getFavs()[i]; if(!f) return;
+  const bkt=_favBucket(f.type);
+  closeFavModal();
+  if(bkt==='internal'||bkt==='law'){
+    if(_assistMode && typeof closeAssist==='function') closeAssist();   // 도우미 패널이 떠 있으면 닫고 전문 표시
+    wsOpen(f.name, bkt, bkt==='law'?(f.url||''):undefined);
   }
+  else if(bkt==='company') favOpenCompany(f.name);
+  else if(bkt==='patent') favOpenPatent(f.name);
+  else if(bkt==='support'||bkt==='procurement') favOpenOppty(bkt, f.name);
+  else if(f.url){ window.open(safeUrl(f.url),'_blank','noopener'); }
 }
 
 const _FAV_TYPE_LABEL={internal:'내규', law:'법령', company:'기업', patent:'특허', support:'지원사업', procurement:'조달'};
@@ -6251,33 +6299,30 @@ function _favMoveItem(i, sel){ _favSetItemFolder(i, sel && sel.value || ''); ren
 function _favItemCard(f, i, folderOpts){
   const bkt=_favBucket(f.type);
   const label=bkt==='law'?(f.type||'법령'):(_FAV_TYPE_LABEL[bkt]||'기타');
-  const sub=f.subtitle||f.org||'';
-  let open='';
-  if(bkt==='internal') open=`<button class="abtn primary" onclick="wsOpen('${argAttr(f.name)}','internal')">📄 규정 전문 보기</button>`;
-  else if(bkt==='law') open=`<button class="abtn primary" onclick="wsOpen('${argAttr(f.name)}','law','${argAttr(f.url)}')">📄 조문 전문 보기</button>`+(f.url?`<a class="abtn" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ 법제처</a>`:'');
-  else if(bkt==='company') open=`<button class="abtn primary" onclick="favOpenCompany('${argAttr(f.name)}')">🏢 기업 다시 조회</button>`;
-  else if(bkt==='patent') open=`<button class="abtn primary" onclick="favOpenPatent('${argAttr(f.name)}')">📄 특허 다시 조회</button>`+(f.url?`<a class="abtn" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ KIPRIS</a>`:'');
-  else open=(f.url?`<a class="abtn primary" href="${escAttr(safeUrl(f.url))}" target="_blank">↗ 공고 바로가기</a>`:'')+((f.endText||f.end)?`<span class="fav-due">마감 ${escHtml(f.endText||f.end)}</span>`:'');
+  let sub=f.subtitle||f.org||'';
+  if((bkt==='support'||bkt==='procurement')&&(f.endText||f.end)) sub=(sub?sub+' · ':'')+'마감 '+(f.endText||f.end);
   const cur=String(f.folder||'');
   const sel=`<select class="fav-move" title="폴더 이동" onclick="event.stopPropagation()" onchange="_favMoveItem(${i},this)">`
     +`<option value=""${cur?'':' selected'}>📂 미분류</option>`
     +folderOpts.map(fn=>`<option value="${escAttr(fn)}"${fn===cur?' selected':''}>📁 ${escHtml(fn)}</option>`).join('')+`</select>`;
   return `
-    <div class="card" id="fc${i}">
-      <div class="card-head" onclick="toggleCard2('fc${i}')">
-        <span class="ltype${bkt==='internal'?' ltype-int':''}">${escHtml(label)}</span>
-        <span class="lname">${escHtml(f.name)}</span>
-        <span class="lorg">${escHtml(sub)}</span>
-        <button class="fav-btn active" onclick="event.stopPropagation();removeFavAt(${i});" title="즐겨찾기 제거" style="margin-left:auto;">★</button>
-        <span class="arrow" style="font-size:11px;color:var(--ht);margin-left:4px;">▼</span>
+    <div class="favm-item" onclick="_favOpenItem(${i})" title="클릭하면 본문에서 열기">
+      <div class="favm-open">
+        <span class="favm-ltype${bkt==='internal'?' int':''}">${escHtml(label)}</span>
+        <div class="favm-main">
+          <div class="favm-name">${escHtml(f.name)}</div>
+          ${sub?`<div class="favm-sub">${escHtml(sub)}</div>`:''}
+        </div>
       </div>
-      <div class="card-body"><div class="actions">${open}${sel}</div></div>
+      ${sel}
+      <button class="favm-star" onclick="event.stopPropagation();removeFavAt(${i});" title="즐겨찾기 제거">★</button>
+      <span class="favm-go">›</span>
     </div>`;
 }
 async function renderFavList(){
+  const body=document.getElementById('favModalBody'); if(!body) return;
   const favs = await loadFavs();
-  const fbar=document.getElementById('fbar'); if(fbar) fbar.style.display='none';
-  const pag=document.getElementById('pagination'); if(pag) pag.innerHTML='';
+  const cnt=document.getElementById('favModalCount'); if(cnt) cnt.textContent = favs.length?`(${favs.length})`:'';
   // 폴더 목록: 저장된 폴더 + 항목이 참조하는 폴더 병합
   const folders=getFavFolders().slice();
   favs.forEach(f=>{ const fn=String(f.folder||''); if(fn && folders.indexOf(fn)<0) folders.push(fn); });
@@ -6287,11 +6332,9 @@ async function renderFavList(){
     <button class="abtn primary" onclick="_favNewFolder()">＋ 폴더 추가</button>
   </div>`;
   if(!favs.length && !folders.length){
-    document.getElementById('results').innerHTML=toolbar+'<div class="fav-empty">⭐ 즐겨찾기가 없습니다.<br>내규·법령·기업·특허·지원사업 등 각 조회 결과의 ☆ 버튼으로 담고,<br>폴더를 만들어 항목별로 분류할 수 있어요.</div>';
-    setStatus('');
+    body.innerHTML=toolbar+'<div class="fav-empty">⭐ 즐겨찾기가 없습니다.<br>내규·법령·기업·특허·지원사업 등 각 조회 결과의 ☆ 버튼으로 담고,<br>폴더를 만들어 항목별로 분류할 수 있어요.</div>';
     return;
   }
-  setStatus(`즐겨찾기 ${favs.length}건${folders.length?` · 폴더 ${folders.length}개`:''}`);
   // index 유지한 채 그룹핑
   const idx=favs.map((f,i)=>i);
   const inFolder=fn=> idx.filter(i=>String(favs[i].folder||'')===fn);
@@ -6316,7 +6359,7 @@ async function renderFavList(){
         <span class="fav-group-cnt">${loose.length}</span>
       </div>`+loose.map(i=>_favItemCard(favs[i],i,folders)).join('')+`</div>`;
   }
-  document.getElementById('results').innerHTML=html;
+  body.innerHTML=html;
 }
 
 function toggleCard2(id){document.getElementById(id).classList.toggle('open');}
@@ -7139,6 +7182,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(document.getElementById('diffPanel')?.classList.contains('show')){ closeDiff(); return; }
       if(document.getElementById('netPanel')?.classList.contains('show')){ closeNetPanel(); return; }
       if(document.getElementById('cmpPanel')?.classList.contains('show')){ closeCmp(); return; }
+      if(document.getElementById('favModalBg')?.classList.contains('show')){ closeFavModal(); return; }
       if(document.getElementById('collModalBg')?.classList.contains('show')){ closeCollModal(); return; }
       if(document.getElementById('kwModalBg')?.classList.contains('show')){ closeKwEditor(); return; }
       if(document.getElementById('internalTree')?.classList.contains('open')){ closeInternalTree(); return; }
