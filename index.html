@@ -2881,11 +2881,10 @@ function runPatent(){
   fetch('/api/assist/patent?'+p.toString()).then(r=>r.json()).then(d=>{ _patLast=d; box.innerHTML=_renderPatentList(d); })
     .catch(e=>{ box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
 }
-// KIPRIS 원문보기 URL — 출원번호를 하이픈 형식(10-YYYY-NNNNNNN)으로 검색
+// KIPRIS 원문보기 URL — 출원번호로 해당 특허 서지상세 페이지를 바로 연다.
 function _kiprisUrl(appno){
   const n=String(appno||'').replace(/\D/g,'');
-  const q=n.length>=12?`${n.slice(0,2)}-${n.slice(2,6)}-${n.slice(6)}`:String(appno||'');
-  return q?`https://www.kipris.or.kr/khome/search/searchResult.do?query=${encodeURIComponent(q)}`:'';
+  return n?`https://kpat.kipris.or.kr/kpat/biblioa.do?method=biblioFrame&start=biblio&applno=${n}`:'';
 }
 function _renderPatentList(d){
   if(d&&d.need_key){
