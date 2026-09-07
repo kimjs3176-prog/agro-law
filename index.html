@@ -281,9 +281,9 @@ body.dark .cpat-b.reg{background:rgba(34,197,94,.16);color:#6ee7a0;}
 .exp-limit.ok{background:#e7f6ec;color:#137a3e;} .exp-limit.over{background:#fde6e6;color:#c0342b;}
 body.dark .exp-limit.ok{background:rgba(34,197,94,.16);color:#6ee7a0;} body.dark .exp-limit.over{background:rgba(239,68,68,.18);color:#fca5a5;}
 .exp-actions{display:flex;gap:8px;margin-top:4px;}
-.exp-print{flex:1;font-size:13.5px;font-weight:800;padding:11px;border:none;border-radius:10px;background:var(--g);color:#fff;cursor:pointer;}
+.exp-print{flex:1;font-size:13.5px;font-weight:800;padding:11px;border:none;border-radius:10px;background:var(--g);color:#fff;cursor:pointer;white-space:nowrap;}
 .exp-print:hover{background:var(--gd);}
-.exp-mini2{font-size:13px;font-weight:700;padding:11px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);cursor:pointer;}
+.exp-mini2{font-size:13px;font-weight:700;padding:11px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);cursor:pointer;white-space:nowrap;}
 .exp-mini2:hover{border-color:var(--g);color:var(--g);}
 .exp-clear{font-size:13px;font-weight:700;padding:11px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--mu);cursor:pointer;}
 .exp-preview{position:sticky;top:8px;}
@@ -3199,6 +3199,15 @@ function _expBuild(){
       `<table class="expd-tbl"><thead><tr><th>순번</th><th>일자</th><th>출장지</th><th>출장목적</th><th>금액</th></tr></thead>`+
       `<tbody>${trHtml}</tbody><tfoot><tr><td colspan="4">합계</td><td class="tr">${_won(total)}</td></tr></tfoot></table>`+
       `<div class="expd-sum">합계 일금 ${_hanAmount(total)}원정 (${_won(total)})</div>`;
+    // 붙여넣기용(HWP·ERP 리치에디터에 표 유지) — 인라인 스타일 표
+    const tci='border:1px solid #808080;padding:6px 10px;font-size:14px;vertical-align:middle;';
+    const tch='background:#efefef;font-weight:bold;text-align:center;white-space:nowrap;'+tci;
+    const rr=rows.map((r,i)=>`<tr><td style="${tci};text-align:center">${i+1}</td><td style="${tci};text-align:center">${_ev(_fmtKDate(r.date))}</td><td style="${tci}">${_ev(r.place)}</td><td style="${tci}">${_ev(r.content)}</td><td style="${tci};text-align:right">${_won(_digits(r.amt))}</td></tr>`).join('');
+    const trHead=head.length?`<p style="margin:0 0 6px;font-size:14px">${head.map(x=>_ev(x[0])+': '+_ev(x[1])).join(' / ')}</p>`:'';
+    _expRich=trHead+'<table style="border-collapse:collapse;width:100%">'+
+      `<tr><th style="${tch}">순번</th><th style="${tch}">일자</th><th style="${tch}">출장지</th><th style="${tch}">출장목적</th><th style="${tch}">금액</th></tr>`+
+      (rr||`<tr><td style="${tci};text-align:center" colspan="5">(내역 없음)</td></tr>`)+
+      `<tr><td style="${tch}" colspan="4">합계</td><td style="${tci};text-align:right;font-weight:bold">${_won(total)}</td></tr></table>`;
     const tlines=rows.map((r,i)=>`  ${i+1}) ${_fmtKDate(r.date)} | ${r.place||'-'} | ${r.content||'-'} | ${_won(_digits(r.amt))}`).join('\n');
     text='[여비(출장비) 지출]\n'+head.map(x=>`· ${x[0]}: ${x[1]}`).join('\n')+
       `${head.length?'\n':''}· 출장내역 (일자 | 출장지 | 목적 | 금액)\n${tlines||'  (내역 없음)'}\n· 합계: 일금 ${_hanAmount(total)}원정 (${_won(total)})`;
