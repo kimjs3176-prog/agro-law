@@ -4940,11 +4940,17 @@ def _fsc_financials(key, crno):
     if not isinstance(items, list) or not items:
         return None
     yr = lambda x: re.sub(r"\D", "", str(x.get("bizYear") or ""))[:4]
-    # 연결(있으면) 우선, 최신 사업연도 순
+    # 연결(있으면) 우선, 사업연도별 1개 행 → 최근 5개년(오름차순)
     conso = [x for x in items if "연결" in str(x.get("fnclDcdNm") or x.get("fnclGrpDcdNm") or "")]
-    rows = sorted(conso or items, key=yr, reverse=True)
-    cur = rows[0]
-    prev = next((x for x in rows[1:] if yr(x) and yr(x) != yr(cur)), None)
+    use = conso or items
+    by_year = {}
+    for x in use:
+        y = yr(x)
+        if y and y not in by_year:
+            by_year[y] = x
+    years = sorted(by_year.keys())[-5:]
+    if not years:
+        return None
 
     def pick(row, keys):
         if not row:
@@ -4954,16 +4960,25 @@ def _fsc_financials(key, crno):
             if n is not None:
                 return n
         return None
+    series = []
+    for label, keys in _FSC_FIN_METRICS:
+        vals = [pick(by_year[y], keys) for y in years]
+        if any(v is not None for v in vals):
+            series.append({"name": label, "values": vals})
+    if not series:
+        return None
+    # 상단 지표용 items(최신연도 cur, 직전연도 prev)
+    latest = years[-1]
+    prev_y = years[-2] if len(years) > 1 else None
     out = []
     for label, keys in _FSC_FIN_METRICS:
-        c = pick(cur, keys)
+        c = pick(by_year[latest], keys)
         if c is not None:
-            out.append({"name": label, "cur": c, "prev": pick(prev, keys)})
-    if not out:
-        return None
-    fs = str(cur.get("fnclDcdNm") or cur.get("fnclGrpDcdNm") or "").strip()
-    return {"year": yr(cur), "report": "요약재무제표", "fs": fs,
-            "source": "금융위 공공데이터", "items": out}
+            out.append({"name": label, "cur": c,
+                        "prev": (pick(by_year[prev_y], keys) if prev_y else None)})
+    fs = str(by_year[latest].get("fnclDcdNm") or by_year[latest].get("fnclGrpDcdNm") or "").strip()
+    return {"year": latest, "years": years, "series": series, "items": out,
+            "report": "요약재무제표", "fs": fs, "source": "금융위 공공데이터"}
 
 def _dart_company(key, corp_code):
     """corp_code → DART 기업개황(company.json) 라벨 dict. 실패 시 {}.

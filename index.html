@@ -192,6 +192,14 @@ body.dark .comp-badge.closed{background:rgba(239,68,68,.2);color:#fca5a5;}
 .fin-p{font-size:11px;color:var(--mu);display:flex;gap:6px;align-items:center;}
 .fin-yoy{font-weight:700;}
 .fin-yoy.up{color:#dc2626;} .fin-yoy.dn{color:#2563eb;}
+.fin-charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1px;background:var(--bd);}
+.fin-chart{background:var(--sf);padding:11px 13px 8px;display:flex;flex-direction:column;gap:5px;}
+.fin-ct{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+.fin-cn{font-size:12px;color:var(--mu);font-weight:600;}
+.fin-cv{font-size:14px;font-weight:700;white-space:nowrap;}
+.fin-svg{display:block;overflow:visible;}
+.fin-yls{display:flex;font-size:10px;color:var(--mu);margin-top:1px;}
+.fin-yl{text-align:center;}
 body.dark .fin-yoy.up{color:#f87171;} body.dark .fin-yoy.dn{color:#60a5fa;}
 /* 기업 상세 — 요약 지표 타일·업종·연계 특허 */
 .comp-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:12px 0 4px;}
@@ -2548,22 +2556,49 @@ function _fmtWon(n){
   const txt=parts.length?parts.join(' ')+'원':a.toLocaleString('ko-KR')+'원';
   return (neg?'-':'')+txt;
 }
-function _renderFinance(fin){
-  if(!fin||!(fin.items||[]).length) return '';
-  const rows=fin.items.map(it=>{
-    let d=''; if(it.cur!=null&&it.prev!=null&&it.prev!==0){
-      const r=(it.cur-it.prev)/Math.abs(it.prev)*100; const up=r>=0;
-      d=`<span class="fin-yoy ${up?'up':'dn'}">${up?'▲':'▼'} ${Math.abs(r).toFixed(1)}%</span>`;
-    }
-    return `<div class="fin-row"><span class="fin-k">${escHtml(it.name)}</span>`+
-      `<span class="fin-v">${escHtml(_fmtWon(it.cur))}</span>`+
-      `<span class="fin-p">${it.prev!=null?'전기 '+escHtml(_fmtWon(it.prev)):''} ${d}</span></div>`;
+function _finBarChart(name, years, values){
+  const vals=values.map(v=>(v==null||v==='')?null:Number(v));
+  const nums=vals.filter(v=>v!=null&&isFinite(v));
+  if(!nums.length) return '';
+  const maxAbs=Math.max(1,...nums.map(v=>Math.abs(v)));
+  const hasNeg=nums.some(v=>v<0);
+  const H=46, bw=15, gap=9, n=vals.length;
+  const W=n*bw+(n-1)*gap;
+  const zeroY=hasNeg?H*0.58:H;
+  const scale=(hasNeg?H*0.42:H-3)/maxAbs;
+  const bars=vals.map((v,i)=>{
+    const x=i*(bw+gap);
+    if(v==null||!isFinite(v)) return `<rect x="${x}" y="${H-2}" width="${bw}" height="2" fill="var(--bd)"/>`;
+    const h=Math.max(1.5,Math.abs(v)*scale);
+    const y=v>=0?(zeroY-h):zeroY;
+    const col=v>=0?'var(--g)':'#d9534f';
+    return `<rect x="${x}" y="${y.toFixed(1)}" width="${bw}" height="${h.toFixed(1)}" rx="2" fill="${col}"><title>${escHtml(years[i])}: ${escHtml(_fmtWon(v))}</title></rect>`;
   }).join('');
+  const yls=years.map(y=>`<span class="fin-yl" style="width:${bw}px;margin-right:${gap}px">${escHtml(String(y).slice(2))}</span>`).join('');
+  let lv=null,pv=null; for(let i=vals.length-1;i>=0;i--){ if(vals[i]!=null){ if(lv===null)lv=vals[i]; else {pv=vals[i]; break;} } }
+  let yoy=''; if(lv!=null&&pv!=null&&pv!==0){ const r=(lv-pv)/Math.abs(pv)*100; const up=r>=0; yoy=` <span class="fin-yoy ${up?'up':'dn'}">${up?'▲':'▼'}${Math.abs(r).toFixed(1)}%</span>`; }
+  return `<div class="fin-chart"><div class="fin-ct"><span class="fin-cn">${escHtml(name)}</span>`+
+    `<span class="fin-cv">${escHtml(_fmtWon(lv))}${yoy}</span></div>`+
+    `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="fin-svg" role="img" aria-label="${escHtml(name)} 연도별 추이">${bars}</svg>`+
+    `<div class="fin-yls">${yls}</div></div>`;
+}
+function _renderFinance(fin){
+  if(!fin) return '';
+  let years=fin.years, series=fin.series;
+  if((!series||!series.length)&&(fin.items||[]).length){   // cur/prev만 있으면 2개년 합성(DART 등)
+    const y=parseInt(fin.year)||(new Date().getFullYear()-1);
+    years=[String(y-1),String(y)];
+    series=fin.items.filter(it=>it.cur!=null).map(it=>({name:it.name,values:[(it.prev==null?null:it.prev),it.cur]}));
+  }
+  if(!series||!series.length||!years||!years.length) return '';
+  const charts=series.map(s=>_finBarChart(s.name, years, s.values||[])).filter(Boolean).join('');
+  if(!charts) return '';
   const src=fin.source||'DART';
-  const meta=[fin.year?fin.year+'년':'', fin.report||'', fin.fs||'', '출처 '+src].filter(Boolean).join(' · ');
-  return `<div class="fin-box"><div class="fin-hd">💰 재무 요약`+
+  const span=years.length>1?`${years[0]}~${years[years.length-1]}`:years[0];
+  const meta=[span+' 추이', fin.report||'', fin.fs||'', '출처 '+src].filter(Boolean).join(' · ');
+  return `<div class="fin-box"><div class="fin-hd">💰 재무 추이`+
     `<span class="fin-meta">${escHtml(meta)}</span></div>`+
-    `<div class="fin-grid">${rows}</div></div>`;
+    `<div class="fin-charts">${charts}</div></div>`;
 }
 function _compStatusBadge(fields){
   const get=n=>(fields.find(f=>f[0]===n)||[])[1]||'';
@@ -2846,6 +2881,12 @@ function runPatent(){
   fetch('/api/assist/patent?'+p.toString()).then(r=>r.json()).then(d=>{ _patLast=d; box.innerHTML=_renderPatentList(d); })
     .catch(e=>{ box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
 }
+// KIPRIS 원문보기 URL — 출원번호를 하이픈 형식(10-YYYY-NNNNNNN)으로 검색
+function _kiprisUrl(appno){
+  const n=String(appno||'').replace(/\D/g,'');
+  const q=n.length>=12?`${n.slice(0,2)}-${n.slice(2,6)}-${n.slice(6)}`:String(appno||'');
+  return q?`https://www.kipris.or.kr/khome/search/searchResult.do?query=${encodeURIComponent(q)}`:'';
+}
 function _renderPatentList(d){
   if(d&&d.need_key){
     const url=d.apply_url?`<a href="${escHtml(d.apply_url)}" target="_blank" rel="noopener">서비스키 발급 안내 →</a>`:'';
@@ -2857,7 +2898,7 @@ function _renderPatentList(d){
   const rows=items.map(it=>{
     const st=it.status?`<span class="pat-badge">${escHtml(it.status)}</span>`:'';
     const metaBits=[it.appno&&('출원 '+it.appno), it.appdate&&_fmtDate(it.appdate), it.regno&&('등록 '+it.regno)].filter(Boolean).map(escHtml).join(' · ');
-    const kurl=it.appno?`https://www.kipris.or.kr/khome/search/searchResult.do?query=${encodeURIComponent(it.appno)}`:'';
+    const kurl=_kiprisUrl(it.appno);
     const favItem={type:'patent',name:it.title||'',subtitle:it.applicant||'',appno:it.appno||'',url:kurl};
     const on=favHas(favItem);
     return `<div class="pat-rw"><button class="pat-row" onclick="patDetail('${argAttr(it.appno||'')}')" title="상세 보기">`+
@@ -2916,7 +2957,7 @@ function _renderPatentDetail(d){
     ['대리인',t.agent],['IPC',t.ipc]].filter(r=>r[1]);
   const meta=rows.map(r=>`<div class="pat-d-row"><span class="pat-d-k">${escHtml(r[0])}</span><span class="pat-d-v">${escHtml(String(r[1]))}</span></div>`).join('');
   const abs=t.abstract?`<div class="pat-d-abs"><div class="pat-d-k">요약</div><p>${escHtml(t.abstract)}</p></div>`:'';
-  const kurl=t.appno?`https://www.kipris.or.kr/khome/search/searchResult.do?query=${encodeURIComponent(t.appno)}`:'';
+  const kurl=_kiprisUrl(t.appno);
   const link=kurl?`<a class="assist-card-link" href="${escHtml(kurl)}" target="_blank" rel="noopener">KIPRIS에서 원문 보기 →</a>`:'';
   const favItem={type:'patent',name:t.title||'',subtitle:t.applicant||'',appno:t.appno||'',url:kurl};
   const favOn=favHas(favItem);
