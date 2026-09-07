@@ -108,6 +108,14 @@ body.dark .stgl.active{background:#20222a;}
 .pat-chip{font-size:12.5px;font-weight:700;color:var(--mu);background:var(--sf);border:1px solid var(--bd);border-radius:999px;padding:6px 13px;cursor:pointer;font-family:var(--font);transition:.12s;}
 .pat-chip:hover{border-color:var(--g);color:var(--tx);}
 .pat-chip.active{background:var(--gl);border-color:transparent;color:var(--gp);}
+/* 상태 칩: 활성 시 상태별 색상 */
+.pat-schip{padding:6px 12px;}
+.pat-schip.active{color:#fff;}
+.pat-schip.active.s-all{background:var(--g);}
+.pat-schip.active.s-R{background:#16a34a;}
+.pat-schip.active.s-A{background:#2563eb;}
+.pat-schip.active.s-J,.pat-schip.active.s-F,.pat-schip.active.s-I,.pat-schip.active.s-C,.pat-schip.active.s-G{background:#dc2626;}
+.pat-pdiv{width:1px;height:18px;background:var(--bd);margin:0 3px;align-self:center;}
 .pat-inp{padding:9px 12px;border:1px solid var(--bd);border-radius:9px;font-size:13px;background:var(--sf);color:var(--tx);outline:none;font-family:var(--font);}
 .pat-inp:focus{border-color:var(--g);box-shadow:var(--shadow-focus);}
 .pat-frow2{gap:8px;}
@@ -2296,17 +2304,25 @@ const PAT_APPLICANTS=['농촌진흥청','농림축산검역본부','국립농산
 const PAT_STATUS=[['','전체 상태'],['R','등록'],['A','공개'],['J','거절'],['F','소멸'],['C','취하'],['I','무효'],['G','포기']];
 let _patLast=null, _patParams='';
 function _patFiltersHtml(){
-  const chips=PAT_APPLICANTS.map((a,i)=>
+  const appl=PAT_APPLICANTS.map((a,i)=>
     `<button class="pat-chip${i===0?' active':''}" data-v="${argAttr(a)}" onclick="_patApplPick(this)">${escHtml(a==='농업기술원'?'농업기술원(각 도)':a)}</button>`).join('');
-  const opts=PAT_STATUS.map(([v,l])=>`<option value="${v}">${escHtml(l)}</option>`).join('');
+  const stat=PAT_STATUS.map(([v,l],i)=>
+    `<button class="pat-chip pat-schip s-${v||'all'}${i===0?' active':''}" data-v="${v}" onclick="_patStatusPick(this)">${escHtml(l)}</button>`).join('');
   return `<div class="pat-filters">`+
-    `<div class="pat-frow"><span class="pat-flabel">출원인</span><div class="pat-appl" id="patAppl">${chips}</div></div>`+
+    `<div class="pat-frow"><span class="pat-flabel">출원인</span><div class="pat-appl" id="patAppl">${appl}</div></div>`+
+    `<div class="pat-frow"><span class="pat-flabel">상태</span><div class="pat-appl" id="patStatus">${stat}</div></div>`+
+    `<div class="pat-frow"><span class="pat-flabel">기간</span><div class="pat-appl" id="patPeriod">`+
+      `<button class="pat-chip active" data-y="0" onclick="_patPeriod(0,this)">전체</button>`+
+      `<button class="pat-chip" data-y="1" onclick="_patPeriod(1,this)">최근 1년</button>`+
+      `<button class="pat-chip" data-y="2" onclick="_patPeriod(2,this)">최근 2년</button>`+
+      `<button class="pat-chip" data-y="3" onclick="_patPeriod(3,this)">최근 3년</button>`+
+      `<span class="pat-pdiv"></span>`+
+      `<input id="patFrom" class="pat-inp pat-year" inputmode="numeric" maxlength="4" placeholder="시작(YYYY)" oninput="_patPeriodManual()">`+
+      `<span class="pat-tilde">~</span>`+
+      `<input id="patTo" class="pat-inp pat-year" inputmode="numeric" maxlength="4" placeholder="종료(YYYY)" oninput="_patPeriodManual()">`+
+    `</div></div>`+
     `<div class="pat-frow pat-frow2">`+
       `<input id="patQuery" class="pat-inp" placeholder="키워드(발명의 명칭 등, 선택)" onkeydown="if(event.key==='Enter')runPatent()">`+
-      `<select id="patStatus" class="pat-sel" aria-label="특허 상태">${opts}</select>`+
-      `<input id="patFrom" class="pat-inp pat-year" inputmode="numeric" maxlength="4" placeholder="출원 시작(YYYY)">`+
-      `<span class="pat-tilde">~</span>`+
-      `<input id="patTo" class="pat-inp pat-year" inputmode="numeric" maxlength="4" placeholder="종료(YYYY)">`+
       `<button class="sbtn" onclick="runPatent()">조회</button>`+
     `</div></div>`;
 }
@@ -2314,6 +2330,19 @@ function _patApplPick(btn){
   document.querySelectorAll('#patAppl .pat-chip').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
 }
+function _patStatusPick(btn){
+  document.querySelectorAll('#patStatus .pat-chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function _patPeriod(y, btn){
+  document.querySelectorAll('#patPeriod .pat-chip').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const yr=new Date().getFullYear();
+  const f=document.getElementById('patFrom'), t=document.getElementById('patTo');
+  if(y===0){ if(f)f.value=''; if(t)t.value=''; }
+  else { if(f)f.value=String(yr-y+1); if(t)t.value=String(yr); }
+}
+function _patPeriodManual(){ document.querySelectorAll('#patPeriod .pat-chip').forEach(b=>b.classList.remove('active')); }
 // ── 기업 조회: 통합 키워드 검색 + 목록 + 상세 그리드 ──
 let _compLast=null;
 function _fmtBno(b){ b=String(b||'').replace(/\D/g,''); return b.length===10?`${b.slice(0,3)}-${b.slice(3,5)}-${b.slice(5)}`:b; }
@@ -2679,7 +2708,7 @@ function runPatent(){
   const p=new URLSearchParams();
   if(appl&&appl.v) p.set('applicant',appl.v);
   const q=((document.getElementById('patQuery')||{}).value||'').trim(); if(q) p.set('query',q);
-  const st=(document.getElementById('patStatus')||{}).value||''; if(st) p.set('status',st);
+  const st=((document.querySelector('#patStatus .pat-chip.active')||{}).dataset||{}).v||''; if(st) p.set('status',st);
   const from=((document.getElementById('patFrom')||{}).value||'').replace(/\D/g,''); if(from) p.set('date_from',from);
   const to=((document.getElementById('patTo')||{}).value||'').replace(/\D/g,''); if(to) p.set('date_to',to);
   _patParams=p.toString();                 // 엑셀 내보내기에서 동일 필터 재사용
