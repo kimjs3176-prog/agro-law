@@ -2968,6 +2968,7 @@ function openExpense(){
     `<div class="exp-wrap">`+
       `<div class="exp-form" id="expForm"><div id="expFields"></div>`+
         `<div class="exp-actions"><button class="exp-print" onclick="_expCopy(this)">📋 본문 복사</button>`+
+          `<button class="exp-mini2" onclick="downloadHwpx(this)" title="표 서식을 한글(.hwpx) 파일로 저장">📄 한글(.hwpx)</button>`+
           `<button class="exp-mini2" onclick="printExpense()">🖨 인쇄</button>`+
           `<button class="exp-clear" onclick="_expReset()">초기화</button></div>`+
       `</div>`+
@@ -3148,6 +3149,50 @@ function _expCopy(btn){
 }
 function _expCopyFb(text,done){ try{ const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done&&done(); }catch(e){ alert('복사 실패 — 본문을 직접 선택해 복사하세요.'); } }
 function printExpense(){ _expUpdate(); window.print(); }
+// 현재 구분의 본문을 한글(.hwpx) 표 파일로 생성
+function _expHwpxPayload(){
+  const t=_expState.type;
+  if(t==='promo'){
+    const pm=_expState.promo; const people=_digits(pm.people), total=_digits(pm.total);
+    const per=people>0?Math.floor(total/people):0; const g=n=>_wonGeum(n);
+    return {title:'지출결의서 (업무추진비)', filename:'지출결의서_업무추진비', colCnt:4, colWidths:[8000,15814,8000,15814], rows:[
+      [{t:'관련근거',hd:1},{t:pm.basis||'',cs:3}],
+      [{t:'집행목적',hd:1},{t:pm.purpose||'',cs:3}],
+      [{t:'일 시',hd:1},{t:_dotDate(pm.date)},{t:'장 소',hd:1},{t:pm.place||''}],
+      [{t:'집행대상',hd:1},{t:pm.targets||'',cs:3}],
+      [{t:'금 액',hd:1},{t:total?g(total):''},{t:'1인당 지출액',hd:1},{t:(people&&total)?g(per):''}],
+      [{t:'비 고',hd:1},{t:pm.note||'',cs:3}],
+    ]};
+  }
+  if(t==='general'){
+    const g=_expState.general; const sup=_digits(g.supply),vat=_digits(g.vat),total=sup+vat;
+    const vendor=[g.vendor,g.bno&&('사업자 '+g.bno),g.ceo&&('대표 '+g.ceo)].filter(Boolean).join(', ');
+    const acct=[g.bank,g.account,g.holder&&('예금주 '+g.holder)].filter(Boolean).join(' ');
+    const rows=[['거래처',vendor],['거래내용',g.desc||''],['지출과목',g.budget||''],
+      ['금액','일금 '+_hanAmount(total)+'원정 ('+_won(total)+')'],
+      ['결제방식',[g.method,acct&&('('+acct+')')].filter(Boolean).join(' ')]]
+      .map(r=>[{t:r[0],hd:1},{t:r[1]}]);
+    return {title:'지출결의서 (일반)', filename:'지출결의서_일반', colCnt:2, colWidths:[9000,38628], rows};
+  }
+  const tv=_expState.travel; const rws=(tv.rows||[]).filter(r=>r.content||r.amt||r.date||r.place);
+  const total=rws.reduce((a,r)=>a+_digits(r.amt),0); const rows=[];
+  rows.push([{t:'출장자',hd:1},{t:[tv.name,tv.dept&&('('+tv.dept+')')].filter(Boolean).join(' '),cs:4}]);
+  rows.push([{t:'순번',hd:1},{t:'일자',hd:1},{t:'출장지',hd:1},{t:'출장목적',hd:1},{t:'금액',hd:1}]);
+  rws.forEach((r,i)=>rows.push([{t:String(i+1)},{t:_fmtKDate(r.date)},{t:r.place||''},{t:r.content||''},{t:_won(_digits(r.amt))}]));
+  rows.push([{t:'합계',hd:1,cs:4},{t:_won(total)}]);
+  return {title:'지출결의서 (여비)', filename:'지출결의서_여비', colCnt:5, colWidths:[4000,9000,9000,17628,8000], rows};
+}
+function downloadHwpx(btn){
+  const payload=_expHwpxPayload(); if(!payload.rows.length) return;
+  const orig=btn?btn.textContent:''; if(btn){ btn.disabled=true; btn.textContent='생성 중...'; }
+  fetch('/api/expense/hwpx',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    .then(r=>{ if(!r.ok) return r.json().then(j=>{throw new Error(j.error||'생성 실패');}); return r.blob(); })
+    .then(blob=>{ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url;
+      a.download=(payload.filename||'지출결의서')+'.hwpx'; document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url); })
+    .catch(e=>alert('한글(.hwpx) 생성 실패: '+(e.message||e)))
+    .finally(()=>{ if(btn){ btn.disabled=false; btn.textContent=orig||'📄 한글(.hwpx)'; } });
+}
 function _expReset(){
   if(!confirm('입력한 내용을 모두 지울까요?')) return;
   try{ localStorage.removeItem(EXP_KEY); }catch(e){}
@@ -9576,14 +9621,20 @@ async function scoreAndReorderAsync(laws, keywords){
   <!-- Footer -->
   <footer style="text-align:center;padding:28px 0 20px;color:var(--ht);font-size:12px;border-top:1px solid var(--bd);margin-top:24px;background:var(--sf);">
     <div style="margin-bottom:6px;">
-      <span style="font-weight:700;color:var(--g);font-size:14px;">농진원 업무 도우미</span>
+      <span style="font-weight:700;color:var(--g);font-size:14px;">KOAT Work Place</span>
     </div>
-    <div style="margin-bottom:4px;">
+    <div style="margin-bottom:6px;">
       내규똑똑 · 국가법령 · 기업 · 특허 · 지원사업 · 조달 통합 업무 지원
     </div>
-    <div>
-      © 2025 <strong>kimjs</strong> · Powered by
-      <a href="https://www.law.go.kr" target="_blank" style="color:var(--g);text-decoration:none;">법제처 국가법령정보센터</a>
+    <div style="line-height:1.7;max-width:760px;margin:0 auto;">
+      © 2026 <strong>kimjs</strong> · Powered by
+      <a href="https://www.law.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">법제처 국가법령정보센터</a> ·
+      <a href="https://plus.kipris.or.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">특허청 KIPRIS</a> ·
+      <a href="https://opendart.fss.or.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">금융감독원 DART</a> ·
+      <a href="https://bizno.net" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">비즈노 기업정보</a> ·
+      <a href="https://www.bizinfo.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">중소벤처기업부 기업마당</a> ·
+      <a href="https://www.g2b.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">조달청 나라장터</a> ·
+      <a href="https://www.data.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">공공데이터포털</a>
     </div>
   </footer>
 

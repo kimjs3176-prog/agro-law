@@ -5175,6 +5175,156 @@ def assist_procurement():
         return jsonify({"success": False, "error": f"조회 실패: {e}"})
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 지출결의서 본문 → 한글(.hwpx) 표 생성
+# 실제 내규 hwpx를 서식 베이스로 재사용(header/스타일 유지)하고 section0만 교체.
+# ══════════════════════════════════════════════════════════════════════════
+def _hwpx_base_bytes():
+    """HWPX 서식 베이스 바이트. 임베드 모듈 우선(서버리스 대응), 실패 시 내규 원본."""
+    try:
+        import base64 as _b64, hwpx_base
+        return _b64.b64decode(hwpx_base.BASE_HWPX_B64)
+    except Exception:
+        pass
+    import glob as _glob
+    here = os.path.dirname(os.path.abspath(__file__))
+    for cand in ([os.path.join(here, "regulations", "보직관리기준", "original.hwpx")]
+                 + sorted(_glob.glob(os.path.join(here, "regulations", "*", "original.hwpx")))):
+        if os.path.exists(cand):
+            with open(cand, "rb") as f:
+                return f.read()
+    return None
+
+def _hwpx_full_border(header_xml):
+    """4면 모두 선이 있는 borderFill id를 찾는다(표 테두리용). 없으면 '3'."""
+    for blk in re.findall(r'<hh:borderFill\b.*?</hh:borderFill>', header_xml, re.S):
+        idm = re.match(r'<hh:borderFill id="([0-9]+)"', blk)
+        if not idm:
+            continue
+        ok = 0
+        for side in ("leftBorder", "rightBorder", "topBorder", "bottomBorder"):
+            m = re.search(r'<hh:' + side + r'\b[^>]*type="([^"]+)"', blk)
+            if m and m.group(1) != "NONE":
+                ok += 1
+        if ok == 4:
+            return idm.group(1)
+    return "3"
+
+def _xesc(s):
+    return (str(s or "").replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;").replace('"', "&quot;"))
+
+def _hwpx_cell(text, col, row, cspan, width, height, bf, align):
+    para_h = "PARA_ALIGN_CENTER" if align == "center" else "PARA_ALIGN_LEFT"
+    return (
+        f'<hp:tc name="" header="0" hasMargin="1" protect="0" editable="0" dirty="0" borderFillIDRef="{bf}">'
+        f'<hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="CENTER" '
+        f'linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0">'
+        f'<hp:p id="0" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">'
+        f'<hp:run charPrIDRef="0"><hp:t>{_xesc(text)}</hp:t></hp:run>'
+        f'<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1000" textheight="1000" '
+        f'baseline="850" spacing="600" horzpos="0" horzsize="{width}" flags="393216"/></hp:linesegarray>'
+        f'</hp:p></hp:subList>'
+        f'<hp:cellAddr colAddr="{col}" rowAddr="{row}"/>'
+        f'<hp:cellSpan colSpan="{cspan}" rowSpan="1"/>'
+        f'<hp:cellSz width="{width}" height="{height}"/>'
+        f'<hp:cellMargin left="141" right="141" top="141" bottom="141"/></hp:tc>')
+
+def _hwpx_table(payload, bf):
+    col_w = payload.get("colWidths") or []
+    col_cnt = int(payload.get("colCnt") or (len(col_w) or 1))
+    rows = payload.get("rows") or []
+    rh = 1848
+    total_w = sum(col_w) if col_w else 47628
+    trs = []
+    for r, cells in enumerate(rows):
+        col = 0
+        tcs = []
+        for c in cells:
+            cs = int(c.get("cs") or 1)
+            w = sum(col_w[col:col + cs]) if col_w else int(total_w / max(1, col_cnt)) * cs
+            align = c.get("align") or ("center" if c.get("hd") else "left")
+            tcs.append(_hwpx_cell(c.get("t", ""), col, r, cs, w, rh, bf, align))
+            col += cs
+        trs.append("<hp:tr>" + "".join(tcs) + "</hp:tr>")
+    tbl = (
+        f'<hp:tbl id="0" zOrder="0" numberingType="TABLE" textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" '
+        f'lock="0" dropcapstyle="None" pageBreak="CELL" repeatHeader="0" rowCnt="{len(rows)}" colCnt="{col_cnt}" '
+        f'cellSpacing="0" borderFillIDRef="{bf}" noAdjust="0">'
+        f'<hp:sz width="{total_w}" widthRelTo="ABSOLUTE" height="{rh*len(rows)}" heightRelTo="ABSOLUTE" protect="0"/>'
+        f'<hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" '
+        f'vertRelTo="PARA" horzRelTo="PARA" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/>'
+        f'<hp:outMargin left="283" right="283" top="283" bottom="283"/>'
+        f'<hp:inMargin left="510" right="510" top="141" bottom="141"/>'
+        + "".join(trs) + '</hp:tbl>')
+    return (
+        '<hp:p id="0" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">'
+        f'<hp:run charPrIDRef="0">{tbl}</hp:run>'
+        '<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1000" textheight="1000" '
+        'baseline="850" spacing="600" horzpos="0" horzsize="47628" flags="393216"/></hp:linesegarray></hp:p>')
+
+def _hwpx_empty_para():
+    return ('<hp:p id="0" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">'
+            '<hp:run charPrIDRef="0"></hp:run>'
+            '<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1000" textheight="1000" '
+            'baseline="850" spacing="600" horzpos="0" horzsize="47628" flags="393216"/></hp:linesegarray></hp:p>')
+
+def _hwpx_build_section(base_sec, payload, bf):
+    m = re.search(r'<hs:sec\b[^>]*>', base_sec)
+    if not m:
+        raise ValueError("section root not found")
+    prefix = base_sec[:m.end()]                 # xml 선언 + <hs:sec ...>
+    body = base_sec[m.end():]
+    pi = body.find('<hp:p')
+    pj = body.find('</hp:p>', pi) + len('</hp:p>')
+    first_para = body[pi:pj]                     # secPr 문단(페이지 설정)
+    first_para = re.sub(r'<hp:t>.*?</hp:t>', '<hp:t></hp:t>', first_para, flags=re.S)
+    title = payload.get("title")
+    title_para = ""
+    if title:
+        title_para = (
+            '<hp:p id="0" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">'
+            f'<hp:run charPrIDRef="0"><hp:t>{_xesc(title)}</hp:t></hp:run>'
+            '<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1200" textheight="1200" '
+            'baseline="1020" spacing="600" horzpos="0" horzsize="47628" flags="393216"/></hp:linesegarray></hp:p>')
+    return (prefix + first_para + title_para + _hwpx_table(payload, bf)
+            + _hwpx_empty_para() + '</hs:sec>')
+
+@app.route("/api/expense/hwpx", methods=["POST"])
+def expense_hwpx():
+    """지출결의서 본문 표를 한글(.hwpx) 파일로 생성. 서식 베이스는 내규 hwpx 재사용."""
+    data = request.get_json(silent=True) or {}
+    if not (data.get("rows")):
+        return jsonify({"success": False, "error": "표 데이터가 없습니다."}), 400
+    base = _hwpx_base_bytes()
+    if not base:
+        return jsonify({"success": False, "error": "HWPX 기본 서식을 찾을 수 없습니다."}), 500
+    try:
+        zin = zipfile.ZipFile(_io.BytesIO(base), "r")
+        header = zin.read("Contents/header.xml").decode("utf-8", "ignore")
+        base_sec = zin.read("Contents/section0.xml").decode("utf-8", "ignore")
+        bf = _hwpx_full_border(header)
+        new_sec = _hwpx_build_section(base_sec, data, bf)
+        out = _io.BytesIO()
+        zout = zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED)
+        zi = zipfile.ZipInfo("mimetype")
+        zout.writestr(zi, "application/hwp+zip", compress_type=zipfile.ZIP_STORED)
+        for n in zin.namelist():
+            if n in ("mimetype", "Preview/PrvImage.png"):
+                continue
+            if n == "Contents/section0.xml":
+                zout.writestr(n, new_sec.encode("utf-8"))
+            else:
+                zout.writestr(n, zin.read(n))
+        zout.close(); zin.close()
+        fname = (data.get("filename") or "지출결의서") + ".hwpx"
+        from urllib.parse import quote as _q
+        return Response(out.getvalue(), mimetype="application/hwp+zip",
+                        headers={"Content-Disposition": "attachment; filename*=UTF-8''" + _q(fname)})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"HWPX 생성 실패: {e}"}), 500
+
+
 # ── 실행 ─────────────────────────────────────────────────────────────────────
 PORT = int(os.environ.get("PORT", 5100))
 
