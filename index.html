@@ -176,6 +176,7 @@ body.dark .det-fav.on{background:rgba(245,179,1,.16);color:#fbbf24;}
 .pat-pg:hover:not(:disabled){border-color:var(--g);color:var(--g);background:var(--gl);}
 .pat-pg:disabled{opacity:.4;cursor:default;}
 .pat-pginfo{font-size:12.5px;color:var(--mu);font-weight:600;min-width:88px;text-align:center;}
+.pat-fbnote{font-size:12px;line-height:1.6;color:var(--gp);background:var(--gl);border:1px solid var(--bd);border-radius:9px;padding:8px 12px;margin-bottom:10px;}
 .pat-back{display:inline-flex;align-items:center;gap:4px;margin-bottom:12px;padding:6px 12px;border:1px solid var(--bd);border-radius:999px;background:var(--sf);color:var(--mu);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font);}
 .pat-back:hover{color:var(--tx);border-color:var(--g);}
 .pat-detail{background:var(--sf);border:1px solid var(--bd);border-radius:12px;box-shadow:var(--shadow);padding:16px 18px;}
@@ -3011,9 +3012,11 @@ function _renderPatentList(d){
   const total=(totalN && totalN!==items.length)?` / 총 ${escHtml(String(totalN))}건`:'';
   const pageTxt=(totalN>_PAT_PER)?` <span class="pat-count-pg">(${_patPage}페이지)</span>`:'';
   const nav=_patPageNav(d);
+  // 명칭 정밀검색 0건 → 자유검색(명칭+요약+청구항) 폴백 시 안내
+  const fb=d.matchMode==='word'?`<div class="pat-fbnote">🔎 명칭 정확일치 결과가 없어 <b>자유검색</b>(명칭·요약·청구항)으로 대체했습니다. 검색어를 줄이면 더 정확해집니다.</div>`:'';
   return `<div class="pat-listhd"><span class="pat-count">${items.length}건 표시${total}${pageTxt}</span>`+
          `<button class="pat-xlsx" onclick="exportPatents(this)" title="현재 필터의 전체 결과를 엑셀(CSV)로 저장">⬇ 엑셀 다운로드</button></div>`+
-         `<div class="pat-list">${rows}</div>`+nav;
+         fb+`<div class="pat-list">${rows}</div>`+nav;
 }
 // 현재 필터의 특허 전체 결과를 여러 페이지로 모아 엑셀(CSV)로 저장
 async function exportPatents(btn){
