@@ -2366,7 +2366,8 @@ async function openAssist(kind){
   const head=`<div class="assist-head"><span class="assist-h-ic">${_icon(kind)||cfg.ic}</span>`+
     `<span class="assist-h-t">${escHtml(cfg.label)}</span>`+
     `<span class="assist-h-hint">${escHtml(cfg.hint)}</span>`+
-    `<span class="assist-api-badge ${ok?'ok':'no'}">${ok?'API 연결됨':'서비스키 필요'}</span></div>`;
+    // 연결 표시는 최상단바(#badge)에만 두고, 패널에는 키 미설정 경고만 표시(중복 방지)
+    (ok?'':`<span class="assist-api-badge no">서비스키 필요</span>`)+`</div>`;
   if(kind==='patent'){                       // 특허: 출원인·기간·상태 필터 + 목록
     _patLast=null;
     p.innerHTML=head+_patFiltersHtml()+`<div id="patResults" class="pat-results"></div>`;
