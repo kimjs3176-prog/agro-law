@@ -4618,70 +4618,41 @@ def debug_law_xml():
 # ══════════════════════════════════════════════════════════════════════════
 # 업무 도우미 — 공공 API 프록시 (기업/특허/지원사업/조달)
 # 서비스키는 환경변수로 주입한다. 키 미설정 시 need_key 응답으로 UI가 안내한다.
-#   BIZNO_API_KEY   : 비즈노 기업정보 API 키 (기업 통합검색: 회사명·사업자번호·대표자)
-#   DART_API_KEY    : (선택) DART 오픈API — 기업 상세에 재무 요약·기업개황 보강
-#   DATA_GO_KR_KEY  : 공공데이터포털 서비스키 (국세청 사업자상태 보조·나라장터 입찰공고)
+#   DART_API_KEY    : DART 오픈API — 기업 회사명 검색·기업개황·재무 요약
+#   DATA_GO_KR_KEY  : 공공데이터포털 서비스키 (국세청 사업자상태·나라장터 입찰공고·지원사업)
 #   KIPRIS_API_KEY  : 키프리스 플러스 서비스키 (특허·상표·디자인)
-#   BIZINFO_API_KEY : 기업마당 인증키(crtfcKey) (정부 지원사업 공고)
-# 참고: yybmion/public-apis-4Kr
+#   BIZINFO_API_KEY : 공공데이터포털(기업마당·중소벤처기업부) 인증키 (정부 지원사업 공고)
+# 기업조회는 DART(회사명 검색)와 공공데이터포털(국세청 사업자상태)을 함께 활용한다.
 # ══════════════════════════════════════════════════════════════════════════
-_ASSIST_ENV = {"company": "BIZNO_API_KEY", "patent": "KIPRIS_API_KEY",
+_ASSIST_ENV = {"company": "DART_API_KEY", "patent": "KIPRIS_API_KEY",
                "support": "BIZINFO_API_KEY", "procurement": "DATA_GO_KR_KEY"}
 _ASSIST_APPLY = {
-    "company":     "https://bizno.net/openapi",
+    "company":     "https://opendart.fss.or.kr",
     "patent":      "https://plus.kipris.or.kr/portal/main/main.do",
-    "support":     "https://www.bizinfo.go.kr/",
+    "support":     "https://www.data.go.kr/",
     "procurement": "https://www.data.go.kr/data/15129394/openapi.do",
 }
 _ASSIST_PROVIDER = {
-    "company": "비즈노 기업정보", "patent": "특허청 KIPRIS",
-    "support": "기업마당(중소벤처기업부)", "procurement": "조달청 나라장터",
+    "company": "DART·공공데이터포털", "patent": "특허청 KIPRIS",
+    "support": "공공데이터포털", "procurement": "공공데이터포털(나라장터)",
 }
-# 비즈노 응답 필드명(계정/버전에 따라 다를 수 있어 후보를 넓게 잡는다)
-_BIZNO_NAME = ("company", "companyName", "cmpnm", "corpNm", "bizNm", "name", "상호")
-_BIZNO_CEO  = ("ceonm", "ceoNm", "ceo", "reprNm", "repName", "대표자")
-_BIZNO_BNO  = ("bno", "bizno", "brno", "businessNumber", "b_no", "사업자등록번호")
-_BIZNO_ADDR = ("addr", "address", "adres", "roadAddr", "주소")
-_BIZNO_BIZ  = ("bizcond", "bizType", "biztype", "industry", "업태", "종목")
-# 상세 그리드 라벨(알려진 키 → 한글). 없는 키는 원본 키를 그대로 노출.
-_BIZNO_LABELS = {
-    "company": "상호", "companyName": "상호", "corpNm": "상호", "cmpnm": "상호",
-    "ceonm": "대표자", "ceoNm": "대표자", "ceo": "대표자", "reprNm": "대표자",
-    "bno": "사업자등록번호", "bizno": "사업자등록번호", "brno": "사업자등록번호", "b_no": "사업자등록번호",
-    "corpno": "법인등록번호", "corpNo": "법인등록번호", "cno": "법인등록번호",
-    "addr": "주소", "address": "주소", "adres": "주소", "roadAddr": "도로명주소",
-    "bizcond": "업태", "bizType": "종목", "biztype": "종목", "bizitem": "종목",
-    "tel": "전화번호", "hp": "휴대전화", "fax": "팩스", "email": "이메일", "homepage": "홈페이지",
-    "estbDt": "설립일", "establishDate": "설립일", "empCnt": "종업원수", "empcnt": "종업원수",
-    "capital": "자본금", "sales": "매출액", "sector": "산업분류", "jibunAddr": "지번주소",
-}
-# 그리드 우선 표시 순서(라벨 기준)
-_BIZNO_ORDER = ["상호", "대표자", "사업자등록번호", "법인등록번호", "업태", "종목",
-                "산업분류", "설립일", "종업원수", "자본금", "매출액",
-                "주소", "도로명주소", "지번주소", "전화번호", "휴대전화", "팩스",
-                "이메일", "홈페이지"]
 
-def _bz(row, keys):
-    for k in keys:
-        v = row.get(k)
-        if v not in (None, "", []):
-            return str(v).strip()
-    return ""
+def _fmtbno_disp(b):
+    """사업자등록번호 숫자 → 000-00-00000 표기."""
+    b = re.sub(r"\D", "", str(b or ""))
+    return f"{b[:3]}-{b[3:5]}-{b[5:]}" if len(b) == 10 else b
 
-def _bizno_search(key, q, page="1", rows="30"):
-    """비즈노 통합검색 → 원본 레코드 리스트."""
-    r = _SESSION.get("https://bizno.net/api/fapi",
-                     params={"key": key, "gb": "1", "q": q, "type": "json",
-                             "pg": page, "onePageCnt": rows}, timeout=15)
-    d = r.json() or {}
-    rows_ = (d.get("items") or d.get("list") or d.get("data")
-             or (d.get("result") or {}).get("items") or [])
-    if isinstance(rows_, dict):
-        rows_ = rows_.get("item") or [rows_]
-    total = d.get("totalCount") or d.get("total") or d.get("cnt") or len(rows_)
-    return (rows_ if isinstance(rows_, list) else []), str(total)
+def _fmtymd(v):
+    """YYYYMMDD → YYYY-MM-DD (그 외는 원본)."""
+    v = re.sub(r"\D", "", str(v or ""))
+    return f"{v[:4]}-{v[4:6]}-{v[6:8]}" if len(v) >= 8 else v
 
 def _assist_key(kind: str) -> str:
+    # 기업조회는 DART(회사명 검색) 또는 국세청 사업자상태(공공데이터포털) 중
+    # 하나만 있어도 조회 가능하다(둘 다 있으면 상세가 가장 풍부).
+    if kind == "company":
+        return (_dart_key()
+                or (os.environ.get("DATA_GO_KR_KEY", "") or "").strip())
     return (os.environ.get(_ASSIST_ENV.get(kind, ""), "") or "").strip()
 
 def _assist_need_key(kind: str):
@@ -4766,6 +4737,28 @@ def _dart_find_corp(key, name):
     listed = [c for c in cand if c[2]]        # stock_code 있는(상장) 후보 우선
     return (listed or cand)[0]
 
+def _dart_search(key, q, limit=30):
+    """회사명(부분일치) → DART 후보 [(corp_code, corp_name, stock_code)].
+    정확 일치 → 부분 일치 순, 상장(종목코드 보유) 우선·상호 짧은 순."""
+    nq = _dart_norm(q)
+    if not nq:
+        return []
+    m = _dart_corp_map(key)
+    hits, seen = [], set()
+    for c in (m.get(nq) or []):               # 정확 일치 우선
+        if c[0] not in seen:
+            hits.append(c); seen.add(c[0])
+    for norm, lst in m.items():               # 부분 일치 보강
+        if norm == nq or nq not in norm:
+            continue
+        for c in lst:
+            if c[0] not in seen:
+                hits.append(c); seen.add(c[0])
+        if len(hits) >= limit * 4:
+            break
+    hits.sort(key=lambda c: (0 if c[2] else 1, len(c[1] or "")))
+    return hits[:limit]
+
 def _num(v):
     try:
         return int(re.sub(r"[^\d-]", "", str(v)))
@@ -4803,112 +4796,142 @@ def _dart_financials(key, corp_code):
                     "fs": "연결" if fs == "CFS" else "개별/별도", "items": items}
     return None
 
-_DART_OVERVIEW = {          # company.json 필드 → 그리드 라벨
-    "ceo_nm": "대표자(공시)", "corp_cls": "법인구분", "jurir_no": "법인등록번호",
-    "est_dt": "설립일(공시)", "acc_mt": "결산월", "induty_code": "업종코드",
-    "hm_url": "홈페이지", "adres": "주소(공시)", "stock_name": "종목명",
-    "stock_code": "종목코드",
-}
 _DART_CLS = {"Y": "유가증권시장 상장", "K": "코스닥 상장", "N": "코넥스 상장", "E": "기타(외부감사 등)"}
-# 그리드에서 DART 보조 필드의 표시 순서(비즈노 필드 뒤에 이어 붙는다).
-_DART_GRID_ORDER = ["상장여부", "법인구분", "종목명", "종목코드", "결산월",
-                    "업종코드", "홈페이지", "공시(DART)"]
+_DART_COMPANY_FIELDS = {      # company.json 필드 → 그리드 라벨
+    "corp_name": "상호", "corp_name_eng": "영문상호", "ceo_nm": "대표자",
+    "corp_cls": "법인구분", "jurir_no": "법인등록번호",
+    "adres": "주소", "hm_url": "홈페이지", "phn_no": "전화번호", "fax_no": "팩스",
+    "induty_code": "업종코드", "est_dt": "설립일", "acc_mt": "결산월",
+    "stock_name": "종목명", "stock_code": "종목코드",
+}
+# 상세 그리드 표시 순서(라벨 기준). 없는 라벨은 건너뛴다.
+_COMP_GRID_ORDER = ["상호", "영문상호", "대표자", "사업자등록번호", "법인등록번호",
+                    "법인구분", "상장여부", "종목명", "종목코드", "업종코드",
+                    "설립일", "결산월", "납세자 상태", "과세유형", "폐업일",
+                    "주소", "전화번호", "팩스", "홈페이지", "공시(DART)"]
 
-def _dart_enrich(name):
-    """회사명 기준 DART 매칭 → (추가 그리드 필드 dict, 재무 요약 dict|None).
-    DART_API_KEY 없거나 매칭 실패 시 ({}, None)."""
-    key = _dart_key()
-    if not key or not name:
-        return {}, None
-    hit = _dart_find_corp(key, name)
-    if not hit:
-        return {}, None
-    corp_code, _, stock = hit
-    extra = {}
+def _dart_company(key, corp_code):
+    """corp_code → DART 기업개황(company.json) 라벨 dict. 실패 시 {}.
+    사업자등록번호는 '_bno' 키로 함께 반환(국세청 상태 연계용)."""
     try:
         r = _SESSION.get("https://opendart.fss.or.kr/api/company.json",
                          params={"crtfcKey": key, "corp_code": corp_code}, timeout=15)
         d = r.json() or {}
-        if d.get("status") == "000":
-            for k, lab in _DART_OVERVIEW.items():
-                v = (d.get(k) or "").strip()
-                if not v:
-                    continue
-                if k == "corp_cls":
-                    v = _DART_CLS.get(v, v)
-                elif k == "acc_mt":
-                    v = f"{v}월"
-                extra[lab] = v
-            extra["공시(DART)"] = f"https://dart.fss.or.kr/dsab007/main.do?apiKey=&corpCode={corp_code}"
-            extra["상장여부"] = "상장" if (stock or d.get("stock_code")) else "비상장"
     except Exception:
-        pass
-    return extra, _dart_financials(key, corp_code)
+        return {}
+    if d.get("status") != "000":
+        return {}
+    out = {}
+    for k, lab in _DART_COMPANY_FIELDS.items():
+        v = (d.get(k) or "").strip()
+        if not v:
+            continue
+        if k == "corp_cls":
+            v = _DART_CLS.get(v, v)
+        elif k == "acc_mt":
+            v = f"{v}월"
+        elif k == "est_dt":
+            v = _fmtymd(v)
+        out[lab] = v
+    out["상장여부"] = "상장" if (d.get("stock_code") or "").strip() else "비상장"
+    out["공시(DART)"] = f"https://dart.fss.or.kr/dsae001/main.do?corp_code={corp_code}"
+    bno = re.sub(r"\D", "", d.get("bizr_no", "") or "")
+    if bno:
+        out["_bno"] = bno
+    return out
 
 @app.route("/api/assist/company")
 def assist_company():
-    """기업 조회 — 비즈노 통합검색(회사명·사업자번호·대표자명 등 키워드)."""
-    key = _assist_key("company")
-    if not key:
+    """기업 조회 — DART 회사명 검색 / 국세청 사업자번호 상태(공공데이터포털).
+
+    · 사업자등록번호(10자리) → 국세청 사업자상태(계속/휴업/폐업) 단건.
+    · 그 외(회사명) → DART 등재 법인 후보 목록(상세에서 개황·재무 조회).
+    """
+    if not _assist_key("company"):
         return _assist_need_key("company")
     query = request.args.get("query", "").strip()
-    page = re.sub(r"\D", "", request.args.get("page", "1")) or "1"
     if not query:
         return jsonify({"success": False,
-                        "error": "회사명·사업자등록번호·대표자명 등 검색어를 입력하세요."})
+                        "error": "회사명 또는 사업자등록번호를 입력하세요."})
+    digits = re.sub(r"\D", "", query)
+    # 사업자등록번호(10자리, 숫자·구분기호만) → 국세청 상태 단건
+    if len(digits) == 10 and re.fullmatch(r"[\d\s-]+", query):
+        if not (os.environ.get("DATA_GO_KR_KEY", "") or "").strip():
+            return jsonify({"success": False, "mode": "bno",
+                            "error": "사업자등록번호 조회에는 공공데이터포털 서비스키(DATA_GO_KR_KEY)가 필요합니다."})
+        st = _nts_status(digits)
+        if not st:
+            return jsonify({"success": True, "count": 0, "items": [], "mode": "bno",
+                            "note": "국세청에 등록된 상태 정보가 없습니다."})
+        biz = " · ".join(v for v in (st.get("납세자 상태"), st.get("과세유형")) if v)
+        item = {"name": _fmtbno_disp(digits), "ceo": "", "bno": digits,
+                "addr": "", "biz": biz, "corp": "", "closed": bool(st.get("폐업일"))}
+        return jsonify({"success": True, "count": 1, "total": "1",
+                        "items": [item], "mode": "bno"})
+    # 회사명 → DART 후보
+    dk = _dart_key()
+    if not dk:
+        return jsonify({"success": False, "mode": "name",
+                        "error": "회사명 검색에는 DART 인증키가 필요합니다. "
+                                 "사업자등록번호(10자리)로 조회하거나 관리자에게 DART_API_KEY 설정을 요청하세요."})
     try:
-        rows, total = _bizno_search(key, query, page)
-        items = []
-        for row in rows[:30]:
-            name = _bz(row, _BIZNO_NAME)
-            bno = re.sub(r"\D", "", _bz(row, _BIZNO_BNO))
-            items.append({
-                "name": name or "(상호 미상)",
-                "ceo": _bz(row, _BIZNO_CEO),
-                "bno": bno,
-                "addr": _bz(row, _BIZNO_ADDR),
-                "biz": _bz(row, _BIZNO_BIZ)})
+        hits = _dart_search(dk, query)
+        items = [{"name": nm, "ceo": "", "bno": "", "addr": "",
+                  "biz": ("상장" if sk else ""), "corp": cc, "stock": sk}
+                 for cc, nm, sk in hits]
         return jsonify({"success": True, "count": len(items),
-                        "total": total or str(len(items)), "items": items})
+                        "total": str(len(items)), "items": items, "mode": "name"})
     except Exception as e:
         return jsonify({"success": False, "error": f"조회 실패: {e}"})
 
 @app.route("/api/assist/company/detail")
 def assist_company_detail():
-    """기업 상세 — 비즈노 레코드 전체를 그리드용 필드로 정규화(+국세청 상태 보조)."""
-    key = _assist_key("company")
-    if not key:
+    """기업 상세 — DART 기업개황·재무 + 국세청 사업자상태(공공데이터포털).
+
+    corp(=DART corp_code) 우선, 없으면 query(회사명)로 DART 매칭, bno(사업자번호)로
+    국세청 상태를 조회한다. 셋 다 없으면 오류.
+    """
+    if not _assist_key("company"):
         return _assist_need_key("company")
+    corp = re.sub(r"[^0-9]", "", request.args.get("corp", ""))
     bno = re.sub(r"\D", "", request.args.get("bno", ""))
     query = request.args.get("query", "").strip()
-    q = bno or query
-    if not q:
-        return jsonify({"success": False, "error": "검색어 또는 사업자번호가 필요합니다."})
+    if not (corp or bno or query):
+        return jsonify({"success": False, "error": "회사명·사업자번호 또는 기업코드가 필요합니다."})
+    dk = _dart_key()
     try:
-        rows, _ = _bizno_search(key, q, "1")
-        rec = rows[0] if rows else None
-        if not rec:
-            return jsonify({"success": False, "error": "기업 정보를 찾지 못했습니다."})
-        name = _bz(rec, _BIZNO_NAME)
-        rbno = re.sub(r"\D", "", _bz(rec, _BIZNO_BNO)) or bno
-        # 라벨링 + 우선순위 정렬 (알려지지 않은 키는 원본 키로 노출)
-        labeled = {}
-        for k, v in rec.items():
-            if v in (None, "", []) or isinstance(v, (dict, list)):
-                continue
-            labeled[_BIZNO_LABELS.get(k, k)] = str(v).strip()
-        labeled.update(_nts_status(rbno))     # 국세청 상태 보조
-        extra, finance = _dart_enrich(name)   # DART 기업개황 보조
-        for lab, v in extra.items():
-            labeled.setdefault(lab, v)
+        # corp_code 미지정 시 회사명으로 DART 매칭 시도
+        if not corp and dk and query:
+            hit = _dart_find_corp(dk, query)
+            if hit:
+                corp = hit[0]
+        name, labeled, finance = "", {}, None
+        if corp and dk:
+            ov = _dart_company(dk, corp)
+            if ov:
+                name = ov.get("상호") or query
+                if not bno and ov.get("_bno"):
+                    bno = ov["_bno"]
+                labeled.update({k: v for k, v in ov.items() if not k.startswith("_")})
+            finance = _dart_financials(dk, corp)
+        if bno:
+            labeled.update(_nts_status(bno))       # 국세청 사업자상태
+            labeled.setdefault("사업자등록번호", _fmtbno_disp(bno))
+        if not name:
+            name = query or (_fmtbno_disp(bno) if bno else "(상호 미상)")
+        if not labeled and not finance:
+            return jsonify({"success": False,
+                            "error": "기업 정보를 찾지 못했습니다. "
+                                     "DART 등재 회사명 또는 사업자등록번호를 확인하세요."})
+        # 필드 정렬(알려진 라벨 우선, 나머지는 원순서)
         fields, seen = [], set()
-        for lab in _BIZNO_ORDER + _DART_GRID_ORDER:
+        for lab in _COMP_GRID_ORDER:
             if lab in labeled and lab not in seen:
                 fields.append([lab, labeled[lab]]); seen.add(lab)
         for lab, v in labeled.items():
             if lab not in seen:
                 fields.append([lab, v]); seen.add(lab)
-        # 상단 요약 지표(가능한 실데이터만) — 매출액(전년비)·임직원수·자본금
+        # 상단 요약 지표(실데이터만) — 매출액(전년비)·영업이익·사업자상태
         stats = []
         if finance:
             sales = next((it for it in finance["items"] if it["name"] == "매출액"), None)
@@ -4918,15 +4941,15 @@ def assist_company_detail():
                     rr = (sales["cur"] - sales["prev"]) / abs(sales["prev"]) * 100
                     sub = f"전년비 {'+' if rr >= 0 else ''}{rr:.1f}%"
                 stats.append({"label": "최근 매출액", "value": _won_short(sales["cur"]), "sub": sub})
-        emp = labeled.get("종업원수")
-        if emp:
-            stats.append({"label": "임직원수", "value": (emp + "명") if emp.isdigit() else emp, "sub": ""})
-        cap = labeled.get("자본금")
-        if cap:
-            stats.append({"label": "자본금", "value": _won_short(cap) or cap, "sub": ""})
-        # 주요 업종(핵심 역량 대체) — 업태·종목
-        skills = [labeled[k] for k in ("업태", "종목", "산업분류") if labeled.get(k)]
-        detail = {"name": name or "(상호 미상)", "bno": rbno, "fields": fields}
+            op = next((it for it in finance["items"] if it["name"] == "영업이익"), None)
+            if op and op.get("cur") is not None:
+                stats.append({"label": "영업이익", "value": _won_short(op["cur"]),
+                              "sub": f"{finance.get('year','')} {finance.get('fs','')}".strip()})
+        nts = labeled.get("납세자 상태")
+        if nts:
+            stats.append({"label": "사업자상태", "value": nts, "sub": labeled.get("과세유형", "")})
+        skills = [labeled[k] for k in ("업종코드", "법인구분") if labeled.get(k)]
+        detail = {"name": name, "bno": bno, "fields": fields}
         if finance:
             detail["finance"] = finance
         if stats:

@@ -2001,7 +2001,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
         <button class="sm-item" id="smCompany" onclick="openAssist('company')" title="기업 통합검색(회사명·사업자번호·대표자)"><span class="sm-ic">🏢</span><span>기업</span></button>
         <button class="sm-item" id="smPatent" onclick="openAssist('patent')" title="특허·실용신안 검색(KIPRIS)"><span class="sm-ic">📄</span><span>특허</span></button>
         <button class="sm-item" id="smProcurement" onclick="openAssist('procurement')" title="나라장터 입찰공고(조달청)"><span class="sm-ic">📢</span><span>조달공고</span></button>
-        <button class="sm-item" id="smSupport" onclick="openAssist('support')" title="정부 지원사업 공고(기업마당)"><span class="sm-ic">🎯</span><span>지원사업</span></button>
+        <button class="sm-item" id="smSupport" onclick="openAssist('support')" title="정부 지원사업 공고(공공데이터포털)"><span class="sm-ic">🎯</span><span>지원사업</span></button>
       </div>
       <span class="sm-div" aria-hidden="true"></span>
       <div class="sm-group">
@@ -2309,9 +2309,9 @@ function setAgency(ag){
 // ── 업무 도우미(공공 API 조회): 기업·특허·지원사업·조달 ──────────────────────
 let _assistMode=null, _assistStatus=null, _scenReturn='internal';
 const ASSIST_CFG={
-  company:    {tab:'smCompany',    label:'기업 조회',   ic:'🏢', ph:'회사명 · 사업자등록번호 · 대표자명 등', hint:'회사명·사업자번호·대표자명 등으로 기업 정보를 검색합니다.', param:'query'},
+  company:    {tab:'smCompany',    label:'기업 조회',   ic:'🏢', ph:'회사명(DART) 또는 사업자등록번호(10자리)', hint:'DART 기업개황·재무와 국세청 사업자상태(공공데이터포털)를 함께 조회합니다.', param:'query'},
   patent:     {tab:'smPatent',     label:'특허 조회',   ic:'📄', ph:'특허 키워드 또는 출원인 (예: 스마트팜)',      hint:'KIPRIS에서 특허·실용신안을 검색합니다.',           param:'query'},
-  support:    {tab:'smSupport',    label:'지원사업 조회', ic:'🎯', ph:'지원사업 키워드 (예: 스마트팜, 수출, R&D)',    hint:'정부 지원사업 공고(기업마당) — 마감임박·관심일정 관리.', param:'query', oppty:true,
+  support:    {tab:'smSupport',    label:'지원사업 조회', ic:'🎯', ph:'지원사업 키워드 (예: 스마트팜, 수출, R&D)',    hint:'정부 지원사업 공고(공공데이터포털) — 마감임박·관심일정 관리.', param:'query', oppty:true,
                presets:['스마트팜','청년·귀농','수출','R&D','기자재·시설','교육','자금','판로']},
   procurement:{tab:'smProcurement',label:'조달공고 조회', ic:'📢', ph:'입찰공고 키워드 (예: 시설, 용역)',             hint:'나라장터 입찰공고(최근 30일) — 마감임박·관심일정 관리.', param:'query', oppty:true,
                presets:['농업','스마트팜','시설·공사','용역','기자재','시스템','연구']},
@@ -2345,11 +2345,11 @@ async function openAssist(kind){
   }
   if(kind==='company'){                      // 기업: 통합 키워드 검색 + 목록 + 상세 그리드
     _compLast=null; _compScope='all'; _compFilter={region:'',q:'',sort:'rel'};
-    const scopes=[['all','전체'],['name','회사명'],['bno','사업자번호'],['ceo','대표자명']];
+    const scopes=[['all','전체'],['name','회사명'],['bno','사업자번호']];
     const sc=scopes.map(([v,l],i)=>`<button class="pat-chip${i===0?' active':''}" data-v="${v}" onclick="_compScopePick(this)">${l}</button>`).join('');
     p.innerHTML=head+
       `<div class="pat-frow" style="margin-bottom:10px;"><span class="pat-flabel">검색 대상</span><div class="pat-appl" id="compScope">${sc}</div></div>`+
-      `<div class="assist-search"><input id="compQuery" class="sinput" placeholder="회사명 · 사업자등록번호 · 대표자명 등" onkeydown="if(event.key==='Enter')runCompany()" aria-label="기업 검색어"><button class="sbtn" onclick="runCompany()">조회</button></div>`+
+      `<div class="assist-search"><input id="compQuery" class="sinput" placeholder="회사명(DART) 또는 사업자등록번호(10자리)" onkeydown="if(event.key==='Enter')runCompany()" aria-label="기업 검색어"><button class="sbtn" onclick="runCompany()">조회</button></div>`+
       `<div id="compResults" class="pat-results"></div>`;
     const cq=document.getElementById('compQuery'); if(cq) cq.focus();
     return;
@@ -2429,12 +2429,12 @@ const COMP_SIDO=[['서울','서울'],['부산','부산'],['대구','대구'],['�
 function _compSido(addr){ addr=String(addr||''); for(const [lab,pat] of COMP_SIDO){ if(addr.indexOf(lab)>=0||addr.indexOf(pat)>=0) return lab; } return addr?'기타':''; }
 function _fmtBno(b){ b=String(b||'').replace(/\D/g,''); return b.length===10?`${b.slice(0,3)}-${b.slice(3,5)}-${b.slice(5)}`:b; }
 function _compScopePick(btn){ document.querySelectorAll('#compScope .pat-chip').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); _compScope=btn.dataset.v||'all';
-  const cq=document.getElementById('compQuery'); if(cq) cq.placeholder=({all:'회사명 · 사업자등록번호 · 대표자명 등',name:'회사명 입력',bno:'사업자등록번호(숫자)',ceo:'대표자명 입력'})[_compScope]; }
+  const cq=document.getElementById('compQuery'); if(cq) cq.placeholder=({all:'회사명(DART) 또는 사업자등록번호(10자리)',name:'회사명 입력(DART 등재 법인)',bno:'사업자등록번호(숫자 10자리)'})[_compScope]||'회사명 또는 사업자등록번호'; }
 function runCompany(){
   const box=document.getElementById('compResults'); if(!box) return;
   let q=((document.getElementById('compQuery')||{}).value||'').trim();
   if(_compScope==='bno') q=q.replace(/\D/g,'');   // 사업자번호는 숫자만
-  if(!q){ box.innerHTML=`<div class="assist-note">회사명·사업자번호·대표자명 등 검색어를 입력하세요.</div>`; return; }
+  if(!q){ box.innerHTML=`<div class="assist-note">회사명(DART) 또는 사업자등록번호를 입력하세요.</div>`; return; }
   _compFilter={region:'',q:'',sort:'rel'};
   box.innerHTML=`<div class="assist-loading"><div class="spinner"></div><span>기업 조회 중...</span></div>`;
   fetch('/api/assist/company?query='+encodeURIComponent(q)).then(r=>r.json()).then(d=>{ _compLast=d; box.innerHTML=_renderCompanyList(d); })
@@ -2443,7 +2443,7 @@ function runCompany(){
 function _renderCompanyList(d){
   if(d&&d.need_key){
     const url=d.apply_url?`<a href="${escHtml(d.apply_url)}" target="_blank" rel="noopener">서비스키 발급 안내 →</a>`:'';
-    return `<div class="assist-note">🔑 <b>${escHtml(d.provider||'')}</b> 서비스키가 설정되지 않았습니다.<br>관리자가 환경변수(<code>BIZNO_API_KEY</code>)를 설정하면 조회할 수 있습니다.<br>${url}</div>`;
+    return `<div class="assist-note">🔑 <b>${escHtml(d.provider||'')}</b> 서비스키가 설정되지 않았습니다.<br>관리자가 환경변수(<code>DART_API_KEY</code> 또는 <code>DATA_GO_KR_KEY</code>)를 설정하면 조회할 수 있습니다.<br>${url}</div>`;
   }
   if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'조회에 실패했습니다.')}</div>`;
   const items=d.items||[];
@@ -2479,12 +2479,13 @@ function _compRowsHtml(){
   if(!arr.length) return `<div class="assist-note">필터 조건에 맞는 기업이 없습니다.</div>`;
   const rows=arr.map(it=>{
     const meta=[it.bno&&_fmtBno(it.bno), it.biz, it.addr].filter(Boolean).map(escHtml).join(' · ');
-    const bnoArg=argAttr(it.bno||''), nmArg=encodeURIComponent(it.name||'');
-    const favItem={type:'company',name:it.name||'',subtitle:it.bno?('사업자 '+_fmtBno(it.bno)):(it.ceo?('대표 '+it.ceo):''),bno:it.bno||'',url:''};
+    const corpArg=argAttr(it.corp||''), bnoArg=argAttr(it.bno||''), nmArg=encodeURIComponent(it.name||'');
+    const badges=(it.stock?'<span class="pat-row-appl">상장</span>':'')+(it.closed?'<span class="pat-row-appl" style="color:#d33">폐업</span>':'');
+    const favItem={type:'company',name:it.name||'',subtitle:it.bno?('사업자 '+_fmtBno(it.bno)):(it.stock?'상장법인':''),bno:it.bno||'',url:''};
     const on=favHas(favItem);
-    return `<div class="pat-rw"><button class="pat-row" onclick="compDetail('${bnoArg}','${nmArg}')" title="상세 보기">`+
+    return `<div class="pat-rw"><button class="pat-row" onclick="compDetail('${corpArg}','${bnoArg}','${nmArg}')" title="상세 보기">`+
       `<div class="pat-row-t">${escHtml(it.name||'(상호 미상)')}</div>`+
-      `<div class="pat-row-m">${it.ceo?'<span class="pat-row-appl">대표 '+escHtml(it.ceo)+'</span>':''}${meta?'<span class="pat-row-meta">'+meta+'</span>':''}</div></button>`+
+      `<div class="pat-row-m">${it.ceo?'<span class="pat-row-appl">대표 '+escHtml(it.ceo)+'</span>':''}${badges}${meta?'<span class="pat-row-meta">'+meta+'</span>':''}</div></button>`+
       `<button class="pat-fav${on?' on':''}" data-fav="${_favData(favItem)}" data-style="row" onclick="favToggleEl(this)" title="즐겨찾기" aria-pressed="${on}">${on?'★':'☆'}</button></div>`;
   }).join('');
   return `<div class="pat-count">${arr.length}건 표시${total}</div><div class="pat-list">${rows}</div>`;
@@ -2492,10 +2493,15 @@ function _compRowsHtml(){
 function _compRefresh(){ _compFilter.q=((document.getElementById('compFilter2')||{}).value||''); const box=document.getElementById('compListBox'); if(box) box.innerHTML=_compRowsHtml(); }
 function _compRegionPick(r,btn){ _compFilter.region=(_compFilter.region===r)?'':r; document.querySelectorAll('#compRegion .pat-chip').forEach(b=>b.classList.remove('active')); if(btn&&_compFilter.region===r) btn.classList.add('active'); else if(!_compFilter.region){ const all=document.querySelector('#compRegion .pat-chip'); if(all) all.classList.add('active'); } _compRefresh(); }
 function _compSortPick(s,btn){ _compFilter.sort=s; if(btn){ btn.parentElement.querySelectorAll('.pat-chip').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } _compRefresh(); }
-function compDetail(bno, nameEnc){
+function compDetail(corp, bno, nameEnc){
   const box=document.getElementById('compResults'); if(!box) return;
   const back=`<button class="pat-back" onclick="compBackToList()">← 목록으로</button>`;
-  const qs=(bno&&bno.replace(/\D/g,'').length>=10)?('bno='+encodeURIComponent(bno)):('query='+encodeURIComponent(decodeURIComponent(nameEnc||'')));
+  const nm=decodeURIComponent(nameEnc||'');
+  const parts=[];
+  if(corp) parts.push('corp='+encodeURIComponent(corp));
+  if(bno&&bno.replace(/\D/g,'').length>=10) parts.push('bno='+encodeURIComponent(bno.replace(/\D/g,'')));
+  if(!corp&&nm) parts.push('query='+encodeURIComponent(nm));
+  const qs=parts.join('&');
   box.innerHTML=back+`<div class="assist-loading"><div class="spinner"></div><span>상세 불러오는 중...</span></div>`;
   fetch('/api/assist/company/detail?'+qs).then(r=>r.json()).then(d=>{
     box.innerHTML=back+_renderCompanyDetail(d);
@@ -3234,7 +3240,7 @@ function _renderAssist(d, kind){
   const cnt=`<div style="font-size:12px;color:var(--mu);margin-bottom:4px;">${items.length}건</div>`;
   return cnt+cards;
 }
-const ASSIST_ENV_LABEL={company:'DATA_GO_KR_KEY',patent:'KIPRIS_API_KEY',support:'BIZINFO_API_KEY',procurement:'DATA_GO_KR_KEY'};
+const ASSIST_ENV_LABEL={company:'DART_API_KEY / DATA_GO_KR_KEY',patent:'KIPRIS_API_KEY',support:'BIZINFO_API_KEY',procurement:'DATA_GO_KR_KEY'};
 
 function setMode(m){
   if(_assistMode) closeAssist();   // 업무 도우미에서 일반 검색 모드로 복귀
@@ -9631,9 +9637,6 @@ async function scoreAndReorderAsync(laws, keywords){
       <a href="https://www.law.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">법제처 국가법령정보센터</a> ·
       <a href="https://plus.kipris.or.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">특허청 KIPRIS</a> ·
       <a href="https://opendart.fss.or.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">금융감독원 DART</a> ·
-      <a href="https://bizno.net" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">비즈노 기업정보</a> ·
-      <a href="https://www.bizinfo.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">중소벤처기업부 기업마당</a> ·
-      <a href="https://www.g2b.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">조달청 나라장터</a> ·
       <a href="https://www.data.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">공공데이터포털</a>
     </div>
   </footer>
