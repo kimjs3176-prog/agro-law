@@ -177,6 +177,11 @@ body.dark .det-fav.on{background:rgba(245,179,1,.16);color:#fbbf24;}
 .pat-pg:disabled{opacity:.4;cursor:default;}
 .pat-pginfo{font-size:12.5px;color:var(--mu);font-weight:600;min-width:88px;text-align:center;}
 .pat-fbnote{font-size:12px;line-height:1.6;color:var(--gp);background:var(--gl);border:1px solid var(--bd);border-radius:9px;padding:8px 12px;margin-bottom:10px;}
+.pat-flabel-sub{display:inline-block;margin-left:5px;font-size:10px;font-weight:700;color:var(--ht);background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:0 5px;vertical-align:middle;}
+.pat-widen{font-size:12px;line-height:1.7;color:var(--mu);background:var(--sf);border:1px solid var(--bd);border-radius:9px;padding:9px 12px;margin-bottom:10px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;}
+.pat-widen b{color:var(--tx);}
+.pat-widen-btn{margin-left:2px;padding:4px 11px;border:1px solid var(--g);border-radius:999px;background:var(--gl);color:var(--gp);font-size:11.5px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.12s;}
+.pat-widen-btn:hover{background:var(--g);color:#fff;}
 .pat-back{display:inline-flex;align-items:center;gap:4px;margin-bottom:12px;padding:6px 12px;border:1px solid var(--bd);border-radius:999px;background:var(--sf);color:var(--mu);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font);}
 .pat-back:hover{color:var(--tx);border-color:var(--g);}
 .pat-detail{background:var(--sf);border:1px solid var(--bd);border-radius:12px;box-shadow:var(--shadow);padding:16px 18px;}
@@ -2483,7 +2488,7 @@ function _patFiltersHtml(){
   return `<div class="pat-filters">`+
     `<div class="pat-frow"><span class="pat-flabel">출원인</span><div class="pat-appl" id="patAppl">${appl}</div></div>`+
     `<div class="pat-frow"><span class="pat-flabel">상태</span><div class="pat-appl" id="patStatus">${stat}</div></div>`+
-    `<div class="pat-frow"><span class="pat-flabel">기간</span><div class="pat-appl" id="patPeriod">`+
+    `<div class="pat-frow"><span class="pat-flabel" title="출원일(신청일) 기준으로 거릅니다">기간<span class="pat-flabel-sub">출원일</span></span><div class="pat-appl" id="patPeriod">`+
       `<button class="pat-chip active" data-y="0" onclick="_patPeriod(0,this)">전체</button>`+
       `<button class="pat-chip" data-y="1" onclick="_patPeriod(1,this)">최근 1년</button>`+
       `<button class="pat-chip" data-y="2" onclick="_patPeriod(2,this)">최근 2년</button>`+
@@ -2523,6 +2528,20 @@ function _patPeriod(y, btn){
   else { if(f)f.value=String(yr-y+1); if(t)t.value=String(yr); }
 }
 function _patPeriodManual(){ document.querySelectorAll('#patPeriod .pat-chip').forEach(b=>b.classList.remove('active')); }
+// 결과가 적을 때 원클릭 필터 완화(재조회)
+function _patClearPeriod(){
+  const f=document.getElementById('patFrom'), t=document.getElementById('patTo');
+  if(f) f.value=''; if(t) t.value='';
+  document.querySelectorAll('#patPeriod .pat-chip').forEach(b=>b.classList.remove('active'));
+  const all=document.querySelector('#patPeriod .pat-chip[data-y="0"]'); if(all) all.classList.add('active');
+  runPatent();
+}
+function _patClearStatus(){
+  const cont=document.getElementById('patStatus');
+  if(cont){ cont.querySelectorAll('.pat-chip').forEach(b=>b.classList.remove('active'));
+    const all=cont.querySelector('.pat-chip[data-v=""]'); if(all) all.classList.add('active'); }
+  runPatent();
+}
 // ── 기업 조회: 통합 키워드 검색 + 결과 필터(지역·정렬·결과내검색) + 상세 ──
 let _compLast=null, _compScope='all', _compFilter={region:'',q:'',sort:'rel'};
 const COMP_SIDO=[['서울','서울'],['부산','부산'],['대구','대구'],['인천','인천'],['광주','광주'],['대전','대전'],['울산','울산'],['세종','세종'],['경기','경기'],['강원','강원'],['충북','충청북'],['충남','충청남'],['전북','전라북'],['전남','전라남'],['경북','경상북'],['경남','경상남'],['제주','제주']];
@@ -3034,9 +3053,18 @@ function _renderPatentList(d){
   const nav=_patPageNav(d);
   // 명칭 정밀검색 0건 → 자유검색(명칭+요약+청구항) 폴백 시 안내
   const fb=d.matchMode==='word'?`<div class="pat-fbnote">🔎 명칭 정확일치 결과가 없어 <b>자유검색</b>(명칭·요약·청구항)으로 대체했습니다. 검색어를 줄이면 더 정확해집니다.</div>`:'';
+  // 결과가 적을 때: 제약 필터(기간·상태)를 원클릭으로 완화 안내
+  const perActive=!!(((document.getElementById('patFrom')||{}).value||'').trim()||((document.getElementById('patTo')||{}).value||'').trim());
+  const statActive=(_patStatuses||[]).length>0;
+  let widen='';
+  if(totalN>0 && totalN<=20 && (perActive||statActive)){
+    const acts=(perActive?`<button class="pat-widen-btn" onclick="_patClearPeriod()">기간 전체로</button>`:'')
+      +(statActive?`<button class="pat-widen-btn" onclick="_patClearStatus()">상태 전체로</button>`:'');
+    widen=`<div class="pat-widen">🔎 결과가 적나요? <b>기간은 출원일 기준</b>이라 ‘최근 출원 + 등록’은 자연히 적게 나옵니다(심사·등록에 보통 1~3년). 필터를 완화해 더 보기:${acts}</div>`;
+  }
   return `<div class="pat-listhd"><span class="pat-count">${items.length}건 표시${total}${pageTxt}</span>`+
          `<button class="pat-xlsx" onclick="exportPatents(this)" title="현재 필터의 전체 결과를 엑셀(CSV)로 저장">⬇ 엑셀 다운로드</button></div>`+
-         fb+`<div class="pat-list">${rows}</div>`+nav;
+         fb+widen+`<div class="pat-list">${rows}</div>`+nav;
 }
 // 현재 필터의 특허 전체 결과를 여러 페이지로 모아 엑셀(CSV)로 저장
 async function exportPatents(btn){
