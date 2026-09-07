@@ -232,7 +232,7 @@ body.dark .cpat-b.reg{background:rgba(34,197,94,.16);color:#6ee7a0;}
 .exp-limit{margin-top:8px;font-size:12px;font-weight:700;padding:7px 10px;border-radius:8px;background:var(--bg);color:var(--mu);}
 .exp-limit.ok{background:#e7f6ec;color:#137a3e;} .exp-limit.over{background:#fde6e6;color:#c0342b;}
 body.dark .exp-limit.ok{background:rgba(34,197,94,.16);color:#6ee7a0;} body.dark .exp-limit.over{background:rgba(239,68,68,.18);color:#fca5a5;}
-.exp-actions{display:flex;gap:8px;position:sticky;bottom:0;}
+.exp-actions{display:flex;gap:8px;margin-top:4px;}
 .exp-print{flex:1;font-size:13.5px;font-weight:800;padding:11px;border:none;border-radius:10px;background:var(--g);color:#fff;cursor:pointer;}
 .exp-print:hover{background:var(--gd);}
 .exp-mini2{font-size:13px;font-weight:700;padding:11px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);cursor:pointer;}
@@ -257,6 +257,14 @@ body.dark .exp-limit.ok{background:rgba(34,197,94,.16);color:#6ee7a0;} body.dark
 .expd-sum{font-size:13.5px;font-weight:800;color:var(--gp);text-align:right;margin-top:4px;}
 .expd-warn{margin-top:12px;font-size:12.5px;font-weight:700;color:#c0342b;background:#fde6e6;border-radius:8px;padding:9px 11px;}
 body.dark .expd-warn{background:rgba(239,68,68,.18);color:#fca5a5;}
+/* 업무추진비 표 양식(공문서 스타일) */
+.pmt{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px;}
+.pmt th,.pmt td{border:1px solid #9aa0a8;padding:8px 11px;vertical-align:middle;color:var(--tx);line-height:1.5;}
+.pmt th{background:#eef0f3;font-weight:700;width:96px;text-align:center;white-space:nowrap;}
+.pmt td{text-align:center;}
+.pmt tr:nth-child(1) td,.pmt tr:nth-child(2) td,.pmt tr:nth-child(4) td,.pmt tr:nth-child(6) td{text-align:left;}
+body.dark .pmt th,body.dark .pmt td{border-color:rgba(255,255,255,.22);}
+body.dark .pmt th{background:rgba(255,255,255,.08);}
 @media(max-width:820px){ .exp-wrap{grid-template-columns:1fr;} .exp-preview{position:static;} }
 /* 인쇄: 본문만 출력 */
 @media print{
@@ -2890,13 +2898,15 @@ function closeAssist(){
 const EXP_KEY='expenseBody';
 const EXP_METHODS=['계좌이체','현금','법인카드','어음','기타'];
 const EXP_PER_LIMIT=50000;    // 업무추진비 1인당 한도
-let _expState=null, _expPlain='', _expRendering=false;
+let _expState=null, _expPlain='', _expRich='', _expRendering=false;
+function _wonGeum(n){ return '금'+(Math.round(Number(n)||0)).toLocaleString('ko-KR')+'원'; }
+function _dotDate(iso){ const m=String(iso||'').match(/(\d{4})-(\d{2})-(\d{2})/); return m?`${m[1]}. ${+m[2]}. ${+m[3]}.`:String(iso||''); }
 function _today(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 const _GANADA=['가','나','다','라','마','바','사','아','자','차','카','타','파','하'];
 function _expDefault(){ return {type:'general',
   general:{vendor:'',bno:'',ceo:'',desc:'',budget:'',supply:'',vat:'',method:'계좌이체',bank:'',holder:'',account:''},
   travel:{name:'',dept:'',rows:[{date:_today(),place:'',content:'',amt:''}]},
-  promo:{date:_today(),work:'',place:'',people:'',names:'',total:''}}; }
+  promo:{basis:'',purpose:'',date:_today(),place:'',targets:'',people:'',total:'',note:''}}; }
 function _expLoadState(){ try{ const s=JSON.parse(localStorage.getItem(EXP_KEY)||'null'); if(s&&s.type){ const d=_expDefault(); return Object.assign(d,s,{general:Object.assign(d.general,s.general),travel:Object.assign(d.travel,s.travel),promo:Object.assign(d.promo,s.promo)}); } }catch(e){} return _expDefault(); }
 function _expSaveState(){ try{ localStorage.setItem(EXP_KEY, JSON.stringify(_expState)); }catch(e){} }
 function _won(n){ return '₩'+(Math.round(Number(n)||0)).toLocaleString('ko-KR'); }
@@ -2988,15 +2998,19 @@ function _expRenderFields(){
   } else {
     const pm=_expState.promo;
     box.innerHTML=
-      `<div class="exp-fg"><div class="exp-fgt">업무추진비 내역</div><div class="exp-frow">`+
-        `<label>집행일자<input id="pmDate" type="date" value="${_ev(pm.date)}"></label>`+
-        `<label>결제처(상호)<input id="pmPlace" value="${_ev(pm.place)}" placeholder="예: △△식당"></label></div>`+
-        `<label class="exp-full">관련 업무내용<textarea id="pmWork" rows="2" placeholder="예: ○○사업 추진 관련 유관기관 협의">${_ev(pm.work)}</textarea></label></div>`+
-      `<div class="exp-fg"><div class="exp-fgt">참석 및 금액</div><div class="exp-frow">`+
-        `<label>참석인원(명)<input id="pmPeople" inputmode="numeric" value="${_ev(pm.people)}"></label>`+
-        `<label>총 집행금액(원)<input id="pmTotal" inputmode="numeric" value="${_ev(pm.total)}"></label></div>`+
-        `<label class="exp-full">참석자 명단(선택)<input id="pmNames" value="${_ev(pm.names)}" placeholder="예: 홍길동, 김철수, 이영희"></label>`+
-        `<div class="exp-limit" id="pmLimit"></div></div>`;
+      `<div class="exp-fg"><div class="exp-fgt">문서 정보</div>`+
+        `<label class="exp-full">관련근거<input id="pmBasis" value="${_ev(pm.basis)}" placeholder="예: 기술거래이전팀-369(2026.8.21.)"></label>`+
+        `<label class="exp-full">집행목적<textarea id="pmPurpose" rows="2" placeholder="예: NTIS 기술이전 시스템 관련 업무 협의">${_ev(pm.purpose)}</textarea></label></div>`+
+      `<div class="exp-fg"><div class="exp-fgt">일시·장소</div><div class="exp-frow">`+
+        `<label>일시<input id="pmDate" type="date" value="${_ev(pm.date)}"></label>`+
+        `<label>장소<input id="pmPlace" value="${_ev(pm.place)}" placeholder="예: 씨아전복, 온아"></label></div></div>`+
+      `<div class="exp-fg"><div class="exp-fgt">집행대상 및 금액</div>`+
+        `<label class="exp-full">집행대상(참석자)<textarea id="pmTargets" rows="2" placeholder="예: KISTI 유은지 선임 등 2명, 농진원 경준형 팀장, 김진선 연구원 등 총 4명">${_ev(pm.targets)}</textarea></label>`+
+        `<div class="exp-frow"><label>참석인원(명·1인당 계산)<input id="pmPeople" inputmode="numeric" value="${_ev(pm.people)}"></label>`+
+        `<label>금액(원)<input id="pmTotal" inputmode="numeric" value="${_ev(pm.total)}"></label></div>`+
+        `<div class="exp-limit" id="pmLimit"></div></div>`+
+      `<div class="exp-fg"><div class="exp-fgt">비고</div>`+
+        `<label class="exp-full"><input id="pmNote" value="${_ev(pm.note)}" placeholder="(선택)"></label></div>`;
   }
   _expRendering=false;
 }
@@ -3014,7 +3028,7 @@ function _expSync(){
     const rows=[]; for(let i=0;i<n;i++){ rows.push({date:g('tvDate'+i),place:g('tvPlace'+i),content:g('tvContent'+i),amt:g('tvAmt'+i)}); }
     _expState.travel={name:g('tvName'),dept:g('tvDept'),rows:rows.length?rows:_expState.travel.rows};
   } else {
-    _expState.promo={date:g('pmDate'),work:g('pmWork'),place:g('pmPlace'),people:g('pmPeople'),names:g('pmNames'),total:g('pmTotal')};
+    _expState.promo={basis:g('pmBasis'),purpose:g('pmPurpose'),date:g('pmDate'),place:g('pmPlace'),targets:g('pmTargets'),people:g('pmPeople'),total:g('pmTotal'),note:g('pmNote')};
   }
 }
 function _expVatAuto(){ _expSync(); _expState.general.vat=String(Math.round(_digits(_expState.general.supply)*0.1));
@@ -3022,7 +3036,7 @@ function _expVatAuto(){ _expSync(); _expState.general.vat=String(Math.round(_dig
 function _expTravelAdd(){ _expSync(); _expState.travel.rows.push({date:_today(),place:'',content:'',amt:''}); _expRenderFields(); _expUpdate(); _expSaveState(); }
 function _expTravelDel(i){ _expSync(); _expState.travel.rows.splice(i,1); if(!_expState.travel.rows.length) _expState.travel.rows=[{date:_today(),place:'',content:'',amt:''}]; _expRenderFields(); _expUpdate(); _expSaveState(); }
 function _expBuild(){
-  const t=_expState.type; let html='', text='';
+  const t=_expState.type; let html='', text=''; _expRich='';
   if(t==='general'){
     const g=_expState.general; const sup=_digits(g.supply), vat=_digits(g.vat), total=sup+vat;
     const vendor=[g.vendor||'—', g.bno&&('사업자 '+g.bno), g.ceo&&('대표 '+g.ceo)].filter(Boolean).join(', ');
@@ -3049,13 +3063,33 @@ function _expBuild(){
     const per=people>0?Math.floor(total/people):0; const over=per>EXP_PER_LIMIT;
     const limitEl=document.getElementById('pmLimit');
     if(limitEl){ limitEl.className='exp-limit '+(people&&total?(over?'over':'ok'):'');
-      limitEl.textContent=people&&total?`1인당 ${_won(per)} · 한도 ${_won(EXP_PER_LIMIT)} ${over?'초과 ⚠':'이내 ✔'}`:`1인당 한도 ${_won(EXP_PER_LIMIT)}`; }
-    const perTxt=people>0?`${_won(per)} (한도 ${_won(EXP_PER_LIMIT)} ${over?'초과 ⚠':'이내 ✔'})`:'—';
-    const L=[['집행일자',_fmtKDate(pm.date)],['관련 업무',pm.work],['결제처',pm.place],
-      ['참석인원',people?`${people}명`+(pm.names?` (${pm.names})`:''):''],['집행금액',total?_won(total):''],['1인당 지출',perTxt]];
-    html=`<div class="expd-tag">업무추진비</div>`+_expLines(L)+
-      (over?`<div class="expd-warn">⚠ 1인당 한도(${_won(EXP_PER_LIMIT)})를 초과했습니다. 인원 또는 금액을 확인하세요.</div>`:'');
-    text='[업무추진비 지출]\n'+L.filter(x=>x[1]&&x[1]!=='—').map(x=>`· ${x[0]}: ${x[1]}`).join('\n');
+      limitEl.textContent=people&&total?`1인당 ${_wonGeum(per)} · 한도 ${_wonGeum(EXP_PER_LIMIT)} ${over?'초과 ⚠':'이내 ✔'}`:`1인당 한도 ${_wonGeum(EXP_PER_LIMIT)}`; }
+    // 첨부 표 양식: 관련근거 / 집행목적 / 일시·장소 / 집행대상 / 금액·1인당 / 비고
+    const rows=[
+      ['관련근거', pm.basis||'', null, null],
+      ['집행목적', pm.purpose||'', null, null],
+      ['일　시', _dotDate(pm.date), '장　소', pm.place||''],
+      ['집행대상', pm.targets||'', null, null],
+      ['금　액', total?_wonGeum(total):'', '1인당 지출액', (people&&total)?_wonGeum(per):''],
+      ['비　고', pm.note||'', null, null],
+    ];
+    const cell=v=>_ev(v)||'&nbsp;';
+    const trs=rows.map(r=> r[2]===null
+      ? `<tr><th>${_ev(r[0])}</th><td colspan="3">${cell(r[1])}</td></tr>`
+      : `<tr><th>${_ev(r[0])}</th><td>${cell(r[1])}</td><th>${_ev(r[2])}</th><td>${cell(r[3])}</td></tr>`).join('');
+    html=`<div class="expd-tag">업무추진비</div><table class="pmt">${trs}</table>`+
+      (over?`<div class="expd-warn">⚠ 1인당 지출액이 한도(${_wonGeum(EXP_PER_LIMIT)})를 초과했습니다. 인원 또는 금액을 확인하세요.</div>`:'');
+    // 붙여넣기용(HWP·ERP 리치에디터에 표 유지) — 인라인 스타일
+    const ci='border:1px solid #808080;padding:6px 10px;font-size:14px;vertical-align:middle;';
+    const ch='background:#efefef;font-weight:bold;text-align:center;white-space:nowrap;'+ci;
+    _expRich='<table style="border-collapse:collapse;width:100%">'+rows.map(r=> r[2]===null
+      ? `<tr><th style="${ch}">${_ev(r[0])}</th><td style="${ci}" colspan="3">${_ev(r[1])}</td></tr>`
+      : `<tr><th style="${ch}">${_ev(r[0])}</th><td style="${ci}">${_ev(r[1])}</td><th style="${ch}">${_ev(r[2])}</th><td style="${ci}">${_ev(r[3])}</td></tr>`).join('')+'</table>';
+    // 플레인 폴백
+    const P=[['관련근거',pm.basis],['집행목적',pm.purpose],
+      ['일시',_dotDate(pm.date)+(pm.place?('   장소: '+pm.place):'')],['집행대상',pm.targets],
+      ['금액',total?_wonGeum(total)+((people&&total)?`   (1인당 ${_wonGeum(per)})`:''):''],['비고',pm.note]];
+    text='[업무추진비 지출]\n'+P.filter(x=>x[1]).map(x=>`· ${x[0]}: ${x[1]}`).join('\n');
   }
   return {html, text};
 }
@@ -3072,6 +3106,14 @@ function _expUpdate(){
 function _expCopy(btn){
   const text=_expPlain||''; if(!text){ return; }
   const done=()=>{ if(btn){ const o=btn.textContent; btn.textContent='✓ 복사됨'; setTimeout(()=>{btn.textContent=o;},1400); } };
+  if(_expRich && navigator.clipboard && window.ClipboardItem){   // 표 유지(리치) + 플레인 폴백
+    try{
+      const item=new ClipboardItem({'text/html':new Blob([_expRich],{type:'text/html'}),
+                                    'text/plain':new Blob([text],{type:'text/plain'})});
+      navigator.clipboard.write([item]).then(done).catch(()=>_expCopyFb(text,done));
+      return;
+    }catch(e){}
+  }
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done).catch(()=>_expCopyFb(text,done)); }
   else _expCopyFb(text,done);
 }
