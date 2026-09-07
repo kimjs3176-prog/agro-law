@@ -4625,16 +4625,16 @@ def debug_law_xml():
 # 기업조회는 DART(회사명 검색)와 공공데이터포털(국세청 사업자상태)을 함께 활용한다.
 # ══════════════════════════════════════════════════════════════════════════
 _ASSIST_ENV = {"company": "DART_API_KEY", "patent": "KIPRIS_API_KEY",
-               "support": "BIZINFO_API_KEY", "procurement": "DATA_GO_KR_KEY"}
+               "support": "DATA_GO_KR_KEY", "procurement": "DATA_GO_KR_KEY"}
 _ASSIST_APPLY = {
     "company":     "https://opendart.fss.or.kr",
     "patent":      "https://plus.kipris.or.kr/portal/main/main.do",
-    "support":     "https://www.data.go.kr/",
+    "support":     "https://www.data.go.kr/data/15125364/openapi.do",
     "procurement": "https://www.data.go.kr/data/15129394/openapi.do",
 }
 _ASSIST_PROVIDER = {
     "company": "DART·공공데이터포털", "patent": "특허청 KIPRIS",
-    "support": "공공데이터포털", "procurement": "공공데이터포털(나라장터)",
+    "support": "공공데이터포털(K-Startup)", "procurement": "공공데이터포털(나라장터)",
 }
 
 def _fmtbno_disp(b):
@@ -4664,9 +4664,18 @@ def _assist_need_key(kind: str):
 
 @app.route("/api/assist/status")
 def assist_status():
-    """각 조회 기능의 서비스키 설정 여부(배지 표시용)."""
-    return jsonify({k: bool(_assist_key(k))
-                    for k in ("company", "patent", "support", "procurement")})
+    """각 조회 기능의 서비스키 설정 여부(배지 표시용).
+
+    ?debug=1 이면 배포 환경이 실제로 인식하는 환경변수 존재 여부(값이 아닌 bool)도
+    함께 반환한다 — 배포 후 '조회 안 됨' 원인(키 스코프/리디플로이) 진단용.
+    """
+    out = {k: bool(_assist_key(k))
+           for k in ("company", "patent", "support", "procurement")}
+    if request.args.get("debug"):
+        out["keys"] = {name: bool((os.environ.get(name, "") or "").strip())
+                       for name in ("DART_API_KEY", "DATA_GO_KR_KEY",
+                                    "KIPRIS_API_KEY", "BIZINFO_API_KEY", "LAW_OC")}
+    return jsonify(out)
 
 def _nts_status(bno):
     """국세청 사업자등록 상태(계속/휴업/폐업) — DATA_GO_KR_KEY 있을 때만."""
@@ -5106,41 +5115,55 @@ def _won_short(v):
 
 @app.route("/api/assist/support")
 def assist_support():
-    """지원사업 조회 — 기업마당 bizinfo 지원사업 공고(마감일 파싱 포함)."""
+    """지원사업 조회 — 창업진흥원 K-Startup 지원사업 공고(공공데이터포털, DATA_GO_KR_KEY).
+
+    apis.data.go.kr/B552735/kisedKstartupService01/getAnnouncementInformation01.
+    키워드(query)는 응답을 받아 제목·내용·분야·대상에서 부분일치로 걸러낸다.
+    """
     key = _assist_key("support")
     if not key:
         return _assist_need_key("support")
     query = request.args.get("query", "").strip()
+    base = os.environ.get("SUPPORT_API_URL", "").strip() or \
+        "https://apis.data.go.kr/B552735/kisedKstartupService01/getAnnouncementInformation01"
     try:
-        r = _SESSION.get("https://www.bizinfo.go.kr/uss/rss/bizinfoApi.do",
-                         params={"crtfcKey": key, "dataType": "json",
-                                 "searchCnt": "60", "hashtags": query}, timeout=15)
+        r = _SESSION.get(base, params={"serviceKey": key, "page": "1",
+                                       "perPage": "200", "returnType": "json"}, timeout=15)
         d = r.json() or {}
-        arr = d.get("jsonArray") or (d.get("response", {}) or {}).get("body", {}).get("items") or []
+        arr = d.get("data")
+        if arr is None:                       # 혹시 표준 data.go.kr 래핑이면
+            body = (d.get("response") or {}).get("body") or {}
+            arr = body.get("items") or []
+            if isinstance(arr, dict):
+                arr = arr.get("item") or []
+        arr = arr if isinstance(arr, list) else ([arr] if arr else [])
+        ql = query.lower()
         items = []
-        for row in (arr if isinstance(arr, list) else [arr])[:60]:
-            url = row.get("pblancUrl") or ""
-            if url and url.startswith("/"):
-                url = "https://www.bizinfo.go.kr" + url
-            apply_url = (row.get("rceptEngnHmpgUrl") or row.get("pcUrl")
-                         or row.get("rqutUrl") or "")
-            if apply_url and apply_url.startswith("/"):
-                apply_url = "https://www.bizinfo.go.kr" + apply_url
-            period = row.get("reqstBeginEndDe") or ""
-            ds = _pick_dates(period)
-            field = row.get("pldirSportRealmLclasCodeNm") or ""
-            target = (row.get("trgetNm") or row.get("bizTrgetNm") or "").strip()
-            tags = (row.get("hashtags") or "").strip()
-            taglist = [t for t in re.split(r"[,\s]+", tags) if t][:5]
+        for row in arr:
+            title = (row.get("biz_pbanc_nm") or row.get("intg_pbanc_biz_nm") or "").strip()
+            content = (row.get("pbanc_ctnt") or "").strip()
+            field = (row.get("supt_biz_clsfc") or "").strip()
+            target = (row.get("aply_trgt_ctnt") or row.get("aply_trgt") or "").strip()
+            region = (row.get("supt_regin") or "").strip()
+            org = (row.get("pbanc_ntrp_nm") or "").strip()
+            if ql and ql not in " ".join([title, content, field, target, region, org]).lower():
+                continue
+            bgn = re.sub(r"\D", "", str(row.get("pbanc_rcpt_bgng_dt") or ""))[:8]
+            end = re.sub(r"\D", "", str(row.get("pbanc_rcpt_end_dt") or ""))[:8]
+            url = (row.get("detl_pg_url") or "").strip()
+            period = (f"{bgn} ~ {end}" if (bgn or end) else "")
+            taglist = [t for t in (field, region) if t][:5]
             items.append({
-                "title": row.get("pblancNm") or row.get("polcyNm") or "(공고명 없음)",
-                "subtitle": row.get("jrsdInsttNm") or row.get("excInsttNm") or "",
-                "begin": ds[0] if ds else "", "end": ds[-1] if ds else "",
-                "endText": period, "field": field, "target": target, "tags": taglist,
-                "applyUrl": apply_url,
+                "title": title or "(공고명 없음)",
+                "subtitle": org,
+                "begin": bgn, "end": end, "endText": period,
+                "field": field, "target": target, "tags": taglist,
+                "applyUrl": url,
                 "meta": [["신청기간", period or "-"], ["분야", field or "-"],
-                         ["지원대상", target or "-"]],
+                         ["지원대상", target or "-"], ["지원지역", region or "-"]],
                 "url": url})
+            if len(items) >= 60:
+                break
         return jsonify({"success": True, "count": len(items), "items": items})
     except Exception as e:
         return jsonify({"success": False, "error": f"조회 실패: {e}"})

@@ -2311,7 +2311,7 @@ let _assistMode=null, _assistStatus=null, _scenReturn='internal';
 const ASSIST_CFG={
   company:    {tab:'smCompany',    label:'기업 조회',   ic:'🏢', ph:'회사명(DART) 또는 사업자등록번호(10자리)', hint:'DART 기업개황·재무와 국세청 사업자상태(공공데이터포털)를 함께 조회합니다.', param:'query'},
   patent:     {tab:'smPatent',     label:'특허 조회',   ic:'📄', ph:'특허 키워드 또는 출원인 (예: 스마트팜)',      hint:'KIPRIS에서 특허·실용신안을 검색합니다.',           param:'query'},
-  support:    {tab:'smSupport',    label:'지원사업 조회', ic:'🎯', ph:'지원사업 키워드 (예: 스마트팜, 수출, R&D)',    hint:'정부 지원사업 공고(공공데이터포털) — 마감임박·관심일정 관리.', param:'query', oppty:true,
+  support:    {tab:'smSupport',    label:'지원사업 조회', ic:'🎯', ph:'지원사업 키워드 (예: 스마트팜, 수출, R&D)',    hint:'창업·정부 지원사업 공고(K-Startup·공공데이터포털) — 마감임박·관심일정 관리.', param:'query', oppty:true,
                presets:['스마트팜','청년·귀농','수출','R&D','기자재·시설','교육','자금','판로']},
   procurement:{tab:'smProcurement',label:'조달공고 조회', ic:'📢', ph:'입찰공고 키워드 (예: 시설, 용역)',             hint:'나라장터 입찰공고(최근 30일) — 마감임박·관심일정 관리.', param:'query', oppty:true,
                presets:['농업','스마트팜','시설·공사','용역','기자재','시스템','연구']},
@@ -3240,7 +3240,7 @@ function _renderAssist(d, kind){
   const cnt=`<div style="font-size:12px;color:var(--mu);margin-bottom:4px;">${items.length}건</div>`;
   return cnt+cards;
 }
-const ASSIST_ENV_LABEL={company:'DART_API_KEY / DATA_GO_KR_KEY',patent:'KIPRIS_API_KEY',support:'BIZINFO_API_KEY',procurement:'DATA_GO_KR_KEY'};
+const ASSIST_ENV_LABEL={company:'DART_API_KEY / DATA_GO_KR_KEY',patent:'KIPRIS_API_KEY',support:'DATA_GO_KR_KEY',procurement:'DATA_GO_KR_KEY'};
 
 function setMode(m){
   if(_assistMode) closeAssist();   // 업무 도우미에서 일반 검색 모드로 복귀
