@@ -1960,7 +1960,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 <div class="topbar">
   <button class="tree-toggle" onclick="openInternalTree()" title="내규 전체 목록" aria-label="내규 전체 목록 열기">📚</button>
   <div>
-    <span class="brand"><span class="brand-full">농진원 업무 도우미</span><span class="brand-short">업무 도우미</span></span>
+    <span class="brand"><span class="brand-full">KOAT Work Place</span><span class="brand-short">KOAT</span></span>
     <span class="brand-en" style="font-size:10px;color:#9ca3af;margin-left:6px;font-weight:500;letter-spacing:.5px;">Work Assistant</span><br>
     <span class="brand-sub">내규똑똑 · 법령 · 기업 · 특허 · 지원사업 · 조달 통합 지원</span>
   </div>
@@ -3028,13 +3028,13 @@ function _expRenderFields(){
     const pm=_expState.promo;
     box.innerHTML=
       `<div class="exp-fg"><div class="exp-fgt">문서 정보</div>`+
-        `<label class="exp-full">관련근거<input id="pmBasis" value="${_ev(pm.basis)}" placeholder="예: 기술거래이전팀-369(2026.8.21.)"></label>`+
-        `<label class="exp-full">집행목적<textarea id="pmPurpose" rows="2" placeholder="예: NTIS 기술이전 시스템 관련 업무 협의">${_ev(pm.purpose)}</textarea></label></div>`+
+        `<label class="exp-full">관련근거<input id="pmBasis" value="${_ev(pm.basis)}" placeholder="관련 근거 문서·번호"></label>`+
+        `<label class="exp-full">집행목적<textarea id="pmPurpose" rows="2" placeholder="집행 목적">${_ev(pm.purpose)}</textarea></label></div>`+
       `<div class="exp-fg"><div class="exp-fgt">일시·장소</div><div class="exp-frow">`+
         `<label>일시<input id="pmDate" type="date" value="${_ev(pm.date)}"></label>`+
-        `<label>장소<input id="pmPlace" value="${_ev(pm.place)}" placeholder="예: 씨아전복, 온아"></label></div></div>`+
+        `<label>장소<input id="pmPlace" value="${_ev(pm.place)}" placeholder="집행 장소"></label></div></div>`+
       `<div class="exp-fg"><div class="exp-fgt">집행대상 및 금액</div>`+
-        `<label class="exp-full">집행대상(참석자)<textarea id="pmTargets" rows="2" placeholder="예: KISTI 유은지 선임 등 2명, 농진원 경준형 팀장, 김진선 연구원 등 총 4명">${_ev(pm.targets)}</textarea></label>`+
+        `<label class="exp-full">집행대상(참석자)<textarea id="pmTargets" rows="2" placeholder="참석자·소속·인원(총 N명)">${_ev(pm.targets)}</textarea></label>`+
         `<div class="exp-frow"><label>참석인원(명·1인당 계산)<input id="pmPeople" inputmode="numeric" value="${_ev(pm.people)}"></label>`+
         `<label>금액(원)<input id="pmTotal" inputmode="numeric" value="${_ev(pm.total)}"></label></div>`+
         `<div class="exp-limit" id="pmLimit"></div></div>`+
