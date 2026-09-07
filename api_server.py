@@ -4900,6 +4900,21 @@ def assist_company():
                                  "사업자등록번호(10자리)로 조회하거나 관리자에게 DART_API_KEY 설정을 요청하세요."})
     try:
         hits = _dart_search(dk, query)
+        # 후보가 없고 기업목록 자체를 못 불러왔으면(로드 오류) 원인을 안내
+        if not hits and _DART_CORP.get("n", 0) == 0 and _DART_CORP.get("err"):
+            snip = _DART_CORP.get("snippet", "") or ""
+            is_html = ("<!doctype html" in snip.lower()) or ("<html" in snip.lower())
+            msg = ("DART 기업목록(corpCode)을 불러오지 못했습니다. "
+                   + ("응답이 정상 ZIP이 아니라 HTML 오류 페이지였습니다 — "
+                      "DART_API_KEY가 유효한 오픈API 인증키인지, 가입 후 이메일 인증(승인)이 "
+                      "완료됐는지 확인하세요."
+                      if is_html else f"({_DART_CORP.get('err')})"))
+            out = {"success": False, "mode": "name", "error": msg}
+            if request.args.get("debug"):
+                out["_debug"] = {"corp_http": _DART_CORP.get("http"),
+                                 "corp_err": _DART_CORP.get("err"),
+                                 "corp_snippet": snip}
+            return jsonify(out)
         items = [{"name": nm, "ceo": "", "bno": "", "addr": "",
                   "biz": ("상장" if sk else ""), "corp": cc, "stock": sk}
                  for cc, nm, sk in hits]
@@ -5220,6 +5235,8 @@ def assist_support():
     except Exception as e:
         return jsonify({"success": False, "error": f"조회 실패: {e}"})
 
+_NARA_BASE = {}   # {op: 동작 확인된 base URL} — 후보 탐색 결과 캐시
+
 @app.route("/api/assist/procurement")
 def assist_procurement():
     """조달공고 조회 — 조달청 나라장터 입찰공고정보(최근 30일)."""
@@ -5234,9 +5251,7 @@ def assist_procurement():
     btype = request.args.get("type", "servc").strip().lower()
     if btype not in _OPS:
         btype = "servc"
-    base = os.environ.get("PROCUREMENT_API_URL", "").strip()
-    if not base:
-        base = f"http://apis.data.go.kr/1230000/ad/BidPublicInfoService/{_OPS[btype]}"
+    op = _OPS[btype]
     end = time.strftime("%Y%m%d")
     start = time.strftime("%Y%m%d", time.localtime(time.time() - 30 * 86400))
     try:
@@ -5244,25 +5259,46 @@ def assist_procurement():
                   "inqryDiv": "1", "inqryBgnDt": start + "0000", "inqryEndDt": end + "2359"}
         if query:
             params["bidNtceNm"] = query
-        r = _SESSION.get(base, params=params, timeout=15)
-        # 응답이 JSON이 아니면(대개 data.go.kr 오류 XML) 진단 정보와 함께 안내
-        dbg_head, dbg_body = "", ""
-        try:
-            j = r.json() or {}
-        except Exception:
-            body_txt = r.content[:600].decode("utf-8", "replace")
-            cm = re.search(r"<returnAuthMsg>(.*?)</returnAuthMsg>", body_txt) or \
-                 re.search(r"<errMsg>(.*?)</errMsg>", body_txt) or \
-                 re.search(r"<resultMsg>(.*?)</resultMsg>", body_txt)
-            msg = cm.group(1) if cm else "응답을 해석할 수 없습니다(비 JSON)."
+        # 후보 엔드포인트를 순서대로 시도(https 우선). data.go.kr은 http 거부(403)·
+        # 서비스 경로 버전이 갈려서, JSON 본문(response.body)이 오는 첫 URL을 채택·캐시.
+        override = os.environ.get("PROCUREMENT_API_URL", "").strip()
+        if override:
+            bases = [override if override.rstrip("/").endswith(op)
+                     else override.rstrip("/") + "/" + op]
+        elif _NARA_BASE.get(op):
+            bases = [_NARA_BASE[op]]
+        else:
+            bases = [f"https://apis.data.go.kr/1230000/ad/BidPublicInfoService/{op}",
+                     f"https://apis.data.go.kr/1230000/BidPublicInfoService04/{op}",
+                     f"https://apis.data.go.kr/1230000/BidPublicInfoService/{op}",
+                     f"http://apis.data.go.kr/1230000/ad/BidPublicInfoService/{op}"]
+        j, chosen, attempts, r = None, "", [], None
+        for b in bases:
+            try:
+                r = _SESSION.get(b, params=params, timeout=15)
+                try:
+                    jj = r.json()
+                except Exception:
+                    jj, snip = None, r.content[:200].decode("utf-8", "replace")
+                    attempts.append({"base": b, "http": r.status_code, "json": False, "snippet": snip})
+                    continue
+                has_body = isinstance((jj.get("response") or {}).get("body"), dict)
+                attempts.append({"base": b, "http": r.status_code, "json": True, "body": has_body})
+                if has_body:
+                    j, chosen = jj, b
+                    break
+            except Exception as e:
+                attempts.append({"base": b, "err": f"{type(e).__name__}: {e}"})
+        if j is None:
             out = {"success": False,
-                   "error": f"나라장터 응답 오류: {msg} (HTTP {r.status_code}). "
-                            f"DATA_GO_KR_KEY의 '나라장터 입찰공고정보서비스'(15129394) 활용신청·"
-                            f"Decoding 키 여부를 확인하세요."}
+                   "error": "나라장터 응답 오류: 등록된 엔드포인트에서 데이터를 받지 못했습니다. "
+                            "DATA_GO_KR_KEY의 '나라장터 입찰공고정보서비스'(15129394) 활용신청·"
+                            "Decoding 키 여부를 확인하세요."}
             if request.args.get("debug"):
-                out["_debug"] = {"http": r.status_code, "op": _OPS[btype],
-                                 "base": base, "snippet": body_txt}
+                out["_debug"] = {"op": op, "attempts": attempts}
             return jsonify(out)
+        if not override:
+            _NARA_BASE[op] = chosen         # 성공 URL 캐시(다음부터 바로 사용)
         header = ((j.get("response") or {}).get("header") or {})
         body = ((j.get("response") or {}).get("body") or {})
         arr = body.get("items") or []
@@ -5289,7 +5325,7 @@ def assist_procurement():
                 "url": row.get("bidNtceDtlUrl") or row.get("bidNtceUrl") or ""})
         resp = {"success": True, "count": len(items), "items": items}
         if request.args.get("debug"):         # 배포 진단: 나라장터 응답 상태
-            resp["_debug"] = {"http": r.status_code, "op": _OPS[btype], "base": base,
+            resp["_debug"] = {"chosen": chosen, "op": op, "attempts": attempts,
                               "resultCode": header.get("resultCode", ""),
                               "resultMsg": header.get("resultMsg", ""),
                               "totalCount": body.get("totalCount", ""),
