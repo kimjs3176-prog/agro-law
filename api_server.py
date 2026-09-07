@@ -15,7 +15,7 @@ try:
 except Exception:
     def _xml_fromstring(s): return ET.fromstring(s)
 import urllib3
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 import requests as req_lib
@@ -4627,13 +4627,13 @@ def debug_law_xml():
 _ASSIST_ENV = {"company": "DART_API_KEY", "patent": "KIPRIS_API_KEY",
                "support": "DATA_GO_KR_KEY", "procurement": "DATA_GO_KR_KEY"}
 _ASSIST_APPLY = {
-    "company":     "https://opendart.fss.or.kr",
+    "company":     "https://www.data.go.kr/data/15043184/openapi.do",
     "patent":      "https://plus.kipris.or.kr/portal/main/main.do",
     "support":     "https://www.data.go.kr/data/15125364/openapi.do",
     "procurement": "https://www.data.go.kr/data/15129394/openapi.do",
 }
 _ASSIST_PROVIDER = {
-    "company": "DART·공공데이터포털", "patent": "특허청 KIPRIS",
+    "company": "공공데이터포털(금융위·국세청)", "patent": "특허청 KIPRIS",
     "support": "공공데이터포털(K-Startup)", "procurement": "공공데이터포털(나라장터)",
 }
 
@@ -4647,12 +4647,27 @@ def _fmtymd(v):
     v = re.sub(r"\D", "", str(v or ""))
     return f"{v[:4]}-{v[4:6]}-{v[6:8]}" if len(v) >= 8 else v
 
+def _dgk_key() -> str:
+    """공공데이터포털 서비스키(Decoding 형태로 정규화).
+
+    data.go.kr은 Decoding/Encoding 두 형태 키를 발급한다. Encoding 키(%2B·%2F·%3D
+    포함)를 그대로 requests params로 넘기면 이중 인코딩되어 인증 실패한다.
+    퍼센트 인코딩이 보이면 한 번 unquote 해 Decoding 형태로 맞춘다(requests가
+    한 번만 인코딩하도록)."""
+    k = (os.environ.get("DATA_GO_KR_KEY", "") or "").strip()
+    if k and re.search(r"%[0-9A-Fa-f]{2}", k):
+        try:
+            return unquote(k)
+        except Exception:
+            return k
+    return k
+
 def _assist_key(kind: str) -> str:
-    # 기업조회는 DART(회사명 검색) 또는 국세청 사업자상태(공공데이터포털) 중
-    # 하나만 있어도 조회 가능하다(둘 다 있으면 상세가 가장 풍부).
+    # 기업조회는 공공데이터포털(회사명·사업자상태) 우선, DART는 선택(재무 보강).
     if kind == "company":
-        return (_dart_key()
-                or (os.environ.get("DATA_GO_KR_KEY", "") or "").strip())
+        return (_dgk_key() or _dart_key())
+    if kind in ("support", "procurement"):
+        return _dgk_key()
     return (os.environ.get(_ASSIST_ENV.get(kind, ""), "") or "").strip()
 
 def _assist_need_key(kind: str):
@@ -4679,7 +4694,7 @@ def assist_status():
 
 def _nts_status(bno):
     """국세청 사업자등록 상태(계속/휴업/폐업) — DATA_GO_KR_KEY 있을 때만."""
-    gk = (os.environ.get("DATA_GO_KR_KEY", "") or "").strip()
+    gk = _dgk_key()
     bno = re.sub(r"\D", "", bno or "")
     if not gk or len(bno) != 10:
         return {}
@@ -4830,9 +4845,140 @@ _DART_COMPANY_FIELDS = {      # company.json 필드 → 그리드 라벨
 }
 # 상세 그리드 표시 순서(라벨 기준). 없는 라벨은 건너뛴다.
 _COMP_GRID_ORDER = ["상호", "영문상호", "대표자", "사업자등록번호", "법인등록번호",
-                    "법인구분", "상장여부", "종목명", "종목코드", "업종코드",
-                    "설립일", "결산월", "납세자 상태", "과세유형", "폐업일",
+                    "법인구분", "상장여부", "상장시장", "종목명", "종목코드",
+                    "주요사업", "업종코드", "종업원수", "설립일", "결산월",
+                    "납세자 상태", "과세유형", "폐업일", "감사인", "주거래은행",
                     "주소", "전화번호", "팩스", "홈페이지", "공시(DART)"]
+
+# ── 금융위원회 기업기본정보(공공데이터포털) — 회사명 검색 주 소스 ──────────────
+# apis.data.go.kr/1160100/service/GetCorpBasicInfoService_V2/getCorpOutline_V2
+# 회사명(corpNm)·법인등록번호(crno)로 조회. DATA_GO_KR_KEY 사용.
+_FSC_BASE = ("https://apis.data.go.kr/1160100/service/"
+             "GetCorpBasicInfoService_V2/getCorpOutline_V2")
+_FSC_FIELDS = {              # getCorpOutline_V2 필드 → 그리드 라벨
+    "corpNm": "상호", "corpEngNm": "영문상호", "enpRprfNm": "대표자",
+    "corpRegMrktDcdNm": "상장시장", "enpMainBizNm": "주요사업",
+    "enpEmpeCnt": "종업원수", "enpEstbDt": "설립일", "enpStacMm": "결산월",
+    "enpBsadr": "주소", "enpTlno": "전화번호", "enpFxno": "팩스",
+    "enpHmpgUrl": "홈페이지", "actnAudpnNm": "감사인", "enpMntrBnkNm": "주거래은행",
+}
+
+def _fsc_company(key, corp_nm=None, crno=None, rows="30"):
+    """금융위 기업기본정보 조회 → (records list | None, requests.Response).
+    corpNm(회사명, 부분검색) 또는 crno(법인등록번호)로 조회. 비 JSON이면 None."""
+    params = {"serviceKey": key, "pageNo": "1", "numOfRows": rows, "resultType": "json"}
+    if corp_nm:
+        params["corpNm"] = corp_nm
+    if crno:
+        params["crno"] = crno
+    r = _SESSION.get(_FSC_BASE, params=params, timeout=15)
+    try:
+        j = r.json() or {}
+    except Exception:
+        return None, r
+    items = (((j.get("response") or {}).get("body") or {}).get("items") or [])
+    if isinstance(items, dict):
+        items = items.get("item") or []
+    if isinstance(items, dict):
+        items = [items]
+    return (items if isinstance(items, list) else []), r
+
+def _fsc_labeled(rec):
+    """금융위 레코드 → 그리드 라벨 dict(+_bno/_crno)."""
+    out = {}
+    for k, lab in _FSC_FIELDS.items():
+        v = str(rec.get(k) or "").strip()
+        if not v or v in ("0", "-", "null"):
+            continue
+        if k == "enpEstbDt":
+            v = _fmtymd(v)
+        elif k == "enpStacMm":
+            mm = re.sub(r"\D", "", v)
+            v = f"{mm}월" if mm else v
+        out[lab] = v
+    bno = re.sub(r"\D", "", str(rec.get("bzno") or ""))
+    crno = re.sub(r"\D", "", str(rec.get("crno") or ""))
+    if bno:
+        out["사업자등록번호"] = _fmtbno_disp(bno); out["_bno"] = bno
+    if crno:
+        out["법인등록번호"] = crno; out["_crno"] = crno
+    mkt = str(rec.get("corpRegMrktDcdNm") or "").strip()
+    out["상장여부"] = ("상장" if mkt and mkt not in ("기타", "비상장", "해당없음", "기타법인")
+                    else "비상장")
+    return out
+
+# ── 금융위원회 기업재무정보(공공데이터포털) — 요약재무제표 ────────────────────
+_FSC_FIN_BASE = ("https://apis.data.go.kr/1160100/service/"
+                 "GetFinaStatInfoService_V2/getSummFinaStat_V2")
+# 지표 라벨 → 응답 후보 필드명(버전차 대비 여러 후보). 값은 원(₩).
+_FSC_FIN_METRICS = [
+    ("매출액",   ("enpSaleAmt", "saleAmt", "revenue")),
+    ("영업이익", ("enpBzopPft", "bzopPft", "operatingProfit")),
+    ("당기순이익", ("enpCrtmNpf", "crtmNpf", "netIncome", "thstrmNpf")),
+    ("자산총계", ("enpTastAmt", "tastAmt", "totalAssets")),
+    ("부채총계", ("enpTdbtAmt", "tdbtAmt", "totalDebt", "totalLiabilities")),
+    ("자본총계", ("enpTcptAmt", "tcptAmt", "totalCapital", "totalEquity")),
+    ("자본금",   ("enpCptlAmt", "cptlAmt", "capital")),
+]
+
+def _fsc_financials(key, crno):
+    """금융위 요약재무제표(법인등록번호 기준) → DART finance와 동일 형태 dict|None."""
+    crno = re.sub(r"\D", "", str(crno or ""))
+    if not key or not crno:
+        return None
+    try:
+        r = _SESSION.get(_FSC_FIN_BASE, params={"serviceKey": key, "pageNo": "1",
+                         "numOfRows": "30", "resultType": "json", "crno": crno}, timeout=15)
+        j = r.json() or {}
+    except Exception:
+        return None
+    items = (((j.get("response") or {}).get("body") or {}).get("items") or [])
+    if isinstance(items, dict):
+        items = items.get("item") or []
+    if isinstance(items, dict):
+        items = [items]
+    if not isinstance(items, list) or not items:
+        return None
+    yr = lambda x: re.sub(r"\D", "", str(x.get("bizYear") or ""))[:4]
+    # 연결(있으면) 우선, 사업연도별 1개 행 → 최근 5개년(오름차순)
+    conso = [x for x in items if "연결" in str(x.get("fnclDcdNm") or x.get("fnclGrpDcdNm") or "")]
+    use = conso or items
+    by_year = {}
+    for x in use:
+        y = yr(x)
+        if y and y not in by_year:
+            by_year[y] = x
+    years = sorted(by_year.keys())[-5:]
+    if not years:
+        return None
+
+    def pick(row, keys):
+        if not row:
+            return None
+        for k in keys:
+            n = _num(row.get(k))
+            if n is not None:
+                return n
+        return None
+    series = []
+    for label, keys in _FSC_FIN_METRICS:
+        vals = [pick(by_year[y], keys) for y in years]
+        if any(v is not None for v in vals):
+            series.append({"name": label, "values": vals})
+    if not series:
+        return None
+    # 상단 지표용 items(최신연도 cur, 직전연도 prev)
+    latest = years[-1]
+    prev_y = years[-2] if len(years) > 1 else None
+    out = []
+    for label, keys in _FSC_FIN_METRICS:
+        c = pick(by_year[latest], keys)
+        if c is not None:
+            out.append({"name": label, "cur": c,
+                        "prev": (pick(by_year[prev_y], keys) if prev_y else None)})
+    fs = str(by_year[latest].get("fnclDcdNm") or by_year[latest].get("fnclGrpDcdNm") or "").strip()
+    return {"year": latest, "years": years, "series": series, "items": out,
+            "report": "요약재무제표", "fs": fs, "source": "금융위 공공데이터"}
 
 def _dart_company(key, corp_code):
     """corp_code → DART 기업개황(company.json) 라벨 dict. 실패 시 {}.
@@ -4866,10 +5012,10 @@ def _dart_company(key, corp_code):
 
 @app.route("/api/assist/company")
 def assist_company():
-    """기업 조회 — DART 회사명 검색 / 국세청 사업자번호 상태(공공데이터포털).
+    """기업 조회 — 공공데이터포털(금융위 기업기본정보) 회사명 검색 / 국세청 사업자상태.
 
     · 사업자등록번호(10자리) → 국세청 사업자상태(계속/휴업/폐업) 단건.
-    · 그 외(회사명) → DART 등재 법인 후보 목록(상세에서 개황·재무 조회).
+    · 그 외(회사명) → 금융위 기업기본정보 후보 목록(상세에서 개황·재무 조회).
     """
     if not _assist_key("company"):
         return _assist_need_key("company")
@@ -4878,9 +5024,10 @@ def assist_company():
         return jsonify({"success": False,
                         "error": "회사명 또는 사업자등록번호를 입력하세요."})
     digits = re.sub(r"\D", "", query)
+    gk = _dgk_key()
     # 사업자등록번호(10자리, 숫자·구분기호만) → 국세청 상태 단건
     if len(digits) == 10 and re.fullmatch(r"[\d\s-]+", query):
-        if not (os.environ.get("DATA_GO_KR_KEY", "") or "").strip():
+        if not gk:
             return jsonify({"success": False, "mode": "bno",
                             "error": "사업자등록번호 조회에는 공공데이터포털 서비스키(DATA_GO_KR_KEY)가 필요합니다."})
         st = _nts_status(digits)
@@ -4892,40 +5039,44 @@ def assist_company():
                 "addr": "", "biz": biz, "corp": "", "closed": bool(st.get("폐업일"))}
         return jsonify({"success": True, "count": 1, "total": "1",
                         "items": [item], "mode": "bno"})
-    # 회사명 → DART 후보
-    dk = _dart_key()
-    if not dk:
+    # 회사명 → 금융위 기업기본정보(공공데이터포털)
+    if not gk:
         return jsonify({"success": False, "mode": "name",
-                        "error": "회사명 검색에는 DART 인증키가 필요합니다. "
-                                 "사업자등록번호(10자리)로 조회하거나 관리자에게 DART_API_KEY 설정을 요청하세요."})
+                        "error": "회사명 검색에는 공공데이터포털 서비스키(DATA_GO_KR_KEY)가 필요합니다."})
     try:
-        hits = _dart_search(dk, query)
-        # 후보가 없고 기업목록 자체를 못 불러왔으면(로드 오류) 원인을 안내
-        if not hits and _DART_CORP.get("n", 0) == 0 and _DART_CORP.get("err"):
-            snip = _DART_CORP.get("snippet", "") or ""
-            is_html = ("<!doctype html" in snip.lower()) or ("<html" in snip.lower())
-            msg = ("DART 기업목록(corpCode)을 불러오지 못했습니다. "
-                   + ("응답이 정상 ZIP이 아니라 HTML 오류 페이지였습니다 — "
-                      "DART_API_KEY가 유효한 오픈API 인증키인지, 가입 후 이메일 인증(승인)이 "
-                      "완료됐는지 확인하세요."
-                      if is_html else f"({_DART_CORP.get('err')})"))
-            out = {"success": False, "mode": "name", "error": msg}
+        recs, r = _fsc_company(gk, corp_nm=query, rows="50")
+        if recs is None:                        # 비 JSON(대개 data.go.kr 오류 XML)
+            body_txt = r.content[:600].decode("utf-8", "replace")
+            cm = re.search(r"<returnAuthMsg>(.*?)</returnAuthMsg>", body_txt) or \
+                 re.search(r"<errMsg>(.*?)</errMsg>", body_txt) or \
+                 re.search(r"<resultMsg>(.*?)</resultMsg>", body_txt)
+            msg = cm.group(1) if cm else "응답을 해석할 수 없습니다(비 JSON)."
+            out = {"success": False, "mode": "name",
+                   "error": f"기업기본정보 응답 오류: {msg} (HTTP {r.status_code}). "
+                            f"DATA_GO_KR_KEY의 '금융위원회_기업기본정보'(15043184) 활용신청·"
+                            f"Decoding 키 여부를 확인하세요."}
             if request.args.get("debug"):
-                out["_debug"] = {"corp_http": _DART_CORP.get("http"),
-                                 "corp_err": _DART_CORP.get("err"),
-                                 "corp_snippet": snip}
+                out["_debug"] = {"http": r.status_code, "base": _FSC_BASE, "snippet": body_txt}
             return jsonify(out)
-        items = [{"name": nm, "ceo": "", "bno": "", "addr": "",
-                  "biz": ("상장" if sk else ""), "corp": cc, "stock": sk}
-                 for cc, nm, sk in hits]
+        items = []
+        for rec in recs[:30]:
+            nm = str(rec.get("corpNm") or "").strip()
+            bno = re.sub(r"\D", "", str(rec.get("bzno") or ""))
+            crno = re.sub(r"\D", "", str(rec.get("crno") or ""))
+            mkt = str(rec.get("corpRegMrktDcdNm") or "").strip()
+            listed = mkt and mkt not in ("기타", "기타법인", "해당없음", "비상장")
+            items.append({"name": nm or "(상호 미상)",
+                          "ceo": str(rec.get("enpRprfNm") or "").strip(),
+                          "bno": bno, "addr": str(rec.get("enpBsadr") or "").strip(),
+                          "biz": str(rec.get("enpMainBizNm") or "").strip(),
+                          "corp": crno, "stock": (mkt if listed else "")})
         resp = {"success": True, "count": len(items),
                 "total": str(len(items)), "items": items, "mode": "name"}
-        if request.args.get("debug"):         # 배포 진단: DART 기업목록 로드 상태
-            resp["_debug"] = {"dart_key": True, "corp_map_size": _DART_CORP.get("n", 0),
-                              "corp_http": _DART_CORP.get("http", 0),
-                              "corp_err": _DART_CORP.get("err", ""),
-                              "corp_snippet": _DART_CORP.get("snippet", ""),
-                              "hits": len(hits)}
+        if request.args.get("debug"):
+            resp["_debug"] = {"http": r.status_code, "rows": len(recs),
+                              "resultMsg": (((r.json() or {}).get("response") or {})
+                                            .get("header") or {}).get("resultMsg", ""),
+                              "base": _FSC_BASE}
         return jsonify(resp)
     except Exception as e:
         return jsonify({"success": False, "error": f"조회 실패: {e}"})
@@ -4939,36 +5090,56 @@ def assist_company_detail():
     """
     if not _assist_key("company"):
         return _assist_need_key("company")
-    corp = re.sub(r"[^0-9]", "", request.args.get("corp", ""))
+    corp = re.sub(r"\D", "", request.args.get("corp", ""))   # crno(법인등록번호 13자리)
     bno = re.sub(r"\D", "", request.args.get("bno", ""))
     query = request.args.get("query", "").strip()
     if not (corp or bno or query):
         return jsonify({"success": False, "error": "회사명·사업자번호 또는 기업코드가 필요합니다."})
+    gk = _dgk_key()
     dk = _dart_key()
     try:
-        # corp_code 미지정 시 회사명으로 DART 매칭 시도
-        if not corp and dk and query:
-            hit = _dart_find_corp(dk, query)
-            if hit:
-                corp = hit[0]
         name, labeled, finance = "", {}, None
-        if corp and dk:
-            ov = _dart_company(dk, corp)
-            if ov:
-                name = ov.get("상호") or query
-                if not bno and ov.get("_bno"):
-                    bno = ov["_bno"]
-                labeled.update({k: v for k, v in ov.items() if not k.startswith("_")})
-            finance = _dart_financials(dk, corp)
+        rec = None
+        # 금융위 기업기본정보(공공데이터포털) 우선 — 법인등록번호 또는 회사명
+        if gk:
+            if corp and len(corp) >= 11:
+                recs, _ = _fsc_company(gk, crno=corp, rows="5")
+                rec = (recs[0] if recs else None)
+            if rec is None and query:
+                recs, _ = _fsc_company(gk, corp_nm=query, rows="10")
+                rec = (recs[0] if recs else None)
+        crno = corp if (corp and len(corp) >= 11) else ""
+        if rec:
+            lb = _fsc_labeled(rec)
+            name = lb.get("상호") or query
+            if not bno and lb.get("_bno"):
+                bno = lb["_bno"]
+            if not crno and lb.get("_crno"):
+                crno = lb["_crno"]
+            labeled.update({k: v for k, v in lb.items() if not k.startswith("_")})
+        # 국세청 사업자상태(공공데이터포털)
         if bno:
-            labeled.update(_nts_status(bno))       # 국세청 사업자상태
+            labeled.update(_nts_status(bno))
             labeled.setdefault("사업자등록번호", _fmtbno_disp(bno))
+        # 재무: 금융위 요약재무제표(공공데이터포털) 우선 — 법인등록번호 기준
+        if gk and crno:
+            finance = _fsc_financials(gk, crno)
+        # DART 재무(선택 폴백) — 금융위 재무가 없고 DART 키가 유효할 때만
+        if finance is None and dk and (name or query):
+            try:
+                hit = _dart_find_corp(dk, name or query)
+                if hit:
+                    finance = _dart_financials(dk, hit[0])
+                    labeled.setdefault("공시(DART)",
+                                       f"https://dart.fss.or.kr/dsae001/main.do?corp_code={hit[0]}")
+            except Exception:
+                pass
         if not name:
             name = query or (_fmtbno_disp(bno) if bno else "(상호 미상)")
         if not labeled and not finance:
             return jsonify({"success": False,
                             "error": "기업 정보를 찾지 못했습니다. "
-                                     "DART 등재 회사명 또는 사업자등록번호를 확인하세요."})
+                                     "공공데이터에 등재된 회사명 또는 사업자등록번호를 확인하세요."})
         # 필드 정렬(알려진 라벨 우선, 나머지는 원순서)
         fields, seen = [], set()
         for lab in _COMP_GRID_ORDER:
@@ -4987,14 +5158,31 @@ def assist_company_detail():
                     rr = (sales["cur"] - sales["prev"]) / abs(sales["prev"]) * 100
                     sub = f"전년비 {'+' if rr >= 0 else ''}{rr:.1f}%"
                 stats.append({"label": "최근 매출액", "value": _won_short(sales["cur"]), "sub": sub})
-            op = next((it for it in finance["items"] if it["name"] == "영업이익"), None)
+            def _fin(nm):
+                return next((it for it in finance["items"] if it["name"] == nm), None)
+            op = _fin("영업이익")
             if op and op.get("cur") is not None:
+                margin = ""
+                if sales and sales.get("cur"):
+                    margin = f"영업이익률 {op['cur']/sales['cur']*100:.1f}%"
                 stats.append({"label": "영업이익", "value": _won_short(op["cur"]),
-                              "sub": f"{finance.get('year','')} {finance.get('fs','')}".strip()})
+                              "sub": margin or f"{finance.get('year','')} {finance.get('fs','')}".strip()})
+            netp = _fin("당기순이익")
+            if netp and netp.get("cur") is not None:
+                stats.append({"label": "당기순이익", "value": _won_short(netp["cur"]),
+                              "sub": f"{finance.get('year','')} 기준"})
+            debt, cap = _fin("부채총계"), _fin("자본총계")
+            if debt and cap and cap.get("cur"):
+                stats.append({"label": "부채비율",
+                              "value": f"{debt['cur']/cap['cur']*100:.0f}%",
+                              "sub": "부채총계/자본총계"})
+        emp = labeled.get("종업원수")
+        if emp:
+            stats.append({"label": "종업원수", "value": (emp + "명") if emp.isdigit() else emp, "sub": ""})
         nts = labeled.get("납세자 상태")
         if nts:
             stats.append({"label": "사업자상태", "value": nts, "sub": labeled.get("과세유형", "")})
-        skills = [labeled[k] for k in ("업종코드", "법인구분") if labeled.get(k)]
+        skills = [labeled[k] for k in ("주요사업", "상장시장", "업종코드") if labeled.get(k)]
         detail = {"name": name, "bno": bno, "fields": fields}
         if finance:
             detail["finance"] = finance
@@ -5002,7 +5190,12 @@ def assist_company_detail():
             detail["stats"] = stats
         if skills:
             detail["skills"] = skills
-        return jsonify({"success": True, "detail": detail})
+        resp = {"success": True, "detail": detail}
+        if request.args.get("debug"):
+            resp["_debug"] = {"crno": crno, "fsc_matched": bool(rec),
+                              "finance_source": (finance or {}).get("source", ""),
+                              "field_count": len(fields)}
+        return jsonify(resp)
     except Exception as e:
         return jsonify({"success": False, "error": f"상세 조회 실패: {e}"})
 
@@ -5034,7 +5227,9 @@ def assist_patent():
         if applicant:
             params["applicant"] = applicant
         if query:
-            params["word"] = query
+            # 자유검색(word)은 요약·청구항까지 걸려 무관한 결과가 많으므로
+            # 발명의 명칭(inventionTitle) 중심으로 매칭해 관련도를 높인다.
+            params["inventionTitle"] = query
         if status:
             params["lastvalue"] = status
         # 출원일 범위(YYYY→YYYY0101/YYYY1231). KIPRIS 는 'YYYYMMDD~YYYYMMDD' 형식.

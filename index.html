@@ -192,6 +192,14 @@ body.dark .comp-badge.closed{background:rgba(239,68,68,.2);color:#fca5a5;}
 .fin-p{font-size:11px;color:var(--mu);display:flex;gap:6px;align-items:center;}
 .fin-yoy{font-weight:700;}
 .fin-yoy.up{color:#dc2626;} .fin-yoy.dn{color:#2563eb;}
+.fin-charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1px;background:var(--bd);}
+.fin-chart{background:var(--sf);padding:11px 13px 8px;display:flex;flex-direction:column;gap:5px;}
+.fin-ct{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+.fin-cn{font-size:12px;color:var(--mu);font-weight:600;}
+.fin-cv{font-size:14px;font-weight:700;white-space:nowrap;}
+.fin-svg{display:block;overflow:visible;}
+.fin-yls{display:flex;font-size:10px;color:var(--mu);margin-top:1px;}
+.fin-yl{text-align:center;}
 body.dark .fin-yoy.up{color:#f87171;} body.dark .fin-yoy.dn{color:#60a5fa;}
 /* 기업 상세 — 요약 지표 타일·업종·연계 특허 */
 .comp-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:12px 0 4px;}
@@ -2000,7 +2008,6 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
         <span class="sm-glabel">공공DB</span>
         <button class="sm-item" id="smCompany" onclick="openAssist('company')" title="기업 통합검색(회사명·사업자번호·대표자)"><span class="sm-ic">🏢</span><span>기업</span></button>
         <button class="sm-item" id="smPatent" onclick="openAssist('patent')" title="특허·실용신안 검색(KIPRIS)"><span class="sm-ic">📄</span><span>특허</span></button>
-        <button class="sm-item" id="smProcurement" onclick="openAssist('procurement')" title="나라장터 입찰공고(조달청)"><span class="sm-ic">📢</span><span>조달공고</span></button>
         <button class="sm-item" id="smSupport" onclick="openAssist('support')" title="정부 지원사업 공고(공공데이터포털)"><span class="sm-ic">🎯</span><span>지원사업</span></button>
       </div>
       <span class="sm-div" aria-hidden="true"></span>
@@ -2309,7 +2316,7 @@ function setAgency(ag){
 // ── 업무 도우미(공공 API 조회): 기업·특허·지원사업·조달 ──────────────────────
 let _assistMode=null, _assistStatus=null, _scenReturn='internal';
 const ASSIST_CFG={
-  company:    {tab:'smCompany',    label:'기업 조회',   ic:'🏢', ph:'회사명(DART) 또는 사업자등록번호(10자리)', hint:'DART 기업개황·재무와 국세청 사업자상태(공공데이터포털)를 함께 조회합니다.', param:'query'},
+  company:    {tab:'smCompany',    label:'기업 조회',   ic:'🏢', ph:'회사명 또는 사업자등록번호(10자리)', hint:'공공데이터포털(금융위 기업기본정보·국세청 사업자상태)로 조회하며, DART 키가 있으면 재무를 보강합니다.', param:'query'},
   patent:     {tab:'smPatent',     label:'특허 조회',   ic:'📄', ph:'특허 키워드 또는 출원인 (예: 스마트팜)',      hint:'KIPRIS에서 특허·실용신안을 검색합니다.',           param:'query'},
   support:    {tab:'smSupport',    label:'지원사업 조회', ic:'🎯', ph:'지원사업 키워드 (예: 스마트팜, 수출, R&D)',    hint:'창업·정부 지원사업 공고(K-Startup·공공데이터포털) — 마감임박·관심일정 관리.', param:'query', oppty:true,
                presets:['스마트팜','청년·귀농','수출','R&D','기자재·시설','교육','자금','판로']},
@@ -2349,7 +2356,7 @@ async function openAssist(kind){
     const sc=scopes.map(([v,l],i)=>`<button class="pat-chip${i===0?' active':''}" data-v="${v}" onclick="_compScopePick(this)">${l}</button>`).join('');
     p.innerHTML=head+
       `<div class="pat-frow" style="margin-bottom:10px;"><span class="pat-flabel">검색 대상</span><div class="pat-appl" id="compScope">${sc}</div></div>`+
-      `<div class="assist-search"><input id="compQuery" class="sinput" placeholder="회사명(DART) 또는 사업자등록번호(10자리)" onkeydown="if(event.key==='Enter')runCompany()" aria-label="기업 검색어"><button class="sbtn" onclick="runCompany()">조회</button></div>`+
+      `<div class="assist-search"><input id="compQuery" class="sinput" placeholder="회사명 또는 사업자등록번호(10자리)" onkeydown="if(event.key==='Enter')runCompany()" aria-label="기업 검색어"><button class="sbtn" onclick="runCompany()">조회</button></div>`+
       `<div id="compResults" class="pat-results"></div>`;
     const cq=document.getElementById('compQuery'); if(cq) cq.focus();
     return;
@@ -2376,8 +2383,9 @@ function _patStatusMatch(it){
   return _patStatuses.some(code=>{ const l=PAT_CODE_LABEL[code]||''; return l&&s.indexOf(l)>=0; });
 }
 function _patFiltersHtml(){
-  const appl=PAT_APPLICANTS.map((a,i)=>
-    `<button class="pat-chip${i===0?' active':''}" data-v="${argAttr(a)}" onclick="_patApplPick(this)">${escHtml(a==='농업기술원'?'농업기술원(각 도)':a)}</button>`).join('');
+  const appl=`<button class="pat-chip active" data-v="" onclick="_patApplPick(this)">전체</button>`+
+    PAT_APPLICANTS.map(a=>
+    `<button class="pat-chip" data-v="${argAttr(a)}" onclick="_patApplPick(this)">${escHtml(a==='농업기술원'?'농업기술원(각 도)':a)}</button>`).join('');
   const stat=PAT_STATUS.map(([v,l],i)=>
     `<button class="pat-chip pat-schip s-${v||'all'}${i===0?' active':''}" data-v="${v}" onclick="_patStatusPick(this)">${escHtml(l)}</button>`).join('');
   return `<div class="pat-filters">`+
@@ -2429,7 +2437,7 @@ const COMP_SIDO=[['서울','서울'],['부산','부산'],['대구','대구'],['�
 function _compSido(addr){ addr=String(addr||''); for(const [lab,pat] of COMP_SIDO){ if(addr.indexOf(lab)>=0||addr.indexOf(pat)>=0) return lab; } return addr?'기타':''; }
 function _fmtBno(b){ b=String(b||'').replace(/\D/g,''); return b.length===10?`${b.slice(0,3)}-${b.slice(3,5)}-${b.slice(5)}`:b; }
 function _compScopePick(btn){ document.querySelectorAll('#compScope .pat-chip').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); _compScope=btn.dataset.v||'all';
-  const cq=document.getElementById('compQuery'); if(cq) cq.placeholder=({all:'회사명(DART) 또는 사업자등록번호(10자리)',name:'회사명 입력(DART 등재 법인)',bno:'사업자등록번호(숫자 10자리)'})[_compScope]||'회사명 또는 사업자등록번호'; }
+  const cq=document.getElementById('compQuery'); if(cq) cq.placeholder=({all:'회사명 또는 사업자등록번호(10자리)',name:'회사명 입력',bno:'사업자등록번호(숫자 10자리)'})[_compScope]||'회사명 또는 사업자등록번호'; }
 function runCompany(){
   const box=document.getElementById('compResults'); if(!box) return;
   let q=((document.getElementById('compQuery')||{}).value||'').trim();
@@ -2443,7 +2451,7 @@ function runCompany(){
 function _renderCompanyList(d){
   if(d&&d.need_key){
     const url=d.apply_url?`<a href="${escHtml(d.apply_url)}" target="_blank" rel="noopener">서비스키 발급 안내 →</a>`:'';
-    return `<div class="assist-note">🔑 <b>${escHtml(d.provider||'')}</b> 서비스키가 설정되지 않았습니다.<br>관리자가 환경변수(<code>DART_API_KEY</code> 또는 <code>DATA_GO_KR_KEY</code>)를 설정하면 조회할 수 있습니다.<br>${url}</div>`;
+    return `<div class="assist-note">🔑 <b>${escHtml(d.provider||'')}</b> 서비스키가 설정되지 않았습니다.<br>관리자가 환경변수(<code>DATA_GO_KR_KEY</code>)를 설정하면 조회할 수 있습니다.<br>${url}</div>`;
   }
   if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'조회에 실패했습니다.')}</div>`;
   const items=d.items||[];
@@ -2548,20 +2556,49 @@ function _fmtWon(n){
   const txt=parts.length?parts.join(' ')+'원':a.toLocaleString('ko-KR')+'원';
   return (neg?'-':'')+txt;
 }
-function _renderFinance(fin){
-  if(!fin||!(fin.items||[]).length) return '';
-  const rows=fin.items.map(it=>{
-    let d=''; if(it.cur!=null&&it.prev!=null&&it.prev!==0){
-      const r=(it.cur-it.prev)/Math.abs(it.prev)*100; const up=r>=0;
-      d=`<span class="fin-yoy ${up?'up':'dn'}">${up?'▲':'▼'} ${Math.abs(r).toFixed(1)}%</span>`;
-    }
-    return `<div class="fin-row"><span class="fin-k">${escHtml(it.name)}</span>`+
-      `<span class="fin-v">${escHtml(_fmtWon(it.cur))}</span>`+
-      `<span class="fin-p">${it.prev!=null?'전기 '+escHtml(_fmtWon(it.prev)):''} ${d}</span></div>`;
+function _finBarChart(name, years, values){
+  const vals=values.map(v=>(v==null||v==='')?null:Number(v));
+  const nums=vals.filter(v=>v!=null&&isFinite(v));
+  if(!nums.length) return '';
+  const maxAbs=Math.max(1,...nums.map(v=>Math.abs(v)));
+  const hasNeg=nums.some(v=>v<0);
+  const H=46, bw=15, gap=9, n=vals.length;
+  const W=n*bw+(n-1)*gap;
+  const zeroY=hasNeg?H*0.58:H;
+  const scale=(hasNeg?H*0.42:H-3)/maxAbs;
+  const bars=vals.map((v,i)=>{
+    const x=i*(bw+gap);
+    if(v==null||!isFinite(v)) return `<rect x="${x}" y="${H-2}" width="${bw}" height="2" fill="var(--bd)"/>`;
+    const h=Math.max(1.5,Math.abs(v)*scale);
+    const y=v>=0?(zeroY-h):zeroY;
+    const col=v>=0?'var(--g)':'#d9534f';
+    return `<rect x="${x}" y="${y.toFixed(1)}" width="${bw}" height="${h.toFixed(1)}" rx="2" fill="${col}"><title>${escHtml(years[i])}: ${escHtml(_fmtWon(v))}</title></rect>`;
   }).join('');
-  return `<div class="fin-box"><div class="fin-hd">💰 재무 요약`+
-    `<span class="fin-meta">${escHtml(fin.year)}년 ${escHtml(fin.report||'')} · ${escHtml(fin.fs||'')} · 출처 DART</span></div>`+
-    `<div class="fin-grid">${rows}</div></div>`;
+  const yls=years.map(y=>`<span class="fin-yl" style="width:${bw}px;margin-right:${gap}px">${escHtml(String(y).slice(2))}</span>`).join('');
+  let lv=null,pv=null; for(let i=vals.length-1;i>=0;i--){ if(vals[i]!=null){ if(lv===null)lv=vals[i]; else {pv=vals[i]; break;} } }
+  let yoy=''; if(lv!=null&&pv!=null&&pv!==0){ const r=(lv-pv)/Math.abs(pv)*100; const up=r>=0; yoy=` <span class="fin-yoy ${up?'up':'dn'}">${up?'▲':'▼'}${Math.abs(r).toFixed(1)}%</span>`; }
+  return `<div class="fin-chart"><div class="fin-ct"><span class="fin-cn">${escHtml(name)}</span>`+
+    `<span class="fin-cv">${escHtml(_fmtWon(lv))}${yoy}</span></div>`+
+    `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="fin-svg" role="img" aria-label="${escHtml(name)} 연도별 추이">${bars}</svg>`+
+    `<div class="fin-yls">${yls}</div></div>`;
+}
+function _renderFinance(fin){
+  if(!fin) return '';
+  let years=fin.years, series=fin.series;
+  if((!series||!series.length)&&(fin.items||[]).length){   // cur/prev만 있으면 2개년 합성(DART 등)
+    const y=parseInt(fin.year)||(new Date().getFullYear()-1);
+    years=[String(y-1),String(y)];
+    series=fin.items.filter(it=>it.cur!=null).map(it=>({name:it.name,values:[(it.prev==null?null:it.prev),it.cur]}));
+  }
+  if(!series||!series.length||!years||!years.length) return '';
+  const charts=series.map(s=>_finBarChart(s.name, years, s.values||[])).filter(Boolean).join('');
+  if(!charts) return '';
+  const src=fin.source||'DART';
+  const span=years.length>1?`${years[0]}~${years[years.length-1]}`:years[0];
+  const meta=[span+' 추이', fin.report||'', fin.fs||'', '출처 '+src].filter(Boolean).join(' · ');
+  return `<div class="fin-box"><div class="fin-hd">💰 재무 추이`+
+    `<span class="fin-meta">${escHtml(meta)}</span></div>`+
+    `<div class="fin-charts">${charts}</div></div>`;
 }
 function _compStatusBadge(fields){
   const get=n=>(fields.find(f=>f[0]===n)||[])[1]||'';
@@ -2844,6 +2881,12 @@ function runPatent(){
   fetch('/api/assist/patent?'+p.toString()).then(r=>r.json()).then(d=>{ _patLast=d; box.innerHTML=_renderPatentList(d); })
     .catch(e=>{ box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
 }
+// KIPRIS 원문보기 URL — 출원번호를 하이픈 형식(10-YYYY-NNNNNNN)으로 검색
+function _kiprisUrl(appno){
+  const n=String(appno||'').replace(/\D/g,'');
+  const q=n.length>=12?`${n.slice(0,2)}-${n.slice(2,6)}-${n.slice(6)}`:String(appno||'');
+  return q?`https://www.kipris.or.kr/khome/search/searchResult.do?query=${encodeURIComponent(q)}`:'';
+}
 function _renderPatentList(d){
   if(d&&d.need_key){
     const url=d.apply_url?`<a href="${escHtml(d.apply_url)}" target="_blank" rel="noopener">서비스키 발급 안내 →</a>`:'';
@@ -2855,7 +2898,7 @@ function _renderPatentList(d){
   const rows=items.map(it=>{
     const st=it.status?`<span class="pat-badge">${escHtml(it.status)}</span>`:'';
     const metaBits=[it.appno&&('출원 '+it.appno), it.appdate&&_fmtDate(it.appdate), it.regno&&('등록 '+it.regno)].filter(Boolean).map(escHtml).join(' · ');
-    const kurl=it.appno?`https://www.kipris.or.kr/khome/search/searchResult.do?query=${encodeURIComponent(it.appno)}`:'';
+    const kurl=_kiprisUrl(it.appno);
     const favItem={type:'patent',name:it.title||'',subtitle:it.applicant||'',appno:it.appno||'',url:kurl};
     const on=favHas(favItem);
     return `<div class="pat-rw"><button class="pat-row" onclick="patDetail('${argAttr(it.appno||'')}')" title="상세 보기">`+
@@ -2914,7 +2957,7 @@ function _renderPatentDetail(d){
     ['대리인',t.agent],['IPC',t.ipc]].filter(r=>r[1]);
   const meta=rows.map(r=>`<div class="pat-d-row"><span class="pat-d-k">${escHtml(r[0])}</span><span class="pat-d-v">${escHtml(String(r[1]))}</span></div>`).join('');
   const abs=t.abstract?`<div class="pat-d-abs"><div class="pat-d-k">요약</div><p>${escHtml(t.abstract)}</p></div>`:'';
-  const kurl=t.appno?`https://www.kipris.or.kr/khome/search/searchResult.do?query=${encodeURIComponent(t.appno)}`:'';
+  const kurl=_kiprisUrl(t.appno);
   const link=kurl?`<a class="assist-card-link" href="${escHtml(kurl)}" target="_blank" rel="noopener">KIPRIS에서 원문 보기 →</a>`:'';
   const favItem={type:'patent',name:t.title||'',subtitle:t.applicant||'',appno:t.appno||'',url:kurl};
   const favOn=favHas(favItem);
@@ -3240,7 +3283,7 @@ function _renderAssist(d, kind){
   const cnt=`<div style="font-size:12px;color:var(--mu);margin-bottom:4px;">${items.length}건</div>`;
   return cnt+cards;
 }
-const ASSIST_ENV_LABEL={company:'DART_API_KEY / DATA_GO_KR_KEY',patent:'KIPRIS_API_KEY',support:'DATA_GO_KR_KEY',procurement:'DATA_GO_KR_KEY'};
+const ASSIST_ENV_LABEL={company:'DATA_GO_KR_KEY',patent:'KIPRIS_API_KEY',support:'DATA_GO_KR_KEY',procurement:'DATA_GO_KR_KEY'};
 
 function setMode(m){
   if(_assistMode) closeAssist();   // 업무 도우미에서 일반 검색 모드로 복귀
