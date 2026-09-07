@@ -773,6 +773,23 @@ body.dark .int-badge-law{background:#13294d!important;color:#aecbfd!important;}
 .ws-stack-title{writing-mode:vertical-rl;text-orientation:mixed;font-size:11.5px;font-weight:700;
   color:var(--tx);max-height:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 @keyframes wsStackIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+/* 하단 책갈피 도크 — 최소화·초과 문서를 가로 칩으로 모아 두고 클릭하면 비교뷰로 복원 */
+.ws-dock{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;
+  background:var(--sf);border:1px solid var(--bd);border-radius:12px;box-shadow:var(--shadow);}
+.ws-dock-lab{font-size:12px;font-weight:800;color:var(--mu);letter-spacing:-.01em;flex-shrink:0;}
+.ws-dock-lab b{color:var(--g);}
+.ws-dock-card{display:inline-flex;align-items:center;gap:7px;max-width:240px;padding:6px 11px;
+  background:var(--card);border:1px solid var(--bd);border-bottom:2px solid var(--g);
+  border-radius:8px 8px 3px 3px;cursor:pointer;font-family:var(--font);
+  transition:transform .14s,box-shadow .14s,border-color .14s;animation:wsDockIn .25s ease;}
+.ws-dock-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(37,110,244,.18);border-bottom-color:var(--gd);}
+.ws-dock-card.int{border-bottom-color:#0f766e;}
+.ws-dock-badge{font-size:10px;font-weight:800;color:var(--gp);background:var(--gl);border-radius:5px;padding:1px 6px;flex-shrink:0;}
+.ws-dock-card.int .ws-dock-badge{background:rgba(15,118,110,.14);color:#0f766e;}
+body.dark .ws-dock-card.int .ws-dock-badge{background:rgba(45,212,191,.16);color:#5eead4;}
+.ws-dock-title{font-size:12.5px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+@keyframes wsDockIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.ws-allmin{flex:1;text-align:center;padding:40px 20px;color:var(--ht);font-size:13px;line-height:1.7;}
 .ws-pane::before{content:'';display:block;height:3px;flex-shrink:0;
   background:linear-gradient(90deg,var(--g),transparent 80%);opacity:.9;}
 .ws-pane-head{display:flex;align-items:center;gap:8px;padding:10px 12px;
@@ -1227,11 +1244,13 @@ body.dark .int-law-chip{background:#161920;color:#aecbfd;}
 .idb-ic{font-size:15px;}
 .idb-cnt{margin-left:auto;font-size:11px;font-weight:700;color:var(--gd);background:var(--gl);border-radius:999px;padding:1px 8px;}
 .idb-list{display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto;}
-.idb-item{display:flex;align-items:baseline;gap:8px;text-align:left;background:none;border:none;border-radius:7px;padding:6px 8px;cursor:pointer;font-family:var(--font);width:100%;}
+/* 항목: 제목(위) + 개정일(아래) 세로 배치 — 좁은 열에서도 제목이 한 글자씩 세로로
+   쪼개지지 않도록 word-break:keep-all(단어 단위 줄바꿈) 적용. */
+.idb-item{display:flex;flex-direction:column;align-items:stretch;gap:1px;text-align:left;background:none;border:none;border-radius:7px;padding:6px 8px;cursor:pointer;font-family:var(--font);width:100%;min-width:0;}
 .idb-item:hover{background:var(--bg);}
-.idb-item-t{font-size:13px;color:var(--tx);font-weight:500;flex:1;line-height:1.4;}
+.idb-item-t{font-size:13px;color:var(--tx);font-weight:500;line-height:1.4;word-break:keep-all;overflow-wrap:anywhere;min-width:0;}
 .idb-item:hover .idb-item-t{color:var(--g);}
-.idb-rev{font-size:11px;color:var(--ht);white-space:nowrap;flex-shrink:0;}
+.idb-rev{font-size:11px;color:var(--ht);line-height:1.3;word-break:keep-all;}
 @media(max-width:560px){ .idb-grid{flex-direction:column;} }
 /* 푸터 */
 .footer{text-align:center;padding:22px 0 14px;font-size:12px;color:var(--ht);}
@@ -2187,6 +2206,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <button class="ws-bar-btn" onclick="wsBackToList()">← 목록·검색으로</button>
     </div>
     <div class="ws-grid ws-1" id="wsGrid"></div>
+    <div class="ws-dock" id="wsDock" hidden aria-label="최소화한 문서 책갈피"></div>
   </div>
   <!-- 페이지네이션 -->
   <div id="pagination" style="display:flex;justify-content:center;gap:6px;margin-top:12px;flex-wrap:wrap;"></div>
@@ -7782,12 +7802,13 @@ async function wsOpen(name, docType, url, org, type){
   const key=_wsKey(name,docType);
   const exist=_wsPanes.find(p=>_wsKey(p.name,p.docType)===key);
   if(exist){
+    if(exist.minimized){ wsRestore(exist.id); return; }   // 최소화돼 있으면 다시 펼침
     const el=document.getElementById('wspane_'+exist.id);
     if(el){ el.scrollIntoView({behavior:'smooth',block:'nearest'}); _wsFlash(el); }
     return;
   }
   const id=++_wsId;
-  const pane={id,name,docType,url:url||'',org:org||'',type:type||'',loading:true,
+  const pane={id,name,docType,url:url||'',org:org||'',type:type||'',loading:true,minimized:false,
               error:'',arts:null,text:null,structured:null,abbrevMap:{},filter:''};
   _wsPanes.push(pane);
   _wsEnterId=id;               // 오른쪽에서 미끄러져 들어오는 진입 애니메이션
@@ -7818,14 +7839,17 @@ async function wsOpen(name, docType, url, org, type){
     loadRegNames().then(()=>{ try{ const el=document.getElementById('wsbody_'+id); if(el){ _collapseSpacedNames(el); markInternalRefs(el); } }catch(e){} });
   }
 }
-// 레이아웃 계산: [최초 규정] + 오른쪽 최근 N창(펼침) + 나머지(오른쪽 스택)
+// 레이아웃 계산: 펼친 창 [최초 규정 + 오른쪽 최근 N창] + 하단 책갈피(자동 넘침 + 수동 최소화)
 function _wsLayout(){
-  const primary=_wsPanes[0]||null;
-  const others=_wsPanes.slice(1);
+  const active=_wsPanes.filter(p=>!p.minimized);      // 펼쳐진(비교뷰) 창
+  const minimized=_wsPanes.filter(p=>p.minimized);    // 사용자가 최소화한 창
+  const primary=active[0]||null;
+  const others=active.slice(1);
   const visibleOthers=others.slice(-WS_MAX_VISIBLE_RIGHT);
-  const stacked=others.slice(0, Math.max(0, others.length-WS_MAX_VISIBLE_RIGHT));
+  const overflow=others.slice(0, Math.max(0, others.length-WS_MAX_VISIBLE_RIGHT));
   const visible = primary ? [primary, ...visibleOthers] : [];
-  return {primary, visible, stacked};
+  const docked = [...overflow, ...minimized];         // 하단 책갈피에 표시할 창
+  return {primary, visible, docked};
 }
 function wsPaneHtml(p, cls){
   const isInt=p.docType==='internal';
@@ -7835,6 +7859,7 @@ function wsPaneHtml(p, cls){
       <span class="ws-pane-title" title="${escAttr(p.name)}">${escHtml(p.name)}</span>
       <input class="ws-pane-filter" placeholder="조문·키워드" value="${escAttr(p.filter||'')}"
              oninput="wsFilter(${p.id},this.value)" aria-label="이 문서 안에서 찾기">
+      <button class="ws-icon" title="최소화 — 하단 책갈피로 내리기(내용 유지)" onclick="wsMinimize(${p.id})">⌄</button>
       <button class="ws-icon" title="전체화면·상세 기능(AI·메모·비교)" onclick="wsExpand(${p.id})">⤢</button>
       <button class="ws-icon" title="이 창 닫기" onclick="wsClose(${p.id})">✕</button>
     </header>
@@ -7848,22 +7873,29 @@ function wsRenderShell(){
   // 왼쪽 내규가 제1조로 이동해 비교가 끊기던 문제를 막는다.
   const _prevScroll={};
   grid.querySelectorAll('.ws-pane-body').forEach(b=>{ const m=(b.id||'').match(/^wsbody_(\d+)$/); if(m) _prevScroll[m[1]]=b.scrollTop; });
-  const {visible, stacked}=_wsLayout();
+  const {visible, docked}=_wsLayout();
   const entering=_wsEnterId;
   grid.className='ws-grid';
   let html=visible.map(p=>{
     const cls = p.id===entering ? 'ws-enter' : (entering ? 'ws-shift' : '');
     return wsPaneHtml(p, cls);
   }).join('');
-  if(stacked.length){
-    html += `<div class="ws-stack" aria-label="쌓인 문서 ${stacked.length}건">
-      <div class="ws-stack-h">쌓임 ${stacked.length}</div>`
-      + stacked.map(p=>`<button class="ws-stack-card${p.docType==='internal'?' int':''}"
-          title="${escAttr(p.name)} — 클릭하면 다시 펼칩니다" onclick="wsRestore(${p.id})">
-          <span class="ws-stack-title">${escHtml(p.name)}</span></button>`).join('')
-      + `</div>`;
+  if(!visible.length && docked.length){
+    html=`<div class="ws-allmin">📑 모든 문서를 책갈피로 내렸습니다.<br>아래 책갈피를 클릭하면 비교뷰로 다시 열립니다.</div>`;
   }
   grid.innerHTML=html;
+  // 하단 책갈피 도크(자동 넘침 + 수동 최소화) — 클릭하면 비교뷰로 복원
+  const dock=document.getElementById('wsDock');
+  if(dock){
+    if(docked.length){
+      dock.innerHTML=`<span class="ws-dock-lab">📑 책갈피 <b>${docked.length}</b></span>`
+        + docked.map(p=>`<button class="ws-dock-card${p.docType==='internal'?' int':''}"
+            title="${escAttr(p.name)} — 클릭하면 비교뷰로 다시 엽니다" onclick="wsRestore(${p.id})">
+            <span class="ws-dock-badge">${p.docType==='internal'?'내규':'법령'}</span>
+            <span class="ws-dock-title">${escHtml(p.name)}</span></button>`).join('');
+      dock.hidden=false;
+    } else { dock.innerHTML=''; dock.hidden=true; }
+  }
   _wsEnterId=0;
   _wsPostRender();
   // 새로 진입한 창(entering)을 뺀 기존 창들의 스크롤 위치 복원
@@ -7881,11 +7913,19 @@ function _wsPostRender(){
   });
 }
 // 스택의 문서를 다시 펼침(가장 최근 창으로 승격 → 보이는 영역 진입)
+// 최소화: 창을 하단 책갈피로 내림(내용·스크롤 상태 유지)
+function wsMinimize(id){
+  const p=_wsPanes.find(x=>x.id===id); if(!p) return;
+  p.minimized=true;
+  wsRenderShell();
+}
+// 복원: 책갈피에서 다시 비교뷰로 펼침(맨 앞으로 이동해 나란히 비교)
 function wsRestore(id){
   const idx=_wsPanes.findIndex(p=>p.id===id); if(idx<0) return;
-  const [p]=_wsPanes.splice(idx,1); _wsPanes.push(p);
+  const [p]=_wsPanes.splice(idx,1); p.minimized=false; _wsPanes.push(p);
   _wsEnterId=id;
   wsRenderShell();
+  setTimeout(()=>{ const el=document.getElementById('wspane_'+id); if(el){ el.scrollIntoView({behavior:'smooth',block:'nearest'}); _wsFlash(el); } },30);
 }
 function wsBodyHtml(p){
   if(p.loading) return `<div class="fp-loading"><div class="spinner" style="margin:0 auto 10px;"></div>불러오는 중...</div>`;
@@ -7998,12 +8038,14 @@ function wsClose(id){
   _wsPanes=_wsPanes.filter(p=>p.id!==id);
   if(!_wsPanes.length){
     const g=document.getElementById('wsGrid'); if(g) g.innerHTML='';
+    const dk=document.getElementById('wsDock'); if(dk){ dk.innerHTML=''; dk.hidden=true; }
     wsBackToList(); return;
   }
   wsRenderShell();
 }
 function wsCloseAll(){
   _wsPanes=[]; const g=document.getElementById('wsGrid'); if(g) g.innerHTML='';
+  const dk=document.getElementById('wsDock'); if(dk){ dk.innerHTML=''; dk.hidden=true; }
   wsBackToList();
 }
 function wsExpand(id){
