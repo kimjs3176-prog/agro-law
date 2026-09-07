@@ -34,42 +34,40 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);}
 .tb-ic{font-size:15px;line-height:1;}
 .tb-cnt{font-size:10.5px;font-weight:800;color:var(--gd);}
 .tb-tool .ai-active-badge{position:absolute;top:4px;right:4px;}
-/* 레이아웃 */
-.main{max-width:min(1680px,96vw);margin:0 auto;padding:20px 28px 40px;}
+/* 레이아웃 — 좌측 세로 메뉴 패널 + 우측 콘텐츠 */
+.main{max-width:min(1680px,96vw);margin:0 auto;padding:20px 28px 40px;display:flex;gap:22px;align-items:flex-start;}
 @media(min-width:1800px){.main{max-width:1800px;}}
-@media(max-width:900px){.main{max-width:100%;padding:14px 14px 32px;}}
-/* 상단 메뉴 바(가로): 검색 모드 + 도구 */
-.main-content{min-width:0;}
-.side-menu{display:flex;flex-direction:row;align-items:center;gap:6px;flex-wrap:wrap;
+.main-content{flex:1;min-width:0;}
+/* 좌측 메뉴 패널(사이드바) */
+.side-menu{width:214px;flex-shrink:0;display:flex;flex-direction:column;gap:2px;
   background:var(--sf);border:1px solid rgba(0,0,0,.06);border-radius:var(--r);box-shadow:var(--shadow);
-  padding:8px 12px;margin-bottom:16px;}
-.sm-sec{display:flex;flex-direction:row;align-items:center;gap:6px;}
-.sm-sec.sm-tools{margin-left:auto;}
-.sm-sec.sm-tools::before{content:'';width:1px;height:20px;background:rgba(0,0,0,.1);margin:0 4px 0 0;flex-shrink:0;}
-.sm-label{font-size:10px;font-weight:800;color:var(--ht);letter-spacing:.06em;padding:0 6px 0 2px;flex-shrink:0;}
-.sm-group{display:flex;align-items:center;gap:4px;flex-shrink:0;}
-.sm-glabel{font-size:10px;font-weight:800;color:var(--ht);letter-spacing:.04em;padding:0 5px 0 2px;white-space:nowrap;flex-shrink:0;}
-.sm-item{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border:none;background:transparent;
-  border-radius:999px;font-size:13px;font-weight:600;color:var(--mu);cursor:pointer;white-space:nowrap;
-  text-decoration:none;transition:.12s;}
+  padding:12px 10px;position:sticky;top:76px;}
+.sm-sec{display:flex;flex-direction:column;align-items:stretch;gap:2px;width:100%;}
+.sm-group{display:flex;flex-direction:column;align-items:stretch;gap:2px;width:100%;}
+.sm-group + .sm-group{margin-top:12px;}
+.sm-glabel{font-size:10.5px;font-weight:800;color:var(--ht);letter-spacing:.06em;padding:2px 8px 6px;white-space:nowrap;}
+.sm-div{display:none;}
+.sm-item{display:flex;align-items:center;gap:9px;width:100%;justify-content:flex-start;text-align:left;
+  padding:9px 12px;border:none;background:transparent;border-radius:10px;font-size:13.5px;font-weight:600;
+  color:var(--mu);cursor:pointer;white-space:nowrap;text-decoration:none;transition:.12s;}
 .sm-item:hover{background:var(--bg);color:var(--tx);}
-.sm-item.active{background:var(--gl);color:var(--gp);font-weight:700;}
-.sm-ic{font-size:14px;flex-shrink:0;}
-body.dark .side-menu{border-color:rgba(255,255,255,.08);}
-body.dark .sm-sec.sm-tools::before{background:rgba(255,255,255,.14);}
-@media(max-width:900px){
-  .side-menu{gap:5px;padding:7px 9px;}
-  .sm-label{display:none;}
-  .sm-tools{display:none;}   /* 모바일은 하단 내비게이션으로 대체 */
-  .sm-item{padding:7px 12px;font-size:12.5px;}
-}
-/* ── 메뉴 정리: 주요 기능(좌, 아이콘+텍스트) + 도구(우, 아이콘) ── */
-.sm-primary{flex-wrap:wrap;gap:4px;}
-.sm-div{width:1px;height:18px;background:var(--bd);margin:0 7px;flex-shrink:0;}
-body:not(.dark) .sm-div{background:rgba(0,0,0,.1);}
-.sm-item.sm-icon{gap:0;padding:8px 10px;}
-.sm-item.sm-icon .sm-ic{font-size:15px;}
+.sm-item.active{background:var(--gl);color:var(--gp);font-weight:700;box-shadow:inset 3px 0 0 var(--g);}
+.sm-ic{font-size:15px;flex-shrink:0;width:18px;text-align:center;}
 .sm-item.sm-icon .ai-active-badge{margin-left:2px;}
+body.dark .side-menu{border-color:rgba(255,255,255,.08);}
+/* 모바일: 상단 가로 스크롤 바로 전환 */
+@media(max-width:900px){
+  .main{flex-direction:column;gap:0;max-width:100%;padding:14px 14px 32px;}
+  .side-menu{width:auto;flex-direction:row;overflow-x:auto;position:static;top:auto;gap:5px;
+    padding:8px 10px;margin-bottom:14px;-webkit-overflow-scrolling:touch;}
+  .sm-sec{flex-direction:row;align-items:center;gap:6px;width:auto;}
+  .sm-group{flex-direction:row;align-items:center;gap:4px;width:auto;}
+  .sm-group + .sm-group{margin-top:0;}
+  .sm-glabel{display:none;}
+  .sm-item{width:auto;padding:7px 12px;font-size:12.5px;border-radius:999px;}
+  .sm-item.active{box-shadow:none;}
+  .sm-ic{width:auto;}
+}
 /* ── 검색 유형 토글(키워드 ↔ AI 시나리오) ── */
 .search-toggle{display:inline-flex;background:var(--bg);border:1px solid var(--bd);border-radius:11px;padding:3px;gap:2px;margin:0 0 12px;}
 .stgl{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:none;background:transparent;border-radius:8px;
