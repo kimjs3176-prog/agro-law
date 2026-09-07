@@ -3211,7 +3211,6 @@ function openExpense(){
       `<div class="exp-form" id="expForm"><div id="expFields"></div>`+
         `<div class="exp-actions"><button class="exp-print" onclick="_expCopy(this)">📋 본문 복사</button>`+
           `<button class="exp-mini2" onclick="downloadHwpx(this)" title="표 서식을 한글(.hwpx) 파일로 저장">📄 한글(.hwpx)</button>`+
-          `<button class="exp-mini2" onclick="printExpense()">🖨 인쇄</button>`+
           `<button class="exp-clear" onclick="_expReset()">초기화</button></div>`+
       `</div>`+
       `<div class="exp-preview"><div class="exp-doc" id="expDoc"></div></div>`+
@@ -3332,10 +3331,10 @@ function _expBuild(){
     const tch='background:#efefef;font-weight:bold;text-align:center;white-space:nowrap;'+tci;
     const rr=rows.map((r,i)=>`<tr><td style="${tci};text-align:center">${i+1}</td><td style="${tci};text-align:center">${_ev(_fmtKDate(r.date))}</td><td style="${tci}">${_ev(r.place)}</td><td style="${tci}">${_ev(r.content)}</td><td style="${tci};text-align:right">${_won(_digits(r.amt))}</td></tr>`).join('');
     const trHead=head.length?`<p style="margin:0 0 6px;font-size:14px">${head.map(x=>_ev(x[0])+': '+_ev(x[1])).join(' / ')}</p>`:'';
-    _expRich=trHead+'<table style="border-collapse:collapse;width:100%">'+
+    _expRich=trHead+'<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;width:100%"><tbody>'+
       `<tr><th style="${tch}">순번</th><th style="${tch}">일자</th><th style="${tch}">출장지</th><th style="${tch}">출장목적</th><th style="${tch}">금액</th></tr>`+
       (rr||`<tr><td style="${tci};text-align:center" colspan="5">(내역 없음)</td></tr>`)+
-      `<tr><td style="${tch}" colspan="4">합계</td><td style="${tci};text-align:right;font-weight:bold">${_won(total)}</td></tr></table>`;
+      `<tr><td style="${tch}" colspan="4">합계</td><td style="${tci};text-align:right;font-weight:bold">${_won(total)}</td></tr></tbody></table>`;
     const tlines=rows.map((r,i)=>`  ${i+1}) ${_fmtKDate(r.date)} | ${r.place||'-'} | ${r.content||'-'} | ${_won(_digits(r.amt))}`).join('\n');
     text='[여비(출장비) 지출]\n'+head.map(x=>`· ${x[0]}: ${x[1]}`).join('\n')+
       `${head.length?'\n':''}· 출장내역 (일자 | 출장지 | 목적 | 금액)\n${tlines||'  (내역 없음)'}\n· 합계: 일금 ${_hanAmount(total)}원정 (${_won(total)})`;
@@ -3363,9 +3362,9 @@ function _expBuild(){
     // 붙여넣기용(HWP·ERP 리치에디터에 표 유지) — 인라인 스타일
     const ci='border:1px solid #808080;padding:6px 10px;font-size:14px;vertical-align:middle;';
     const ch='background:#efefef;font-weight:bold;text-align:center;white-space:nowrap;'+ci;
-    _expRich='<table style="border-collapse:collapse;width:100%">'+rows.map(r=> r[2]===null
+    _expRich='<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;width:100%"><tbody>'+rows.map(r=> r[2]===null
       ? `<tr><th style="${ch}">${_ev(r[0])}</th><td style="${ci}" colspan="3">${_ev(r[1])}</td></tr>`
-      : `<tr><th style="${ch}">${_ev(r[0])}</th><td style="${ci}">${_ev(r[1])}</td><th style="${ch}">${_ev(r[2])}</th><td style="${ci}">${_ev(r[3])}</td></tr>`).join('')+'</table>';
+      : `<tr><th style="${ch}">${_ev(r[0])}</th><td style="${ci}">${_ev(r[1])}</td><th style="${ch}">${_ev(r[2])}</th><td style="${ci}">${_ev(r[3])}</td></tr>`).join('')+'</tbody></table>';
     // 플레인 폴백
     const P=[['관련근거',pm.basis],['집행목적',pm.purpose],
       ['일시',_dotDate(pm.date)+(pm.place?('   장소: '+pm.place):'')],['집행대상',pm.targets],
@@ -3385,21 +3384,45 @@ function _expUpdate(){
   doc.innerHTML=`<div class="expd-title">지출결의서 본문</div>${b.html}`;
 }
 function _expCopy(btn){
-  const text=_expPlain||''; if(!text){ return; }
+  const text=_expPlain||''; if(!text && !_expRich){ return; }
   const done=()=>{ if(btn){ const o=btn.textContent; btn.textContent='✓ 복사됨'; setTimeout(()=>{btn.textContent=o;},1400); } };
-  if(_expRich && navigator.clipboard && window.ClipboardItem){   // 표 유지(리치) + 플레인 폴백
-    try{
-      const item=new ClipboardItem({'text/html':new Blob([_expRich],{type:'text/html'}),
-                                    'text/plain':new Blob([text],{type:'text/plain'})});
-      navigator.clipboard.write([item]).then(done).catch(()=>_expCopyFb(text,done));
-      return;
-    }catch(e){}
+  // 표가 있는 구분(여비·업무추진비): 표를 그대로 유지해 붙여넣기.
+  if(_expRich){
+    // 1) contenteditable 선택 후 execCommand('copy') — HWP·워드·ERP 리치에디터에 표가
+    //    가장 안정적으로 붙는다(브라우저가 실제 DOM에서 표 클립보드를 생성).
+    if(_expCopyRichSelection(_expRich)){ done(); return; }
+    // 2) 비동기 ClipboardItem 폴백(문서 래퍼로 감싸 호환성↑)
+    if(navigator.clipboard && window.ClipboardItem){
+      try{
+        const item=new ClipboardItem({'text/html':new Blob([_expRichDoc(_expRich)],{type:'text/html'}),
+                                      'text/plain':new Blob([text||''],{type:'text/plain'})});
+        navigator.clipboard.write([item]).then(done).catch(()=>_expCopyFb(text,done));
+        return;
+      }catch(e){}
+    }
   }
+  // 표 없는 구분(일반) 또는 리치 복사 실패 → 텍스트
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done).catch(()=>_expCopyFb(text,done)); }
   else _expCopyFb(text,done);
 }
+// 붙여넣기 호환용 전체 HTML 문서 래퍼(일부 편집기가 문서 구조를 요구)
+function _expRichDoc(inner){ return '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>'+inner+'</body></html>'; }
+// 숨은 contenteditable에 표 HTML을 넣고 선택→복사. 성공 시 true.
+function _expCopyRichSelection(html){
+  try{
+    const div=document.createElement('div');
+    div.setAttribute('contenteditable','true');
+    div.style.cssText='position:fixed;left:-99999px;top:0;opacity:0;white-space:normal;';
+    div.innerHTML=html;
+    document.body.appendChild(div);
+    const sel=window.getSelection(); const range=document.createRange();
+    range.selectNodeContents(div); sel.removeAllRanges(); sel.addRange(range);
+    const ok=document.execCommand('copy');
+    sel.removeAllRanges(); document.body.removeChild(div);
+    return !!ok;
+  }catch(e){ return false; }
+}
 function _expCopyFb(text,done){ try{ const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done&&done(); }catch(e){ alert('복사 실패 — 본문을 직접 선택해 복사하세요.'); } }
-function printExpense(){ _expUpdate(); window.print(); }
 // 현재 구분의 본문을 한글(.hwpx) 표 파일로 생성
 function _expHwpxPayload(){
   const t=_expState.type;
