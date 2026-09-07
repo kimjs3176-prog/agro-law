@@ -3648,7 +3648,7 @@ function renderRegCards(items, kw, kind){
 function _renderRegView(){
   if(!_currentResults) return;
   const {kind, kw, items} = _currentResults;
-  const view = _sortRegItems(items, kind, _regSort);
+  const view = _sortRegItems(items, kind, _regSort, kw);
   _currentResults.view = view;
   // 관련도순일 때만 첫 카드에 '가장 관련 높음' 표식(교차 패널 등 타 경로에는 안 붙음)
   view.forEach(it=>{ if(it) delete it._rankTop; });
@@ -3659,8 +3659,8 @@ function _renderRegView(){
   buildRegToolbar(kind, view.length);
   updateSplitLayout();
 }
-// 정렬: relevance(원 순서 유지) / name(이름) / date(공포일 최신) / rev(최근 개정일)
-function _sortRegItems(items, kind, sort){
+// 정렬: relevance(명칭 일치 우선 + 서버 순서) / name(이름) / date(공포일 최신) / rev(최근 개정일)
+function _sortRegItems(items, kind, sort, kw){
   const a=(items||[]).slice();
   const nm=it=> it['법령명한글']||it.name||'';
   if(sort==='name') a.sort((x,y)=>nm(x).localeCompare(nm(y),'ko'));
@@ -3668,8 +3668,16 @@ function _sortRegItems(items, kind, sort){
   else if(sort==='rev'){
     const rv=it=>{ try{ return _extractRevInfo(it, it.matched_articles||[]).latest||''; }catch(e){ return ''; } };
     a.sort((x,y)=>rv(y).localeCompare(rv(x)));
+  } else {
+    // relevance: 규정명(법령명)에 검색어가 포함된 항목을 우선(안정 정렬로 서버 순서 유지).
+    // 조문 본문만 매칭돼 상단에 올라온 저관련 규정이 명칭 일치 규정보다 앞서던 문제 보정.
+    const q=String(kw||'').replace(/\s+/g,'');
+    if(q){
+      const hit=it=>nm(it).replace(/\s+/g,'').indexOf(q)>=0?0:1;
+      return a.map((it,i)=>[it,i]).sort((x,y)=>(hit(x[0])-hit(y[0]))||(x[1]-y[1])).map(p=>p[0]);
+    }
   }
-  return a;   // relevance: 서버가 준 원래 순서 유지
+  return a;
 }
 function setRegSort(v){ _regSort=v; _renderRegView(); }
 // 결과 도구모음: 건수 · 정렬 · CSV 내보내기
