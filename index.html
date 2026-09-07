@@ -84,8 +84,8 @@ body.dark .stgl.active{background:#20222a;}
 .assist-h-ic{font-size:20px;align-self:center;}
 .assist-h-t{font-size:17px;font-weight:800;color:var(--tx);letter-spacing:-.3px;}
 .assist-h-hint{font-size:12.5px;color:var(--mu);}
-.assist-search{display:flex;gap:8px;margin-bottom:16px;}
-.assist-search .sinput{flex:1;}
+.assist-search{display:flex;gap:8px;margin-bottom:16px;max-width:620px;}
+.assist-search .sinput{flex:1;min-width:0;}
 .assist-results{display:flex;flex-direction:column;gap:10px;}
 .assist-card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;}
 .assist-card-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:7px;}
@@ -118,7 +118,7 @@ body.dark .stgl.active{background:#20222a;}
 .pat-pdiv{width:1px;height:18px;background:var(--bd);margin:0 3px;align-self:center;}
 .pat-inp{padding:9px 12px;border:1px solid var(--bd);border-radius:9px;font-size:13px;background:var(--sf);color:var(--tx);outline:none;font-family:var(--font);}
 .pat-inp:focus{border-color:var(--g);box-shadow:var(--shadow-focus);}
-.pat-frow2{gap:8px;}
+.pat-frow2{gap:8px;max-width:620px;}
 .pat-frow2 .pat-inp:first-of-type{flex:1;min-width:160px;}
 .pat-year{width:120px;flex-shrink:0;}
 .pat-sel{padding:9px 12px;border:1px solid var(--bd);border-radius:9px;font-size:13px;background:var(--sf);color:var(--tx);cursor:pointer;font-family:var(--font);flex-shrink:0;}
@@ -1078,6 +1078,31 @@ body.dark .int-law-chip{background:#161920;color:#b7bdf0;}
   .fp-left{min-width:0;}
   .cmp-body{grid-template-columns:1fr;}
   .cmp-col:first-child{display:none;}
+  /* ── 상단 메뉴: 가로 스크롤 한 줄 ── */
+  .sm-primary{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .sm-primary::-webkit-scrollbar{display:none;}
+  .sm-primary .sm-item{flex:0 0 auto;font-size:12.5px;padding:7px 10px;}
+  .side-menu{padding:6px 8px;}
+  /* ── 업무 도우미 패널: 폭 제한 해제·검색창 풀폭 ── */
+  .assist-search,.pat-frow2{max-width:none;}
+  .assist-head{gap:4px;margin-bottom:10px;}
+  .assist-h-hint{flex-basis:100%;}
+  .pat-flabel{min-width:44px;font-size:11px;}
+  .pat-chip{font-size:12px;padding:5px 10px;}
+  .pat-appl{gap:5px;}
+  .pat-year{width:84px;}
+  .opp-bar{gap:6px;} .opp-sort,.opp-tool{font-size:11.5px;padding:6px 9px;}
+  .opp-card{padding:11px 36px 11px 12px;}
+  .opp-grid,.comp-grid,.fin-grid{grid-template-columns:1fr;}
+  .comp-fbar .comp-qf{margin-left:0;flex-basis:100%;}
+  /* ── 지출결의서: 여비 행 세로 정렬·표 가로 스크롤 ── */
+  .exp-segset{width:100%;} .exp-seg{flex:1;text-align:center;padding:8px 6px;}
+  .exp-trow{display:flex;flex-wrap:wrap;gap:5px;}
+  .exp-trn{flex:0 0 100%;text-align:left;}
+  .exp-trow .td{flex:1 1 45%;} .exp-trow .tp{flex:1 1 45%;} .exp-trow .ta{flex:1 1 60%;} .exp-trow .tc{flex:1 1 100%;grid-column:auto;}
+  .exp-doc{padding:16px 14px;}
+  .exp-preview{overflow-x:auto;}
+  .expd-tbl{min-width:440px;}
   /* 하단 탭바 */
   .mobile-nav{display:flex;}
 }
@@ -2308,7 +2333,13 @@ async function openAssist(kind){
 // ── 특허 조회: 출원인 프리셋·기간·상태 필터 + 목록/상세 ──
 const PAT_APPLICANTS=['농촌진흥청','농림축산검역본부','국립농산물품질관리원','국립종자원','농업기술원'];
 const PAT_STATUS=[['','전체 상태'],['R','등록'],['A','공개'],['J','거절'],['F','소멸'],['C','취하'],['I','무효'],['G','포기']];
-let _patLast=null, _patParams='';
+const PAT_CODE_LABEL={R:'등록',A:'공개',J:'거절',F:'소멸',C:'취하',I:'무효',G:'포기'};
+let _patLast=null, _patParams='', _patStatuses=[];   // 다중 선택 상태 코드
+function _patStatusMatch(it){
+  if(!_patStatuses.length) return true;
+  const s=String(it&&it.status||'');
+  return _patStatuses.some(code=>{ const l=PAT_CODE_LABEL[code]||''; return l&&s.indexOf(l)>=0; });
+}
 function _patFiltersHtml(){
   const appl=PAT_APPLICANTS.map((a,i)=>
     `<button class="pat-chip${i===0?' active':''}" data-v="${argAttr(a)}" onclick="_patApplPick(this)">${escHtml(a==='농업기술원'?'농업기술원(각 도)':a)}</button>`).join('');
@@ -2337,8 +2368,16 @@ function _patApplPick(btn){
   btn.classList.add('active');
 }
 function _patStatusPick(btn){
-  document.querySelectorAll('#patStatus .pat-chip').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
+  const cont=document.getElementById('patStatus'); if(!cont) return;
+  const allBtn=cont.querySelector('.pat-chip[data-v=""]');
+  if(!btn.dataset.v){                          // '전체 상태' → 나머지 해제
+    cont.querySelectorAll('.pat-chip').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  } else {                                     // 개별 상태 토글(다중 선택)
+    if(allBtn) allBtn.classList.remove('active');
+    btn.classList.toggle('active');
+    if(!cont.querySelector('.pat-chip.active') && allBtn) allBtn.classList.add('active');
+  }
 }
 function _patPeriod(y, btn){
   document.querySelectorAll('#patPeriod .pat-chip').forEach(b=>b.classList.remove('active'));
@@ -2751,7 +2790,8 @@ function runPatent(){
   const p=new URLSearchParams();
   if(appl&&appl.v) p.set('applicant',appl.v);
   const q=((document.getElementById('patQuery')||{}).value||'').trim(); if(q) p.set('query',q);
-  const st=((document.querySelector('#patStatus .pat-chip.active')||{}).dataset||{}).v||''; if(st) p.set('status',st);
+  _patStatuses=[...document.querySelectorAll('#patStatus .pat-chip.active')].map(b=>b.dataset.v).filter(Boolean);
+  if(_patStatuses.length===1) p.set('status',_patStatuses[0]);   // 단일=서버필터, 다중=결과필터
   const from=((document.getElementById('patFrom')||{}).value||'').replace(/\D/g,''); if(from) p.set('date_from',from);
   const to=((document.getElementById('patTo')||{}).value||'').replace(/\D/g,''); if(to) p.set('date_to',to);
   _patParams=p.toString();                 // 엑셀 내보내기에서 동일 필터 재사용
@@ -2765,7 +2805,7 @@ function _renderPatentList(d){
     return `<div class="assist-note">🔑 <b>${escHtml(d.provider||'')}</b> 서비스키가 설정되지 않았습니다.<br>관리자가 환경변수(<code>KIPRIS_API_KEY</code>)를 설정하면 조회할 수 있습니다.<br>${url}</div>`;
   }
   if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'조회에 실패했습니다.')}</div>`;
-  const items=d.items||[];
+  const items=(d.items||[]).filter(_patStatusMatch);   // 다중 상태 선택 시 결과 필터
   if(!items.length) return `<div class="assist-note">조건에 맞는 특허가 없습니다.</div>`;
   const rows=items.map(it=>{
     const st=it.status?`<span class="pat-badge">${escHtml(it.status)}</span>`:'';
@@ -2801,6 +2841,7 @@ async function exportPatents(btn){
       if(btn) btn.textContent=`내보내는 중... (${all.length}${total?'/'+total:''})`;
       if(all.length>=total || items.length<ROWS) break;
     }
+    all=all.filter(_patStatusMatch);            // 다중 상태 선택 시 결과 필터 적용
     if(!all.length){ alert('내보낼 데이터가 없습니다.'); return; }
     const header=['제목','출원인','출원번호','출원일','등록번호','상태','IPC'];
     const rows=all.map(it=>[it.title||'', it.applicant||'', it.appno||'', _fmtDate(it.appdate), it.regno||'', it.status||'', it.ipc||'']);
