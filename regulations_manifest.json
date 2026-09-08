@@ -464,12 +464,34 @@
  },
  {
   "title": "에너지 관리 규칙",
-  "revision": "2022년도 12월 제정",
+  "revision": "2026년도 8월 18일 개정",
   "category": "규칙",
   "slug": "에너지_관리_규칙",
-  "src": "에너지 관리 규칙(2022년도 12월 제정).hwp",
+  "src": "에너지 관리 규칙(2026년도 8월 18일 개정).hwpx",
   "html": "/regulations/에너지_관리_규칙/index.html",
-  "pdf": "pdf/에너지_관리_규칙.pdf"
+  "pdf": "pdf/에너지_관리_규칙.pdf",
+  "effective_date": "",
+  "department": "",
+  "note": "",
+  "uploader": "김진선",
+  "uploaded_at": "2026-09-08 16:52",
+  "original": "/regulations/에너지_관리_규칙/original.hwpx",
+  "searchable": true,
+  "history": [
+   {
+    "revision": "2022년도 12월 제정",
+    "replaced_at": "2026-09-08 16:52",
+    "entry": {
+     "title": "에너지 관리 규칙",
+     "revision": "2022년도 12월 제정",
+     "category": "규칙",
+     "slug": "에너지_관리_규칙",
+     "src": "에너지 관리 규칙(2022년도 12월 제정).hwp",
+     "html": "/regulations/에너지_관리_규칙/index.html",
+     "pdf": "pdf/에너지_관리_규칙.pdf"
+    }
+   }
+  ]
  },
  {
   "title": "연구개발성과 사업화 관리규칙",
