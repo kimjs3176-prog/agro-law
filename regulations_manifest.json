@@ -791,12 +791,34 @@
  },
  {
   "title": "재무회계규정 시행세칙",
-  "revision": "2025년도 6월 일부개정",
+  "revision": "2026년도 8월 18일 개정",
   "category": "세칙",
   "slug": "재무회계규정_시행세칙",
-  "src": "재무회계규정 시행세칙(2025년도 6월 일부개정).hwpx",
+  "src": "재무회계규정 시행세칙(2026년도 8월 18일 개정).hwpx",
   "html": "/regulations/재무회계규정_시행세칙/index.html",
-  "pdf": "pdf/재무회계규정_시행세칙.pdf"
+  "pdf": "pdf/재무회계규정_시행세칙.pdf",
+  "effective_date": "",
+  "department": "",
+  "note": "",
+  "uploader": "김진선",
+  "uploaded_at": "2026-09-08 16:52",
+  "original": "/regulations/재무회계규정_시행세칙/original.hwpx",
+  "searchable": true,
+  "history": [
+   {
+    "revision": "2025년도 6월 일부개정",
+    "replaced_at": "2026-09-08 16:52",
+    "entry": {
+     "title": "재무회계규정 시행세칙",
+     "revision": "2025년도 6월 일부개정",
+     "category": "세칙",
+     "slug": "재무회계규정_시행세칙",
+     "src": "재무회계규정 시행세칙(2025년도 6월 일부개정).hwpx",
+     "html": "/regulations/재무회계규정_시행세칙/index.html",
+     "pdf": "pdf/재무회계규정_시행세칙.pdf"
+    }
+   }
+  ]
  },
  {
   "title": "직제규정 시행세칙",
