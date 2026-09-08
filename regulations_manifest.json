@@ -121,9 +121,31 @@
   "revision": "2023년도 6월 일부개정",
   "category": "규정",
   "slug": "재무회계규정",
-  "src": "재무회계규정(2023년도 6월 일부개정).hwp",
+  "src": "재무회계규정(2023년도 6월 일부개정).hwpx",
   "html": "/regulations/재무회계규정/index.html",
-  "pdf": "pdf/재무회계규정.pdf"
+  "pdf": "pdf/재무회계규정.pdf",
+  "effective_date": "",
+  "department": "",
+  "note": "",
+  "uploader": "김진선",
+  "uploaded_at": "2026-09-08 16:55",
+  "original": "/regulations/재무회계규정/original.hwpx",
+  "searchable": true,
+  "history": [
+   {
+    "revision": "2023년도 6월 일부개정",
+    "replaced_at": "2026-09-08 16:55",
+    "entry": {
+     "title": "재무회계규정",
+     "revision": "2023년도 6월 일부개정",
+     "category": "규정",
+     "slug": "재무회계규정",
+     "src": "재무회계규정(2023년도 6월 일부개정).hwp",
+     "html": "/regulations/재무회계규정/index.html",
+     "pdf": "pdf/재무회계규정.pdf"
+    }
+   }
+  ]
  },
  {
   "title": "종자산업진흥센터 시험분석 등의 수수료 규정",
