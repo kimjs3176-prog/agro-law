@@ -1162,20 +1162,40 @@
  },
  {
   "title": "직원채용지침",
-  "revision": "2026년도 6월 11일 개정",
+  "revision": "2026년도 8월 18일 개정",
   "category": "예규",
   "slug": "직원채용지침",
-  "src": "직원채용지침(2026년도 6월 11일 개정).hwpx",
+  "src": "직원채용지침(2026년도 8월 18일 개정).hwpx",
   "html": "/regulations/직원채용지침/index.html",
   "pdf": "pdf/직원채용지침.pdf",
   "effective_date": "",
   "department": "",
   "note": "",
   "uploader": "김진선",
-  "uploaded_at": "2026-08-20 09:34",
+  "uploaded_at": "2026-09-08 16:52",
   "original": "/regulations/직원채용지침/original.hwpx",
   "searchable": true,
   "history": [
+   {
+    "revision": "2026년도 6월 11일 개정",
+    "replaced_at": "2026-09-08 16:52",
+    "entry": {
+     "title": "직원채용지침",
+     "revision": "2026년도 6월 11일 개정",
+     "category": "예규",
+     "slug": "직원채용지침",
+     "src": "직원채용지침(2026년도 6월 11일 개정).hwpx",
+     "html": "/regulations/직원채용지침/index.html",
+     "pdf": "pdf/직원채용지침.pdf",
+     "effective_date": "",
+     "department": "",
+     "note": "",
+     "uploader": "김진선",
+     "uploaded_at": "2026-08-20 09:34",
+     "original": "/regulations/직원채용지침/original.hwpx",
+     "searchable": true
+    }
+   },
    {
     "revision": "2026년도 6월 11일 개정",
     "replaced_at": "2026-08-20 09:34",
