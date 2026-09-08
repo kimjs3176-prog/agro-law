@@ -388,12 +388,34 @@
  },
  {
   "title": "수탁사업 관리규칙",
-  "revision": "2022년도 6월 다른 내규로 인한 개정",
+  "revision": "2026년도 8월 18일 개정",
   "category": "규칙",
   "slug": "수탁사업_관리규칙",
-  "src": "수탁사업 관리규칙(2022년도 6월 다른 내규로 인한 개정).hwp",
+  "src": "수탁사업 관리규칙(2026년도 8월 18일 개정).hwpx",
   "html": "/regulations/수탁사업_관리규칙/index.html",
-  "pdf": "pdf/수탁사업_관리규칙.pdf"
+  "pdf": "pdf/수탁사업_관리규칙.pdf",
+  "effective_date": "",
+  "department": "",
+  "note": "",
+  "uploader": "김진선",
+  "uploaded_at": "2026-09-08 16:52",
+  "original": "/regulations/수탁사업_관리규칙/original.hwpx",
+  "searchable": true,
+  "history": [
+   {
+    "revision": "2022년도 6월 다른 내규로 인한 개정",
+    "replaced_at": "2026-09-08 16:52",
+    "entry": {
+     "title": "수탁사업 관리규칙",
+     "revision": "2022년도 6월 다른 내규로 인한 개정",
+     "category": "규칙",
+     "slug": "수탁사업_관리규칙",
+     "src": "수탁사업 관리규칙(2022년도 6월 다른 내규로 인한 개정).hwp",
+     "html": "/regulations/수탁사업_관리규칙/index.html",
+     "pdf": "pdf/수탁사업_관리규칙.pdf"
+    }
+   }
+  ]
  },
  {
   "title": "스마트농업기술의 표준에 관한 운영규칙",
