@@ -667,12 +667,34 @@
  },
  {
   "title": "감사규정 시행세칙",
-  "revision": "2022년도 2월 다른 내규로 인한 개정",
+  "revision": "2026년도 8월 18일 개정",
   "category": "세칙",
   "slug": "감사규정_시행세칙",
-  "src": "감사규정 시행세칙(2022년도 2월 다른 내규로 인한 개정).hwp",
+  "src": "감사규정 시행세칙(2026년도 8월 18일 개정).hwpx",
   "html": "/regulations/감사규정_시행세칙/index.html",
-  "pdf": "pdf/감사규정_시행세칙.pdf"
+  "pdf": "pdf/감사규정_시행세칙.pdf",
+  "effective_date": "",
+  "department": "",
+  "note": "",
+  "uploader": "김진선",
+  "uploaded_at": "2026-09-08 16:52",
+  "original": "/regulations/감사규정_시행세칙/original.hwpx",
+  "searchable": true,
+  "history": [
+   {
+    "revision": "2022년도 2월 다른 내규로 인한 개정",
+    "replaced_at": "2026-09-08 16:52",
+    "entry": {
+     "title": "감사규정 시행세칙",
+     "revision": "2022년도 2월 다른 내규로 인한 개정",
+     "category": "세칙",
+     "slug": "감사규정_시행세칙",
+     "src": "감사규정 시행세칙(2022년도 2월 다른 내규로 인한 개정).hwp",
+     "html": "/regulations/감사규정_시행세칙/index.html",
+     "pdf": "pdf/감사규정_시행세칙.pdf"
+    }
+   }
+  ]
  },
  {
   "title": "보수규정 시행세칙",
