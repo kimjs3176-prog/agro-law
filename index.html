@@ -6603,6 +6603,8 @@ function favToggleEl(btn){ if(!btn) return; let item; try{ item=JSON.parse(btn.d
 // 즐겨찾기에서 조회 도구 다시 열기(본문을 해당 카테고리로 이동시켜 항목 표시)
 function favOpenCompany(name){ Promise.resolve(openAssist('company')).then(()=>{ const q=document.getElementById('compQuery'); if(q){ q.value=name; runCompany(); } }); }
 function favOpenPatent(name){ Promise.resolve(openAssist('patent')).then(()=>{ const q=document.getElementById('patQuery'); if(q){ q.value=name; runPatent(); } }); }
+// 즐겨찾기한 특허를 출원번호로 바로 상세 열람(제목 재검색 0건 문제 회피)
+function favOpenPatentDetail(appno){ Promise.resolve(openAssist('patent')).then(()=>{ if(typeof patDetail==='function') patDetail(appno); }); }
 function favOpenOppty(kind, name){ Promise.resolve(openAssist(kind)).then(()=>{ const q=document.getElementById('oppQuery'); if(q){ q.value=name; runOppty(kind); } }); }
 
 // 서버 의존 제거 — localStorage 마이그레이션만 보장(하위 호환용 no-op)
@@ -6659,7 +6661,11 @@ function _favOpenItem(i){
     wsOpen(f.name, bkt, bkt==='law'?(f.url||''):undefined);
   }
   else if(bkt==='company') favOpenCompany(f.name);
-  else if(bkt==='patent') favOpenPatent(f.name);
+  else if(bkt==='patent'){
+    // 출원번호가 있으면 제목 재검색(0건 가능) 대신 해당 특허 상세를 바로 연다.
+    const appno=String(f.appno||'').replace(/\D/g,'') || (String(f.url||'').match(/applno=(\d+)/)||[])[1] || '';
+    if(appno) favOpenPatentDetail(appno); else favOpenPatent(f.name);
+  }
   else if(bkt==='support'||bkt==='procurement') favOpenOppty(bkt, f.name);
   else if(f.url){ window.open(safeUrl(f.url),'_blank','noopener'); }
 }
