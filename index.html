@@ -298,6 +298,77 @@ body.dark .exp-limit.ok{background:rgba(34,197,94,.16);color:#6ee7a0;} body.dark
 .exp-actions{display:flex;gap:8px;margin-top:4px;}
 .exp-hint2{margin-top:8px;font-size:11.5px;line-height:1.6;color:var(--ht);}
 .exp-hint2 b{color:var(--mu);font-weight:700;}
+/* ── 업무 메모(할 일·일정·연락처·메모, 로컬 저장) ───────────────────────────── */
+.sm-badge{min-width:16px;height:16px;padding:0 4px;margin-left:5px;border-radius:999px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;line-height:1;}
+.memo-wrap{max-width:960px;}
+.memo-privacy{font-size:11.5px;color:var(--ht);background:var(--gl);border:1px solid var(--bd);border-radius:8px;padding:7px 11px;margin-bottom:12px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.memo-privacy b{color:var(--gp);}
+.memo-privacy .memo-io{margin-left:auto;display:flex;gap:6px;}
+.memo-io-btn{font-size:11px;font-weight:700;padding:4px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--card);color:var(--mu);cursor:pointer;font-family:var(--font);}
+.memo-io-btn:hover{border-color:var(--g);color:var(--g);}
+.memo-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
+.memo-sum{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:3px;}
+.memo-sum b{font-size:22px;font-weight:800;color:var(--tx);line-height:1;}
+.memo-sum span{font-size:11.5px;color:var(--mu);}
+.memo-sum.hot b{color:#ef4444;}
+.memo-sum.today b{color:var(--g);}
+.memo-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;border-bottom:1.5px solid var(--bd);padding-bottom:0;}
+.memo-tab{position:relative;padding:8px 14px;border:none;background:transparent;color:var(--mu);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);border-bottom:2.5px solid transparent;margin-bottom:-1.5px;display:inline-flex;align-items:center;gap:6px;}
+.memo-tab:hover{color:var(--tx);}
+.memo-tab.active{color:var(--g);border-bottom-color:var(--g);}
+.memo-tab .n{font-size:10.5px;font-weight:800;color:var(--gp);background:var(--gl);border-radius:999px;padding:1px 6px;}
+.memo-toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;}
+.memo-input{flex:1;min-width:180px;height:36px;padding:0 12px;border:1px solid var(--bd);border-radius:9px;background:var(--card);color:var(--fg);font-size:13px;font-family:var(--font);}
+.memo-input:focus{outline:none;border-color:var(--g);box-shadow:var(--shadow-focus);}
+.memo-sel{height:36px;padding:0 8px;border:1px solid var(--bd);border-radius:9px;background:var(--card);color:var(--mu);font-size:12.5px;cursor:pointer;font-family:var(--font);}
+.memo-date{height:36px;padding:0 8px;border:1px solid var(--bd);border-radius:9px;background:var(--card);color:var(--mu);font-size:12.5px;font-family:var(--font);}
+.memo-addbtn{height:36px;padding:0 16px;border:none;border-radius:9px;background:var(--g);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);}
+.memo-addbtn:hover{background:var(--gd);}
+.memo-search{width:100%;height:34px;padding:0 12px;margin-bottom:10px;border:1px solid var(--bd);border-radius:9px;background:var(--card);color:var(--fg);font-size:12.5px;font-family:var(--font);}
+.memo-search:focus{outline:none;border-color:var(--g);}
+.memo-list{display:flex;flex-direction:column;gap:8px;}
+.memo-empty{text-align:center;padding:30px 20px;color:var(--ht);font-size:13px;line-height:1.7;}
+.memo-grp{font-size:11px;font-weight:800;color:var(--mu);margin:6px 2px 2px;letter-spacing:-.01em;}
+/* 항목 카드 */
+.memo-item{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border:1px solid var(--bd);border-radius:11px;background:var(--card);transition:border-color .12s;}
+.memo-item:hover{border-color:var(--g);}
+.memo-item.done{opacity:.55;}
+.memo-chk{flex-shrink:0;width:20px;height:20px;margin-top:1px;border:1.8px solid var(--bd);border-radius:6px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;padding:0;}
+.memo-chk.on{background:var(--g);border-color:var(--g);}
+.memo-main{flex:1;min-width:0;}
+.memo-t{font-size:13.5px;font-weight:600;color:var(--tx);line-height:1.45;word-break:keep-all;}
+.memo-item.done .memo-t{text-decoration:line-through;}
+.memo-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px;font-size:11.5px;color:var(--mu);}
+.memo-meta a{color:var(--g);text-decoration:none;}
+.memo-meta a:hover{text-decoration:underline;}
+.dday{font-size:10.5px;font-weight:800;border-radius:999px;padding:1px 8px;flex-shrink:0;}
+.dday.over{background:#fde6e6;color:#c0342b;}
+.dday.soon{background:#fdf2dc;color:#8a5a00;}
+.dday.ok{background:var(--gl);color:var(--gp);}
+body.dark .dday.over{background:rgba(239,68,68,.2);color:#fca5a5;}
+body.dark .dday.soon{background:rgba(245,158,11,.18);color:#fbbf24;}
+.prio{font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 6px;flex-shrink:0;}
+.prio.h{background:#fde6e6;color:#c0342b;}
+.prio.m{background:var(--gl);color:var(--gp);}
+.prio.l{background:var(--bg);color:var(--ht);}
+.memo-del{flex-shrink:0;width:26px;height:26px;border:none;background:transparent;color:var(--ht);cursor:pointer;border-radius:6px;font-size:14px;line-height:1;}
+.memo-del:hover{background:rgba(239,68,68,.1);color:#ef4444;}
+.memo-actions{display:flex;gap:4px;flex-shrink:0;}
+/* 연락처 */
+.memo-ct-name{font-size:13.5px;font-weight:700;color:var(--tx);}
+.memo-ct-org{font-size:11.5px;color:var(--mu);}
+.memo-ct-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;font-size:12px;}
+.memo-ct-row a{color:var(--g);text-decoration:none;}
+/* 메모(노트) */
+.memo-notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+.memo-note{border:1px solid var(--bd);border-left:4px solid var(--g);border-radius:10px;padding:11px 13px;background:var(--card);display:flex;flex-direction:column;gap:5px;min-height:90px;}
+.memo-note .memo-t{font-weight:700;}
+.memo-note-body{font-size:12.5px;color:var(--mu);line-height:1.6;white-space:pre-wrap;word-break:break-word;flex:1;}
+.memo-note-foot{display:flex;align-items:center;justify-content:space-between;font-size:10.5px;color:var(--ht);}
+.memo-form-lg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;background:var(--sf);border:1px solid var(--bd);border-radius:11px;padding:12px;}
+.memo-form-lg .full{grid-column:1/-1;}
+.memo-form-lg textarea{min-height:60px;resize:vertical;padding:8px 12px;border:1px solid var(--bd);border-radius:9px;background:var(--card);color:var(--fg);font-size:13px;font-family:var(--font);}
+@media(max-width:560px){ .memo-form-lg{grid-template-columns:1fr;} }
 .exp-print{flex:1;font-size:13.5px;font-weight:800;padding:11px;border:none;border-radius:10px;background:var(--g);color:#fff;cursor:pointer;white-space:nowrap;}
 .exp-print:hover{background:var(--gd);}
 .exp-mini2{font-size:13px;font-weight:700;padding:11px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);cursor:pointer;white-space:nowrap;}
@@ -2115,6 +2186,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <div class="sm-group">
         <span class="sm-glabel">업무도구</span>
         <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 본문 작성"><span class="sm-ic" data-icon="expense"></span><span>지출결의서</span></button>
+        <button class="sm-item" id="smMemo" onclick="openMemo()" title="업무 메모 — 할 일·일정·연락처·메모(내 PC에만 저장)"><span class="sm-ic" data-icon="memo"></span><span>업무메모</span><span id="memoBadge" class="sm-badge" hidden></span></button>
       </div>
     </div>
   </aside>
@@ -3168,6 +3240,181 @@ function closeAssist(){
   const mc=document.querySelector('.main-content'); if(mc) mc.classList.remove('assist-on');
   Object.values(ASSIST_CFG).forEach(c=>{ const t=document.getElementById(c.tab); if(t) t.classList.remove('active'); });
   const ex=document.getElementById('smExpense'); if(ex) ex.classList.remove('active');
+  const mm=document.getElementById('smMemo'); if(mm) mm.classList.remove('active');
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// 업무 메모 — 할 일·일정·연락처·메모. 전적으로 내 PC(localStorage)에만 저장.
+// 서버로 전송하지 않으며, 백업(JSON 내보내기/가져오기)로 이관·보관한다.
+// ══════════════════════════════════════════════════════════════════════════
+const _MEMO_KEY='koat_memo';
+let _memoTab='todo', _memoQ='';
+function _wmemoGet(){ try{ const m=JSON.parse(localStorage.getItem(_MEMO_KEY)||'{}');
+  return {todos:m.todos||[], events:m.events||[], contacts:m.contacts||[], notes:m.notes||[]}; }
+  catch{ return {todos:[],events:[],contacts:[],notes:[]}; } }
+function _wmemoSave(m){ try{ localStorage.setItem(_MEMO_KEY, JSON.stringify(m)); }catch(e){} _memoUpdateBadge(); }
+function _memoId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function _memoToday(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+// 날짜 문자열 → 남은 일수 배지 {n,label,cls}. 오늘 기준 로컬 계산.
+function _memoDday(dateStr){
+  const s=String(dateStr||'').replace(/\D/g,''); if(s.length<8) return null;
+  const d=new Date(+s.slice(0,4), +s.slice(4,6)-1, +s.slice(6,8)); if(isNaN(d)) return null;
+  const t=new Date(); t.setHours(0,0,0,0);
+  const n=Math.round((d-t)/86400000);
+  if(n<0) return {n,label:'D+'+(-n),cls:'over'};
+  if(n===0) return {n,label:'D-DAY',cls:'soon'};
+  if(n<=3) return {n,label:'D-'+n,cls:'soon'};
+  return {n,label:'D-'+n,cls:'ok'};
+}
+function openMemo(){
+  if(typeof wsBackToList==='function') wsBackToList();
+  document.querySelector('.main-content').classList.add('assist-on');
+  document.querySelectorAll('.sm-item.active').forEach(el=>el.classList.remove('active'));
+  const tab=document.getElementById('smMemo'); if(tab) tab.classList.add('active');
+  _assistMode='memo';
+  const p=document.getElementById('assistantPanel');
+  p.innerHTML=`<div class="assist-head"><span class="assist-h-ic">📝</span>`+
+    `<span class="assist-h-t">업무 메모</span>`+
+    `<span class="assist-h-hint">할 일·일정·연락처·메모를 한곳에서. 내 PC에만 저장됩니다.</span></div>`+
+    `<div class="memo-wrap" id="memoWrap"></div>`;
+  _memoRender();
+}
+function _memoSetTab(k){ _memoTab=k; _memoQ=''; _memoRender(); }
+function _memoRender(){
+  const w=document.getElementById('memoWrap'); if(!w) return;
+  const m=_wmemoGet();
+  const openTodos=m.todos.filter(t=>!t.done);
+  const todayEvents=m.events.filter(e=>{ const d=_memoDday(e.date); return d&&d.n===0; });
+  const hot=[...openTodos.filter(t=>{ const d=t.due&&_memoDday(t.due); return d&&d.n<=1; }),
+             ...m.events.filter(e=>{ const d=_memoDday(e.date); return d&&d.n>=0&&d.n<=1; })];
+  const privacy=`<div class="memo-privacy">🔒 이 메모는 <b>이 브라우저(내 PC)</b>에만 저장되며 서버로 전송되지 않습니다.`+
+    `<span class="memo-io"><button class="memo-io-btn" onclick="_memoExport()" title="전체 메모를 JSON 파일로 백업">⬇ 백업</button>`+
+    `<label class="memo-io-btn" title="백업 파일에서 복원(중복 제외 병합)">⬆ 복원<input type="file" accept="application/json" style="display:none" onchange="_memoImport(this)"></label></span></div>`;
+  const summary=`<div class="memo-summary">`+
+    `<div class="memo-sum today"><b>${openTodos.length}</b><span>진행 중 할 일</span></div>`+
+    `<div class="memo-sum hot"><b>${hot.length}</b><span>오늘·임박</span></div>`+
+    `<div class="memo-sum"><b>${todayEvents.length}</b><span>오늘 일정</span></div>`+
+    `<div class="memo-sum"><b>${m.contacts.length}</b><span>연락처</span></div></div>`;
+  const tabs=[['todo','✅ 할 일',openTodos.length],['event','📅 일정',m.events.length],['contact','👤 연락처',m.contacts.length],['note','🗒 메모',m.notes.length]];
+  const tabHtml=`<div class="memo-tabs">`+tabs.map(([k,l,n])=>`<button class="memo-tab${_memoTab===k?' active':''}" onclick="_memoSetTab('${k}')">${l}${n?`<span class="n">${n}</span>`:''}</button>`).join('')+`</div>`;
+  let body='';
+  if(_memoTab==='todo') body=_memoTodoView(m);
+  else if(_memoTab==='event') body=_memoEventView(m);
+  else if(_memoTab==='contact') body=_memoContactView(m);
+  else body=_memoNoteView(m);
+  w.innerHTML=privacy+summary+tabHtml+`<div id="memoBody">${body}</div>`;
+}
+// ── 할 일 ──
+function _memoTodoView(m){
+  const add=`<div class="memo-toolbar">`+
+    `<input id="mtText" class="memo-input" placeholder="할 일 입력 후 Enter" maxlength="200" onkeydown="if(event.key==='Enter')_memoAddTodo()">`+
+    `<select id="mtPrio" class="memo-sel"><option value="m">보통</option><option value="h">중요</option><option value="l">낮음</option></select>`+
+    `<input id="mtDue" class="memo-date" type="date" title="마감일(선택)">`+
+    `<button class="memo-addbtn" onclick="_memoAddTodo()">추가</button></div>`;
+  const list=[...m.todos].sort((a,b)=>{ if(a.done!==b.done) return a.done?1:-1;
+    const da=a.due?a.due.replace(/\D/g,''):'99999999', db=b.due?b.due.replace(/\D/g,''):'99999999';
+    return da.localeCompare(db); });
+  const rows=list.length? list.map(t=>{
+    const dd=t.due?_memoDday(t.due):null; const pl={h:'중요',m:'보통',l:'낮음'}[t.prio||'m'];
+    return `<div class="memo-item${t.done?' done':''}">`+
+      `<button class="memo-chk${t.done?' on':''}" onclick="_memoToggleTodo('${t.id}')" title="완료 토글">${t.done?'✓':''}</button>`+
+      `<div class="memo-main"><div class="memo-t">${escHtml(t.text)}</div>`+
+      `<div class="memo-meta"><span class="prio ${t.prio||'m'}">${pl}</span>${t.due?`<span>${_fmtKDate(t.due)}</span>`:''}${dd&&!t.done?`<span class="dday ${dd.cls}">${dd.label}</span>`:''}</div></div>`+
+      `<button class="memo-del" onclick="_memoDel('todos','${t.id}')" title="삭제">✕</button></div>`;
+  }).join('') : `<div class="memo-empty">할 일이 없습니다.<br>위에 입력하고 <b>Enter</b>로 추가하세요.</div>`;
+  return add+`<div class="memo-list">${rows}</div>`;
+}
+function _memoAddTodo(){ const el=document.getElementById('mtText'); const text=((el&&el.value)||'').trim(); if(!text) return;
+  const m=_wmemoGet(); m.todos.unshift({id:_memoId(),text,prio:((document.getElementById('mtPrio')||{}).value)||'m',due:((document.getElementById('mtDue')||{}).value)||'',done:false,createdAt:_memoToday()});
+  _wmemoSave(m); _memoRender(); const t=document.getElementById('mtText'); if(t) t.focus(); }
+function _memoToggleTodo(id){ const m=_wmemoGet(); const t=m.todos.find(x=>x.id===id); if(t){ t.done=!t.done; _wmemoSave(m); _memoRender(); } }
+// ── 일정 ──
+function _memoEventView(m){
+  const add=`<div class="memo-toolbar">`+
+    `<input id="meTitle" class="memo-input" placeholder="일정 제목" maxlength="120">`+
+    `<input id="meDate" class="memo-date" type="date">`+
+    `<input id="meTime" class="memo-date" type="time">`+
+    `<button class="memo-addbtn" onclick="_memoAddEvent()">추가</button></div>`+
+    `<input id="mePlace" class="memo-search" placeholder="장소·메모(선택)" maxlength="120">`;
+  const list=[...m.events].sort((a,b)=>((a.date||'')+(a.time||'')).replace(/\D/g,'').localeCompare(((b.date||'')+(b.time||'')).replace(/\D/g,'')));
+  const rows=list.length? list.map(e=>{ const dd=_memoDday(e.date);
+    return `<div class="memo-item">`+
+      `<div class="memo-main"><div class="memo-t">${escHtml(e.title)}</div>`+
+      `<div class="memo-meta"><span>📅 ${_fmtKDate(e.date)}${e.time?' '+escHtml(e.time):''}</span>${e.place?`<span>📍 ${escHtml(e.place)}</span>`:''}${dd?`<span class="dday ${dd.cls}">${dd.label}</span>`:''}</div></div>`+
+      `<button class="memo-del" onclick="_memoDel('events','${e.id}')" title="삭제">✕</button></div>`;
+  }).join('') : `<div class="memo-empty">등록된 일정이 없습니다.</div>`;
+  return add+`<div class="memo-list" style="margin-top:10px;">${rows}</div>`;
+}
+function _memoAddEvent(){ const t=((document.getElementById('meTitle')||{}).value||'').trim(); const d=(document.getElementById('meDate')||{}).value; if(!t||!d){ alert('제목과 날짜를 입력하세요.'); return; }
+  const m=_wmemoGet(); m.events.push({id:_memoId(),title:t,date:d,time:(document.getElementById('meTime')||{}).value||'',place:((document.getElementById('mePlace')||{}).value||'').trim()}); _wmemoSave(m); _memoRender(); }
+// ── 연락처 ──
+function _memoContactView(m){
+  const form=`<div class="memo-form-lg">`+
+    `<input id="mcName" class="memo-input" placeholder="이름" maxlength="40">`+
+    `<input id="mcOrg" class="memo-input" placeholder="기관·부서" maxlength="60">`+
+    `<input id="mcRole" class="memo-input" placeholder="직위·담당업무" maxlength="60">`+
+    `<input id="mcPhone" class="memo-input" placeholder="전화" maxlength="40">`+
+    `<input id="mcEmail" class="memo-input" placeholder="이메일" maxlength="80">`+
+    `<input id="mcMemo" class="memo-input" placeholder="메모" maxlength="120">`+
+    `<button class="memo-addbtn full" onclick="_memoAddContact()">＋ 연락처 추가</button></div>`;
+  const search=`<input class="memo-search" placeholder="이름·기관·담당으로 검색" value="${escAttr(_memoQ)}" oninput="_memoFilter(this.value)">`;
+  return form+search+`<div class="memo-list" id="memoInner">${_memoRowsFor('contact',m)}</div>`;
+}
+function _memoAddContact(){ const g=id=>((document.getElementById(id)||{}).value||'').trim();
+  const name=g('mcName'); if(!name){ alert('이름을 입력하세요.'); return; }
+  const m=_wmemoGet(); m.contacts.unshift({id:_memoId(),name,org:g('mcOrg'),role:g('mcRole'),phone:g('mcPhone'),email:g('mcEmail'),memo:g('mcMemo')}); _wmemoSave(m); _memoRender(); }
+// ── 메모(노트) ──
+function _memoNoteView(m){
+  const add=`<div class="memo-toolbar">`+
+    `<input id="mnTitle" class="memo-input" placeholder="메모 제목" maxlength="80">`+
+    `<button class="memo-addbtn" onclick="_memoAddNote()">추가</button></div>`+
+    `<textarea id="mnBody" class="memo-search" style="height:70px;resize:vertical;" placeholder="메모 내용"></textarea>`+
+    `<input class="memo-search" placeholder="메모 검색" value="${escAttr(_memoQ)}" oninput="_memoFilter(this.value)">`;
+  return add+`<div class="memo-notes" id="memoInner">${_memoRowsFor('note',m)}</div>`;
+}
+function _memoAddNote(){ const t=((document.getElementById('mnTitle')||{}).value||'').trim(); const b=((document.getElementById('mnBody')||{}).value||'').trim();
+  if(!t&&!b){ alert('제목 또는 내용을 입력하세요.'); return; }
+  const m=_wmemoGet(); m.notes.unshift({id:_memoId(),title:t,body:b,updatedAt:_memoToday()}); _wmemoSave(m); _memoRender(); }
+// 검색 대상(연락처·메모)의 목록만 갱신 — 입력창 포커스 유지
+function _memoRowsFor(tab, m){
+  const q=(_memoQ||'').toLowerCase();
+  if(tab==='contact'){
+    const list=(m.contacts||[]).filter(c=>!q||((c.name||'')+' '+(c.org||'')+' '+(c.role||'')+' '+(c.memo||'')).toLowerCase().includes(q));
+    return list.length? list.map(c=>`<div class="memo-item">`+
+      `<div class="memo-main"><div class="memo-ct-name">${escHtml(c.name)}${c.role?` <span class="memo-ct-org">· ${escHtml(c.role)}</span>`:''}</div>`+
+      `${c.org?`<div class="memo-ct-org">${escHtml(c.org)}</div>`:''}`+
+      `<div class="memo-ct-row">${c.phone?`<a href="tel:${escAttr(c.phone)}">📞 ${escHtml(c.phone)}</a>`:''}${c.email?`<a href="mailto:${escAttr(c.email)}">✉ ${escHtml(c.email)}</a>`:''}${c.memo?`<span>${escHtml(c.memo)}</span>`:''}</div></div>`+
+      `<button class="memo-del" onclick="_memoDel('contacts','${c.id}')" title="삭제">✕</button></div>`).join('')
+      : `<div class="memo-empty">${q?'검색 결과가 없습니다.':'저장된 연락처가 없습니다.'}</div>`;
+  }
+  // note
+  const list=(m.notes||[]).filter(n=>!q||((n.title||'')+' '+(n.body||'')).toLowerCase().includes(q));
+  return list.length? list.map(n=>`<div class="memo-note">`+
+    `<div class="memo-t">${escHtml(n.title||'(제목 없음)')}</div>`+
+    `<div class="memo-note-body">${escHtml(n.body||'')}</div>`+
+    `<div class="memo-note-foot"><span>${escHtml(n.updatedAt||'')}</span><button class="memo-del" onclick="_memoDel('notes','${n.id}')" title="삭제">✕</button></div></div>`).join('')
+    : `<div class="memo-empty">${q?'검색 결과가 없습니다.':'저장된 메모가 없습니다.'}</div>`;
+}
+function _memoFilter(v){ _memoQ=v; const inner=document.getElementById('memoInner'); if(inner) inner.innerHTML=_memoRowsFor(_memoTab, _wmemoGet()); }
+function _memoDel(coll,id){ const m=_wmemoGet(); m[coll]=(m[coll]||[]).filter(x=>x.id!==id); _wmemoSave(m); _memoRender(); }
+// 메뉴 배지: 지난·오늘 마감 할 일 + 오늘 일정(긴급) 개수
+function _memoUpdateBadge(){ const b=document.getElementById('memoBadge'); if(!b) return;
+  const m=_wmemoGet();
+  const urgent=[...m.todos.filter(t=>{ if(t.done||!t.due) return false; const d=_memoDday(t.due); return d&&d.n<=0; }),
+                ...m.events.filter(e=>{ const d=_memoDday(e.date); return d&&d.n===0; })].length;
+  if(urgent>0){ b.textContent=urgent>99?'99+':String(urgent); b.hidden=false; } else { b.hidden=true; } }
+// 백업/복원(로컬 저장이므로 이관·보관 수단 제공)
+function _memoExport(){ try{ const blob=new Blob([JSON.stringify(_wmemoGet(),null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='업무메모_'+_memoToday()+'.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }catch(e){ alert('백업 실패: '+(e.message||e)); } }
+function _memoImport(input){ const f=input&&input.files&&input.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result); const m=_wmemoGet(); let added=0;
+    ['todos','events','contacts','notes'].forEach(k=>{ if(Array.isArray(d[k])){ const ex=new Set((m[k]||[]).map(x=>x&&x.id));
+      d[k].forEach(x=>{ if(x&&x.id&&!ex.has(x.id)){ m[k].push(x); added++; } }); } });
+    _wmemoSave(m); _memoRender(); alert('복원 완료 — '+added+'건 추가(중복 제외).'); }
+    catch(e){ alert('가져오기 실패: 올바른 백업(JSON) 파일이 아닙니다.'); } };
+  r.readAsText(f); input.value='';
 }
 
 // ── 지출결의서 본문 작성기 — 구분(일반·여비·업무추진비)별 ERP 본문 생성 ────────
@@ -7162,7 +7409,8 @@ const _ICON_P={
   stats:'<path d="M3 21h18"/><rect x="5" y="11" width="3.2" height="7" rx="1"/><rect x="10.4" y="6" width="3.2" height="12" rx="1"/><rect x="15.8" y="9" width="3.2" height="9" rx="1"/>',
   upload:'<path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
   ai:'<path d="M12 3l1.5 4.2L18 9l-4.5 1.8L12 15l-1.5-4.2L6 9l4.5-1.8z"/><path d="M18.5 14l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7z"/>',
-  tree:'<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.1"/><circle cx="4" cy="12" r="1.1"/><circle cx="4" cy="18" r="1.1"/>'
+  tree:'<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.1"/><circle cx="4" cy="12" r="1.1"/><circle cx="4" cy="18" r="1.1"/>',
+  memo:'<path d="M4 5a1 1 0 0 1 1-1h11l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M15 4v4h4"/><path d="M8 12h7M8 16h5"/>'
 };
 function _icon(name){
   const p=_ICON_P[name]; if(!p) return '';
@@ -7174,6 +7422,7 @@ function _hydrateIcons(root){
 document.addEventListener('DOMContentLoaded',()=>{
   _hydrateIcons();
   try{ _migrateCollections(); }catch(_){}
+  try{ _memoUpdateBadge(); }catch(_){}
   // ── 이벤트 위임: 클릭 ──────────────────────────────────────────────────
   document.addEventListener('click', e=>{
     // 작업공간(그리드) 창 내부의 참조 클릭 → 새 창(패널)으로 추가 열기
