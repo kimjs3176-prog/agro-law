@@ -1897,6 +1897,27 @@ def _ai_error(resp):
     return user, kind
 
 
+def _ai_url_allowed(url: str) -> bool:
+    """승인된 모델 서버 URL 검증(F01/SSRF 방어).
+
+    · http/https 스킴과 호스트가 있어야 한다.
+    · OLLAMA_ALLOWED_HOSTS(쉼표 구분)가 설정돼 있으면 그 호스트만 허용한다.
+      미설정이면 OLLAMA_BASE_URL 자체가 관리자 승인값이므로 형식만 확인한다.
+    """
+    try:
+        from urllib.parse import urlparse
+        u = urlparse(url)
+        if u.scheme not in ("http", "https") or not u.hostname:
+            return False
+        allow = [h.strip().lower() for h in
+                 (os.environ.get("OLLAMA_ALLOWED_HOSTS") or "").split(",") if h.strip()]
+        if allow and u.hostname.lower() not in allow:
+            return False
+        return True
+    except Exception:
+        return False
+
+
 @app.route("/api/ai/interpret", methods=["POST"])
 def ai_interpret():
     """멀티 프로바이더 조문 해석 (Claude / GPT / Gemini / Ollama)"""
@@ -1985,7 +2006,18 @@ def ai_interpret():
 
         # ── Ollama (로컬) ──────────────────────────────────────────────────────
         elif provider == "ollama":
-            base_url = (api_key or "http://localhost:11434").rstrip("/")
+            # 보안(F01/SSRF): 사용자 입력(api_key)을 서버 요청 URL로 쓰지 않는다.
+            # 관리자 환경변수 OLLAMA_BASE_URL(승인된 모델 서버)만 사용하며,
+            # 미설정 시 이 배포에서는 Ollama를 제공하지 않는다.
+            base_url = (os.environ.get("OLLAMA_BASE_URL") or "").strip().rstrip("/")
+            if not base_url:
+                return jsonify({"error": "이 배포에서는 Ollama를 사용할 수 없습니다. "
+                                         "관리자가 승인된 모델 서버(OLLAMA_BASE_URL)를 "
+                                         "설정하면 사용할 수 있습니다.",
+                                "kind": "config"}), 400
+            if not _ai_url_allowed(base_url):
+                return jsonify({"error": "허용되지 않은 모델 서버 주소입니다.",
+                                "kind": "config"}), 403
             mdl = model or "gemma3"
             resp = req_lib.post(
                 f"{base_url}/api/chat",
@@ -1994,6 +2026,7 @@ def ai_interpret():
                                    {"role": "user",   "content": user_msg}]},
                 headers={"Content-Type": "application/json"},
                 timeout=60,
+                allow_redirects=False,   # 리디렉션으로 승인 외 주소로 우회되는 것 차단
             )
             d = resp.json()
             if resp.status_code != 200:
@@ -2890,14 +2923,33 @@ def _convert_upload(filename: str, raw: bytes, title: str, meta: dict) -> dict:
     elif ext in (".txt", ".md"):
         blocks = _text_blocks(_decode(raw))
     elif ext == ".pdf":
-        # PDF 는 원본 그대로 열람(텍스트 추출은 외부 라이브러리 필요)
+        # F08: /regulations/* 의 CSP(object-src/frame-src 'none')는 <embed>/<iframe>
+        # 인라인 PDF 표시를 차단한다. 전체 내규의 스크립트 차단을 풀지 않고, 원본 PDF를
+        # 새 탭 열기·다운로드 링크로 제공한다(최상위 탐색은 CSP 영향을 받지 않음).
         src = "original.pdf"
         html = (f'<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">'
-                f'<title>{_esc(title)}</title><style>html,body{{margin:0;height:100%;}}'
-                f'embed{{width:100%;height:100%;border:0;}}</style></head><body>'
-                f'<embed src="{src}" type="application/pdf"></body></html>')
+                f'<meta name="viewport" content="width=device-width,initial-scale=1">'
+                f'<title>{_esc(title)}</title><style>'
+                f'body{{margin:0;font-family:system-ui,"Malgun Gothic",sans-serif;background:#f6f7f9;color:#1f2937;}}'
+                f'.wrap{{max-width:640px;margin:8vh auto;padding:28px;background:#fff;'
+                f'border:1px solid #e5e7eb;border-radius:14px;text-align:center;}}'
+                f'.ic{{font-size:44px}}h1{{font-size:18px;margin:10px 0 6px}}'
+                f'p{{color:#6b7280;font-size:14px;line-height:1.6}}'
+                f'.btns{{margin-top:18px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}}'
+                f'a.btn{{display:inline-block;padding:11px 18px;border-radius:10px;'
+                f'font-weight:700;text-decoration:none;font-size:14px}}'
+                f'a.p{{background:#256ef4;color:#fff}}'
+                f'a.s{{background:#eef2f7;color:#1f2937;border:1px solid #e5e7eb}}'
+                f'</style></head><body><div class="wrap"><div class="ic">📄</div>'
+                f'<h1>{_esc(title)}</h1>'
+                f'<p>이 규정은 PDF 원본으로 등록되어 있습니다.<br>'
+                f'아래 버튼으로 원문을 열람하거나 내려받을 수 있습니다.</p>'
+                f'<div class="btns"><a class="btn p" href="{src}" target="_blank" rel="noopener">원본 PDF 열기</a>'
+                f'<a class="btn s" href="{src}" download>다운로드</a></div>'
+                f'<p style="margin-top:16px;font-size:12px">본문 검색이 필요하면 한/글에서 '
+                f'HWPX 또는 DOCX로 저장해 다시 올려주세요.</p></div></body></html>')
         return {"view_html": html, "text": "", "converted": False,
-                "warning": "PDF는 원본 그대로 열람됩니다. 본문 검색이 필요하면 HWPX 또는 DOCX로 올려주세요."}
+                "warning": "PDF는 원본 열기·다운로드로 제공됩니다. 본문 검색이 필요하면 HWPX 또는 DOCX로 올려주세요."}
     elif ext == ".hwp":
         blocks = []
     else:
@@ -3034,7 +3086,18 @@ def _catalog_reg_hits(query: str, exclude_titles=None, limit: int = 12) -> list:
             continue
         if not name_match and qL not in body.lower():
             continue
-        item = {"title": title, "content": body[:20000], "source": "local",
+        # F07: 본문 매칭이면 일치 위치를 중심으로 발췌해 검색어가 반드시 포함되게 한다.
+        # (기존 body[:20000]은 매칭이 20,000자 밖일 때 검색어가 빠진 앞부분만 반환)
+        if name_match:
+            content = body[:20000]
+        else:
+            pos = body.lower().find(qL)
+            if pos < 0:
+                content = body[:20000]
+            else:
+                start = max(0, pos - 4000)
+                content = ("…" if start > 0 else "") + body[start:start + 20000]
+        item = {"title": title, "content": content, "source": "local",
                 "revision": m.get("revision", ""), "category": m.get("category", "")}
         (title_hits if name_match else body_hits).append(item)
         if len(title_hits) + len(body_hits) >= limit:
@@ -3544,14 +3607,29 @@ def reg_upload():
             }
             if conv["text"]:
                 files[f"{base}/text.txt"] = conv["text"]
+            # F03: 변환 불가 파일(PDF/HWP 등)로 교체할 때 이전 추출 본문(text.txt)과
+            # 확장자가 바뀐 구 원본을 명시적으로 제거한다. 그대로 두면 최신 개정일이
+            # 표시되는데 검색·전문은 구버전 text.txt를 반환하는 불일치가 생긴다.
+            deletes = []
+            try:
+                existing = {f.get("name") for f in _gh_dir(base)
+                            if isinstance(f, dict) and f.get("name")}
+            except Exception:
+                existing = set()
+            if replaced and not conv["text"] and "text.txt" in existing:
+                deletes.append(f"{base}/text.txt")
+            for nm in existing:                      # 확장자가 바뀐 구 원본 정리
+                if nm.startswith("original.") and nm != stored_name:
+                    deletes.append(f"{base}/{nm}")
             who = meta.get("uploader") or "익명"
             msg = (f"내규 {'개정' if replaced else '등록'}: {title}"
                    + (f" ({revision})" if revision else "")
                    + f"\n\n업로더: {who}"
                    + (f"\n개정사유: {meta['note']}" if meta.get("note") else "")
                    + "\n\n업로드 화면(/upload)에서 자동 커밋됨")
-            sha = _gh_commit_files(files, msg)
-            print(f"[reg-upload] GitHub 커밋 완료: {title} → {sha[:7]}")
+            sha = _gh_commit_files(files, msg, deletes=deletes or None)
+            print(f"[reg-upload] GitHub 커밋 완료: {title} → {sha[:7]}"
+                  + (f" (삭제 {len(deletes)}건)" if deletes else ""))
             return jsonify({
                 "success": True, "entry": entry, "replaced": replaced,
                 "searchable": bool(conv["text"]), "warning": conv["warning"],
@@ -3821,11 +3899,20 @@ def semantic_search(query: str, api_key: str, top_k: int = 20):
     return [{**chunks[int(i)], "score": float(sims[int(i)])} for i in idx]
 
 
+def _user_gemini_key():
+    """사용자 Gemini 키 — 헤더(X-Gemini-Key) 우선, 없으면 서버 키.
+
+    F02: URL 쿼리로 키를 받지 않는다. 쿼리 파라미터는 접근 로그·관측 시스템에
+    남을 수 있어, 사용자별 키는 요청 헤더로만 전달받는다.
+    """
+    return (request.headers.get("X-Gemini-Key")
+            or os.environ.get("GEMINI_API_KEY", "")).strip()
+
+
 def _semantic_for_search(query: str, top_k: int = 18):
     """내규 검색 응답에 실을 의미 검색 결과. 인덱스·키가 없으면 빈 목록."""
     try:
-        key = (request.args.get("api_key")
-               or os.environ.get("GEMINI_API_KEY", "")).strip()
+        key = _user_gemini_key()
         if not key or _vec_load()["mat"] is None:
             return []
         return [{"title": h["title"], "slug": h["slug"], "no": h["no"],
@@ -3840,7 +3927,7 @@ def _semantic_for_search(query: str, top_k: int = 18):
 
 def _semantic_available() -> bool:
     """의미 검색이 실제로 수행 가능한지(임베딩 키 + 벡터 인덱스 존재)."""
-    key = (request.args.get("api_key") or os.environ.get("GEMINI_API_KEY", "")).strip()
+    key = _user_gemini_key()
     if not key:
         return False
     try:
@@ -3855,8 +3942,7 @@ def internal_semantic():
     q = (request.args.get("query") or "").strip()
     if len(q) < 2:
         return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
-    key = (request.args.get("api_key")
-           or os.environ.get("GEMINI_API_KEY", "")).strip()
+    key = _user_gemini_key()
     c = _vec_load()
     if c["mat"] is None:
         return jsonify({"success": True, "available": False, "regs": [],
@@ -5058,22 +5144,55 @@ def assist_company():
             if request.args.get("debug"):
                 out["_debug"] = {"http": r.status_code, "base": _FSC_BASE, "snippet": body_txt}
             return jsonify(out)
-        items = []
-        for rec in recs[:30]:
+        # F06: 법인등록번호(crno)/사업자번호(bno) 기준 중복 제거 후 목록화.
+        # 식별자가 있는 레코드는 한 번만, 식별자가 없으면 (상호,대표,주소) 조합으로 판단.
+        items, seen = [], set()
+        for rec in recs:
             nm = str(rec.get("corpNm") or "").strip()
             bno = re.sub(r"\D", "", str(rec.get("bzno") or ""))
             crno = re.sub(r"\D", "", str(rec.get("crno") or ""))
             mkt = str(rec.get("corpRegMrktDcdNm") or "").strip()
             listed = mkt and mkt not in ("기타", "기타법인", "해당없음", "비상장")
-            items.append({"name": nm or "(상호 미상)",
-                          "ceo": str(rec.get("enpRprfNm") or "").strip(),
-                          "bno": bno, "addr": str(rec.get("enpBsadr") or "").strip(),
+            ceo = str(rec.get("enpRprfNm") or "").strip()
+            addr = str(rec.get("enpBsadr") or "").strip()
+            key = ("id:" + (crno or bno)) if (crno or bno) else ("nm:" + nm + "|" + ceo + "|" + addr)
+            if key in seen:
+                continue
+            seen.add(key)
+            items.append({"name": nm or "(상호 미상)", "ceo": ceo,
+                          "bno": bno, "addr": addr,
                           "biz": str(rec.get("enpMainBizNm") or "").strip(),
                           "corp": crno, "stock": (mkt if listed else "")})
-        resp = {"success": True, "count": len(items),
-                "total": str(len(items)), "items": items, "mode": "name"}
+        # 정렬: 완전일치 → 대표법인(질의+법인표기) → 접두일치 → 부분일치 → 그 외.
+        # (판매점·물류 자회사보다 대표 회사가 앞에 오도록)
+        qn = re.sub(r"\s+", "", query)
+        _CORP_MARK = ("(주)", "㈜", "주식회사", "(유)", "유한회사", "(재)", "재단법인", "(사)", "사단법인")
+        def _rank(it):
+            n = re.sub(r"\s+", "", it["name"])
+            if not qn:
+                return 5
+            if n == qn:
+                return 0
+            if n.startswith(qn):
+                rest = n[len(qn):]
+                if rest in _CORP_MARK or rest.strip("()") in ("주", "유", "재", "사"):
+                    return 1
+                return 2
+            return 3 if qn in n else 4
+        items.sort(key=_rank)
+        # 원천 총건수(있으면) — 없으면 중복 제거 결과 수
+        try:
+            src_total = int((((r.json() or {}).get("response") or {})
+                             .get("body") or {}).get("totalCount") or 0)
+        except Exception:
+            src_total = 0
+        shown = items[:30]
+        resp = {"success": True, "count": len(shown),
+                "total": str(src_total or len(items)),
+                "items": shown, "mode": "name"}
         if request.args.get("debug"):
             resp["_debug"] = {"http": r.status_code, "rows": len(recs),
+                              "deduped": len(items), "src_total": src_total,
                               "resultMsg": (((r.json() or {}).get("response") or {})
                                             .get("header") or {}).get("resultMsg", ""),
                               "base": _FSC_BASE}
@@ -5261,18 +5380,34 @@ def assist_patent():
                 "regno": g("registerNumber", "RegistrationNumber"),
                 "status": g("registerStatus", "RegistrationStatus", "lastValue"),
                 "ipc": g("ipcNumber", "InternationalpatentclassificationNumber")})
-        return r, root, total, items, params
+        # F09: 외부 API 오류(인증·권한·쿼터·HTTP)를 '0건'과 구분한다.
+        err = None
+        if r.status_code != 200:
+            err = f"KIPRIS 응답 오류(HTTP {r.status_code})."
+        else:
+            sy = (root.findtext(".//successYN") or "").strip().upper()
+            rc = (root.findtext(".//resultCode") or "").strip()
+            msg = (root.findtext(".//resultMsg") or root.findtext(".//errMsg") or "").strip()
+            if sy == "N" or (rc and rc not in ("", "00", "0", "000")):
+                err = msg or "KIPRIS 조회 오류 — 서비스키 인증·활용신청·쿼터를 확인하세요."
+        return r, root, total, items, params, err
 
     try:
         # 1차: 발명의 명칭(inventionTitle) 정밀 매칭 — 관련도 높은 결과 우선.
         # 2차: 결과가 없고 검색어가 있으면 자유검색(word, 명칭+요약+청구항)으로 폴백.
         #      (긴 제목 전체를 붙여넣는 경우 명칭 완전일치가 어려워 0건이 되던 문제 대응)
         field = "inventionTitle" if query else None
-        r, root, total, items, params = _search(field)
+        r, root, total, items, params, err = _search(field)
+        if err:                                   # 인증/권한/쿼터/HTTP 오류 → 0건으로 위장하지 않음
+            resp = {"success": False, "error": err, "kind": "api"}
+            if request.args.get("debug"):
+                resp["_debug"] = {"http": r.status_code,
+                                  "snippet": r.content[:600].decode("utf-8", "replace")}
+            return jsonify(resp)
         fell_back = False
         if query and not items:
-            r2, root2, total2, items2, params2 = _search("word")
-            if items2:
+            r2, root2, total2, items2, params2, err2 = _search("word")
+            if not err2 and items2:               # 폴백 오류면 정상 0건 유지
                 r, root, total, items, params = r2, root2, total2, items2, params2
                 fell_back = True
         resp = {"success": True, "count": len(items),
@@ -5401,23 +5536,48 @@ def assist_support():
             if request.args.get("debug"):
                 out["_debug"] = {"http": r.status_code, "base": base, "snippet": body_txt}
             return jsonify(out)
-        arr = d.get("data")
-        if arr is None:                       # 혹시 표준 data.go.kr 래핑이면
-            body = (d.get("response") or {}).get("body") or {}
-            arr = body.get("items") or []
-            if isinstance(arr, dict):
-                arr = arr.get("item") or []
-        arr = arr if isinstance(arr, list) else ([arr] if arr else [])
+        import html as _html
+        def _rows(dd):
+            a = dd.get("data")
+            if a is None:                         # 혹시 표준 data.go.kr 래핑이면
+                body = (dd.get("response") or {}).get("body") or {}
+                a = body.get("items") or []
+                if isinstance(a, dict):
+                    a = a.get("item") or []
+            return a if isinstance(a, list) else ([a] if a else [])
+        try:
+            src_total = int(d.get("totalCount") or d.get("matchCount") or 0)
+        except Exception:
+            src_total = 0
+        all_rows = _rows(d)
+        scanned = len(all_rows)
+        # F10: 검색어가 있으면 원천을 여러 페이지 스캔(상한 내)해 첫 페이지 밖 공고도 검색.
+        MAXPAGES, page = 8, 1
+        if query and src_total and scanned < src_total:
+            while page < MAXPAGES and scanned < src_total:
+                page += 1
+                try:
+                    dd = _SESSION.get(base, params={"serviceKey": key, "page": str(page),
+                                      "perPage": "200", "returnType": "json"}, timeout=15).json() or {}
+                except Exception:
+                    break
+                rws = _rows(dd)
+                if not rws:
+                    break
+                all_rows += rws; scanned += len(rws)
         ql = query.lower()
-        items = []
-        for row in arr:
-            title = (row.get("biz_pbanc_nm") or row.get("intg_pbanc_biz_nm") or "").strip()
+        items, matched = [], 0
+        for row in all_rows:
+            title = _html.unescape((row.get("biz_pbanc_nm") or row.get("intg_pbanc_biz_nm") or "").strip())
             content = (row.get("pbanc_ctnt") or "").strip()
-            field = (row.get("supt_biz_clsfc") or "").strip()
-            target = (row.get("aply_trgt_ctnt") or row.get("aply_trgt") or "").strip()
-            region = (row.get("supt_regin") or "").strip()
-            org = (row.get("pbanc_ntrp_nm") or "").strip()
+            field = _html.unescape((row.get("supt_biz_clsfc") or "").strip())
+            target = _html.unescape((row.get("aply_trgt_ctnt") or row.get("aply_trgt") or "").strip())
+            region = _html.unescape((row.get("supt_regin") or "").strip())
+            org = _html.unescape((row.get("pbanc_ntrp_nm") or "").strip())
             if ql and ql not in " ".join([title, content, field, target, region, org]).lower():
+                continue
+            matched += 1
+            if len(items) >= 60:                  # 표시는 60개까지, matched는 계속 집계
                 continue
             bgn = re.sub(r"\D", "", str(row.get("pbanc_rcpt_bgng_dt") or ""))[:8]
             end = re.sub(r"\D", "", str(row.get("pbanc_rcpt_end_dt") or ""))[:8]
@@ -5433,12 +5593,14 @@ def assist_support():
                 "meta": [["신청기간", period or "-"], ["분야", field or "-"],
                          ["지원대상", target or "-"], ["지원지역", region or "-"]],
                 "url": url})
-            if len(items) >= 60:
-                break
-        resp = {"success": True, "count": len(items), "items": items}
+        resp = {"success": True, "count": len(items), "items": items,
+                "total": str(src_total or matched), "matched": matched,
+                "scanned": scanned,
+                "truncated": bool(matched > len(items) or (query and src_total and scanned < src_total)),
+                "has_more": bool(query and src_total and scanned < src_total)}
         if request.args.get("debug"):
-            resp["_debug"] = {"http": r.status_code, "total_rows": len(arr),
-                              "matched": len(items), "base": base}
+            resp["_debug"] = {"http": r.status_code, "scanned": scanned,
+                              "src_total": src_total, "matched": matched, "base": base}
         return jsonify(resp)
     except Exception as e:
         return jsonify({"success": False, "error": f"조회 실패: {e}"})
