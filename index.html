@@ -296,6 +296,8 @@ body.dark .cpat-b.reg{background:rgba(34,197,94,.16);color:#6ee7a0;}
 .exp-limit.ok{background:#e7f6ec;color:#137a3e;} .exp-limit.over{background:#fde6e6;color:#c0342b;}
 body.dark .exp-limit.ok{background:rgba(34,197,94,.16);color:#6ee7a0;} body.dark .exp-limit.over{background:rgba(239,68,68,.18);color:#fca5a5;}
 .exp-actions{display:flex;gap:8px;margin-top:4px;}
+.exp-hint2{margin-top:8px;font-size:11.5px;line-height:1.6;color:var(--ht);}
+.exp-hint2 b{color:var(--mu);font-weight:700;}
 .exp-print{flex:1;font-size:13.5px;font-weight:800;padding:11px;border:none;border-radius:10px;background:var(--g);color:#fff;cursor:pointer;white-space:nowrap;}
 .exp-print:hover{background:var(--gd);}
 .exp-mini2{font-size:13px;font-weight:700;padding:11px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);cursor:pointer;white-space:nowrap;}
@@ -3216,6 +3218,7 @@ function openExpense(){
         `<div class="exp-actions"><button class="exp-print" onclick="_expCopy(this)">📋 본문 복사</button>`+
           `<button class="exp-mini2" onclick="downloadHwpx(this)" title="표 서식을 한글(.hwpx) 파일로 저장">📄 한글(.hwpx)</button>`+
           `<button class="exp-clear" onclick="_expReset()">초기화</button></div>`+
+        `<div class="exp-hint2">여비·업무추진비의 <b>표</b>는 한글(HWP)·워드·ERP <b>서식 편집기</b>에 붙여넣어야 표로 유지됩니다. 표가 그대로 필요하면 <b>📄 한글(.hwpx)</b>로 받으세요.</div>`+
       `</div>`+
       `<div class="exp-preview"><div class="exp-doc" id="expDoc"></div></div>`+
     `</div>`;
@@ -3388,43 +3391,57 @@ function _expUpdate(){
   doc.innerHTML=`<div class="expd-title">지출결의서 본문</div>${b.html}`;
 }
 function _expCopy(btn){
+  _expUpdate();                       // 복사 직전 최신 상태로 _expRich·_expPlain 갱신
   const text=_expPlain||''; if(!text && !_expRich){ return; }
-  const done=()=>{ if(btn){ const o=btn.textContent; btn.textContent='✓ 복사됨'; setTimeout(()=>{btn.textContent=o;},1400); } };
+  const done=(rich)=>{ if(btn){ const o=btn.dataset.label||btn.textContent; btn.dataset.label=o;
+      btn.textContent=rich?'✓ 표로 복사됨':'✓ 복사됨'; setTimeout(()=>{btn.textContent=o;},1600); } };
   // 표가 있는 구분(여비·업무추진비): 표를 그대로 유지해 붙여넣기.
   if(_expRich){
-    // 1) contenteditable 선택 후 execCommand('copy') — HWP·워드·ERP 리치에디터에 표가
-    //    가장 안정적으로 붙는다(브라우저가 실제 DOM에서 표 클립보드를 생성).
-    if(_expCopyRichSelection(_expRich)){ done(); return; }
-    // 2) 비동기 ClipboardItem 폴백(문서 래퍼로 감싸 호환성↑)
+    // 1) copy 이벤트에서 text/html·text/plain을 직접 세팅(HWP·워드 등 리치에디터에
+    //    표가 가장 안정적으로 붙는다). 선택 영역이 있어야 이벤트가 발생하므로
+    //    임시 contenteditable을 포커스·선택한 뒤 실행한다.
+    if(_expCopyRich(_expRichDoc(_expRich), text)){ done(true); return; }
+    // 2) 비동기 ClipboardItem 폴백
     if(navigator.clipboard && window.ClipboardItem){
       try{
         const item=new ClipboardItem({'text/html':new Blob([_expRichDoc(_expRich)],{type:'text/html'}),
                                       'text/plain':new Blob([text||''],{type:'text/plain'})});
-        navigator.clipboard.write([item]).then(done).catch(()=>_expCopyFb(text,done));
+        navigator.clipboard.write([item]).then(()=>done(true)).catch(()=>_expCopyFb(text,()=>done(false)));
         return;
       }catch(e){}
     }
   }
   // 표 없는 구분(일반) 또는 리치 복사 실패 → 텍스트
-  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done).catch(()=>_expCopyFb(text,done)); }
-  else _expCopyFb(text,done);
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(()=>done(false)).catch(()=>_expCopyFb(text,()=>done(false))); }
+  else _expCopyFb(text,()=>done(false));
 }
 // 붙여넣기 호환용 전체 HTML 문서 래퍼(일부 편집기가 문서 구조를 요구)
 function _expRichDoc(inner){ return '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>'+inner+'</body></html>'; }
-// 숨은 contenteditable에 표 HTML을 넣고 선택→복사. 성공 시 true.
-function _expCopyRichSelection(html){
+// copy 이벤트를 가로채 text/html·text/plain을 강제로 세팅한다. 성공 시 true.
+// (임시 contenteditable을 포커스·선택해 execCommand('copy')가 이벤트를 발생시키게 함)
+function _expCopyRich(html, text){
+  let ok=false;
+  const handler=(e)=>{ try{
+    (e.clipboardData||window.clipboardData).setData('text/html', html);
+    (e.clipboardData||window.clipboardData).setData('text/plain', text||'');
+    e.preventDefault(); ok=true;
+  }catch(_){} };
+  const div=document.createElement('div');
+  div.setAttribute('contenteditable','true');
+  div.style.cssText='position:fixed;left:0;top:0;width:1px;height:1px;padding:0;border:0;overflow:hidden;opacity:0;';
+  div.innerHTML=html;
+  document.body.appendChild(div);
+  document.addEventListener('copy', handler, true);
   try{
-    const div=document.createElement('div');
-    div.setAttribute('contenteditable','true');
-    div.style.cssText='position:fixed;left:-99999px;top:0;opacity:0;white-space:normal;';
-    div.innerHTML=html;
-    document.body.appendChild(div);
-    const sel=window.getSelection(); const range=document.createRange();
-    range.selectNodeContents(div); sel.removeAllRanges(); sel.addRange(range);
-    const ok=document.execCommand('copy');
-    sel.removeAllRanges(); document.body.removeChild(div);
-    return !!ok;
-  }catch(e){ return false; }
+    div.focus();
+    const range=document.createRange(); range.selectNodeContents(div);
+    const sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    const r=document.execCommand('copy'); ok = ok || !!r;
+  }catch(_){}
+  document.removeEventListener('copy', handler, true);
+  try{ window.getSelection().removeAllRanges(); }catch(_){}
+  try{ document.body.removeChild(div); }catch(_){}
+  return ok;
 }
 function _expCopyFb(text,done){ try{ const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done&&done(); }catch(e){ alert('복사 실패 — 본문을 직접 선택해 복사하세요.'); } }
 // 현재 구분의 본문을 한글(.hwpx) 표 파일로 생성
