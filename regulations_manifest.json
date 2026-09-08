@@ -1238,12 +1238,34 @@
  },
  {
   "title": "행정정보 공동이용 업무지침",
-  "revision": "2023년도 7월 제정",
+  "revision": "2026년도 8월 18일 개정",
   "category": "예규",
   "slug": "행정정보_공동이용_업무지침",
-  "src": "행정정보 공동이용 업무지침(2023년도 7월 제정).hwp",
+  "src": "행정정보 공동이용 업무지침(2026년도 8월 18일 개정).hwpx",
   "html": "/regulations/행정정보_공동이용_업무지침/index.html",
-  "pdf": "pdf/행정정보_공동이용_업무지침.pdf"
+  "pdf": "pdf/행정정보_공동이용_업무지침.pdf",
+  "effective_date": "",
+  "department": "",
+  "note": "",
+  "uploader": "김진선",
+  "uploaded_at": "2026-09-08 16:52",
+  "original": "/regulations/행정정보_공동이용_업무지침/original.hwpx",
+  "searchable": true,
+  "history": [
+   {
+    "revision": "2023년도 7월 제정",
+    "replaced_at": "2026-09-08 16:52",
+    "entry": {
+     "title": "행정정보 공동이용 업무지침",
+     "revision": "2023년도 7월 제정",
+     "category": "예규",
+     "slug": "행정정보_공동이용_업무지침",
+     "src": "행정정보 공동이용 업무지침(2023년도 7월 제정).hwp",
+     "html": "/regulations/행정정보_공동이용_업무지침/index.html",
+     "pdf": "pdf/행정정보_공동이용_업무지침.pdf"
+    }
+   }
+  ]
  },
  {
   "title": "회계감사인선임위원회 운영지침",
