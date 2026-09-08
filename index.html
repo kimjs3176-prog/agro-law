@@ -369,6 +369,51 @@ body.dark .dday.soon{background:rgba(245,158,11,.18);color:#fbbf24;}
 .memo-form-lg .full{grid-column:1/-1;}
 .memo-form-lg textarea{min-height:60px;resize:vertical;padding:8px 12px;border:1px solid var(--bd);border-radius:9px;background:var(--card);color:var(--fg);font-size:13px;font-family:var(--font);}
 @media(max-width:560px){ .memo-form-lg{grid-template-columns:1fr;} }
+/* 진행률 바 */
+.memo-prog{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:10px 14px;margin:-4px 0 14px;}
+.memo-prog-top{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--mu);}
+.memo-prog-top b{font-size:15px;color:var(--g);}
+.memo-prog-bar{height:8px;border-radius:999px;background:var(--bg);overflow:hidden;margin:6px 0 4px;}
+.memo-prog-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--g),var(--gd));border-radius:999px;transition:width .3s;}
+.memo-prog-sub{font-size:11px;color:var(--ht);}
+/* 할 일 상태 칩 */
+.memo-st{flex-shrink:0;min-width:44px;height:26px;margin-top:1px;padding:0 10px;border:1px solid transparent;border-radius:999px;font-size:11.5px;font-weight:800;cursor:pointer;font-family:var(--font);}
+.memo-st.st-todo{background:var(--bg);color:var(--ht);border-color:var(--bd);}
+.memo-st.st-doing{background:var(--gl);color:var(--gp);}
+.memo-st.st-done{background:#e7f6ec;color:#137a3e;}
+body.dark .memo-st.st-done{background:rgba(34,197,94,.16);color:#6ee7a0;}
+.memo-link{font-size:11px;font-weight:700;color:var(--g);text-decoration:none;background:var(--gl);border-radius:6px;padding:1px 8px;}
+.memo-link:hover{background:var(--g);color:#fff;}
+.memo-note .memo-link{align-self:flex-start;}
+/* 일정 모드 전환 */
+.memo-evmode{display:flex;gap:6px;align-items:center;margin-bottom:10px;}
+.memo-evmode-b{padding:6px 13px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--mu);font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font);}
+.memo-evmode-b.on{background:var(--gl);color:var(--gp);border-color:var(--g);}
+.memo-ics{margin-left:auto;}
+/* 월간 캘린더 */
+.memo-cal{border:1px solid var(--bd);border-radius:12px;background:var(--card);padding:10px 12px;margin-bottom:14px;}
+.memo-cal-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.memo-cal-head b{font-size:14px;font-weight:800;color:var(--tx);min-width:74px;text-align:center;}
+.memo-cal-nav{width:28px;height:28px;border:1px solid var(--bd);border-radius:7px;background:var(--sf);color:var(--tx);font-size:16px;line-height:1;cursor:pointer;}
+.memo-cal-nav:hover{border-color:var(--g);color:var(--g);}
+.memo-cal-today{height:28px;padding:0 11px;border:1px solid var(--bd);border-radius:7px;background:var(--sf);color:var(--mu);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);}
+.memo-cal-today:hover{border-color:var(--g);color:var(--g);}
+.memo-cal-legend{margin-left:auto;display:flex;gap:10px;font-size:11px;color:var(--mu);}
+.memo-cal-legend span{display:inline-flex;align-items:center;gap:4px;}
+.memo-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.memo-cal-wd{text-align:center;font-size:11px;font-weight:700;color:var(--mu);padding:2px 0;}
+.memo-cal-wd.sun{color:#dc2626;} .memo-cal-wd.sat{color:#2563eb;}
+.memo-cal-cell{position:relative;aspect-ratio:1/1;border:1px solid transparent;border-radius:8px;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:4px 0 0;font-family:var(--font);}
+.memo-cal-cell.empty{cursor:default;}
+.memo-cal-cell:not(.empty):hover{background:var(--bg);}
+.memo-cal-cell .cd-n{font-size:12.5px;font-weight:600;color:var(--tx);}
+.memo-cal-cell.today .cd-n{color:var(--g);font-weight:800;}
+.memo-cal-cell.today{border-color:var(--g);}
+.memo-cal-cell.sel{background:var(--gl);border-color:var(--g);}
+.memo-cal-cell .cd-dots{display:flex;gap:2px;margin-top:2px;height:6px;}
+.cd{width:5px;height:5px;border-radius:999px;display:inline-block;}
+.cd.ev{background:var(--g);} .cd.due{background:#f59e0b;}
+i.cd{vertical-align:middle;}
 .exp-print{flex:1;font-size:13.5px;font-weight:800;padding:11px;border:none;border-radius:10px;background:var(--g);color:#fff;cursor:pointer;white-space:nowrap;}
 .exp-print:hover{background:var(--gd);}
 .exp-mini2{font-size:13px;font-weight:700;padding:11px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);cursor:pointer;white-space:nowrap;}
@@ -3248,9 +3293,13 @@ function closeAssist(){
 // 서버로 전송하지 않으며, 백업(JSON 내보내기/가져오기)로 이관·보관한다.
 // ══════════════════════════════════════════════════════════════════════════
 const _MEMO_KEY='koat_memo';
-let _memoTab='todo', _memoQ='';
+let _memoTab='todo', _memoQ='', _memoEventMode='cal';   // 일정: 'cal'(캘린더)|'list'(목록)
+let _memoCal=null, _memoCalSel='';   // 캘린더 표시 월 {y,m0}·선택일(YYYY-MM-DD)
 function _wmemoGet(){ try{ const m=JSON.parse(localStorage.getItem(_MEMO_KEY)||'{}');
-  return {todos:m.todos||[], events:m.events||[], contacts:m.contacts||[], notes:m.notes||[]}; }
+  const r={todos:m.todos||[], events:m.events||[], contacts:m.contacts||[], notes:m.notes||[]};
+  // 마이그레이션: 할 일 상태 3단계(대기·진행·완료). 구 데이터(done만)는 유추.
+  r.todos.forEach(t=>{ if(!t.status) t.status=t.done?'done':'todo'; t.done=(t.status==='done'); });
+  return r; }
   catch{ return {todos:[],events:[],contacts:[],notes:[]}; } }
 function _wmemoSave(m){ try{ localStorage.setItem(_MEMO_KEY, JSON.stringify(m)); }catch(e){} _memoUpdateBadge(); }
 function _memoId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
@@ -3290,11 +3339,15 @@ function _memoRender(){
   const privacy=`<div class="memo-privacy">🔒 이 메모는 <b>이 브라우저(내 PC)</b>에만 저장되며 서버로 전송되지 않습니다.`+
     `<span class="memo-io"><button class="memo-io-btn" onclick="_memoExport()" title="전체 메모를 JSON 파일로 백업">⬇ 백업</button>`+
     `<label class="memo-io-btn" title="백업 파일에서 복원(중복 제외 병합)">⬆ 복원<input type="file" accept="application/json" style="display:none" onchange="_memoImport(this)"></label></span></div>`;
+  const doneN=m.todos.filter(t=>t.status==='done').length, totN=m.todos.length;
+  const pct=totN?Math.round(doneN/totN*100):0;
+  const progress=totN?`<div class="memo-prog"><div class="memo-prog-top"><span>할 일 진행률</span><b>${pct}%</b></div>`+
+    `<div class="memo-prog-bar"><i style="width:${pct}%"></i></div><span class="memo-prog-sub">완료 ${doneN} / 전체 ${totN}</span></div>`:'';
   const summary=`<div class="memo-summary">`+
     `<div class="memo-sum today"><b>${openTodos.length}</b><span>진행 중 할 일</span></div>`+
     `<div class="memo-sum hot"><b>${hot.length}</b><span>오늘·임박</span></div>`+
     `<div class="memo-sum"><b>${todayEvents.length}</b><span>오늘 일정</span></div>`+
-    `<div class="memo-sum"><b>${m.contacts.length}</b><span>연락처</span></div></div>`;
+    `<div class="memo-sum"><b>${m.contacts.length}</b><span>연락처</span></div></div>`+progress;
   const tabs=[['todo','✅ 할 일',openTodos.length],['event','📅 일정',m.events.length],['contact','👤 연락처',m.contacts.length],['note','🗒 메모',m.notes.length]];
   const tabHtml=`<div class="memo-tabs">`+tabs.map(([k,l,n])=>`<button class="memo-tab${_memoTab===k?' active':''}" onclick="_memoSetTab('${k}')">${l}${n?`<span class="n">${n}</span>`:''}</button>`).join('')+`</div>`;
   let body='';
@@ -3305,37 +3358,51 @@ function _memoRender(){
   w.innerHTML=privacy+summary+tabHtml+`<div id="memoBody">${body}</div>`;
 }
 // ── 할 일 ──
+const _MEMO_ST={todo:{l:'대기',c:'st-todo'},doing:{l:'진행',c:'st-doing'},done:{l:'완료',c:'st-done'}};
+const _MEMO_ORD={todo:0,doing:1,done:2};
 function _memoTodoView(m){
   const add=`<div class="memo-toolbar">`+
     `<input id="mtText" class="memo-input" placeholder="할 일 입력 후 Enter" maxlength="200" onkeydown="if(event.key==='Enter')_memoAddTodo()">`+
     `<select id="mtPrio" class="memo-sel"><option value="m">보통</option><option value="h">중요</option><option value="l">낮음</option></select>`+
     `<input id="mtDue" class="memo-date" type="date" title="마감일(선택)">`+
-    `<button class="memo-addbtn" onclick="_memoAddTodo()">추가</button></div>`;
-  const list=[...m.todos].sort((a,b)=>{ if(a.done!==b.done) return a.done?1:-1;
-    const da=a.due?a.due.replace(/\D/g,''):'99999999', db=b.due?b.due.replace(/\D/g,''):'99999999';
-    return da.localeCompare(db); });
+    `<button class="memo-addbtn" onclick="_memoAddTodo()">추가</button></div>`+
+    `<input id="mtLink" class="memo-search" placeholder="관련 링크(선택) — 규정·특허·공고 URL 붙여넣기" maxlength="500">`;
+  // 정렬: 상태(대기<진행<완료) → 마감 임박순
+  const list=[...m.todos].sort((a,b)=>{ const sa=_MEMO_ORD[a.status]||0, sb=_MEMO_ORD[b.status]||0; if(sa!==sb) return sa-sb;
+    const da=a.due?a.due.replace(/\D/g,''):'99999999', db=b.due?b.due.replace(/\D/g,''):'99999999'; return da.localeCompare(db); });
   const rows=list.length? list.map(t=>{
     const dd=t.due?_memoDday(t.due):null; const pl={h:'중요',m:'보통',l:'낮음'}[t.prio||'m'];
-    return `<div class="memo-item${t.done?' done':''}">`+
-      `<button class="memo-chk${t.done?' on':''}" onclick="_memoToggleTodo('${t.id}')" title="완료 토글">${t.done?'✓':''}</button>`+
+    const st=_MEMO_ST[t.status]||_MEMO_ST.todo;
+    const link=t.link?`<a class="memo-link" href="${escAttr(safeUrl(t.link))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🔗 열기</a>`:'';
+    return `<div class="memo-item${t.status==='done'?' done':''}">`+
+      `<button class="memo-st ${st.c}" onclick="_memoCycleTodo('${t.id}')" title="클릭하면 대기→진행→완료로 전환">${st.l}</button>`+
       `<div class="memo-main"><div class="memo-t">${escHtml(t.text)}</div>`+
-      `<div class="memo-meta"><span class="prio ${t.prio||'m'}">${pl}</span>${t.due?`<span>${_fmtKDate(t.due)}</span>`:''}${dd&&!t.done?`<span class="dday ${dd.cls}">${dd.label}</span>`:''}</div></div>`+
+      `<div class="memo-meta"><span class="prio ${t.prio||'m'}">${pl}</span>${t.due?`<span>${_fmtKDate(t.due)}</span>`:''}${dd&&t.status!=='done'?`<span class="dday ${dd.cls}">${dd.label}</span>`:''}${link}</div></div>`+
       `<button class="memo-del" onclick="_memoDel('todos','${t.id}')" title="삭제">✕</button></div>`;
   }).join('') : `<div class="memo-empty">할 일이 없습니다.<br>위에 입력하고 <b>Enter</b>로 추가하세요.</div>`;
-  return add+`<div class="memo-list">${rows}</div>`;
+  return add+`<div class="memo-list" style="margin-top:10px;">${rows}</div>`;
 }
 function _memoAddTodo(){ const el=document.getElementById('mtText'); const text=((el&&el.value)||'').trim(); if(!text) return;
-  const m=_wmemoGet(); m.todos.unshift({id:_memoId(),text,prio:((document.getElementById('mtPrio')||{}).value)||'m',due:((document.getElementById('mtDue')||{}).value)||'',done:false,createdAt:_memoToday()});
+  const m=_wmemoGet(); m.todos.unshift({id:_memoId(),text,prio:((document.getElementById('mtPrio')||{}).value)||'m',due:((document.getElementById('mtDue')||{}).value)||'',status:'todo',done:false,link:((document.getElementById('mtLink')||{}).value||'').trim(),createdAt:_memoToday()});
   _wmemoSave(m); _memoRender(); const t=document.getElementById('mtText'); if(t) t.focus(); }
-function _memoToggleTodo(id){ const m=_wmemoGet(); const t=m.todos.find(x=>x.id===id); if(t){ t.done=!t.done; _wmemoSave(m); _memoRender(); } }
-// ── 일정 ──
+// 상태 순환: 대기 → 진행 → 완료 → 대기
+function _memoCycleTodo(id){ const m=_wmemoGet(); const t=m.todos.find(x=>x.id===id); if(t){ const nx={todo:'doing',doing:'done',done:'todo'}; t.status=nx[t.status||'todo']; t.done=(t.status==='done'); _wmemoSave(m); _memoRender(); } }
+function _memoToggleTodo(id){ _memoCycleTodo(id); }   // 레거시 호환
+// ── 일정(캘린더/목록) ──
+const _MEMO_WD=['일','월','화','수','목','금','토'];
+function _memoEventSetMode(mode){ _memoEventMode=mode; _memoRender(); }
 function _memoEventView(m){
+  const modeBtns=`<div class="memo-evmode">`+
+    `<button class="memo-evmode-b${_memoEventMode==='cal'?' on':''}" onclick="_memoEventSetMode('cal')">📅 캘린더</button>`+
+    `<button class="memo-evmode-b${_memoEventMode==='list'?' on':''}" onclick="_memoEventSetMode('list')">☰ 목록</button>`+
+    `<button class="memo-io-btn memo-ics" onclick="_memoExportICS()" title="일정·마감을 캘린더(.ics)로 내보내 Outlook·구글 캘린더에 등록">📤 캘린더(.ics)</button></div>`;
   const add=`<div class="memo-toolbar">`+
-    `<input id="meTitle" class="memo-input" placeholder="일정 제목" maxlength="120">`+
-    `<input id="meDate" class="memo-date" type="date">`+
+    `<input id="meTitle" class="memo-input" placeholder="일정 제목" maxlength="120" onkeydown="if(event.key==='Enter')_memoAddEvent()">`+
+    `<input id="meDate" class="memo-date" type="date" value="${escAttr(_memoCalSel||_memoToday())}">`+
     `<input id="meTime" class="memo-date" type="time">`+
     `<button class="memo-addbtn" onclick="_memoAddEvent()">추가</button></div>`+
     `<input id="mePlace" class="memo-search" placeholder="장소·메모(선택)" maxlength="120">`;
+  if(_memoEventMode==='cal'){ return modeBtns+_memoCalHtml(m)+_memoDayList(m)+add; }
   const list=[...m.events].sort((a,b)=>((a.date||'')+(a.time||'')).replace(/\D/g,'').localeCompare(((b.date||'')+(b.time||'')).replace(/\D/g,'')));
   const rows=list.length? list.map(e=>{ const dd=_memoDday(e.date);
     return `<div class="memo-item">`+
@@ -3343,10 +3410,72 @@ function _memoEventView(m){
       `<div class="memo-meta"><span>📅 ${_fmtKDate(e.date)}${e.time?' '+escHtml(e.time):''}</span>${e.place?`<span>📍 ${escHtml(e.place)}</span>`:''}${dd?`<span class="dday ${dd.cls}">${dd.label}</span>`:''}</div></div>`+
       `<button class="memo-del" onclick="_memoDel('events','${e.id}')" title="삭제">✕</button></div>`;
   }).join('') : `<div class="memo-empty">등록된 일정이 없습니다.</div>`;
-  return add+`<div class="memo-list" style="margin-top:10px;">${rows}</div>`;
+  return modeBtns+add+`<div class="memo-list" style="margin-top:10px;">${rows}</div>`;
 }
+// 월간 캘린더: 일정(파랑)·할 일 마감(주황) 점 표시, 오늘·선택일 강조
+function _memoCalHtml(m){
+  const now=new Date();
+  if(!_memoCal) _memoCal={y:now.getFullYear(), m0:now.getMonth()};
+  if(!_memoCalSel) _memoCalSel=_memoToday();
+  const {y,m0}=_memoCal, mp=String(m0+1).padStart(2,'0'), pfx=y+'-'+mp;
+  const startDow=new Date(y,m0,1).getDay(), days=new Date(y,m0+1,0).getDate(), todayStr=_memoToday();
+  const evByDay={}, dueByDay={};
+  m.events.forEach(e=>{ const s=String(e.date||'').slice(0,10); if(s.startsWith(pfx)){ const d=+s.slice(8,10); evByDay[d]=(evByDay[d]||0)+1; } });
+  m.todos.forEach(t=>{ if(t.status==='done'||!t.due) return; const s=String(t.due).slice(0,10); if(s.startsWith(pfx)){ const d=+s.slice(8,10); dueByDay[d]=(dueByDay[d]||0)+1; } });
+  let cells='';
+  for(let i=0;i<startDow;i++) cells+='<div class="memo-cal-cell empty"></div>';
+  for(let d=1; d<=days; d++){ const ds=pfx+'-'+String(d).padStart(2,'0');
+    const cls=[ds===todayStr?'today':'', ds===_memoCalSel?'sel':''].filter(Boolean).join(' ');
+    const dots=(evByDay[d]?'<i class="cd ev"></i>':'')+(dueByDay[d]?'<i class="cd due"></i>':'');
+    cells+=`<button class="memo-cal-cell ${cls}" onclick="_memoCalPick('${ds}')"><span class="cd-n">${d}</span><span class="cd-dots">${dots}</span></button>`;
+  }
+  const wd=_MEMO_WD.map((w,i)=>`<div class="memo-cal-wd${i===0?' sun':(i===6?' sat':'')}">${w}</div>`).join('');
+  return `<div class="memo-cal"><div class="memo-cal-head">`+
+    `<button class="memo-cal-nav" onclick="_memoCalNav(-1)" aria-label="이전 달">‹</button>`+
+    `<b>${y}.${mp}</b>`+
+    `<button class="memo-cal-nav" onclick="_memoCalNav(1)" aria-label="다음 달">›</button>`+
+    `<button class="memo-cal-today" onclick="_memoCalToday()">오늘</button>`+
+    `<span class="memo-cal-legend"><span><i class="cd ev"></i>일정</span><span><i class="cd due"></i>마감</span></span></div>`+
+    `<div class="memo-cal-grid">${wd}${cells}</div></div>`;
+}
+function _memoDayList(m){
+  const sel=_memoCalSel||_memoToday();
+  const evs=m.events.filter(e=>String(e.date||'').slice(0,10)===sel).sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')));
+  const dues=m.todos.filter(t=>t.status!=='done'&&String(t.due||'').slice(0,10)===sel);
+  const dow=(()=>{ const p=sel.split('-'); const d=new Date(+p[0],+p[1]-1,+p[2]); return _MEMO_WD[d.getDay()]; })();
+  const head=`<div class="memo-grp">📆 ${_fmtKDate(sel)} (${dow})</div>`;
+  let rows='';
+  evs.forEach(e=>{ rows+=`<div class="memo-item"><div class="memo-main"><div class="memo-t">${escHtml(e.title)}</div><div class="memo-meta"><span>🕑 ${e.time?escHtml(e.time):'종일'}</span>${e.place?`<span>📍 ${escHtml(e.place)}</span>`:''}</div></div><button class="memo-del" onclick="_memoDel('events','${e.id}')" title="삭제">✕</button></div>`; });
+  dues.forEach(t=>{ rows+=`<div class="memo-item"><div class="memo-main"><div class="memo-t">⏰ ${escHtml(t.text)}</div><div class="memo-meta"><span>할 일 마감</span><span class="prio ${t.prio||'m'}">${({h:'중요',m:'보통',l:'낮음'}[t.prio||'m'])}</span></div></div></div>`; });
+  if(!rows) rows=`<div class="memo-empty" style="padding:16px;">이 날짜의 일정·마감이 없습니다. 아래에서 추가하세요.</div>`;
+  return head+`<div class="memo-list" style="margin-bottom:12px;">${rows}</div>`;
+}
+function _memoCalNav(delta){ const now=new Date(); if(!_memoCal) _memoCal={y:now.getFullYear(),m0:now.getMonth()};
+  let mm=_memoCal.m0+delta, yy=_memoCal.y; while(mm<0){mm+=12;yy--;} while(mm>11){mm-=12;yy++;} _memoCal={y:yy,m0:mm}; _memoRender(); }
+function _memoCalToday(){ const n=new Date(); _memoCal={y:n.getFullYear(),m0:n.getMonth()}; _memoCalSel=_memoToday(); _memoRender(); }
+function _memoCalPick(ds){ _memoCalSel=ds; const p=ds.split('-'); _memoCal={y:+p[0],m0:+p[1]-1}; _memoRender(); }
 function _memoAddEvent(){ const t=((document.getElementById('meTitle')||{}).value||'').trim(); const d=(document.getElementById('meDate')||{}).value; if(!t||!d){ alert('제목과 날짜를 입력하세요.'); return; }
-  const m=_wmemoGet(); m.events.push({id:_memoId(),title:t,date:d,time:(document.getElementById('meTime')||{}).value||'',place:((document.getElementById('mePlace')||{}).value||'').trim()}); _wmemoSave(m); _memoRender(); }
+  _memoCalSel=d; const m=_wmemoGet(); m.events.push({id:_memoId(),title:t,date:d,time:(document.getElementById('meTime')||{}).value||'',place:((document.getElementById('mePlace')||{}).value||'').trim()}); _wmemoSave(m); _memoRender(); }
+// 일정·할 일 마감을 .ics로 내보내기(Outlook·구글 캘린더 가져오기)
+function _memoExportICS(){
+  const m=_wmemoGet(); const pad=n=>String(n).padStart(2,'0'); const now=new Date();
+  const stamp=now.getUTCFullYear()+pad(now.getUTCMonth()+1)+pad(now.getUTCDate())+'T'+pad(now.getUTCHours())+pad(now.getUTCMinutes())+pad(now.getUTCSeconds())+'Z';
+  const esc=s=>String(s||'').replace(/([,;\\])/g,'\\$1').replace(/\r?\n/g,'\\n');
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//KOAT Work Place//업무메모//KO','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  let cnt=0;
+  const addEv=(uid,dateStr,timeStr,title,desc)=>{ const d=String(dateStr||'').replace(/\D/g,'').slice(0,8); if(d.length<8) return;
+    L.push('BEGIN:VEVENT','UID:'+uid+'@koat','DTSTAMP:'+stamp);
+    if(timeStr){ const hm=(String(timeStr).replace(/\D/g,'')+'0000').slice(0,4); L.push('DTSTART:'+d+'T'+hm+'00'); }
+    else L.push('DTSTART;VALUE=DATE:'+d);
+    L.push('SUMMARY:'+esc(title)); if(desc) L.push('DESCRIPTION:'+esc(desc)); L.push('END:VEVENT'); cnt++; };
+  m.events.forEach(e=>addEv('ev-'+e.id, e.date, e.time, e.title, e.place));
+  m.todos.forEach(t=>{ if(t.due&&t.status!=='done') addEv('td-'+t.id, t.due, '', '[할 일] '+t.text, ''); });
+  if(!cnt){ alert('내보낼 일정·마감이 없습니다.'); return; }
+  L.push('END:VCALENDAR');
+  const blob=new Blob([L.join('\r\n')],{type:'text/calendar;charset=utf-8;'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='업무메모_일정_'+_memoToday()+'.ics';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
 // ── 연락처 ──
 function _memoContactView(m){
   const form=`<div class="memo-form-lg">`+
@@ -3369,12 +3498,13 @@ function _memoNoteView(m){
     `<input id="mnTitle" class="memo-input" placeholder="메모 제목" maxlength="80">`+
     `<button class="memo-addbtn" onclick="_memoAddNote()">추가</button></div>`+
     `<textarea id="mnBody" class="memo-search" style="height:70px;resize:vertical;" placeholder="메모 내용"></textarea>`+
+    `<input id="mnLink" class="memo-search" placeholder="관련 링크(선택) — 규정·특허·공고 URL 붙여넣기" maxlength="500">`+
     `<input class="memo-search" placeholder="메모 검색" value="${escAttr(_memoQ)}" oninput="_memoFilter(this.value)">`;
   return add+`<div class="memo-notes" id="memoInner">${_memoRowsFor('note',m)}</div>`;
 }
 function _memoAddNote(){ const t=((document.getElementById('mnTitle')||{}).value||'').trim(); const b=((document.getElementById('mnBody')||{}).value||'').trim();
   if(!t&&!b){ alert('제목 또는 내용을 입력하세요.'); return; }
-  const m=_wmemoGet(); m.notes.unshift({id:_memoId(),title:t,body:b,updatedAt:_memoToday()}); _wmemoSave(m); _memoRender(); }
+  const m=_wmemoGet(); m.notes.unshift({id:_memoId(),title:t,body:b,link:((document.getElementById('mnLink')||{}).value||'').trim(),updatedAt:_memoToday()}); _wmemoSave(m); _memoRender(); }
 // 검색 대상(연락처·메모)의 목록만 갱신 — 입력창 포커스 유지
 function _memoRowsFor(tab, m){
   const q=(_memoQ||'').toLowerCase();
@@ -3392,6 +3522,7 @@ function _memoRowsFor(tab, m){
   return list.length? list.map(n=>`<div class="memo-note">`+
     `<div class="memo-t">${escHtml(n.title||'(제목 없음)')}</div>`+
     `<div class="memo-note-body">${escHtml(n.body||'')}</div>`+
+    `${n.link?`<a class="memo-link" href="${escAttr(safeUrl(n.link))}" target="_blank" rel="noopener">🔗 링크 열기</a>`:''}`+
     `<div class="memo-note-foot"><span>${escHtml(n.updatedAt||'')}</span><button class="memo-del" onclick="_memoDel('notes','${n.id}')" title="삭제">✕</button></div></div>`).join('')
     : `<div class="memo-empty">${q?'검색 결과가 없습니다.':'저장된 메모가 없습니다.'}</div>`;
 }
