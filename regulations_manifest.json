@@ -751,13 +751,35 @@
   "pdf": "pdf/치유농업사_자격시험_규칙_시행세칙.pdf"
  },
  {
-  "title": "CCTV운영지침",
-  "revision": "2023년도 6월 일부개정",
+  "title": "CCTV 운영 지침",
+  "revision": "2026년도 8월 18일 개정",
   "category": "예규",
-  "slug": "CCTV운영지침",
-  "src": "CCTV운영지침(2023년도 6월 일부개정).hwp",
-  "html": "/regulations/CCTV운영지침/index.html",
-  "pdf": "pdf/CCTV운영지침.pdf"
+  "slug": "CCTV_운영_지침",
+  "src": "CCTV 운영 지침(2026년도 8월 18일 개정).hwpx",
+  "html": "/regulations/CCTV_운영_지침/index.html",
+  "pdf": "pdf/CCTV_운영_지침.pdf",
+  "effective_date": "",
+  "department": "",
+  "note": "",
+  "uploader": "김진선",
+  "uploaded_at": "2026-09-08 16:52",
+  "original": "/regulations/CCTV_운영_지침/original.hwpx",
+  "searchable": true,
+  "history": [
+   {
+    "revision": "2023년도 6월 일부개정",
+    "replaced_at": "2026-09-08 16:52",
+    "entry": {
+     "title": "CCTV운영지침",
+     "revision": "2023년도 6월 일부개정",
+     "category": "예규",
+     "slug": "CCTV운영지침",
+     "src": "CCTV운영지침(2023년도 6월 일부개정).hwp",
+     "html": "/regulations/CCTV운영지침/index.html",
+     "pdf": "pdf/CCTV운영지침.pdf"
+    }
+   }
+  ]
  },
  {
   "title": "건강진단 시행지침",
