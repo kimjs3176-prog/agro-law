@@ -5013,8 +5013,11 @@ def _fsc_financials(key, crno):
     if not key or not crno:
         return None
     try:
+        # numOfRows를 넉넉히(전 사업연도 포함) 받아야 한다. 예전에 30으로 제한하면
+        # 원천이 사업연도 오름차순으로 주는 경우 오래된 연도(개별+연결)로 30행이 차
+        # 최근 연도가 응답에서 잘려 재무가 '2021년까지'만 나오던 문제가 있었다.
         r = _SESSION.get(_FSC_FIN_BASE, params={"serviceKey": key, "pageNo": "1",
-                         "numOfRows": "30", "resultType": "json", "crno": crno}, timeout=15)
+                         "numOfRows": "200", "resultType": "json", "crno": crno}, timeout=15)
         j = r.json() or {}
     except Exception:
         return None
@@ -5026,15 +5029,18 @@ def _fsc_financials(key, crno):
     if not isinstance(items, list) or not items:
         return None
     yr = lambda x: re.sub(r"\D", "", str(x.get("bizYear") or ""))[:4]
-    # 연결(있으면) 우선, 사업연도별 1개 행 → 최근 5개년(오름차순)
-    conso = [x for x in items if "연결" in str(x.get("fnclDcdNm") or x.get("fnclGrpDcdNm") or "")]
-    use = conso or items
+    _is_conso = lambda x: "연결" in str(x.get("fnclDcdNm") or x.get("fnclGrpDcdNm") or "")
+    # 사업연도별 1개 행 선택 — 그 해에 연결이 있으면 연결, 없으면 개별/별도.
+    # (연결만 전역 필터하면 최근 연도가 개별만 있을 때 통째로 누락될 수 있어 연도별로 판단)
     by_year = {}
-    for x in use:
+    for x in items:
         y = yr(x)
-        if y and y not in by_year:
+        if not y:
+            continue
+        cur = by_year.get(y)
+        if cur is None or (_is_conso(x) and not _is_conso(cur)):
             by_year[y] = x
-    years = sorted(by_year.keys())[-5:]
+    years = sorted(by_year.keys())[-5:]     # 최근 5개년(오름차순)
     if not years:
         return None
 
