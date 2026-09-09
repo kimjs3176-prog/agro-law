@@ -110,6 +110,35 @@ body.dark .stgl.active{background:#20222a;}
   padding:6px 12px;white-space:nowrap;transition:.12s;}
 .assist-h-link:hover{background:var(--g);color:#fff;border-color:var(--g);}
 .assist-head .assist-api-badge + .assist-h-link{margin-left:8px;}
+/* 오늘의 업무(대시보드) */
+.dash-date{font-size:12.5px;color:var(--mu);font-weight:600;margin:2px 0 12px;}
+.dash-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.dash-tile{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 10px;text-align:center;box-shadow:var(--shadow);}
+.dash-tile b{display:block;font-size:22px;font-weight:800;color:var(--tx);letter-spacing:-.5px;line-height:1.1;}
+.dash-tile span{font-size:11.5px;color:var(--mu);}
+.dash-tile.warn b{color:#dc2626;}
+.dash-tile.hot b{color:#ea580c;}
+.dash-sec{margin-bottom:20px;}
+.dash-sec-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;}
+.dash-sec-h span{font-size:13.5px;font-weight:800;color:var(--tx);}
+.dash-more{font-size:12px;font-weight:700;color:var(--g);background:transparent;border:none;cursor:pointer;padding:2px 4px;}
+.dash-more:hover{text-decoration:underline;}
+.dash-list{display:flex;flex-direction:column;gap:7px;}
+.dash-item{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:var(--card);border:1px solid var(--bd);
+  border-radius:10px;padding:10px 12px;cursor:pointer;font-family:var(--font);transition:.12s;}
+.dash-item:hover{border-color:var(--g);box-shadow:0 2px 10px rgba(37,110,244,.1);}
+.dash-dday{flex-shrink:0;min-width:56px;text-align:center;font-size:11.5px;font-weight:800;padding:4px 8px;border-radius:7px;background:var(--bg);color:var(--mu);}
+.dash-dday.urgent,.dash-dday.over{background:#fee2e2;color:#dc2626;}
+.dash-dday.soon{background:#ffedd5;color:#ea580c;}
+.dash-dday.done{background:var(--bg);color:var(--ht);}
+body.dark .dash-dday.urgent,body.dark .dash-dday.over{background:rgba(220,38,38,.2);color:#fca5a5;}
+body.dark .dash-dday.soon{background:rgba(234,88,12,.2);color:#fdba74;}
+.dash-item-main{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px;}
+.dash-item-t{font-size:13.5px;font-weight:700;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dash-item-m{font-size:11.5px;color:var(--mu);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dash-chips{display:flex;flex-wrap:wrap;gap:7px;}
+.dash-empty{font-size:12.5px;color:var(--ht);padding:14px;text-align:center;border:1px dashed var(--bd);border-radius:10px;background:var(--bg);}
+@media (max-width:640px){ .dash-tiles{grid-template-columns:repeat(2,1fr);} }
 .assist-h-ic{font-size:20px;align-self:center;}
 .assist-h-t{font-size:17px;font-weight:800;color:var(--tx);letter-spacing:-.3px;}
 .assist-h-hint{font-size:12.5px;color:var(--mu);}
@@ -2336,6 +2365,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <span class="sm-div" aria-hidden="true"></span>
       <div class="sm-group">
         <span class="sm-glabel">업무도구</span>
+        <button class="sm-item" id="smHome" onclick="openDashboard()" title="오늘의 업무 — 마감 임박·할 일·최근 검색 한눈에"><span class="sm-ic" aria-hidden="true">🏠</span><span>오늘의 업무</span><span id="dashBadge" class="sm-badge" hidden></span></button>
         <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 본문 작성"><span class="sm-ic" data-icon="expense"></span><span>지출결의서</span></button>
         <button class="sm-item" id="smMemo" onclick="openMemo()" title="업무 메모 — 할 일·일정·연락처·메모(내 PC에만 저장)"><span class="sm-ic" data-icon="memo"></span><span>업무메모</span><span id="memoBadge" class="sm-badge" hidden></span></button>
       </div>
@@ -3471,6 +3501,95 @@ function closeAssist(){
   Object.values(ASSIST_CFG).forEach(c=>{ const t=document.getElementById(c.tab); if(t) t.classList.remove('active'); });
   const ex=document.getElementById('smExpense'); if(ex) ex.classList.remove('active');
   const mm=document.getElementById('smMemo'); if(mm) mm.classList.remove('active');
+  const hm=document.getElementById('smHome'); if(hm) hm.classList.remove('active');
+}
+// ══════════════════════════════════════════════════════════════════════════
+// 오늘의 업무(개인 홈 대시보드) — 마감 임박·할 일·일정·최근 검색을 한 화면에.
+// 모든 데이터는 기존 localStorage(즐겨찾기·업무메모·최근검색)를 재사용한다.
+// ══════════════════════════════════════════════════════════════════════════
+function openDashboard(){
+  if(typeof wsBackToList==='function') wsBackToList();
+  document.querySelector('.main-content').classList.add('assist-on');
+  document.querySelectorAll('.sm-item.active').forEach(el=>el.classList.remove('active'));
+  const tab=document.getElementById('smHome'); if(tab) tab.classList.add('active');
+  _assistMode='home';
+  const p=document.getElementById('assistantPanel');
+  p.innerHTML=`<div class="assist-head"><span class="assist-h-ic">🏠</span>`+
+    `<span class="assist-h-t">오늘의 업무</span>`+
+    `<span class="assist-h-hint">마감 임박·할 일·최근 검색을 한눈에. 모든 데이터는 내 PC에만 저장됩니다.</span>`+_assistCloseBtn()+`</div>`+
+    `<div class="dash-wrap" id="dashWrap"></div>`;
+  _dashRender();
+}
+function _dashQuick(kw){ closeAssist(); if(mode!=='internal'&&mode!=='law') setMode('internal'); quick(kw); }
+function _dashOpenMemo(tab){ _memoTab=tab||'todo'; openMemo(); }
+function _dashRender(){
+  const w=document.getElementById('dashWrap'); if(!w) return;
+  const m=_wmemoGet();
+  // 1) 즐겨찾기 지원사업·조달 마감 임박
+  const opp=getFavs().map((f,i)=>({f,i})).filter(x=>{ const b=_favBucket(x.f.type); return (b==='support'||b==='procurement')&&(x.f.end||x.f.endText); })
+    .map(x=>({...x, dd:_dday(String(x.f.end||x.f.endText||'').replace(/\D/g,'').slice(0,8))})).filter(x=>x.dd)
+    .sort((a,b)=>a.dd.n-b.dd.n);
+  // 2) 미완료 할 일(마감 임박순, 마감 없는 건 뒤로)
+  const todos=(m.todos||[]).filter(t=>t.status!=='done').map(t=>({t, dd:t.due?_memoDday(t.due):null}))
+    .sort((a,b)=>((a.dd?a.dd.n:99999)-(b.dd?b.dd.n:99999)));
+  // 3) 다가오는 일정(오늘 포함)
+  const evs=(m.events||[]).map(e=>({e, dd:_memoDday(e.date)})).filter(x=>x.dd&&x.dd.n>=0).sort((a,b)=>a.dd.n-b.dd.n);
+  // 4) 최근 검색
+  const rec=getRecent();
+
+  const now=new Date();
+  const wd=['일','월','화','수','목','금','토'][now.getDay()];
+  const dateStr=`${now.getFullYear()}. ${now.getMonth()+1}. ${now.getDate()}. (${wd})`;
+
+  // 요약 타일
+  const urgentOpp=opp.filter(x=>x.dd.n>=0&&x.dd.n<=7).length;
+  const overdue=todos.filter(x=>x.dd&&x.dd.n<0).length;
+  const summary=`<div class="dash-date">${dateStr}</div>`+
+    `<div class="dash-tiles">`+
+      `<div class="dash-tile${overdue?' warn':''}"><b>${overdue}</b><span>지난 할 일</span></div>`+
+      `<div class="dash-tile"><b>${todos.length}</b><span>진행 중 할 일</span></div>`+
+      `<div class="dash-tile${urgentOpp?' hot':''}"><b>${urgentOpp}</b><span>임박 공고(7일)</span></div>`+
+      `<div class="dash-tile"><b>${evs.length}</b><span>다가오는 일정</span></div>`+
+    `</div>`;
+
+  const sec=(title, moreLabel, moreFn, inner)=>`<div class="dash-sec"><div class="dash-sec-h"><span>${title}</span>`+
+    (moreFn?`<button class="dash-more" onclick="${moreFn}">${moreLabel} →</button>`:'')+`</div>${inner}</div>`;
+
+  // 마감 임박 공고
+  const oppInner = opp.length ? `<div class="dash-list">`+opp.slice(0,6).map(x=>{
+      const b=_favBucket(x.f.type); const kind=b==='support'?'지원사업':'조달';
+      return `<button class="dash-item" onclick="_favOpenItem(${x.i})" title="${escAttr(x.f.name||'')}">`+
+        `<span class="dash-dday ${x.dd.cls}">${escHtml(x.dd.label)}</span>`+
+        `<span class="dash-item-main"><span class="dash-item-t">${escHtml(x.f.name||'(제목 없음)')}</span>`+
+        `<span class="dash-item-m">${kind}${x.f.subtitle?' · '+escHtml(x.f.subtitle):''}${(x.f.endText||x.f.end)?' · 마감 '+escHtml(String(x.f.endText||x.f.end)):''}</span></span></button>`;
+    }).join('')+`</div>` : `<div class="dash-empty">즐겨찾기한 지원사업·조달 공고가 없습니다. 조회 화면에서 ☆로 담아두면 마감이 여기 모입니다.</div>`;
+
+  // 할 일
+  const todoInner = todos.length ? `<div class="dash-list">`+todos.slice(0,6).map(x=>{
+      const st={todo:'대기',doing:'진행'}[x.t.status||'todo']||'대기';
+      return `<button class="dash-item" onclick="_dashOpenMemo('todo')" title="${escAttr(x.t.text||'')}">`+
+        `<span class="dash-dday ${x.dd?x.dd.cls:'none'}">${x.dd?escHtml(x.dd.label):st}</span>`+
+        `<span class="dash-item-main"><span class="dash-item-t">${escHtml(x.t.text||'')}</span>`+
+        `<span class="dash-item-m">${st}${x.t.due?' · '+escHtml(_fmtKDate(x.t.due)):''}</span></span></button>`;
+    }).join('')+`</div>` : `<div class="dash-empty">진행 중인 할 일이 없습니다.</div>`;
+
+  // 일정
+  const evInner = evs.length ? `<div class="dash-list">`+evs.slice(0,5).map(x=>
+      `<button class="dash-item" onclick="_dashOpenMemo('event')" title="${escAttr(x.e.title||'')}">`+
+        `<span class="dash-dday ${x.dd.cls}">${escHtml(x.dd.label)}</span>`+
+        `<span class="dash-item-main"><span class="dash-item-t">${escHtml(x.e.title||'')}</span>`+
+        `<span class="dash-item-m">${escHtml(_fmtKDate(x.e.date))}${x.e.time?' '+escHtml(x.e.time):''}${x.e.place?' · '+escHtml(x.e.place):''}</span></span></button>`
+    ).join('')+`</div>` : `<div class="dash-empty">다가오는 일정이 없습니다.</div>`;
+
+  // 최근 검색
+  const recInner = rec.length ? `<div class="dash-chips">`+rec.slice(0,12).map(r=>`<button class="rec-chip" onclick="_dashQuick('${argAttr(r)}')">${escHtml(r)}</button>`).join('')+`</div>`
+    : `<div class="dash-empty">최근 검색 기록이 없습니다.</div>`;
+
+  w.innerHTML=summary+
+    sec('⏳ 마감 임박 공고','즐겨찾기','openFavModal()',oppInner)+
+    sec('✅ 할 일','업무메모',"_dashOpenMemo('todo')",todoInner)+
+    sec('📅 다가오는 일정','일정',"_dashOpenMemo('event')",evInner)+
+    sec('🔍 최근 검색','',null,recInner);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -3773,7 +3892,15 @@ function _memoUpdateBadge(){ const b=document.getElementById('memoBadge'); if(!b
   const m=_wmemoGet();
   const urgent=[...m.todos.filter(t=>{ if(t.done||!t.due) return false; const d=_memoDday(t.due); return d&&d.n<=0; }),
                 ...m.events.filter(e=>{ const d=_memoDday(e.date); return d&&d.n===0; })].length;
-  if(urgent>0){ b.textContent=urgent>99?'99+':String(urgent); b.hidden=false; } else { b.hidden=true; } }
+  if(urgent>0){ b.textContent=urgent>99?'99+':String(urgent); b.hidden=false; } else { b.hidden=true; }
+  try{ _dashUpdateBadge(); }catch(e){} }
+// 오늘의 업무 배지: 지난 할 일 + 임박(7일) 지원사업·조달 공고 개수
+function _dashUpdateBadge(){ const b=document.getElementById('dashBadge'); if(!b) return;
+  const m=_wmemoGet();
+  const overdue=(m.todos||[]).filter(t=>{ if(t.status==='done'||!t.due) return false; const d=_memoDday(t.due); return d&&d.n<0; }).length;
+  const oppHot=getFavs().filter(f=>{ const bk=_favBucket(f.type); if(bk!=='support'&&bk!=='procurement') return false; const dd=_dday(String(f.end||f.endText||'').replace(/\D/g,'').slice(0,8)); return dd&&dd.n>=0&&dd.n<=7; }).length;
+  const n=overdue+oppHot;
+  if(n>0){ b.textContent=n>99?'99+':String(n); b.hidden=false; } else b.hidden=true; }
 // 백업/복원(로컬 저장이므로 이관·보관 수단 제공)
 function _memoExport(){ try{ const blob=new Blob([JSON.stringify(_wmemoGet(),null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='업무메모_'+_memoToday()+'.json';
