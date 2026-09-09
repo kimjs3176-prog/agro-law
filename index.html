@@ -8986,6 +8986,7 @@ function wsPaneHtml(p, cls, pos){
       <input class="ws-pane-filter" placeholder="조문·키워드" value="${escAttr(p.filter||'')}"
              oninput="wsFilter(${p.id},this.value)" aria-label="이 문서 안에서 찾기">
       ${moveBtns}${maxBtn}
+      ${isInt?`<button class="ws-icon" title="내규 오류 점검(조문번호·상호참조·괄호 등, AI 미사용)" onclick="wsRuleCheck(${p.id})">🔎</button>`:''}
       <button class="ws-icon" title="최소화 — 하단 책갈피로 내리기(내용 유지)" onclick="wsMinimize(${p.id})">⌄</button>
       <button class="ws-icon" title="전체화면·상세 기능(AI·메모·비교)" onclick="wsExpand(${p.id})">⤢</button>
       <button class="ws-icon" title="이 창 닫기" onclick="wsClose(${p.id})">✕</button>
@@ -9385,6 +9386,20 @@ function wsExpand(id){
   const p=_wsPanes.find(x=>x.id===id); if(!p) return;
   if(p.docType==='internal') openInternalPanel(p.name);
   else openFullPanel(p.name, p.url||('https://www.law.go.kr/법령/'+encodeURIComponent(p.name)), p.org, p.type);
+}
+// 작업공간 창에서 바로 내규 오류 점검(전체화면으로 들어가지 않아도 됨)
+function _wsPlainText(p){
+  if(Array.isArray(p.structured)&&p.structured.length){
+    return p.structured.map(it=>{ const t=it.title||it.name||it['제목']||it['규정명']||''; const c=it.content||it.text||it['내용']||it['본문']||''; return (t?t+'\n':'')+String(c); }).join('\n');
+  }
+  return String(p.text||'');
+}
+function wsRuleCheck(id){
+  const p=_wsPanes.find(x=>x.id===id); if(!p||p.docType!=='internal') return;
+  if(p.loading){ alert('전문을 불러오는 중입니다. 잠시 후 다시 시도하세요.'); return; }
+  if(p.error){ alert('전문을 불러오지 못해 점검할 수 없습니다.'); return; }
+  const findings=_ruleCheckAnalyze(_wsPlainText(p));
+  _ruleCheckOpen(); _ruleCheckRender(findings, p.name);
 }
 // 같은 창 안에서 지정 조문으로 스크롤(법령 창)
 function wsJumpArt(paneEl, artNo){
