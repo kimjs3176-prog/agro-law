@@ -1409,7 +1409,7 @@ body.dark .int-law-chip{background:#161920;color:#aecbfd;}
 /* ── 인쇄 스타일 개선 ── */
 @media print{
   .topbar,.spanel,.fbar,.status,.pagination,.footer,.overlay,
-  .fullpanel,.mobile-nav,.stat-panel,.net-panel,.cmp-panel{display:none!important;}
+  .fullpanel,.mobile-nav,.net-panel,.cmp-panel{display:none!important;}
   .main{max-width:100%;padding:0;}
   .card{box-shadow:none;border:1px solid #ddd;page-break-inside:avoid;margin-bottom:8px;}
   .card-body{display:block!important;}
@@ -1662,22 +1662,6 @@ body.dark .fbar select{background:#1c1f27;color:#e2e4e9;}
 .bm-btn{display:inline-flex;align-items:center;gap:3px;padding:4px 9px;border-radius:var(--rs);border:1px solid var(--bd);font-size:11px;cursor:pointer;color:var(--mu);background:transparent;transition:.15s;}
 .bm-btn:hover{border-color:#3b82f6;color:#1d4ed8;}
 .bm-btn.active{border-color:#3b82f6;color:#1d4ed8;background:#eff6ff;}
-/* ── 통계 패널 ── */
-.stat-panel{position:fixed;top:0;right:-460px;width:min(460px,100vw);height:100vh;background:var(--sf);border-left:1px solid var(--bd);z-index:500;display:flex;flex-direction:column;transition:right .3s cubic-bezier(.4,0,.2,1);box-shadow:-4px 0 24px rgba(0,0,0,.12);}
-.stat-panel.open{right:0;}
-.stat-hd{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--bd);flex-shrink:0;}
-.stat-title{font-size:15px;font-weight:600;flex:1;}
-.stat-body{flex:1;overflow-y:auto;padding:16px 18px;}
-.stat-section{margin-bottom:20px;}
-.stat-section-title{font-size:12px;font-weight:600;color:var(--mu);letter-spacing:.5px;margin-bottom:10px;text-transform:uppercase;}
-.stat-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px;}
-.stat-row:last-child{border-bottom:none;}
-.stat-rank{width:20px;font-size:11px;color:var(--ht);text-align:right;flex-shrink:0;}
-.stat-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.stat-bar-wrap{width:80px;height:6px;background:var(--bd);border-radius:3px;flex-shrink:0;}
-.stat-bar{height:100%;background:var(--g);border-radius:3px;}
-.stat-cnt{font-size:11px;color:var(--ht);width:28px;text-align:right;flex-shrink:0;}
-.stat-empty{text-align:center;padding:30px;color:var(--ht);font-size:13px;}
 /* ── 조문 상호참조 ── */
 .art-xref{color:var(--g);border-bottom:1px dashed var(--g);cursor:pointer;font-weight:500;}
 .art-xref:hover{background:var(--gl);}
@@ -2036,9 +2020,6 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   <button class="mnav-btn" onclick="toggleFavTab()">
     <span class="mnav-icon">☆</span>즐겨찾기
   </button>
-  <button class="mnav-btn" onclick="openStatPanel()">
-    <span class="mnav-icon">📊</span>통계
-  </button>
   <button class="mnav-btn" onclick="toggleDark()">
     <span class="mnav-icon" id="mnavDarkIcon">🌙</span>화면
   </button>
@@ -2271,23 +2252,11 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   </div>
   <div class="tb-tools">
     <button class="tb-tool" id="tbFav" onclick="toggleFavTab()" title="즐겨찾기"><span class="tb-ic" data-icon="fav"></span><span class="tb-tl">즐겨찾기</span><span id="tbFavCount" class="tb-cnt"></span></button>
-    <button class="tb-tool" onclick="openStatPanel()" title="검색 통계"><span class="tb-ic" data-icon="stats"></span><span class="tb-tl">통계</span></button>
     <a class="tb-tool" href="/upload" title="내규 업로드"><span class="tb-ic" data-icon="upload"></span><span class="tb-tl">업로드</span></a>
     <button class="tb-tool" onclick="openAiModal()" title="AI 설정"><span class="tb-ic" data-icon="ai"></span><span class="tb-tl">AI 설정</span><span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
   </div>
   <span class="apibadge" id="badge">● 확인 중</span>
   <button class="dark-btn" id="darkBtn" onclick="toggleDark()" title="다크모드" aria-label="다크 모드 전환">🌙</button>
-</div>
-
-<!-- 통계 패널 -->
-<div class="stat-panel" id="statPanel">
-  <div class="stat-hd">
-    <span class="stat-title">📊 검색 통계</span>
-    <button class="fp-close" aria-label="닫기" onclick="closeStatPanel()">✕</button>
-  </div>
-  <div class="stat-body" id="statBody">
-    <div class="stat-empty">검색 기록이 없습니다.<br>법령을 검색하면 통계가 쌓입니다.</div>
-  </div>
 </div>
 
 <div class="main">
@@ -4263,7 +4232,6 @@ async function doSearch(){
   const sbtn = document.getElementById('sbtn');
   sbtn.disabled = true;
   clearResults();
-  recordStat('search', q);
 
   try{
     // 시나리오 모드
@@ -7525,7 +7493,6 @@ function fpPrint(){
 
 // ── openFullPanel 재정의 (즐겨찾기 상태 반영) ─────────────────────────────
 async function openFullPanel(lawName, lawUrl, org, type){
-  if(lawName && lawName!=='법령 전문') recordStat('view', lawName);
   currentPanelLaw={name:lawName, url:lawUrl, org:org||'', type:type||'법률'};
   _leftDoc={name:lawName, docType:'law'};
   document.getElementById('fpTitle').textContent=lawName;
@@ -8050,114 +8017,6 @@ function toggleBookmark(idx, key){
     localStorage.setItem(key, data);
     if(btn){btn.textContent='🔖 북마크됨'; btn.classList.add('active');}
   }
-  // 통계 갱신
-  recordStat('bookmark', lawName);
-}
-
-function getAllBookmarks(){
-  const result=[];
-  for(let i=0;i<localStorage.length;i++){
-    const k=localStorage.key(i);
-    if(!k.startsWith('bm__')) continue;
-    try{
-      const d=JSON.parse(localStorage.getItem(k));
-      if(d) result.push({...d, key:k});
-    }catch{}
-  }
-  return result.sort((a,b)=>b.savedAt.localeCompare(a.savedAt));
-}
-
-// ── ⑦ 검색 통계 ──────────────────────────────────────────────────────────────
-function recordStat(type, value){
-  try{
-    const raw=localStorage.getItem('lawStats')||'{}';
-    const stats=JSON.parse(raw);
-    if(!stats[type]) stats[type]={};
-    stats[type][value]=(stats[type][value]||0)+1;
-    // 전체 검색 시간 기록 (최근 20개)
-    if(type==='search'){
-      if(!stats.history) stats.history=[];
-      stats.history.unshift({q:value, t:new Date().toISOString()});
-      stats.history=stats.history.slice(0,20);
-    }
-    localStorage.setItem('lawStats', JSON.stringify(stats));
-  }catch{}
-}
-
-function openStatPanel(){
-  renderStatPanel();
-  document.getElementById('statPanel').classList.add('open');
-}
-function closeStatPanel(){document.getElementById('statPanel').classList.remove('open');}
-
-function renderStatPanel(){
-  const raw=localStorage.getItem('lawStats')||'{}';
-  let stats={};
-  try{stats=JSON.parse(raw);}catch{}
-
-  const searches=stats.search||{};
-  const views=stats.view||{};
-  const bms=getAllBookmarks();
-
-  // 검색 Top 순위
-  function renderRank(obj, emptyMsg){
-    const sorted=Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,8);
-    if(!sorted.length) return `<div class="stat-empty">${emptyMsg}</div>`;
-    const max=sorted[0][1]||1;
-    return sorted.map(([label,cnt],i)=>`
-      <div class="stat-row">
-        <span class="stat-rank">${i+1}</span>
-        <span class="stat-label" title="${escHtml(label)}">${escHtml(label)}</span>
-        <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(cnt/max*100)}%"></div></div>
-        <span class="stat-cnt">${cnt}회</span>
-      </div>`).join('');
-  }
-
-  // 북마크 목록
-  const bmHtml=bms.length
-    ? bms.map(b=>`
-        <div class="stat-row" style="cursor:pointer;" onclick="wsOpen(decodeURIComponent('${encodeURIComponent(b.law||'')}'),'law',decodeURIComponent('${encodeURIComponent(b.url||'')}'))">
-          <span class="stat-rank" style="color:#3b82f6;">🔖</span>
-          <span class="stat-label">
-            <span style="font-size:11px;color:var(--ht);">${escHtml(b.law||'')}</span><br>
-            <span style="font-weight:600;">${escHtml(b.no||'')} ${escHtml(b.title||'')}</span>
-          </span>
-          <span class="stat-cnt" style="width:auto;color:var(--ht);">${b.savedAt||''}</span>
-        </div>`).join('')
-    : `<div class="stat-empty">북마크한 조문이 없습니다</div>`;
-
-  // 총 검색 횟수
-  const totalSearch=Object.values(searches).reduce((s,v)=>s+v,0);
-  const totalView=Object.values(views).reduce((s,v)=>s+v,0);
-
-  document.getElementById('statBody').innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">
-      <div class="mbox"><div class="mlbl">총 검색</div><div class="mval">${totalSearch}회</div></div>
-      <div class="mbox"><div class="mlbl">조문 조회</div><div class="mval">${totalView}회</div></div>
-      <div class="mbox"><div class="mlbl">북마크</div><div class="mval">${bms.length}개</div></div>
-      <div class="mbox"><div class="mlbl">즐겨찾기</div><div class="mval" id="statFavCnt">-</div></div>
-    </div>
-    <div class="stat-section">
-      <div class="stat-section-title">🔍 자주 검색한 키워드</div>
-      ${renderRank(searches,'검색 기록이 없습니다')}
-    </div>
-    <div class="stat-section">
-      <div class="stat-section-title">📄 자주 조회한 법령</div>
-      ${renderRank(views,'조회 기록이 없습니다')}
-    </div>
-    <div class="stat-section">
-      <div class="stat-section-title">🔖 북마크한 조문</div>
-      ${bmHtml}
-    </div>
-    <div style="text-align:right;margin-top:12px;">
-      <button class="memo-del" onclick="if(confirm('모든 통계를 초기화할까요?')){localStorage.removeItem('lawStats');renderStatPanel();}">통계 초기화</button>
-    </div>`;
-
-  // 즐겨찾기 수 비동기 업데이트
-  loadFavs().then(favs=>{
-    const el=document.getElementById('statFavCnt');
-    if(el) el.textContent=`${favs.length}개`;
-  });
 }
 
 // ── ⑧ 조문 내 참조 링크 (조번호 이동 + 법령명 준용 패널) ─────────────────────
