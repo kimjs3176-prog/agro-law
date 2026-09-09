@@ -101,6 +101,11 @@ body.dark .stgl.active{background:#20222a;}
 .main-content.assist-on > #assistantPanel{display:block !important;}
 .assist-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:2px 0 14px;}
 .assist-head .assist-api-badge{margin-left:auto;align-self:center;}
+.assist-h-link{margin-left:auto;align-self:center;flex-shrink:0;font-size:12.5px;font-weight:700;
+  text-decoration:none;color:var(--g);background:var(--gl);border:1px solid transparent;border-radius:8px;
+  padding:6px 12px;white-space:nowrap;transition:.12s;}
+.assist-h-link:hover{background:var(--g);color:#fff;border-color:var(--g);}
+.assist-head .assist-api-badge + .assist-h-link{margin-left:8px;}
 .assist-h-ic{font-size:20px;align-self:center;}
 .assist-h-t{font-size:17px;font-weight:800;color:var(--tx);letter-spacing:-.3px;}
 .assist-h-hint{font-size:12.5px;color:var(--mu);}
@@ -121,7 +126,12 @@ body.dark .stgl.active{background:#20222a;}
 .assist-note a:hover{text-decoration:underline;}
 .assist-loading{display:flex;align-items:center;justify-content:center;gap:8px;padding:24px;color:var(--mu);font-size:13px;}
 /* ── 특허 조회: 필터 + 목록 + 상세 ── */
-.pat-filters{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+/* 필터 구역 박스 디자인 */
+.pat-filters{display:flex;flex-direction:column;gap:11px;margin-bottom:14px;
+  background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);}
+.pat-filters-h{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:800;color:var(--tx);
+  margin:-2px 0 2px;padding-bottom:9px;border-bottom:1px solid var(--bd);}
+.pat-filters-h .pat-fh-ic{font-size:14px;}
 .pat-frow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .pat-flabel{font-size:12px;font-weight:800;color:var(--mu);flex-shrink:0;}
 .pat-appl{display:flex;flex-wrap:wrap;gap:6px;}
@@ -143,6 +153,20 @@ body.dark .stgl.active{background:#20222a;}
 .pat-year{width:120px;flex-shrink:0;}
 .pat-sel{padding:9px 12px;border:1px solid var(--bd);border-radius:9px;font-size:13px;background:var(--sf);color:var(--tx);cursor:pointer;font-family:var(--font);flex-shrink:0;}
 .pat-tilde{color:var(--mu);flex-shrink:0;}
+/* 기간: 숫자 직접입력(YYYY-MM-DD) + 달력 선택 */
+.pat-daterange{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.pat-datefield{position:relative;display:inline-flex;align-items:center;}
+.pat-ymd{width:130px;flex-shrink:0;border-radius:9px 0 0 9px;}
+.pat-calbtn{margin-left:-1px;border:1px solid var(--bd);border-left:none;border-radius:0 9px 9px 0;
+  background:var(--sf);color:var(--mu);cursor:pointer;padding:9px 10px;font-size:13px;line-height:1;transition:.12s;}
+.pat-calbtn:hover{background:var(--gl);border-color:var(--g);color:var(--g);}
+.pat-cal-hidden{position:absolute;right:0;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;border:none;padding:0;}
+/* 특허 검색 결과 2열 배치(.pat-list 뒤에 정의된 기본 규칙을 이기도록 클래스 2개로 지정) */
+.pat-list.pat-list-2col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+  border:none;background:none;overflow:visible;}
+.pat-list.pat-list-2col .pat-rw{border:1px solid var(--bd);border-radius:10px;background:var(--card);}
+.pat-list.pat-list-2col .pat-rw:hover{background:var(--gl);border-color:var(--g);}
+@media (max-width:640px){ .pat-list.pat-list-2col{grid-template-columns:1fr;} }
 .pat-count{font-size:12px;color:var(--mu);margin-bottom:8px;}
 .pat-listhd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
 .pat-listhd .pat-count{margin-bottom:0;}
@@ -607,6 +631,11 @@ body.dark .scen-apikey-note{color:#fcd9a3;background:#3a2a12;border-color:#5a452
 .sbtn:hover{background:var(--gd);transform:translateY(-1px);box-shadow:0 4px 16px rgba(37,110,244,.4);}.sbtn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 /* 자주찾는 법령 */
 .qlabel{font-size:11px;color:var(--ht);margin:14px 0 8px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;}
+.int-ex-label{display:flex;align-items:center;gap:8px;}
+.int-upload{margin-left:auto;font-size:12px;font-weight:700;color:var(--g);text-decoration:none;
+  background:var(--gl);border:1px solid transparent;border-radius:999px;padding:5px 12px;white-space:nowrap;
+  text-transform:none;letter-spacing:0;transition:.12s;}
+.int-upload:hover{background:var(--g);color:#fff;border-color:var(--g);}
 .chips{display:flex;gap:6px;flex-wrap:wrap;}
 .chip{padding:6px 14px;border-radius:999px;border:none;font-size:12px;font-weight:600;cursor:pointer;color:var(--g);background:var(--gl);transition:all .18s cubic-bezier(.4,0,.2,1);}
 .chip:hover{background:var(--g);color:#fff;transform:translateY(-1px);box-shadow:0 2px 8px rgba(37,110,244,.25);}
@@ -956,6 +985,25 @@ body.dark .ws-dock-card.int .ws-dock-badge{background:rgba(45,212,191,.16);color
 body.ws-resizing{cursor:col-resize;user-select:none;}
 body.ws-resizing.ws-resizing-col{cursor:row-resize;}
 body.ws-resizing .ws-pane-body{pointer-events:none;}
+/* 자유 배치(플로팅 창) 모드 */
+.ws-grid.ws-free{position:relative;display:block;height:calc(100vh - 210px);min-height:460px;
+  border:1px dashed rgba(0,0,0,.1);border-radius:14px;background:
+  repeating-linear-gradient(45deg,transparent,transparent 11px,rgba(0,0,0,.012) 11px,rgba(0,0,0,.012) 12px);
+  overflow:hidden;}
+.ws-grid.ws-free .ws-pane{position:absolute;height:auto;min-height:0;min-width:0;
+  box-shadow:0 10px 34px rgba(0,0,0,.20);transition:box-shadow .15s;}
+.ws-grid.ws-free .ws-pane.ws-moving{box-shadow:0 16px 44px rgba(0,0,0,.30);}
+.ws-grid.ws-free .ws-pane.ws-maxi{border-radius:12px;}
+.ws-grid.ws-free .ws-pane-head{cursor:grab;touch-action:none;}
+.ws-grid.ws-free .ws-pane.ws-moving .ws-pane-head{cursor:grabbing;}
+.ws-grip{position:absolute;right:0;bottom:0;width:20px;height:20px;cursor:nwse-resize;touch-action:none;z-index:3;
+  background:linear-gradient(135deg,transparent 42%,rgba(0,0,0,.28) 42%,rgba(0,0,0,.28) 52%,transparent 52%,
+  transparent 66%,rgba(0,0,0,.28) 66%,rgba(0,0,0,.28) 76%,transparent 76%);}
+body.dark .ws-grip{background:linear-gradient(135deg,transparent 42%,rgba(255,255,255,.34) 42%,rgba(255,255,255,.34) 52%,transparent 52%,
+  transparent 66%,rgba(255,255,255,.34) 66%,rgba(255,255,255,.34) 76%,transparent 76%);}
+body.ws-dragging{user-select:none;}
+body.ws-dragging .ws-pane-body{pointer-events:none;}
+.ws-pane.ws-reorder{opacity:.9;outline:2px dashed var(--g);outline-offset:-2px;}
 .ws-pane-body{flex:1;overflow:auto;padding:14px 16px 28px;}
 .ws-doc{font-size:14px;line-height:1.7;color:var(--tx);}
 .ws-art{padding:10px 0;border-bottom:1px solid rgba(0,0,0,.05);}
@@ -986,6 +1034,12 @@ mark.ws-hl{background:var(--mark-bg);color:var(--mark-fg);border-radius:2px;padd
   .ws-stack{flex:1 1 auto;flex-direction:row;padding-top:20px;gap:8px;overflow-x:auto;}
   .ws-stack-card{margin-bottom:0;min-height:56px;writing-mode:horizontal-tb;}
   .ws-stack-title{writing-mode:horizontal-tb;}
+  /* 모바일: 자유 배치는 좁은 화면에서 세로 스택으로 안전하게 대체 */
+  .ws-grid.ws-free{display:flex;flex-direction:column;height:auto;border:none;background:none;overflow:visible;}
+  .ws-grid.ws-free .ws-pane{position:static!important;left:auto!important;top:auto!important;
+    width:auto!important;height:auto!important;min-height:340px;max-height:75vh;box-shadow:var(--shadow);}
+  .ws-grip{display:none;}
+  .ws-grid.ws-free .ws-pane-head{cursor:default;}
 }
 body.dark .ws-bar,body.dark .ws-pane,body.dark .ws-stack-card{border-color:rgba(255,255,255,.08);}
 body.dark .ws-art-b{color:#c9ccd2;}
@@ -1360,7 +1414,7 @@ body.dark .int-law-chip{background:#161920;color:#aecbfd;}
 /* ── 인쇄 스타일 개선 ── */
 @media print{
   .topbar,.spanel,.fbar,.status,.pagination,.footer,.overlay,
-  .fullpanel,.mobile-nav,.stat-panel,.net-panel,.cmp-panel{display:none!important;}
+  .fullpanel,.mobile-nav,.net-panel,.cmp-panel{display:none!important;}
   .main{max-width:100%;padding:0;}
   .card{box-shadow:none;border:1px solid #ddd;page-break-inside:avoid;margin-bottom:8px;}
   .card-body{display:block!important;}
@@ -1613,22 +1667,6 @@ body.dark .fbar select{background:#1c1f27;color:#e2e4e9;}
 .bm-btn{display:inline-flex;align-items:center;gap:3px;padding:4px 9px;border-radius:var(--rs);border:1px solid var(--bd);font-size:11px;cursor:pointer;color:var(--mu);background:transparent;transition:.15s;}
 .bm-btn:hover{border-color:#3b82f6;color:#1d4ed8;}
 .bm-btn.active{border-color:#3b82f6;color:#1d4ed8;background:#eff6ff;}
-/* ── 통계 패널 ── */
-.stat-panel{position:fixed;top:0;right:-460px;width:min(460px,100vw);height:100vh;background:var(--sf);border-left:1px solid var(--bd);z-index:500;display:flex;flex-direction:column;transition:right .3s cubic-bezier(.4,0,.2,1);box-shadow:-4px 0 24px rgba(0,0,0,.12);}
-.stat-panel.open{right:0;}
-.stat-hd{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--bd);flex-shrink:0;}
-.stat-title{font-size:15px;font-weight:600;flex:1;}
-.stat-body{flex:1;overflow-y:auto;padding:16px 18px;}
-.stat-section{margin-bottom:20px;}
-.stat-section-title{font-size:12px;font-weight:600;color:var(--mu);letter-spacing:.5px;margin-bottom:10px;text-transform:uppercase;}
-.stat-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px;}
-.stat-row:last-child{border-bottom:none;}
-.stat-rank{width:20px;font-size:11px;color:var(--ht);text-align:right;flex-shrink:0;}
-.stat-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.stat-bar-wrap{width:80px;height:6px;background:var(--bd);border-radius:3px;flex-shrink:0;}
-.stat-bar{height:100%;background:var(--g);border-radius:3px;}
-.stat-cnt{font-size:11px;color:var(--ht);width:28px;text-align:right;flex-shrink:0;}
-.stat-empty{text-align:center;padding:30px;color:var(--ht);font-size:13px;}
 /* ── 조문 상호참조 ── */
 .art-xref{color:var(--g);border-bottom:1px dashed var(--g);cursor:pointer;font-weight:500;}
 .art-xref:hover{background:var(--gl);}
@@ -1987,9 +2025,6 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   <button class="mnav-btn" onclick="toggleFavTab()">
     <span class="mnav-icon">☆</span>즐겨찾기
   </button>
-  <button class="mnav-btn" onclick="openStatPanel()">
-    <span class="mnav-icon">📊</span>통계
-  </button>
   <button class="mnav-btn" onclick="toggleDark()">
     <span class="mnav-icon" id="mnavDarkIcon">🌙</span>화면
   </button>
@@ -2222,23 +2257,10 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   </div>
   <div class="tb-tools">
     <button class="tb-tool" id="tbFav" onclick="toggleFavTab()" title="즐겨찾기"><span class="tb-ic" data-icon="fav"></span><span class="tb-tl">즐겨찾기</span><span id="tbFavCount" class="tb-cnt"></span></button>
-    <button class="tb-tool" onclick="openStatPanel()" title="검색 통계"><span class="tb-ic" data-icon="stats"></span><span class="tb-tl">통계</span></button>
-    <a class="tb-tool" href="/upload" title="내규 업로드"><span class="tb-ic" data-icon="upload"></span><span class="tb-tl">업로드</span></a>
     <button class="tb-tool" onclick="openAiModal()" title="AI 설정"><span class="tb-ic" data-icon="ai"></span><span class="tb-tl">AI 설정</span><span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
   </div>
   <span class="apibadge" id="badge">● 확인 중</span>
   <button class="dark-btn" id="darkBtn" onclick="toggleDark()" title="다크모드" aria-label="다크 모드 전환">🌙</button>
-</div>
-
-<!-- 통계 패널 -->
-<div class="stat-panel" id="statPanel">
-  <div class="stat-hd">
-    <span class="stat-title">📊 검색 통계</span>
-    <button class="fp-close" aria-label="닫기" onclick="closeStatPanel()">✕</button>
-  </div>
-  <div class="stat-body" id="statBody">
-    <div class="stat-empty">검색 기록이 없습니다.<br>법령을 검색하면 통계가 쌓입니다.</div>
-  </div>
 </div>
 
 <div class="main">
@@ -2285,7 +2307,9 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
     <!-- 내규 카테고리 바로가기 (내규·통합 모드일 때 표시) -->
     <div id="internalExamples" style="display:none;">
-      <div class="qlabel">내규 카테고리 바로가기</div>
+      <div class="qlabel int-ex-label">내규 카테고리 바로가기
+        <a class="int-upload" href="/upload" title="개정·신규 내규 문서를 업로드합니다">⬆ 내규 업로드</a>
+      </div>
       <div class="chips" id="internalChips"></div>
     </div>
     <!-- 시나리오 예시 칩 (시나리오 모드일 때만 표시) -->
@@ -2360,11 +2384,16 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <span class="ws-bar-t">📑 열람 작업공간 <span class="ws-cnt" id="wsCnt">0</span></span>
       <span class="ws-hint" id="wsHint">문서를 더 열면 이 화면에서 나란히 비교할 수 있어요</span>
       <span style="flex:1"></span>
+      <span class="ws-seg" id="wsModeSeg" role="group" aria-label="창 배치 방식">
+        <button class="ws-seg-btn on" id="wsModeTile" title="타일: 창을 나란히 붙여 배치" onclick="_wsSetMode('tile')">▦ 타일</button>
+        <button class="ws-seg-btn" id="wsModeFree" title="자유: 창을 윈도우처럼 이동·크기조정" onclick="_wsSetMode('free')">🗗 자유</button>
+      </span>
       <span class="ws-seg" id="wsDirSeg" role="group" aria-label="창 배치 방향">
         <button class="ws-seg-btn on" id="wsDirRow" title="가로로 나란히 배치" onclick="_wsSetDir('row')">◫ 가로</button>
         <button class="ws-seg-btn" id="wsDirCol" title="세로로 위아래 배치" onclick="_wsSetDir('col')">⬓ 세로</button>
       </span>
-      <button class="ws-bar-btn" title="열린 창 크기를 균등하게 맞춥니다" onclick="_wsEqualize()">⇔ 균등</button>
+      <button class="ws-bar-btn" id="wsEqBtn" title="열린 창 크기를 균등하게 맞춥니다" onclick="_wsEqualize()">⇔ 균등</button>
+      <button class="ws-bar-btn" id="wsArrBtn" style="display:none;" title="열린 창을 겹치지 않게 격자로 정렬" onclick="_wsArrangeFree()">▤ 정렬</button>
       <button class="ws-bar-btn" onclick="wsCloseAll()">전체 닫기</button>
       <button class="ws-bar-btn" onclick="wsBackToList()">← 목록·검색으로</button>
     </div>
@@ -2601,7 +2630,9 @@ async function openAssist(kind){
     (ok?'':`<span class="assist-api-badge no">서비스키 필요</span>`)+`</div>`;
   if(kind==='patent'){                       // 특허: 출원인·기간·상태 필터 + 목록
     _patLast=null;
-    p.innerHTML=head+_patFiltersHtml()+`<div id="patResults" class="pat-results"></div>`;
+    // 특허 심화 분석 외부 도구(AtipsUM) 바로가기 — 헤더 우측에 배치
+    const patAnalyze=`<a class="assist-h-link" href="https://atipsum.lovable.app/" target="_blank" rel="noopener noreferrer" title="특허분석 도구(AtipsUM)를 새 창에서 엽니다">🔬 특허분석 ↗</a>`;
+    p.innerHTML=head.replace('</div>', patAnalyze+'</div>')+_patFiltersHtml()+`<div id="patResults" class="pat-results"></div>`;
     const pq=document.getElementById('patQuery'); if(pq) pq.focus();
     return;
   }
@@ -2644,6 +2675,7 @@ function _patFiltersHtml(){
   const stat=PAT_STATUS.map(([v,l],i)=>
     `<button class="pat-chip pat-schip s-${v||'all'}${i===0?' active':''}" data-v="${v}" onclick="_patStatusPick(this)">${escHtml(l)}</button>`).join('');
   return `<div class="pat-filters">`+
+    `<div class="pat-filters-h"><span class="pat-fh-ic">🔎</span>특허 검색 필터</div>`+
     `<div class="pat-frow"><span class="pat-flabel">출원인</span><div class="pat-appl" id="patAppl">${appl}</div></div>`+
     `<div class="pat-frow"><span class="pat-flabel">상태</span><div class="pat-appl" id="patStatus">${stat}</div></div>`+
     `<div class="pat-frow"><span class="pat-flabel" title="출원일(신청일) 기준으로 거릅니다">기간<span class="pat-flabel-sub">출원일</span></span><div class="pat-appl" id="patPeriod">`+
@@ -2652,9 +2684,19 @@ function _patFiltersHtml(){
       `<button class="pat-chip" data-y="2" onclick="_patPeriod(2,this)">최근 2년</button>`+
       `<button class="pat-chip" data-y="3" onclick="_patPeriod(3,this)">최근 3년</button>`+
       `<span class="pat-pdiv"></span>`+
-      `<input id="patFrom" class="pat-inp pat-year" inputmode="numeric" maxlength="4" placeholder="시작(YYYY)" oninput="_patPeriodManual()">`+
-      `<span class="pat-tilde">~</span>`+
-      `<input id="patTo" class="pat-inp pat-year" inputmode="numeric" maxlength="4" placeholder="종료(YYYY)" oninput="_patPeriodManual()">`+
+      `<div class="pat-daterange">`+
+        `<div class="pat-datefield">`+
+          `<input id="patFrom" class="pat-inp pat-ymd" inputmode="numeric" maxlength="10" placeholder="시작 YYYY-MM-DD" oninput="_patDateText('from')" onkeydown="if(event.key==='Enter')runPatent()">`+
+          `<button type="button" class="pat-calbtn" title="달력에서 시작일 선택" onclick="_patOpenCal('from')">📅</button>`+
+          `<input id="patFromD" type="date" class="pat-cal-hidden" tabindex="-1" aria-hidden="true" onchange="_patDatePick('from')">`+
+        `</div>`+
+        `<span class="pat-tilde">~</span>`+
+        `<div class="pat-datefield">`+
+          `<input id="patTo" class="pat-inp pat-ymd" inputmode="numeric" maxlength="10" placeholder="종료 YYYY-MM-DD" oninput="_patDateText('to')" onkeydown="if(event.key==='Enter')runPatent()">`+
+          `<button type="button" class="pat-calbtn" title="달력에서 종료일 선택" onclick="_patOpenCal('to')">📅</button>`+
+          `<input id="patToD" type="date" class="pat-cal-hidden" tabindex="-1" aria-hidden="true" onchange="_patDatePick('to')">`+
+        `</div>`+
+      `</div>`+
     `</div></div>`+
     `<div class="pat-frow pat-frow2">`+
       `<input id="patQuery" class="pat-inp" placeholder="키워드(발명의 명칭 등, 선택)" onkeydown="if(event.key==='Enter')runPatent()">`+
@@ -2677,20 +2719,63 @@ function _patStatusPick(btn){
     if(!cont.querySelector('.pat-chip.active') && allBtn) allBtn.classList.add('active');
   }
 }
-function _patPeriod(y, btn){
-  document.querySelectorAll('#patPeriod .pat-chip').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  const yr=new Date().getFullYear();
-  const f=document.getElementById('patFrom'), t=document.getElementById('patTo');
-  if(y===0){ if(f)f.value=''; if(t)t.value=''; }
-  else { if(f)f.value=String(yr-y+1); if(t)t.value=String(yr); }
+// 날짜 3종 입력(숫자 직접입력 텍스트 + 달력) 동기화 헬퍼
+function _patFmtYmd(s){
+  s=String(s||'').replace(/\D/g,'').slice(0,8);
+  let out=s.slice(0,4); if(s.length>4) out+='-'+s.slice(4,6); if(s.length>6) out+='-'+s.slice(6,8);
+  return out;
 }
-function _patPeriodManual(){ document.querySelectorAll('#patPeriod .pat-chip').forEach(b=>b.classList.remove('active')); }
+function _patChipsOff(){ document.querySelectorAll('#patPeriod .pat-chip').forEach(b=>b.classList.remove('active')); }
+// 조회 전송용: 입력값(YYYY/YYYY-MM/YYYY-MM-DD)을 8자리(YYYYMMDD)로 보정
+function _patNormDate(s, end){
+  s=String(s||'').replace(/\D/g,'');
+  if(!s) return '';
+  if(s.length>=8) return s.slice(0,8);
+  if(s.length===6){ const y=+s.slice(0,4), m=+s.slice(4,6);
+    if(end){ const last=new Date(y, m, 0).getDate()||31; return s+String(last).padStart(2,'0'); }
+    return s+'01'; }
+  if(s.length>=4) return end ? s.slice(0,4)+'1231' : s.slice(0,4)+'0101';
+  return '';   // 4자리 미만은 무시
+}
+// 숫자 직접입력: YYYY-MM-DD 형태로 자동 정리 + 완성 시 달력값 동기화
+function _patDateText(which){
+  const tid=which==='from'?'patFrom':'patTo', did=which==='from'?'patFromD':'patToD';
+  const inp=document.getElementById(tid); if(!inp) return;
+  inp.value=_patFmtYmd(inp.value);
+  _patChipsOff();
+  const d=document.getElementById(did);
+  const digits=inp.value.replace(/\D/g,'');
+  if(d) d.value = digits.length===8 ? inp.value : '';
+}
+// 달력 선택 → 텍스트칸 반영
+function _patDatePick(which){
+  const tid=which==='from'?'patFrom':'patTo', did=which==='from'?'patFromD':'patToD';
+  const d=document.getElementById(did), inp=document.getElementById(tid);
+  if(d&&inp&&d.value){ inp.value=d.value; _patChipsOff(); }
+}
+// 달력 열기(숫자칸 옆 📅). showPicker 미지원 시 포커스로 폴백
+function _patOpenCal(which){
+  const d=document.getElementById(which==='from'?'patFromD':'patToD'); if(!d) return;
+  try{ if(typeof d.showPicker==='function'){ d.showPicker(); return; } }catch(e){}
+  d.focus();
+}
+// 빠른 기간 칩: 시작·종료 텍스트칸과 달력칸을 실제 날짜(YYYY-MM-DD)로 채움
+function _patPeriod(y, btn){
+  _patChipsOff();
+  if(btn) btn.classList.add('active');
+  const f=document.getElementById('patFrom'), t=document.getElementById('patTo');
+  const fd=document.getElementById('patFromD'), td=document.getElementById('patToD');
+  if(y===0){ [f,t,fd,td].forEach(el=>{ if(el) el.value=''; }); return; }
+  const iso=dt=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  const now=new Date(), from=new Date(now); from.setFullYear(now.getFullYear()-y);
+  const a=iso(from), b=iso(now);
+  if(f) f.value=a; if(fd) fd.value=a; if(t) t.value=b; if(td) td.value=b;
+}
+function _patPeriodManual(){ _patChipsOff(); }
 // 결과가 적을 때 원클릭 필터 완화(재조회)
 function _patClearPeriod(){
-  const f=document.getElementById('patFrom'), t=document.getElementById('patTo');
-  if(f) f.value=''; if(t) t.value='';
-  document.querySelectorAll('#patPeriod .pat-chip').forEach(b=>b.classList.remove('active'));
+  ['patFrom','patTo','patFromD','patToD'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  _patChipsOff();
   const all=document.querySelector('#patPeriod .pat-chip[data-y="0"]'); if(all) all.classList.add('active');
   runPatent();
 }
@@ -3155,8 +3240,8 @@ function runPatent(){
   const q=((document.getElementById('patQuery')||{}).value||'').trim(); if(q) p.set('query',q);
   _patStatuses=[...document.querySelectorAll('#patStatus .pat-chip.active')].map(b=>b.dataset.v).filter(Boolean);
   if(_patStatuses.length===1) p.set('status',_patStatuses[0]);   // 단일=서버필터, 다중=결과필터
-  const from=((document.getElementById('patFrom')||{}).value||'').replace(/\D/g,''); if(from) p.set('date_from',from);
-  const to=((document.getElementById('patTo')||{}).value||'').replace(/\D/g,''); if(to) p.set('date_to',to);
+  const from=_patNormDate((document.getElementById('patFrom')||{}).value, false); if(from) p.set('date_from',from);
+  const to=_patNormDate((document.getElementById('patTo')||{}).value, true);      if(to) p.set('date_to',to);
   _patParams=p.toString();                 // 엑셀 내보내기·페이지 이동에서 동일 필터 재사용
   _patFetchPage(1);
 }
@@ -3222,7 +3307,7 @@ function _renderPatentList(d){
   }
   return `<div class="pat-listhd"><span class="pat-count">${items.length}건 표시${total}${pageTxt}</span>`+
          `<button class="pat-xlsx" onclick="exportPatents(this)" title="현재 필터의 전체 결과를 엑셀(CSV)로 저장">⬇ 엑셀 다운로드</button></div>`+
-         fb+widen+`<div class="pat-list">${rows}</div>`+nav;
+         fb+widen+`<div class="pat-list pat-list-2col">${rows}</div>`+nav;
 }
 // 현재 필터의 특허 전체 결과를 여러 페이지로 모아 엑셀(CSV)로 저장
 async function exportPatents(btn){
@@ -4153,7 +4238,6 @@ async function doSearch(){
   const sbtn = document.getElementById('sbtn');
   sbtn.disabled = true;
   clearResults();
-  recordStat('search', q);
 
   try{
     // 시나리오 모드
@@ -7415,7 +7499,6 @@ function fpPrint(){
 
 // ── openFullPanel 재정의 (즐겨찾기 상태 반영) ─────────────────────────────
 async function openFullPanel(lawName, lawUrl, org, type){
-  if(lawName && lawName!=='법령 전문') recordStat('view', lawName);
   currentPanelLaw={name:lawName, url:lawUrl, org:org||'', type:type||'법률'};
   _leftDoc={name:lawName, docType:'law'};
   document.getElementById('fpTitle').textContent=lawName;
@@ -7940,114 +8023,6 @@ function toggleBookmark(idx, key){
     localStorage.setItem(key, data);
     if(btn){btn.textContent='🔖 북마크됨'; btn.classList.add('active');}
   }
-  // 통계 갱신
-  recordStat('bookmark', lawName);
-}
-
-function getAllBookmarks(){
-  const result=[];
-  for(let i=0;i<localStorage.length;i++){
-    const k=localStorage.key(i);
-    if(!k.startsWith('bm__')) continue;
-    try{
-      const d=JSON.parse(localStorage.getItem(k));
-      if(d) result.push({...d, key:k});
-    }catch{}
-  }
-  return result.sort((a,b)=>b.savedAt.localeCompare(a.savedAt));
-}
-
-// ── ⑦ 검색 통계 ──────────────────────────────────────────────────────────────
-function recordStat(type, value){
-  try{
-    const raw=localStorage.getItem('lawStats')||'{}';
-    const stats=JSON.parse(raw);
-    if(!stats[type]) stats[type]={};
-    stats[type][value]=(stats[type][value]||0)+1;
-    // 전체 검색 시간 기록 (최근 20개)
-    if(type==='search'){
-      if(!stats.history) stats.history=[];
-      stats.history.unshift({q:value, t:new Date().toISOString()});
-      stats.history=stats.history.slice(0,20);
-    }
-    localStorage.setItem('lawStats', JSON.stringify(stats));
-  }catch{}
-}
-
-function openStatPanel(){
-  renderStatPanel();
-  document.getElementById('statPanel').classList.add('open');
-}
-function closeStatPanel(){document.getElementById('statPanel').classList.remove('open');}
-
-function renderStatPanel(){
-  const raw=localStorage.getItem('lawStats')||'{}';
-  let stats={};
-  try{stats=JSON.parse(raw);}catch{}
-
-  const searches=stats.search||{};
-  const views=stats.view||{};
-  const bms=getAllBookmarks();
-
-  // 검색 Top 순위
-  function renderRank(obj, emptyMsg){
-    const sorted=Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,8);
-    if(!sorted.length) return `<div class="stat-empty">${emptyMsg}</div>`;
-    const max=sorted[0][1]||1;
-    return sorted.map(([label,cnt],i)=>`
-      <div class="stat-row">
-        <span class="stat-rank">${i+1}</span>
-        <span class="stat-label" title="${escHtml(label)}">${escHtml(label)}</span>
-        <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(cnt/max*100)}%"></div></div>
-        <span class="stat-cnt">${cnt}회</span>
-      </div>`).join('');
-  }
-
-  // 북마크 목록
-  const bmHtml=bms.length
-    ? bms.map(b=>`
-        <div class="stat-row" style="cursor:pointer;" onclick="wsOpen(decodeURIComponent('${encodeURIComponent(b.law||'')}'),'law',decodeURIComponent('${encodeURIComponent(b.url||'')}'))">
-          <span class="stat-rank" style="color:#3b82f6;">🔖</span>
-          <span class="stat-label">
-            <span style="font-size:11px;color:var(--ht);">${escHtml(b.law||'')}</span><br>
-            <span style="font-weight:600;">${escHtml(b.no||'')} ${escHtml(b.title||'')}</span>
-          </span>
-          <span class="stat-cnt" style="width:auto;color:var(--ht);">${b.savedAt||''}</span>
-        </div>`).join('')
-    : `<div class="stat-empty">북마크한 조문이 없습니다</div>`;
-
-  // 총 검색 횟수
-  const totalSearch=Object.values(searches).reduce((s,v)=>s+v,0);
-  const totalView=Object.values(views).reduce((s,v)=>s+v,0);
-
-  document.getElementById('statBody').innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">
-      <div class="mbox"><div class="mlbl">총 검색</div><div class="mval">${totalSearch}회</div></div>
-      <div class="mbox"><div class="mlbl">조문 조회</div><div class="mval">${totalView}회</div></div>
-      <div class="mbox"><div class="mlbl">북마크</div><div class="mval">${bms.length}개</div></div>
-      <div class="mbox"><div class="mlbl">즐겨찾기</div><div class="mval" id="statFavCnt">-</div></div>
-    </div>
-    <div class="stat-section">
-      <div class="stat-section-title">🔍 자주 검색한 키워드</div>
-      ${renderRank(searches,'검색 기록이 없습니다')}
-    </div>
-    <div class="stat-section">
-      <div class="stat-section-title">📄 자주 조회한 법령</div>
-      ${renderRank(views,'조회 기록이 없습니다')}
-    </div>
-    <div class="stat-section">
-      <div class="stat-section-title">🔖 북마크한 조문</div>
-      ${bmHtml}
-    </div>
-    <div style="text-align:right;margin-top:12px;">
-      <button class="memo-del" onclick="if(confirm('모든 통계를 초기화할까요?')){localStorage.removeItem('lawStats');renderStatPanel();}">통계 초기화</button>
-    </div>`;
-
-  // 즐겨찾기 수 비동기 업데이트
-  loadFavs().then(favs=>{
-    const el=document.getElementById('statFavCnt');
-    if(el) el.textContent=`${favs.length}개`;
-  });
 }
 
 // ── ⑧ 조문 내 참조 링크 (조번호 이동 + 법령명 준용 패널) ─────────────────────
@@ -8264,6 +8239,8 @@ let _wsPanes=[];   // {id,name,docType,url,org,type,loading,error,arts,text,stru
 let _wsId=0;
 let _wsEnterId=0;  // 이번 렌더에서 '새로 들어온' 창(진입 애니메이션 대상)
 let _wsDir='row';  // 창 배치: 'row'(가로 나란히)|'col'(세로 위아래)
+let _wsMode='tile';  // 배치 방식: 'tile'(붙여 배치)|'free'(윈도우처럼 자유 이동·크기)
+let _wsZTop=10;      // 자유 배치 창의 z-index 최상단 카운터
 const WS_MAX_VISIBLE_RIGHT=2;  // 최초 규정 오른쪽으로 동시에 펼칠 최대 창 수
 function _wsKey(name,docType){ return _rnorm(name)+'|'+(docType||'law'); }
 function wsIsOpen(){ return _wsPanes.length>0; }
@@ -8352,6 +8329,8 @@ async function wsOpen(name, docType, url, org, type){
 function _wsLayout(){
   const active=_wsPanes.filter(p=>!p.minimized);      // 펼쳐진(비교뷰) 창
   const minimized=_wsPanes.filter(p=>p.minimized);    // 사용자가 최소화한 창
+  // 자유 배치: 모든 창을 동시에 띄운다(오른쪽 스택으로 밀지 않음)
+  if(_wsMode==='free'){ return {primary:active[0]||null, visible:active, docked:minimized}; }
   const primary=active[0]||null;
   const others=active.slice(1);
   const visibleOthers=others.slice(-WS_MAX_VISIBLE_RIGHT);
@@ -8362,21 +8341,37 @@ function _wsLayout(){
 }
 function wsPaneHtml(p, cls, pos){
   const isInt=p.docType==='internal';
-  const first=pos&&pos.first, last=pos&&pos.last;
-  const mvPrev=_wsDir==='row'?'◀':'▲', mvNext=_wsDir==='row'?'▶':'▼';
-  return `<section class="ws-pane${cls?' '+cls:''}" id="wspane_${p.id}" style="flex:${p.flex||1} 1 0;">
-    <header class="ws-pane-head">
+  const free=_wsMode==='free';
+  let style, headExtra='', moveBtns='', maxBtn='', grip='';
+  if(free){
+    _wsEnsureGeom(p);
+    style = p.maxi ? `left:0;top:0;width:100%;height:100%;z-index:${p.z||10};`
+                   : `left:${p.fx}px;top:${p.fy}px;width:${p.fw}px;height:${p.fh}px;z-index:${p.z||10};`;
+    if(p.maxi) cls=(cls?cls+' ':'')+'ws-maxi';
+    headExtra=` onpointerdown="_wsHeadPointerDown(event,${p.id})"`;
+    maxBtn=`<button class="ws-icon" title="${p.maxi?'이전 크기로 복원':'작업공간에 최대화'}" onclick="_wsToggleMax(${p.id})">${p.maxi?'❐':'▢'}</button>`;
+    grip=`<div class="ws-grip" title="드래그하여 창 크기 조절" onpointerdown="_wsFreeResizeStart(event,${p.id})"></div>`;
+  } else {
+    const first=pos&&pos.first, last=pos&&pos.last;
+    const mvPrev=_wsDir==='row'?'◀':'▲', mvNext=_wsDir==='row'?'▶':'▼';
+    style=`flex:${p.flex||1} 1 0;`;
+    headExtra=` onpointerdown="_wsHeadPointerDown(event,${p.id})"`;
+    moveBtns=`<button class="ws-icon ws-move" title="앞으로 이동(또는 제목표시줄을 드래그)" onclick="_wsMovePane(${p.id},-1)" ${first?'disabled':''}>${mvPrev}</button>`+
+             `<button class="ws-icon ws-move" title="뒤로 이동(또는 제목표시줄을 드래그)" onclick="_wsMovePane(${p.id},1)" ${last?'disabled':''}>${mvNext}</button>`;
+  }
+  return `<section class="ws-pane${cls?' '+cls:''}" id="wspane_${p.id}" style="${style}" onpointerdown="_wsFocus(${p.id})">
+    <header class="ws-pane-head"${headExtra}>
       <span class="ws-badge ws-badge-${isInt?'int':'law'}">${isInt?'내규':'법령'}</span>
       <span class="ws-pane-title" title="${escAttr(p.name)}">${escHtml(p.name)}</span>
       <input class="ws-pane-filter" placeholder="조문·키워드" value="${escAttr(p.filter||'')}"
              oninput="wsFilter(${p.id},this.value)" aria-label="이 문서 안에서 찾기">
-      <button class="ws-icon ws-move" title="앞으로 이동" onclick="_wsMovePane(${p.id},-1)" ${first?'disabled':''}>${mvPrev}</button>
-      <button class="ws-icon ws-move" title="뒤로 이동" onclick="_wsMovePane(${p.id},1)" ${last?'disabled':''}>${mvNext}</button>
+      ${moveBtns}${maxBtn}
       <button class="ws-icon" title="최소화 — 하단 책갈피로 내리기(내용 유지)" onclick="wsMinimize(${p.id})">⌄</button>
       <button class="ws-icon" title="전체화면·상세 기능(AI·메모·비교)" onclick="wsExpand(${p.id})">⤢</button>
       <button class="ws-icon" title="이 창 닫기" onclick="wsClose(${p.id})">✕</button>
     </header>
     <div class="ws-pane-body" id="wsbody_${p.id}">${wsBodyHtml(p)}</div>
+    ${grip}
   </section>`;
 }
 function wsRenderShell(){
@@ -8388,15 +8383,20 @@ function wsRenderShell(){
   grid.querySelectorAll('.ws-pane-body').forEach(b=>{ const m=(b.id||'').match(/^wsbody_(\d+)$/); if(m) _prevScroll[m[1]]=b.scrollTop; });
   const {visible, docked}=_wsLayout();
   const entering=_wsEnterId;
-  grid.className='ws-grid'+(_wsDir==='col'?' ws-dir-col':'');
-  _wsSyncDirSeg();
-  // 창 사이에 크기조정 손잡이(리사이저)를 넣어 나란히 비교하며 폭·높이를 조절
+  grid.className='ws-grid'+(_wsMode==='free'?' ws-free':(_wsDir==='col'?' ws-dir-col':''));
+  _wsSyncDirSeg(); _wsSyncModeSeg();
   let html='';
-  visible.forEach((p,i)=>{
-    const cls = p.id===entering ? 'ws-enter' : (entering ? 'ws-shift' : '');
-    if(i>0) html+=`<div class="ws-resizer" title="드래그하면 창 크기를 조절합니다" onpointerdown="_wsResizeStart(event,this)"></div>`;
-    html+=wsPaneHtml(p, cls, {first:i===0, last:i===visible.length-1});
-  });
+  if(_wsMode==='free'){
+    // 자유 배치: 각 창을 절대 위치로 띄운다(제목표시줄 드래그로 이동, 모서리로 크기조정)
+    visible.forEach(p=>{ html+=wsPaneHtml(p, '', null); });
+  } else {
+    // 타일 배치: 창 사이에 크기조정 손잡이(리사이저)를 넣어 나란히 비교하며 폭·높이를 조절
+    visible.forEach((p,i)=>{
+      const cls = p.id===entering ? 'ws-enter' : (entering ? 'ws-shift' : '');
+      if(i>0) html+=`<div class="ws-resizer" title="드래그하면 창 크기를 조절합니다" onpointerdown="_wsResizeStart(event,this)"></div>`;
+      html+=wsPaneHtml(p, cls, {first:i===0, last:i===visible.length-1});
+    });
+  }
   if(!visible.length && docked.length){
     html=`<div class="ws-allmin">📑 모든 문서를 책갈피로 내렸습니다.<br>아래 책갈피를 클릭하면 비교뷰로 다시 열립니다.</div>`;
   }
@@ -8506,6 +8506,134 @@ function _wsResizeStart(ev, resizer){
   }
   document.addEventListener('pointermove',move);
   document.addEventListener('pointerup',up);
+}
+// ── 자유 배치(플로팅 창) 모드 ─────────────────────────────────────────────
+// 타일 ↔ 자유 전환
+function _wsSetMode(mode){
+  if(mode!=='tile'&&mode!=='free') return;
+  if(_wsMode===mode){ _wsSyncModeSeg(); return; }
+  _wsMode=mode;
+  if(mode==='free'){ const {visible}=_wsLayout(); visible.forEach(p=>_wsEnsureGeom(p)); }
+  wsRenderShell();
+}
+function _wsSyncModeSeg(){
+  const t=document.getElementById('wsModeTile'), f=document.getElementById('wsModeFree');
+  const free=_wsMode==='free';
+  if(t) t.classList.toggle('on',!free);
+  if(f) f.classList.toggle('on',free);
+  const dir=document.getElementById('wsDirSeg'), eq=document.getElementById('wsEqBtn'), arr=document.getElementById('wsArrBtn');
+  if(dir) dir.style.display=free?'none':'';
+  if(eq) eq.style.display=free?'none':'';
+  if(arr) arr.style.display=free?'':'none';
+}
+// 창의 자유 배치 초기 위치·크기(계단식 배치)를 준비
+function _wsEnsureGeom(p){
+  if(p.fw) return;
+  const grid=document.getElementById('wsGrid');
+  const W=(grid&&grid.clientWidth)||900, H=(grid&&grid.clientHeight)||560;
+  const w=Math.min(560, Math.max(320, Math.round(W*0.52)));
+  const h=Math.min(560, Math.max(300, Math.round(H*0.86)));
+  const placed=_wsPanes.filter(x=>x.fw).length;
+  const off=(placed%6)*30;
+  p.fw=w; p.fh=h;
+  p.fx=Math.max(0, Math.min(off, W-w));
+  p.fy=Math.max(0, Math.min(off, Math.max(0,H-h)));
+  p.z=++_wsZTop;
+  p.maxi=false;
+}
+// 창을 맨 앞으로(자유 배치에서만)
+function _wsFocus(id){
+  if(_wsMode!=='free') return;
+  const p=_wsPanes.find(x=>x.id===id); if(!p) return;
+  if(p.z===_wsZTop) return;
+  p.z=++_wsZTop;
+  const el=document.getElementById('wspane_'+id); if(el) el.style.zIndex=p.z;
+}
+// 제목표시줄 pointerdown: 자유=이동, 타일=순서 드래그
+function _wsHeadPointerDown(ev,id){
+  if(ev.target&&ev.target.closest('button,input,.ws-icon,.art-fav,.ws-grip')) return;  // 컨트롤 조작은 그대로
+  if(ev.button!==undefined&&ev.button!==0) return;
+  const p=_wsPanes.find(x=>x.id===id); if(!p) return;
+  _wsFocus(id);
+  if(_wsMode==='free'){ if(p.maxi) return; _wsFreeMoveStart(ev,p); }
+  else { _wsTileReorderStart(ev,p); }
+}
+// 자유 배치: 제목표시줄 드래그로 창 이동
+function _wsFreeMoveStart(ev,p){
+  ev.preventDefault();
+  const grid=document.getElementById('wsGrid'), el=document.getElementById('wspane_'+p.id);
+  if(!grid||!el) return;
+  const gr=grid.getBoundingClientRect();
+  const sx=ev.clientX, sy=ev.clientY, ox=p.fx, oy=p.fy;
+  document.body.classList.add('ws-dragging'); el.classList.add('ws-moving');
+  function move(e){
+    let nx=ox+(e.clientX-sx), ny=oy+(e.clientY-sy);
+    nx=Math.max(0, Math.min(nx, Math.max(0, gr.width - el.offsetWidth)));
+    ny=Math.max(0, Math.min(ny, Math.max(0, gr.height - 44)));   // 제목표시줄은 항상 잡히도록
+    p.fx=nx; p.fy=ny; el.style.left=nx+'px'; el.style.top=ny+'px';
+  }
+  function up(){ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up);
+    document.body.classList.remove('ws-dragging'); el.classList.remove('ws-moving'); }
+  document.addEventListener('pointermove',move); document.addEventListener('pointerup',up);
+}
+// 자유 배치: 오른쪽 아래 모서리 드래그로 크기 조절
+function _wsFreeResizeStart(ev,id){
+  ev.preventDefault(); ev.stopPropagation();
+  const p=_wsPanes.find(x=>x.id===id); if(!p||p.maxi) return;
+  const grid=document.getElementById('wsGrid'), el=document.getElementById('wspane_'+id);
+  if(!grid||!el) return;
+  _wsFocus(id);
+  const gr=grid.getBoundingClientRect();
+  const sx=ev.clientX, sy=ev.clientY, ow=p.fw, oh=p.fh, MINW=260, MINH=200;
+  document.body.classList.add('ws-dragging');
+  function move(e){
+    let nw=ow+(e.clientX-sx), nh=oh+(e.clientY-sy);
+    nw=Math.max(MINW, Math.min(nw, gr.width - p.fx));
+    nh=Math.max(MINH, Math.min(nh, gr.height - p.fy));
+    p.fw=nw; p.fh=nh; el.style.width=nw+'px'; el.style.height=nh+'px';
+  }
+  function up(){ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up);
+    document.body.classList.remove('ws-dragging'); }
+  document.addEventListener('pointermove',move); document.addEventListener('pointerup',up);
+}
+// 자유 배치: 최대화 ↔ 복원
+function _wsToggleMax(id){
+  const p=_wsPanes.find(x=>x.id===id); if(!p) return;
+  p.maxi=!p.maxi; _wsFocus(id); wsRenderShell();
+}
+// 자유 배치: 열린 창을 겹치지 않게 격자로 정렬
+function _wsArrangeFree(){
+  const grid=document.getElementById('wsGrid'); if(!grid) return;
+  const {visible}=_wsLayout(); const n=visible.length; if(!n) return;
+  const W=grid.clientWidth, H=grid.clientHeight, gap=10;
+  const cols=Math.ceil(Math.sqrt(n)), rows=Math.ceil(n/cols);
+  const cw=Math.floor((W-gap*(cols+1))/cols), ch=Math.floor((H-gap*(rows+1))/rows);
+  visible.forEach((p,i)=>{ const r=Math.floor(i/cols), c=i%cols;
+    p.maxi=false; p.fx=gap+c*(cw+gap); p.fy=gap+r*(ch+gap); p.fw=cw; p.fh=ch; });
+  wsRenderShell();
+}
+// 타일 배치: 제목표시줄을 드래그해 창 순서를 바꿈(버튼 없이도 재배치)
+function _wsTileReorderStart(ev,p){
+  const startX=ev.clientX, startY=ev.clientY; let dragging=false, lockId=null;
+  function move(e){
+    if(!dragging){ if(Math.abs(e.clientX-startX)<6&&Math.abs(e.clientY-startY)<6) return;
+      dragging=true; document.body.classList.add('ws-dragging'); }
+    const {visible}=_wsLayout();
+    let over=null;
+    for(const q of visible){ if(q.id===p.id) continue;
+      const qe=document.getElementById('wspane_'+q.id); if(!qe) continue;
+      const r=qe.getBoundingClientRect();
+      if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){ over=q; break; } }
+    if(!over){ lockId=null; return; }
+    if(over.id===lockId) return;                 // 방금 자리를 바꾼 창과의 재교환(깜빡임) 방지
+    const a=_wsPanes.indexOf(p), b=_wsPanes.indexOf(over);
+    if(a>=0&&b>=0&&a!==b){ const t=_wsPanes[a]; _wsPanes[a]=_wsPanes[b]; _wsPanes[b]=t; lockId=over.id; wsRenderShell();
+      const me=document.getElementById('wspane_'+p.id); if(me) me.classList.add('ws-reorder'); }
+  }
+  function up(){ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up);
+    document.body.classList.remove('ws-dragging');
+    const me=document.getElementById('wspane_'+p.id); if(me) me.classList.remove('ws-reorder'); }
+  document.addEventListener('pointermove',move); document.addEventListener('pointerup',up);
 }
 function wsBodyHtml(p){
   if(p.loading) return `<div class="fp-loading"><div class="spinner" style="margin:0 auto 10px;"></div>불러오는 중...</div>`;
