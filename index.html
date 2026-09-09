@@ -685,6 +685,7 @@ body.dark .scen-apikey-note{color:#fcd9a3;background:#3a2a12;border-color:#5a452
   background:var(--gl);border:1px solid transparent;border-radius:999px;padding:5px 12px;white-space:nowrap;
   text-transform:none;letter-spacing:0;transition:.12s;}
 .int-upload:hover{background:var(--g);color:#fff;border-color:var(--g);}
+.int-fav-empty{font-size:12px;color:var(--ht);padding:4px 2px;}
 .chips{display:flex;gap:6px;flex-wrap:wrap;}
 .chip{padding:6px 14px;border-radius:999px;border:none;font-size:12px;font-weight:600;cursor:pointer;color:var(--g);background:var(--gl);transition:all .18s cubic-bezier(.4,0,.2,1);}
 .chip:hover{background:var(--g);color:#fff;transform:translateY(-1px);box-shadow:0 2px 8px rgba(37,110,244,.25);}
@@ -2391,7 +2392,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
     <!-- 내규 카테고리 바로가기 (내규·통합 모드일 때 표시) -->
     <div id="internalExamples" style="display:none;">
-      <div class="qlabel int-ex-label">내규 카테고리 바로가기
+      <div class="qlabel int-ex-label">⭐ 즐겨찾기한 내규
         <a class="int-upload" href="/upload" title="개정·신규 내규 문서를 업로드합니다">⬆ 내규 업로드</a>
       </div>
       <div class="chips" id="internalChips"></div>
@@ -4318,18 +4319,17 @@ function setMode(m){
 }
 
 // ── 내규 카테고리 바로가기 칩 ──
-const INTERNAL_CATEGORIES = [
-  {k:'직무발명',   ic:'💡'}, {k:'기술이전',   ic:'🤝'}, {k:'지식재산',  ic:'⚖'},
-  {k:'연구개발',   ic:'🔬'}, {k:'복무',       ic:'🕘'}, {k:'보수',      ic:'💰'},
-  {k:'여비',       ic:'✈'},  {k:'계약',       ic:'📝'}, {k:'감사',      ic:'🔍'},
-  {k:'보안',       ic:'🔒'},
-];
+// 내규 랜딩: 즐겨찾기한 내규(전문·조문)를 칩으로 표시 → 클릭 시 해당 전문/조문 열람.
+// 즐겨찾기는 수시로 바뀌므로 캐시 없이 내규 모드 진입 때마다 다시 그린다.
 function renderInternalChips(){
-  const el=document.getElementById('internalChips');
-  if(!el || el.dataset.ready) return;
-  el.innerHTML = INTERNAL_CATEGORIES.map(c=>
-    `<button class="chip int-cat" onclick="quick('${c.k}')">${c.ic} ${c.k}</button>`).join('');
-  el.dataset.ready='1';
+  const el=document.getElementById('internalChips'); if(!el) return;
+  const favs=getFavs().map((f,i)=>({f,i})).filter(x=>_favBucket(x.f.type)==='internal');
+  if(!favs.length){ el.innerHTML=`<span class="int-fav-empty">즐겨찾기한 내규가 없습니다. 내규 전문에서 ☆를 눌러 담아두면 여기에 모입니다.</span>`; return; }
+  el.innerHTML=favs.map(x=>{
+    const f=x.f, isArt=!!f.art;
+    const label=isArt ? `${escHtml(f.name||'')} ${escHtml(f.art)}` : escHtml(f.name||'');
+    return `<button class="chip int-cat" onclick="_favOpenItem(${x.i})" title="${escAttr((f.name||'')+(isArt?' '+f.art:''))}">${isArt?'📑':'📘'} ${label}</button>`;
+  }).join('');
 }
 function scenarioQuick(q){ document.getElementById('q').value=q; doSearch(); }
 function clearResults(){
