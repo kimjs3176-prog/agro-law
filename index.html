@@ -716,6 +716,22 @@ body.dark .rec-chip{background:#20242c;}
   font-size:13px;line-height:1.5;color:var(--tx);cursor:pointer;font-family:var(--font);white-space:pre-wrap;word-break:break-word;transition:.12s;}
 .snip-text:hover{border-color:var(--g);background:var(--gl);}
 .snip-empty{font-size:12.5px;color:var(--ht);text-align:center;padding:24px;border:1px dashed var(--bd);border-radius:10px;}
+/* 커맨드 팔레트 */
+.cmdk-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:900;display:none;align-items:flex-start;justify-content:center;padding-top:12vh;}
+.cmdk-bg.show{display:flex;}
+.cmdk{width:min(600px,94vw);background:var(--sf);border:1px solid var(--bd);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.32);overflow:hidden;display:flex;flex-direction:column;max-height:70vh;}
+.cmdk-inwrap{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--bd);}
+.cmdk-ic{font-size:15px;color:var(--mu);flex-shrink:0;}
+.cmdk-input{flex:1;border:none;outline:none;background:transparent;font-size:15px;color:var(--tx);font-family:var(--font);}
+.cmdk-esc{flex-shrink:0;font-size:10px;font-weight:700;color:var(--mu);background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:2px 6px;}
+.cmdk-list{overflow-y:auto;padding:6px;}
+.cmdk-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:none;border-radius:9px;
+  padding:9px 12px;cursor:pointer;font-family:var(--font);}
+.cmdk-item.sel{background:var(--gl);}
+.cmdk-label{flex:1;min-width:0;font-size:13.5px;font-weight:600;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cmdk-item.sel .cmdk-label{color:var(--gp);}
+.cmdk-hint{flex-shrink:0;font-size:11px;font-weight:700;color:var(--mu);background:var(--bg);border-radius:6px;padding:2px 8px;}
+.cmdk-empty{padding:26px;text-align:center;color:var(--ht);font-size:13px;}
 /* 필터바 */
 .fbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
 .fbar select{padding:8px 12px;border:none;border-radius:10px;font-size:13px;background:var(--sf);color:var(--tx);cursor:pointer;outline:none;box-shadow:var(--shadow);font-family:var(--font);}
@@ -2128,6 +2144,19 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
     <div class="coll-body" id="snipBody"></div>
     <div class="fav-modal-foot">지출결의서·업무메모 입력칸에 붙여 쓰는 문구를 저장해 재사용합니다. 내 PC에만 저장됩니다.</div>
+  </div>
+</div>
+
+<!-- 커맨드 팔레트 (Ctrl/⌘+K) -->
+<div class="cmdk-bg" id="cmdkBg" role="dialog" aria-modal="true" aria-label="빠른 실행" onclick="if(event.target===this)closeCmdk()">
+  <div class="cmdk">
+    <div class="cmdk-inwrap">
+      <span class="cmdk-ic">⌘</span>
+      <input id="cmdkInput" class="cmdk-input" type="text" placeholder="무엇을 할까요? (모드·도구·내규·즐겨찾기·검색)" autocomplete="off"
+             oninput="_cmdkFilter(this.value)" onkeydown="_cmdkKey(event)">
+      <kbd class="cmdk-esc">Esc</kbd>
+    </div>
+    <div class="cmdk-list" id="cmdkList"></div>
   </div>
 </div>
 
@@ -6661,6 +6690,84 @@ function addSnippet(text){ text=String(text||'').trim(); if(!text) return; const
 function delSnippet(id){ _setSnippets(getSnippets().filter(s=>s.id!==id)); _snipRender(); }
 function openSnippets(){ const bg=document.getElementById('snipBg'); if(!bg) return; _snipRender(); bg.classList.add('show'); _modalFocusIn('snipBg'); }
 function closeSnippets(){ const bg=document.getElementById('snipBg'); if(bg) bg.classList.remove('show'); _modalFocusOut(); }
+
+// ── 커맨드 팔레트 (Ctrl/⌘+K) — 모드·도구·내규·즐겨찾기·검색 빠른 실행 ──
+let _cmdkAll=[], _cmdkView=[], _cmdkSel=0, _cmdkPrevFocus=null;
+function _cmdkBuild(){
+  const A=[];
+  const act=(label,hint,run)=>A.push({label,hint,run});
+  act('내규똑똑 검색','모드',()=>{ if(_assistMode)closeAssist(); setMode('internal'); document.getElementById('q').focus(); });
+  act('법령 조회','모드',()=>{ if(_assistMode)closeAssist(); setMode('law'); document.getElementById('q').focus(); });
+  act('AI 시나리오 검색','모드',()=>{ if(_assistMode)closeAssist(); setMode('scenario'); });
+  act('오늘의 업무','도구',openDashboard);
+  act('업무 메모','도구',openMemo);
+  act('지출결의서','도구',openExpense);
+  act('자주 쓰는 문구','도구',openSnippets);
+  act('즐겨찾기','도구',openFavModal);
+  act('기업 조회','공공조회',()=>openAssist('company'));
+  act('특허 조회','공공조회',()=>openAssist('patent'));
+  act('지원사업 조회','공공조회',()=>openAssist('support'));
+  act('조달공고 조회','공공조회',()=>openAssist('procurement'));
+  act('내규 업로드','도구',()=>{ location.href='/upload'; });
+  act('다크모드 전환','설정',toggleDark);
+  // 즐겨찾기 항목
+  try{ getFavs().forEach((f,i)=>{ const b=_favBucket(f.type); const kind=_FAV_TYPE_LABEL[b]||'즐겨찾기';
+    const nm=f.art?((f.name||'')+' '+f.art):(f.name||''); if(nm) A.push({label:nm,hint:'⭐ '+kind,run:()=>_favOpenItem(i)}); }); }catch(e){}
+  // 내규 명칭 → 전문 열람
+  try{ [..._regNameOrig.values()].forEach(nm=>{ if(nm) A.push({label:nm,hint:'내규 전문',run:()=>{ if(_assistMode)closeAssist(); wsOpen(nm,'internal'); }}); }); }catch(e){}
+  // 저장된 검색
+  try{ getSaved().forEach(s=>A.push({label:s.label||s.q,hint:'📌 저장된 검색',run:()=>_dashQuick?_dashQuick(s.q):quick(s.q)})); }catch(e){}
+  _cmdkAll=A;
+}
+function _cmdkScore(q, s){
+  // 간단 서브시퀀스 매칭(대소문자·공백 무시). 반환: 점수(작을수록 우수), 매칭 실패 시 -1
+  q=q.replace(/\s+/g,'').toLowerCase(); s=s.toLowerCase();
+  if(!q) return 0;
+  const idx=s.indexOf(q); if(idx>=0) return idx;              // 연속 일치 우선
+  let si=0, first=-1, gaps=0;
+  for(let qi=0; qi<q.length; qi++){ const c=q[qi]; let f=-1;
+    for(; si<s.length; si++){ if(s[si]===c){ f=si; si++; break; } }
+    if(f<0) return -1; if(first<0) first=f; if(qi>0) gaps++;
+  }
+  return 100+first+gaps;   // 서브시퀀스 일치(연속 일치보다 후순위)
+}
+function _cmdkFilter(q){
+  q=String(q||'');
+  const scored=_cmdkAll.map(it=>({it, sc:_cmdkScore(q, it.label+' '+it.hint)})).filter(x=>x.sc>=0);
+  scored.sort((a,b)=>a.sc-b.sc);
+  _cmdkView=scored.slice(0,60).map(x=>x.it);
+  const qt=q.trim();
+  // 검색 실행 항목은 맨 아래(폴백) — 정확히 일치하는 명령이 Enter를 가로채지 않도록
+  if(qt){ _cmdkView.push({label:'“'+qt+'” 검색', hint:'검색 실행', run:()=>{ if(_assistMode)closeAssist(); if(mode!=='internal'&&mode!=='law') setMode('internal'); quick(qt); }}); }
+  _cmdkSel=0; _cmdkRender();
+}
+function _cmdkRender(){
+  const list=document.getElementById('cmdkList'); if(!list) return;
+  if(!_cmdkView.length){ list.innerHTML=`<div class="cmdk-empty">일치하는 항목이 없습니다.</div>`; return; }
+  list.innerHTML=_cmdkView.map((it,i)=>`<button class="cmdk-item${i===_cmdkSel?' sel':''}" data-i="${i}" onclick="_cmdkExec(${i})" onmousemove="_cmdkHover(${i})">`+
+    `<span class="cmdk-label">${escHtml(it.label)}</span><span class="cmdk-hint">${escHtml(it.hint||'')}</span></button>`).join('');
+  const sel=list.querySelector('.cmdk-item.sel'); if(sel) sel.scrollIntoView({block:'nearest'});
+}
+function _cmdkHover(i){ if(i===_cmdkSel) return; _cmdkSel=i; const list=document.getElementById('cmdkList'); if(!list) return;
+  list.querySelectorAll('.cmdk-item').forEach((el,j)=>el.classList.toggle('sel',j===i)); }
+function _cmdkKey(e){
+  if(e.key==='ArrowDown'){ e.preventDefault(); _cmdkSel=Math.min(_cmdkSel+1,_cmdkView.length-1); _cmdkRender(); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); _cmdkSel=Math.max(_cmdkSel-1,0); _cmdkRender(); }
+  else if(e.key==='Enter'){ e.preventDefault(); _cmdkExec(_cmdkSel); }
+}
+function _cmdkExec(i){ const it=_cmdkView[i]; if(!it) return; closeCmdk(); try{ it.run(); }catch(e){} }
+function openCmdk(){
+  _cmdkPrevFocus=document.activeElement;
+  _cmdkBuild();
+  const bg=document.getElementById('cmdkBg'); if(!bg) return;
+  bg.classList.add('show');
+  const inp=document.getElementById('cmdkInput'); if(inp){ inp.value=''; }
+  _cmdkFilter('');
+  setTimeout(()=>{ const i=document.getElementById('cmdkInput'); if(i) i.focus(); },30);
+}
+function closeCmdk(){ const bg=document.getElementById('cmdkBg'); if(bg) bg.classList.remove('show');
+  try{ if(_cmdkPrevFocus&&_cmdkPrevFocus.focus) _cmdkPrevFocus.focus(); }catch(e){} _cmdkPrevFocus=null; }
+function toggleCmdk(){ const bg=document.getElementById('cmdkBg'); if(bg&&bg.classList.contains('show')) closeCmdk(); else openCmdk(); }
 function _snipAdd(){ const el=document.getElementById('snipNew'); addSnippet(el&&el.value); if(el){ el.value=''; el.focus(); } }
 function _snipRender(){
   const body=document.getElementById('snipBody'); if(!body) return;
@@ -8309,9 +8416,13 @@ document.addEventListener('DOMContentLoaded',()=>{
     const panel = document.getElementById('fullpanel');
     const isOpen = panel && panel.classList.contains('open');
 
+    // Ctrl/⌘+K: 커맨드 팔레트 열기/닫기
+    if((e.ctrlKey||e.metaKey) && !e.altKey && (e.key==='k'||e.key==='K')){ e.preventDefault(); toggleCmdk(); return; }
+
     // Esc: 위에 떠 있는 것부터 하나씩 닫기(원본 패널 → 모달 → 목록 → 비교 → 전문)
     if(e.key === 'Escape'){
       const t=e.target;
+      if(document.getElementById('cmdkBg')?.classList.contains('show')){ closeCmdk(); return; }
       if(t && /^(INPUT|TEXTAREA)$/.test(t.tagName) && t.value){ return; }  // 입력 중엔 보존
       if(document.getElementById('origPdfPanel')?.classList.contains('open')){ closeOriginalPdf(); return; }
       if(document.getElementById('aiModalBg')?.classList.contains('show')){ closeAiModal(); return; }
