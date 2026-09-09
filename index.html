@@ -1307,8 +1307,25 @@ body.dark .rf-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .rf-toc-row.lv2 .rf-toc-t{padding-left:14px;color:var(--mu);}
 .int-doc-body{font-size:13.5px;line-height:1.95;color:var(--tx);white-space:pre-wrap;word-break:break-word;}
 
-/* 내규 전문 모드: 법령 전용 헤더/도구 버튼 숨김 */
+/* 내규 전문 모드: 법령 전용 헤더/도구 버튼 숨김, 내규 전용 버튼 표시 */
 .fullpanel.internal-doc .law-only{display:none!important;}
+.int-only{display:none;}
+.fullpanel.internal-doc .int-only{display:inline-flex;}
+/* 내규 오류 점검 결과 */
+.rc-summary{font-size:12.5px;color:var(--mu);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--bd);}
+.rc-summary b{color:var(--tx);}
+.rc-ok{text-align:center;padding:34px 18px;color:var(--mu);font-size:14px;line-height:1.8;}
+.rc-ok small{color:var(--ht);font-size:12px;}
+.rc-sec{margin-bottom:16px;}
+.rc-sec-h{font-size:12.5px;font-weight:800;color:var(--tx);margin-bottom:7px;}
+.rc-sec-h span{color:var(--mu);font-weight:700;}
+.rc-item{display:flex;gap:9px;align-items:baseline;padding:8px 11px;border-radius:9px;margin-bottom:6px;
+  border:1px solid var(--bd);background:var(--card);font-size:13px;line-height:1.55;}
+.rc-item.rc-error{border-left:3px solid #dc2626;}
+.rc-item.rc-warn{border-left:3px solid #f59e0b;}
+.rc-item.rc-info{border-left:3px solid var(--bd);}
+.rc-cat{flex-shrink:0;font-size:11px;font-weight:800;color:var(--mu);background:var(--bg);border-radius:6px;padding:2px 8px;white-space:nowrap;}
+.rc-msg{color:var(--tx);word-break:break-word;}
 .fullpanel.internal-doc .fp-toolbar,
 .fullpanel.internal-doc #refListPanel{display:none!important;}
 
@@ -2039,6 +2056,18 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   </div>
 </div>
 
+<!-- 내규 오류 점검 결과 -->
+<div class="coll-modal-bg" id="ruleCheckBg" role="dialog" aria-modal="true" aria-label="내규 오류 점검" onclick="if(event.target===this)closeRuleCheck()">
+  <div class="coll-modal" style="width:min(720px,96vw);">
+    <div class="coll-hd">
+      <span style="font-size:15px;font-weight:700;flex:1;">🔎 내규 오류 점검 <span id="ruleCheckCnt" class="fav-modal-cnt"></span></span>
+      <button class="fp-close" aria-label="닫기" onclick="closeRuleCheck()">✕</button>
+    </div>
+    <div class="coll-body" id="ruleCheckBody"></div>
+    <div class="fav-modal-foot">규칙 기반 점검(구조·상호참조·형식)이며, 의미적 조항 충돌은 담당자 확인이 필요합니다.</div>
+  </div>
+</div>
+
 <!-- (법령 관계도 기능은 제거됨) -->
 
 <!-- 모바일 하단 네비게이션 (body 직속) -->
@@ -2208,6 +2237,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <button class="fp-tbtn law-only" onclick="fpShowHistory()">📅 개정이력</button>
       <button class="fp-tbtn law-only" id="fpRelatedBtn" onclick="fpShowRelated()" title="관련 판례·자치법규(조례) 연계 제안">🔗 관련 조례·판례</button>
       <button class="fp-tbtn law-only" onclick="fpPrint()">🖨 인쇄</button>
+      <button class="fp-tbtn int-only" onclick="runRuleCheck()" title="조문 번호·상호참조·괄호 등 형식 오류를 규칙 기반으로 점검(AI 미사용)">🔎 오류 점검</button>
       <button class="fp-tbtn int-orig" id="fpOrigBtn" onclick="openOriginalPdf()" style="display:none;" title="원본 서식 그대로 보기(PDF)">📄 원본 보기</button>
       <a class="fp-tbtn int-orig" id="fpOrigDl" href="#" target="_blank" rel="noopener" style="display:none;" title="원본 PDF 다운로드">⬇ PDF</a>
       <button class="fp-close" aria-label="닫기" onclick="closePanel()">✕</button>
@@ -4830,6 +4860,10 @@ async function openInternalPanel(name){
     if(d.error){ body.innerHTML=`<div class="fp-empty">⚠ ${escHtml(d.error)}</div>`; return; }
     try{ await loadRegNames(); }catch(e){}   // 내규 사전을 렌더 전에 준비(참조 링크)
     const raw=(d.text||'').trim();
+    // 오류 점검용 평문 확보(구조화 데이터면 제목·본문을 줄바꿈으로 이어붙임)
+    _intCheckText = (Array.isArray(d.structured)&&d.structured.length)
+      ? d.structured.map(it=>{ const t=it.title||it.name||it['제목']||it['규정명']||''; const c=it.content||it.text||it['내용']||it['본문']||''; return (t?t+'\n':'')+String(c); }).join('\n')
+      : raw;
     let html='';
     if(Array.isArray(d.structured)&&d.structured.length){
       html=d.structured.map(it=>{
@@ -4849,6 +4883,111 @@ async function openInternalPanel(name){
     loadRegNames().then(()=>{ try{ _collapseSpacedNames(body); markInternalRefs(body); }catch(e){} });
   }catch(e){ body.innerHTML='<div class="fp-empty">내규 전문 조회 중 오류가 발생했습니다.</div>'; }
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// 내규 오류 점검(규칙 기반, AI 미사용) — 구조·참조·형식 중심.
+// 의미적 충돌(문맥 판단 필요)은 대상에서 제외한다.
+// ══════════════════════════════════════════════════════════════════════════
+let _intCheckText='';
+function _ruleCheckAnalyze(text){
+  const F=[]; const add=(sev,cat,msg,loc)=>F.push({sev,cat,msg,loc:loc||''});
+  if(!text || text.replace(/\s/g,'').length<20){ add('info','점검 대상','본문이 짧아 점검할 내용이 없습니다.'); return F; }
+
+  // 1) 조문 헤딩 파싱(줄머리의 '제N조') — 본문 중간의 참조는 제외
+  const arts=[]; const headRe=/(^|\n)[ \t]*제\s*(\d+)\s*조(?:\s*의\s*(\d+))?\s*(?:\(([^)\n]{0,40})\))?/g;
+  let m;
+  while((m=headRe.exec(text))){ arts.push({num:+m[2], sub:m[3]?+m[3]:0, title:(m[4]||'').trim(), idx:m.index+m[1].length, bodyStart:headRe.lastIndex}); }
+  for(let i=0;i<arts.length;i++){ arts[i].label='제'+arts[i].num+'조'+(arts[i].sub?'의'+arts[i].sub:''); }
+  const numSet=new Set(arts.map(a=>a.num));
+  const existSet=new Set(arts.map(a=>a.num+(a.sub?'-'+a.sub:'')));
+
+  if(arts.length){
+    // 2) 조문번호 중복
+    const seen={}; arts.forEach(a=>{ seen[a.label]=(seen[a.label]||0)+1; });
+    Object.keys(seen).forEach(k=>{ if(seen[k]>1) add('error','조문 중복',`${k}이(가) ${seen[k]}번 나타납니다. 번호 중복 여부를 확인하세요.`); });
+
+    // 3) 본조 번호 누락·역순 ('제N조 삭제' 표기는 정상으로 간주)
+    const mains=arts.filter(a=>!a.sub).map(a=>a.num);
+    let prev=0; const gaps=[];
+    for(const n of mains){
+      if(n<prev) add('warn','조문 순서',`제${n}조가 제${prev}조 뒤에 나옵니다(역순). 순서를 확인하세요.`);
+      else if(n>prev+1){ for(let k=prev+1;k<n;k++){ if(new RegExp('제\\s*'+k+'\\s*조[\\s(（]*삭\\s*제').test(text)) continue; gaps.push(k); } }
+      prev=Math.max(prev,n);
+    }
+    if(gaps.length){ const g=gaps.slice(0,10).map(n=>'제'+n+'조').join(', '); add('warn','조문 누락',`${g}${gaps.length>10?' 외':''}이(가) 보이지 않습니다. 누락 또는 삭제 표기 여부를 확인하세요.`); }
+
+    // 4) 제목 없는 조문(참고)
+    const noTitle=arts.filter(a=>!a.title).map(a=>a.label);
+    if(noTitle.length) add('info','제목 없음',`${noTitle.slice(0,12).join(', ')}${noTitle.length>12?' 외':''}에 (제목)이 없습니다.`);
+  } else {
+    add('info','구조','조문(제N조) 구조를 인식하지 못해 형식 검사만 수행했습니다.');
+  }
+
+  // 5) 끊긴 내부 참조 — '제N조'를 가리키나 해당 조문이 문서에 없음(외부 법령 참조는 제외)
+  if(arts.length>=2){
+    const refRe=/제\s*(\d+)\s*조(?:\s*의\s*(\d+))?/g; let r; const missing=new Set();
+    while((r=refRe.exec(text))){
+      const pre=text.slice(Math.max(0,r.index-16), r.index);
+      if(/[」』]\s*$/.test(pre)) continue;                                   // 「○○법」 제N조
+      if(/(법|법률|령|규칙|조례|고시|예규|훈령|지침|정관|협약|규약)\s*$/.test(pre)) continue;  // ○○법 제N조
+      const num=+r[1], sub=r[2]?+r[2]:0;
+      const ok = sub ? existSet.has(num+'-'+sub) : numSet.has(num);
+      if(!ok) missing.add('제'+num+'조'+(sub?'의'+sub:''));
+    }
+    if(missing.size){ const list=[...missing].slice(0,10).join(', '); add('warn','끊긴 참조',`본문이 ${list}${missing.size>10?' 외':''}을(를) 가리키지만 해당 조문이 문서에 없습니다. (외부 법령 참조가 아니라면 확인 필요)`); }
+  }
+
+  // 6) 별표·별지: 인용은 있으나 서식 정의가 없음
+  const apxRefs=new Set(); let ar; const apxRe=/별\s*표\s*(\d+)|별\s*지\s*제?\s*(\d+)\s*호/g;
+  while((ar=apxRe.exec(text))){ if(ar[1]) apxRefs.add('T'+ar[1]); else if(ar[2]) apxRefs.add('J'+ar[2]); }
+  apxRefs.forEach(ref=>{ const num=ref.slice(1), isT=ref[0]==='T';
+    const defRe = isT ? new RegExp('(^|\\n)\\s*[\\[<（(〔【［]?\\s*별\\s*표\\s*'+num)
+                      : new RegExp('(^|\\n)\\s*[\\[<（(〔【［]?\\s*별\\s*지\\s*제?\\s*'+num+'\\s*호');
+    // 인용 위치 외에 '정의(줄머리)'가 최소 1곳 더 있어야 정상
+    const defCount=(text.match(new RegExp(defRe.source,'g'))||[]).length;
+    if(defCount<1) add('warn','별표·별지',`「${isT?'별표 '+num:'별지 제'+num+'호'}」을(를) 인용하지만 해당 서식이 문서에 없습니다.`);
+  });
+
+  // 7) 정의 중복 — 같은 용어를 두 번 이상 정의
+  const defTerms={}; let dt; const defTermRe=/["“”'']([^"“”''\n]{1,30})["“”''][\s]*(?:이)?란|["“”'']([^"“”''\n]{1,30})["“”''][\s]*라\s*함은/g;
+  while((dt=defTermRe.exec(text))){ const term=(dt[1]||dt[2]||'').trim(); if(term) defTerms[term]=(defTerms[term]||0)+1; }
+  Object.keys(defTerms).forEach(t=>{ if(defTerms[t]>1) add('warn','정의 중복',`용어 "${t}"의 정의가 ${defTerms[t]}번 나타납니다.`); });
+
+  // 8) 괄호 짝(문서 전체)
+  [['(',')','소괄호 ( )'],['[',']','대괄호 [ ]'],['「','」','낫표 「 」'],['『','』','겹낫표 『 』'],['（','）','전각 괄호 （ ）'],['【','】','【 】']].forEach(([o,c,label])=>{
+    const no=text.split(o).length-1, nc=text.split(c).length-1;
+    if(no!==nc) add('error','괄호 짝',`${label}의 여는 기호 ${no}개·닫는 기호 ${nc}개로 개수가 맞지 않습니다.`);
+  });
+  const dq=(text.match(/"/g)||[]).length; if(dq%2===1) add('warn','따옴표',`큰따옴표(")가 홀수(${dq}개)입니다. 닫히지 않은 인용이 있을 수 있습니다.`);
+
+  // 9) 형식: 연속 반복 단어·이중 공백·부칙 유무
+  const dupW=[]; const seenDup=new Set(); let dw; const dupRe=/(^|[^가-힣])([가-힣]{1,8})\s+\2(?![가-힣])/g;
+  while((dw=dupRe.exec(text))){ const w=dw[2]; if(!seenDup.has(w)){ seenDup.add(w); dupW.push(w); } }
+  if(dupW.length) add('info','중복 단어',`연달아 반복된 단어가 있습니다: ${dupW.slice(0,6).map(w=>'"'+w+' '+w+'"').join(', ')}${dupW.length>6?' 외':''}`);
+  const ds=(text.match(/ {2,}/g)||[]).length; if(ds>0) add('info','이중 공백',`연속 공백이 ${ds}곳 있습니다.`);
+  if(!/(^|\n)\s*부\s*칙/.test(text)) add('info','부칙',`부칙(시행일 등)이 보이지 않습니다.`);
+
+  return F;
+}
+function runRuleCheck(){
+  const name=(_leftDoc&&_leftDoc.name)||(document.getElementById('fpTitle')||{}).textContent||'';
+  const findings=_ruleCheckAnalyze(_intCheckText||'');
+  _ruleCheckOpen(); _ruleCheckRender(findings, name);
+}
+function _ruleCheckRender(findings, name){
+  const body=document.getElementById('ruleCheckBody'), cnt=document.getElementById('ruleCheckCnt');
+  const bySev={error:[],warn:[],info:[]}; findings.forEach(f=>(bySev[f.sev]||bySev.info).push(f));
+  if(cnt) cnt.textContent=findings.length?findings.length+'건':'';
+  if(!findings.length){ body.innerHTML=`<div class="rc-ok">✅ 구조·참조·형식 점검에서 발견된 문제가 없습니다.<br><small>규칙 기반 점검이며, 의미적 충돌은 담당자 확인이 필요합니다.</small></div>`; return; }
+  let html=`<div class="rc-summary">${name?escHtml(name)+' · ':''}🔴 오류 <b>${bySev.error.length}</b> · 🟠 주의 <b>${bySev.warn.length}</b> · ⚪ 참고 <b>${bySev.info.length}</b></div>`;
+  [['error','🔴 오류'],['warn','🟠 주의'],['info','⚪ 참고']].forEach(([k,l])=>{ if(!bySev[k].length) return;
+    html+=`<div class="rc-sec"><div class="rc-sec-h">${l} <span>${bySev[k].length}</span></div>`+
+      bySev[k].map(f=>`<div class="rc-item rc-${k}"><span class="rc-cat">${escHtml(f.cat)}</span><span class="rc-msg">${escHtml(f.msg)}</span></div>`).join('')+`</div>`;
+  });
+  body.innerHTML=html;
+}
+function _ruleCheckOpen(){ const bg=document.getElementById('ruleCheckBg'); if(bg){ bg.classList.add('show'); _modalFocusIn('ruleCheckBg'); } }
+function closeRuleCheck(){ const bg=document.getElementById('ruleCheckBg'); if(bg) bg.classList.remove('show'); _modalFocusOut(); }
 
 // ── 규정 전문 서식화: 계층(장/조/항/호)·목록을 인식해 정돈된 HTML로 ──
 // ── 내규 명칭 레지스트리: 본문 참조가 '내규'인지 '법령'인지 판별 ──
@@ -7942,6 +8081,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(document.getElementById('diffPanel')?.classList.contains('show')){ closeDiff(); return; }
       if(document.getElementById('netPanel')?.classList.contains('show')){ closeNetPanel(); return; }
       if(document.getElementById('cmpPanel')?.classList.contains('show')){ closeCmp(); return; }
+      if(document.getElementById('ruleCheckBg')?.classList.contains('show')){ closeRuleCheck(); return; }
       if(document.getElementById('favModalBg')?.classList.contains('show')){ closeFavModal(); return; }
       if(document.getElementById('collModalBg')?.classList.contains('show')){ closeCollModal(); return; }
       if(document.getElementById('kwModalBg')?.classList.contains('show')){ closeKwEditor(); return; }
