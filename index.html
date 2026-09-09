@@ -631,6 +631,11 @@ body.dark .scen-apikey-note{color:#fcd9a3;background:#3a2a12;border-color:#5a452
 .sbtn:hover{background:var(--gd);transform:translateY(-1px);box-shadow:0 4px 16px rgba(37,110,244,.4);}.sbtn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 /* 자주찾는 법령 */
 .qlabel{font-size:11px;color:var(--ht);margin:14px 0 8px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;}
+.int-ex-label{display:flex;align-items:center;gap:8px;}
+.int-upload{margin-left:auto;font-size:12px;font-weight:700;color:var(--g);text-decoration:none;
+  background:var(--gl);border:1px solid transparent;border-radius:999px;padding:5px 12px;white-space:nowrap;
+  text-transform:none;letter-spacing:0;transition:.12s;}
+.int-upload:hover{background:var(--g);color:#fff;border-color:var(--g);}
 .chips{display:flex;gap:6px;flex-wrap:wrap;}
 .chip{padding:6px 14px;border-radius:999px;border:none;font-size:12px;font-weight:600;cursor:pointer;color:var(--g);background:var(--gl);transition:all .18s cubic-bezier(.4,0,.2,1);}
 .chip:hover{background:var(--g);color:#fff;transform:translateY(-1px);box-shadow:0 2px 8px rgba(37,110,244,.25);}
@@ -2252,7 +2257,6 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   </div>
   <div class="tb-tools">
     <button class="tb-tool" id="tbFav" onclick="toggleFavTab()" title="즐겨찾기"><span class="tb-ic" data-icon="fav"></span><span class="tb-tl">즐겨찾기</span><span id="tbFavCount" class="tb-cnt"></span></button>
-    <a class="tb-tool" href="/upload" title="내규 업로드"><span class="tb-ic" data-icon="upload"></span><span class="tb-tl">업로드</span></a>
     <button class="tb-tool" onclick="openAiModal()" title="AI 설정"><span class="tb-ic" data-icon="ai"></span><span class="tb-tl">AI 설정</span><span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
   </div>
   <span class="apibadge" id="badge">● 확인 중</span>
@@ -2303,7 +2307,9 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
     <!-- 내규 카테고리 바로가기 (내규·통합 모드일 때 표시) -->
     <div id="internalExamples" style="display:none;">
-      <div class="qlabel">내규 카테고리 바로가기</div>
+      <div class="qlabel int-ex-label">내규 카테고리 바로가기
+        <a class="int-upload" href="/upload" title="개정·신규 내규 문서를 업로드합니다">⬆ 내규 업로드</a>
+      </div>
       <div class="chips" id="internalChips"></div>
     </div>
     <!-- 시나리오 예시 칩 (시나리오 모드일 때만 표시) -->
