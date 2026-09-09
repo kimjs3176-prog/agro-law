@@ -101,6 +101,10 @@ body.dark .stgl.active{background:#20222a;}
 .main-content.assist-on > #assistantPanel{display:block !important;}
 .assist-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:2px 0 14px;}
 .assist-head .assist-api-badge{margin-left:auto;align-self:center;}
+.assist-close{margin-left:auto;align-self:center;flex-shrink:0;width:30px;height:30px;border:1px solid var(--bd);
+  border-radius:8px;background:var(--sf);color:var(--mu);font-size:14px;cursor:pointer;transition:.12s;}
+.assist-close:hover{background:var(--bg);color:var(--tx);border-color:var(--g);}
+.assist-head .assist-api-badge~.assist-close,.assist-head .assist-h-link~.assist-close{margin-left:8px;}
 .assist-h-link{margin-left:auto;align-self:center;flex-shrink:0;font-size:12.5px;font-weight:700;
   text-decoration:none;color:var(--g);background:var(--gl);border:1px solid transparent;border-radius:8px;
   padding:6px 12px;white-space:nowrap;transition:.12s;}
@@ -376,6 +380,22 @@ body.dark .dday.soon{background:rgba(245,158,11,.18);color:#fbbf24;}
 .prio.m{background:var(--gl);color:var(--gp);}
 .prio.l{background:var(--bg);color:var(--ht);}
 .memo-del{flex-shrink:0;width:26px;height:26px;border:none;background:transparent;color:var(--ht);cursor:pointer;border-radius:6px;font-size:14px;line-height:1;}
+.memo-del:hover{background:rgba(220,38,38,.1);color:#dc2626;}
+.memo-acts{display:flex;align-items:center;gap:2px;flex-shrink:0;}
+.memo-edit{flex-shrink:0;width:26px;height:26px;border:none;background:transparent;color:var(--ht);cursor:pointer;border-radius:6px;font-size:13px;line-height:1;}
+.memo-edit:hover{background:var(--gl);color:var(--g);}
+.memo-cancel{border:1px solid var(--bd);background:var(--sf);color:var(--mu);border-radius:9px;padding:0 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);}
+.memo-cancel:hover{border-color:var(--g);color:var(--tx);}
+.memo-cancel.full{padding:9px 14px;}
+/* 수정 중인 입력폼 강조 */
+.memo-toolbar.editing,.memo-form-lg.editing{outline:2px solid var(--g);outline-offset:3px;border-radius:10px;}
+/* 메모 삭제 실행취소 토스트 */
+.memo-undo{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);z-index:1200;display:flex;align-items:center;gap:12px;
+  background:#1f2430;color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 8px 26px rgba(0,0,0,.28);
+  font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}
+.memo-undo.show{opacity:1;transform:translate(-50%,0);pointer-events:auto;}
+.memo-undo button{background:transparent;border:none;color:#8ab4ff;font-weight:800;font-size:13px;cursor:pointer;padding:2px 4px;}
+.memo-undo button:hover{color:#b9d1ff;text-decoration:underline;}
 .memo-del:hover{background:rgba(239,68,68,.1);color:#ef4444;}
 .memo-actions{display:flex;gap:4px;flex-shrink:0;}
 /* 연락처 */
@@ -946,6 +966,10 @@ body.dark .ws-dock-card.int .ws-dock-badge{background:rgba(45,212,191,.16);color
 .ws-dock-title{font-size:12.5px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 @keyframes wsDockIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 .ws-allmin{flex:1;text-align:center;padding:40px 20px;color:var(--ht);font-size:13px;line-height:1.7;}
+.ws-err-acts{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:12px;flex-wrap:wrap;}
+.ws-retry{font-size:12.5px;font-weight:700;color:var(--g);background:var(--gl);border:1px solid transparent;
+  border-radius:8px;padding:6px 13px;cursor:pointer;font-family:var(--font);transition:.12s;}
+.ws-retry:hover{background:var(--g);color:#fff;border-color:var(--g);}
 .ws-pane::before{content:'';display:block;height:3px;flex-shrink:0;
   background:linear-gradient(90deg,var(--g),transparent 80%);opacity:.9;}
 .ws-pane-head{display:flex;align-items:center;gap:8px;padding:10px 12px;
@@ -2627,7 +2651,7 @@ async function openAssist(kind){
     `<span class="assist-h-t">${escHtml(cfg.label)}</span>`+
     `<span class="assist-h-hint">${escHtml(cfg.hint)}</span>`+
     // 연결 표시는 최상단바(#badge)에만 두고, 패널에는 키 미설정 경고만 표시(중복 방지)
-    (ok?'':`<span class="assist-api-badge no">서비스키 필요</span>`)+`</div>`;
+    (ok?'':`<span class="assist-api-badge no">서비스키 필요</span>`)+_assistCloseBtn()+`</div>`;
   if(kind==='patent'){                       // 특허: 출원인·기간·상태 필터 + 목록
     _patLast=null;
     // 특허 심화 분석 외부 도구(AtipsUM) 바로가기 — 헤더 우측에 배치
@@ -3276,8 +3300,17 @@ function _renderPatentList(d){
     return `<div class="assist-note">🔑 <b>${escHtml(d.provider||'')}</b> 서비스키가 설정되지 않았습니다.<br>관리자가 환경변수(<code>KIPRIS_API_KEY</code>)를 설정하면 조회할 수 있습니다.<br>${url}</div>`;
   }
   if(!d||d.success===false) return `<div class="assist-note">${escHtml((d&&d.error)||'조회에 실패했습니다.')}</div>`;
-  const items=(d.items||[]).filter(_patStatusMatch);   // 다중 상태 선택 시 결과 필터
-  if(!items.length) return `<div class="assist-note">조건에 맞는 특허가 없습니다.</div>`;
+  const raw=(d.items||[]);
+  const items=raw.filter(_patStatusMatch);   // 다중 상태 선택 시 결과 필터
+  const multiStat=(_patStatuses||[]).length>1;
+  if(!items.length){
+    const totalN0=parseInt(d.total||'0',10)||0;
+    // 상태 다중선택은 페이지별로 걸러지므로, 이 페이지엔 없어도 다른 페이지엔 있을 수 있다.
+    if(multiStat && raw.length>0 && totalN0>_PAT_PER){
+      return `<div class="assist-note">이 페이지에는 선택한 상태의 특허가 없습니다.<br>아래 <b>다음 →</b>으로 이어서 확인하세요. <small>(상태를 여러 개 고르면 페이지별로 걸러 표시됩니다)</small></div>`+_patPageNav(d);
+    }
+    return `<div class="assist-note">조건에 맞는 특허가 없습니다.</div>`;
+  }
   const rows=items.map(it=>{
     const _si=_patStatusInfo(it.status,it.regno);
     const st=it.status?`<span class="pat-sb ${_si.cls}">${escHtml(_si.label)}</span>`:'';
@@ -3291,7 +3324,7 @@ function _renderPatentList(d){
       `<button class="pat-fav${on?' on':''}" data-fav="${_favData(favItem)}" data-style="row" onclick="favToggleEl(this)" title="즐겨찾기" aria-pressed="${on}">${on?'★':'☆'}</button></div>`;
   }).join('');
   const totalN=parseInt(d.total||'0',10)||0;
-  const total=(totalN && totalN!==items.length)?` / 총 ${escHtml(String(totalN))}건`:'';
+  const total=(totalN && totalN!==items.length)?` / 총 ${escHtml(String(totalN))}건${multiStat?'<span class="pat-count-pg">(상태 필터 전)</span>':''}`:'';
   const pageTxt=(totalN>_PAT_PER)?` <span class="pat-count-pg">(${_patPage}페이지)</span>`:'';
   const nav=_patPageNav(d);
   // 명칭 정밀검색 0건 → 자유검색(명칭+요약+청구항) 폴백 시 안내
@@ -3400,6 +3433,8 @@ function _renderPatentDetail(d){
   return `<div class="pat-detail"><div class="pat-d-title">${escHtml(t.title||'(제목 없음)')}${badge}${favBtn}</div>`+
     stats+biblio+parties+ipcSec+abs+link+`</div>`;
 }
+// 도우미·메모·지출결의서 패널 헤더의 닫기(✕) 버튼 — 목록/검색 화면으로 복귀
+function _assistCloseBtn(){ return `<button class="assist-close" title="닫기 (Esc)" aria-label="닫기" onclick="closeAssist()">✕</button>`; }
 function closeAssist(){
   _assistMode=null;
   const mc=document.querySelector('.main-content'); if(mc) mc.classList.remove('assist-on');
@@ -3444,11 +3479,22 @@ function openMemo(){
   const p=document.getElementById('assistantPanel');
   p.innerHTML=`<div class="assist-head"><span class="assist-h-ic">📝</span>`+
     `<span class="assist-h-t">업무 메모</span>`+
-    `<span class="assist-h-hint">할 일·일정·연락처·메모를 한곳에서. 내 PC에만 저장됩니다.</span></div>`+
+    `<span class="assist-h-hint">할 일·일정·연락처·메모를 한곳에서. 내 PC에만 저장됩니다.</span>`+_assistCloseBtn()+`</div>`+
     `<div class="memo-wrap" id="memoWrap"></div>`;
   _memoRender();
 }
-function _memoSetTab(k){ _memoTab=k; _memoQ=''; _memoRender(); }
+function _memoSetTab(k){ _memoTab=k; _memoQ=''; _memoEdit=null; _memoRender(); }
+// 항목 수정: ✎ 를 누르면 해당 항목 값을 상단 입력폼에 채우고 '수정 저장'으로 전환한다.
+let _memoEdit=null;   // {coll, id}
+function _memoEditItem(coll){ if(!_memoEdit||_memoEdit.coll!==coll) return null; return (_wmemoGet()[coll]||[]).find(x=>x.id===_memoEdit.id)||null; }
+function _memoStartEdit(coll,id){ _memoEdit={coll,id}; _memoRender();
+  const w=document.getElementById('memoWrap'); if(w) w.scrollIntoView({behavior:'smooth',block:'start'}); }
+function _memoCancelEdit(){ _memoEdit=null; _memoRender(); }
+// 행 우측 액션(수정 ✎ + 삭제 ✕)
+function _memoRowActs(coll,id){
+  return `<button class="memo-edit" onclick="_memoStartEdit('${coll}','${id}')" title="수정">✎</button>`+
+         `<button class="memo-del" onclick="_memoDel('${coll}','${id}')" title="삭제">✕</button>`;
+}
 function _memoRender(){
   const w=document.getElementById('memoWrap'); if(!w) return;
   const m=_wmemoGet();
@@ -3481,12 +3527,15 @@ function _memoRender(){
 const _MEMO_ST={todo:{l:'대기',c:'st-todo'},doing:{l:'진행',c:'st-doing'},done:{l:'완료',c:'st-done'}};
 const _MEMO_ORD={todo:0,doing:1,done:2};
 function _memoTodoView(m){
-  const add=`<div class="memo-toolbar">`+
-    `<input id="mtText" class="memo-input" placeholder="할 일 입력 후 Enter" maxlength="200" onkeydown="if(event.key==='Enter')_memoAddTodo()">`+
-    `<select id="mtPrio" class="memo-sel"><option value="m">보통</option><option value="h">중요</option><option value="l">낮음</option></select>`+
-    `<input id="mtDue" class="memo-date" type="date" title="마감일(선택)">`+
-    `<button class="memo-addbtn" onclick="_memoAddTodo()">추가</button></div>`+
-    `<input id="mtLink" class="memo-search" placeholder="관련 링크(선택) — 규정·특허·공고 URL 붙여넣기" maxlength="500">`;
+  const ed=_memoEditItem('todos');
+  const prioOpt=[['m','보통'],['h','중요'],['l','낮음']].map(([v,l])=>`<option value="${v}"${(ed?ed.prio:'m')===v?' selected':''}>${l}</option>`).join('');
+  const add=`<div class="memo-toolbar${ed?' editing':''}">`+
+    `<input id="mtText" class="memo-input" placeholder="할 일 입력 후 Enter" maxlength="200" value="${ed?escAttr(ed.text):''}" onkeydown="if(event.key==='Enter')_memoAddTodo()">`+
+    `<select id="mtPrio" class="memo-sel">${prioOpt}</select>`+
+    `<input id="mtDue" class="memo-date" type="date" title="마감일(선택)" value="${ed?escAttr(ed.due||''):''}">`+
+    (ed?`<button class="memo-addbtn" onclick="_memoAddTodo()">수정 저장</button><button class="memo-cancel" onclick="_memoCancelEdit()">취소</button>`
+       :`<button class="memo-addbtn" onclick="_memoAddTodo()">추가</button>`)+`</div>`+
+    `<input id="mtLink" class="memo-search" placeholder="관련 링크(선택) — 규정·특허·공고 URL 붙여넣기" maxlength="500" value="${ed?escAttr(ed.link||''):''}">`;
   // 정렬: 상태(대기<진행<완료) → 마감 임박순
   const list=[...m.todos].sort((a,b)=>{ const sa=_MEMO_ORD[a.status]||0, sb=_MEMO_ORD[b.status]||0; if(sa!==sb) return sa-sb;
     const da=a.due?a.due.replace(/\D/g,''):'99999999', db=b.due?b.due.replace(/\D/g,''):'99999999'; return da.localeCompare(db); });
@@ -3498,12 +3547,17 @@ function _memoTodoView(m){
       `<button class="memo-st ${st.c}" onclick="_memoCycleTodo('${t.id}')" title="클릭하면 대기→진행→완료로 전환">${st.l}</button>`+
       `<div class="memo-main"><div class="memo-t">${escHtml(t.text)}</div>`+
       `<div class="memo-meta"><span class="prio ${t.prio||'m'}">${pl}</span>${t.due?`<span>${_fmtKDate(t.due)}</span>`:''}${dd&&t.status!=='done'?`<span class="dday ${dd.cls}">${dd.label}</span>`:''}${link}</div></div>`+
-      `<button class="memo-del" onclick="_memoDel('todos','${t.id}')" title="삭제">✕</button></div>`;
+      `<div class="memo-acts">${_memoRowActs('todos',t.id)}</div></div>`;
   }).join('') : `<div class="memo-empty">할 일이 없습니다.<br>위에 입력하고 <b>Enter</b>로 추가하세요.</div>`;
   return add+`<div class="memo-list" style="margin-top:10px;">${rows}</div>`;
 }
 function _memoAddTodo(){ const el=document.getElementById('mtText'); const text=((el&&el.value)||'').trim(); if(!text) return;
-  const m=_wmemoGet(); m.todos.unshift({id:_memoId(),text,prio:((document.getElementById('mtPrio')||{}).value)||'m',due:((document.getElementById('mtDue')||{}).value)||'',status:'todo',done:false,link:((document.getElementById('mtLink')||{}).value||'').trim(),createdAt:_memoToday()});
+  const m=_wmemoGet();
+  const prio=((document.getElementById('mtPrio')||{}).value)||'m';
+  const due=((document.getElementById('mtDue')||{}).value)||'';
+  const link=((document.getElementById('mtLink')||{}).value||'').trim();
+  if(_memoEdit&&_memoEdit.coll==='todos'){ const t=m.todos.find(x=>x.id===_memoEdit.id); if(t){ t.text=text; t.prio=prio; t.due=due; t.link=link; } _memoEdit=null; }
+  else { m.todos.unshift({id:_memoId(),text,prio,due,status:'todo',done:false,link,createdAt:_memoToday()}); }
   _wmemoSave(m); _memoRender(); const t=document.getElementById('mtText'); if(t) t.focus(); }
 // 상태 순환: 대기 → 진행 → 완료 → 대기
 function _memoCycleTodo(id){ const m=_wmemoGet(); const t=m.todos.find(x=>x.id===id); if(t){ const nx={todo:'doing',doing:'done',done:'todo'}; t.status=nx[t.status||'todo']; t.done=(t.status==='done'); _wmemoSave(m); _memoRender(); } }
@@ -3516,19 +3570,21 @@ function _memoEventView(m){
     `<button class="memo-evmode-b${_memoEventMode==='cal'?' on':''}" onclick="_memoEventSetMode('cal')">📅 캘린더</button>`+
     `<button class="memo-evmode-b${_memoEventMode==='list'?' on':''}" onclick="_memoEventSetMode('list')">☰ 목록</button>`+
     `<button class="memo-io-btn memo-ics" onclick="_memoExportICS()" title="일정·마감을 캘린더(.ics)로 내보내 Outlook·구글 캘린더에 등록">📤 캘린더(.ics)</button></div>`;
-  const add=`<div class="memo-toolbar">`+
-    `<input id="meTitle" class="memo-input" placeholder="일정 제목" maxlength="120" onkeydown="if(event.key==='Enter')_memoAddEvent()">`+
-    `<input id="meDate" class="memo-date" type="date" value="${escAttr(_memoCalSel||_memoToday())}">`+
-    `<input id="meTime" class="memo-date" type="time">`+
-    `<button class="memo-addbtn" onclick="_memoAddEvent()">추가</button></div>`+
-    `<input id="mePlace" class="memo-search" placeholder="장소·메모(선택)" maxlength="120">`;
+  const ed=_memoEditItem('events');
+  const add=`<div class="memo-toolbar${ed?' editing':''}">`+
+    `<input id="meTitle" class="memo-input" placeholder="일정 제목" maxlength="120" value="${ed?escAttr(ed.title):''}" onkeydown="if(event.key==='Enter')_memoAddEvent()">`+
+    `<input id="meDate" class="memo-date" type="date" value="${ed?escAttr(ed.date||''):escAttr(_memoCalSel||_memoToday())}">`+
+    `<input id="meTime" class="memo-date" type="time" value="${ed?escAttr(ed.time||''):''}">`+
+    (ed?`<button class="memo-addbtn" onclick="_memoAddEvent()">수정 저장</button><button class="memo-cancel" onclick="_memoCancelEdit()">취소</button>`
+       :`<button class="memo-addbtn" onclick="_memoAddEvent()">추가</button>`)+`</div>`+
+    `<input id="mePlace" class="memo-search" placeholder="장소·메모(선택)" maxlength="120" value="${ed?escAttr(ed.place||''):''}">`;
   if(_memoEventMode==='cal'){ return modeBtns+_memoCalHtml(m)+_memoDayList(m)+add; }
   const list=[...m.events].sort((a,b)=>((a.date||'')+(a.time||'')).replace(/\D/g,'').localeCompare(((b.date||'')+(b.time||'')).replace(/\D/g,'')));
   const rows=list.length? list.map(e=>{ const dd=_memoDday(e.date);
     return `<div class="memo-item">`+
       `<div class="memo-main"><div class="memo-t">${escHtml(e.title)}</div>`+
       `<div class="memo-meta"><span>📅 ${_fmtKDate(e.date)}${e.time?' '+escHtml(e.time):''}</span>${e.place?`<span>📍 ${escHtml(e.place)}</span>`:''}${dd?`<span class="dday ${dd.cls}">${dd.label}</span>`:''}</div></div>`+
-      `<button class="memo-del" onclick="_memoDel('events','${e.id}')" title="삭제">✕</button></div>`;
+      `<div class="memo-acts">${_memoRowActs('events',e.id)}</div></div>`;
   }).join('') : `<div class="memo-empty">등록된 일정이 없습니다.</div>`;
   return modeBtns+add+`<div class="memo-list" style="margin-top:10px;">${rows}</div>`;
 }
@@ -3565,7 +3621,7 @@ function _memoDayList(m){
   const dow=(()=>{ const p=sel.split('-'); const d=new Date(+p[0],+p[1]-1,+p[2]); return _MEMO_WD[d.getDay()]; })();
   const head=`<div class="memo-grp">📆 ${_fmtKDate(sel)} (${dow})</div>`;
   let rows='';
-  evs.forEach(e=>{ rows+=`<div class="memo-item"><div class="memo-main"><div class="memo-t">${escHtml(e.title)}</div><div class="memo-meta"><span>🕑 ${e.time?escHtml(e.time):'종일'}</span>${e.place?`<span>📍 ${escHtml(e.place)}</span>`:''}</div></div><button class="memo-del" onclick="_memoDel('events','${e.id}')" title="삭제">✕</button></div>`; });
+  evs.forEach(e=>{ rows+=`<div class="memo-item"><div class="memo-main"><div class="memo-t">${escHtml(e.title)}</div><div class="memo-meta"><span>🕑 ${e.time?escHtml(e.time):'종일'}</span>${e.place?`<span>📍 ${escHtml(e.place)}</span>`:''}</div></div><div class="memo-acts">${_memoRowActs('events',e.id)}</div></div>`; });
   dues.forEach(t=>{ rows+=`<div class="memo-item"><div class="memo-main"><div class="memo-t">⏰ ${escHtml(t.text)}</div><div class="memo-meta"><span>할 일 마감</span><span class="prio ${t.prio||'m'}">${({h:'중요',m:'보통',l:'낮음'}[t.prio||'m'])}</span></div></div></div>`; });
   if(!rows) rows=`<div class="memo-empty" style="padding:16px;">이 날짜의 일정·마감이 없습니다. 아래에서 추가하세요.</div>`;
   return head+`<div class="memo-list" style="margin-bottom:12px;">${rows}</div>`;
@@ -3575,7 +3631,11 @@ function _memoCalNav(delta){ const now=new Date(); if(!_memoCal) _memoCal={y:now
 function _memoCalToday(){ const n=new Date(); _memoCal={y:n.getFullYear(),m0:n.getMonth()}; _memoCalSel=_memoToday(); _memoRender(); }
 function _memoCalPick(ds){ _memoCalSel=ds; const p=ds.split('-'); _memoCal={y:+p[0],m0:+p[1]-1}; _memoRender(); }
 function _memoAddEvent(){ const t=((document.getElementById('meTitle')||{}).value||'').trim(); const d=(document.getElementById('meDate')||{}).value; if(!t||!d){ alert('제목과 날짜를 입력하세요.'); return; }
-  _memoCalSel=d; const m=_wmemoGet(); m.events.push({id:_memoId(),title:t,date:d,time:(document.getElementById('meTime')||{}).value||'',place:((document.getElementById('mePlace')||{}).value||'').trim()}); _wmemoSave(m); _memoRender(); }
+  _memoCalSel=d; const m=_wmemoGet();
+  const time=(document.getElementById('meTime')||{}).value||'', place=((document.getElementById('mePlace')||{}).value||'').trim();
+  if(_memoEdit&&_memoEdit.coll==='events'){ const e=m.events.find(x=>x.id===_memoEdit.id); if(e){ e.title=t; e.date=d; e.time=time; e.place=place; } _memoEdit=null; }
+  else { m.events.push({id:_memoId(),title:t,date:d,time,place}); }
+  _wmemoSave(m); _memoRender(); }
 // 일정·할 일 마감을 .ics로 내보내기(Outlook·구글 캘린더 가져오기)
 function _memoExportICS(){
   const m=_wmemoGet(); const pad=n=>String(n).padStart(2,'0'); const now=new Date();
@@ -3598,33 +3658,43 @@ function _memoExportICS(){
 }
 // ── 연락처 ──
 function _memoContactView(m){
-  const form=`<div class="memo-form-lg">`+
-    `<input id="mcName" class="memo-input" placeholder="이름" maxlength="40">`+
-    `<input id="mcOrg" class="memo-input" placeholder="기관·부서" maxlength="60">`+
-    `<input id="mcRole" class="memo-input" placeholder="직위·담당업무" maxlength="60">`+
-    `<input id="mcPhone" class="memo-input" placeholder="전화" maxlength="40">`+
-    `<input id="mcEmail" class="memo-input" placeholder="이메일" maxlength="80">`+
-    `<input id="mcMemo" class="memo-input" placeholder="메모" maxlength="120">`+
-    `<button class="memo-addbtn full" onclick="_memoAddContact()">＋ 연락처 추가</button></div>`;
+  const ed=_memoEditItem('contacts');
+  const form=`<div class="memo-form-lg${ed?' editing':''}">`+
+    `<input id="mcName" class="memo-input" placeholder="이름" maxlength="40" value="${ed?escAttr(ed.name||''):''}">`+
+    `<input id="mcOrg" class="memo-input" placeholder="기관·부서" maxlength="60" value="${ed?escAttr(ed.org||''):''}">`+
+    `<input id="mcRole" class="memo-input" placeholder="직위·담당업무" maxlength="60" value="${ed?escAttr(ed.role||''):''}">`+
+    `<input id="mcPhone" class="memo-input" placeholder="전화" maxlength="40" value="${ed?escAttr(ed.phone||''):''}">`+
+    `<input id="mcEmail" class="memo-input" placeholder="이메일" maxlength="80" value="${ed?escAttr(ed.email||''):''}">`+
+    `<input id="mcMemo" class="memo-input" placeholder="메모" maxlength="120" value="${ed?escAttr(ed.memo||''):''}">`+
+    (ed?`<button class="memo-addbtn full" onclick="_memoAddContact()">수정 저장</button><button class="memo-cancel full" onclick="_memoCancelEdit()">취소</button>`
+       :`<button class="memo-addbtn full" onclick="_memoAddContact()">＋ 연락처 추가</button>`)+`</div>`;
   const search=`<input class="memo-search" placeholder="이름·기관·담당으로 검색" value="${escAttr(_memoQ)}" oninput="_memoFilter(this.value)">`;
   return form+search+`<div class="memo-list" id="memoInner">${_memoRowsFor('contact',m)}</div>`;
 }
 function _memoAddContact(){ const g=id=>((document.getElementById(id)||{}).value||'').trim();
   const name=g('mcName'); if(!name){ alert('이름을 입력하세요.'); return; }
-  const m=_wmemoGet(); m.contacts.unshift({id:_memoId(),name,org:g('mcOrg'),role:g('mcRole'),phone:g('mcPhone'),email:g('mcEmail'),memo:g('mcMemo')}); _wmemoSave(m); _memoRender(); }
+  const m=_wmemoGet(); const data={name,org:g('mcOrg'),role:g('mcRole'),phone:g('mcPhone'),email:g('mcEmail'),memo:g('mcMemo')};
+  if(_memoEdit&&_memoEdit.coll==='contacts'){ const c=m.contacts.find(x=>x.id===_memoEdit.id); if(c) Object.assign(c,data); _memoEdit=null; }
+  else { m.contacts.unshift({id:_memoId(),...data}); }
+  _wmemoSave(m); _memoRender(); }
 // ── 메모(노트) ──
 function _memoNoteView(m){
-  const add=`<div class="memo-toolbar">`+
-    `<input id="mnTitle" class="memo-input" placeholder="메모 제목" maxlength="80">`+
-    `<button class="memo-addbtn" onclick="_memoAddNote()">추가</button></div>`+
-    `<textarea id="mnBody" class="memo-search" style="height:70px;resize:vertical;" placeholder="메모 내용"></textarea>`+
-    `<input id="mnLink" class="memo-search" placeholder="관련 링크(선택) — 규정·특허·공고 URL 붙여넣기" maxlength="500">`+
-    `<input class="memo-search" placeholder="메모 검색" value="${escAttr(_memoQ)}" oninput="_memoFilter(this.value)">`;
+  const ed=_memoEditItem('notes');
+  const add=`<div class="memo-toolbar${ed?' editing':''}">`+
+    `<input id="mnTitle" class="memo-input" placeholder="메모 제목" maxlength="80" value="${ed?escAttr(ed.title||''):''}">`+
+    (ed?`<button class="memo-addbtn" onclick="_memoAddNote()">수정 저장</button><button class="memo-cancel" onclick="_memoCancelEdit()">취소</button>`
+       :`<button class="memo-addbtn" onclick="_memoAddNote()">추가</button>`)+`</div>`+
+    `<textarea id="mnBody" class="memo-search" style="height:70px;resize:vertical;" placeholder="메모 내용">${ed?escHtml(ed.body||''):''}</textarea>`+
+    `<input id="mnLink" class="memo-search" placeholder="관련 링크(선택) — 규정·특허·공고 URL 붙여넣기" maxlength="500" value="${ed?escAttr(ed.link||''):''}">`+
+    (ed?'':`<input class="memo-search" placeholder="메모 검색" value="${escAttr(_memoQ)}" oninput="_memoFilter(this.value)">`);
   return add+`<div class="memo-notes" id="memoInner">${_memoRowsFor('note',m)}</div>`;
 }
 function _memoAddNote(){ const t=((document.getElementById('mnTitle')||{}).value||'').trim(); const b=((document.getElementById('mnBody')||{}).value||'').trim();
   if(!t&&!b){ alert('제목 또는 내용을 입력하세요.'); return; }
-  const m=_wmemoGet(); m.notes.unshift({id:_memoId(),title:t,body:b,link:((document.getElementById('mnLink')||{}).value||'').trim(),updatedAt:_memoToday()}); _wmemoSave(m); _memoRender(); }
+  const m=_wmemoGet(); const link=((document.getElementById('mnLink')||{}).value||'').trim();
+  if(_memoEdit&&_memoEdit.coll==='notes'){ const n=m.notes.find(x=>x.id===_memoEdit.id); if(n){ n.title=t; n.body=b; n.link=link; n.updatedAt=_memoToday(); } _memoEdit=null; }
+  else { m.notes.unshift({id:_memoId(),title:t,body:b,link,updatedAt:_memoToday()}); }
+  _wmemoSave(m); _memoRender(); }
 // 검색 대상(연락처·메모)의 목록만 갱신 — 입력창 포커스 유지
 function _memoRowsFor(tab, m){
   const q=(_memoQ||'').toLowerCase();
@@ -3634,7 +3704,7 @@ function _memoRowsFor(tab, m){
       `<div class="memo-main"><div class="memo-ct-name">${escHtml(c.name)}${c.role?` <span class="memo-ct-org">· ${escHtml(c.role)}</span>`:''}</div>`+
       `${c.org?`<div class="memo-ct-org">${escHtml(c.org)}</div>`:''}`+
       `<div class="memo-ct-row">${c.phone?`<a href="tel:${escAttr(c.phone)}">📞 ${escHtml(c.phone)}</a>`:''}${c.email?`<a href="mailto:${escAttr(c.email)}">✉ ${escHtml(c.email)}</a>`:''}${c.memo?`<span>${escHtml(c.memo)}</span>`:''}</div></div>`+
-      `<button class="memo-del" onclick="_memoDel('contacts','${c.id}')" title="삭제">✕</button></div>`).join('')
+      `<div class="memo-acts">${_memoRowActs('contacts',c.id)}</div></div>`).join('')
       : `<div class="memo-empty">${q?'검색 결과가 없습니다.':'저장된 연락처가 없습니다.'}</div>`;
   }
   // note
@@ -3643,11 +3713,31 @@ function _memoRowsFor(tab, m){
     `<div class="memo-t">${escHtml(n.title||'(제목 없음)')}</div>`+
     `<div class="memo-note-body">${escHtml(n.body||'')}</div>`+
     `${n.link?`<a class="memo-link" href="${escAttr(safeUrl(n.link))}" target="_blank" rel="noopener">🔗 링크 열기</a>`:''}`+
-    `<div class="memo-note-foot"><span>${escHtml(n.updatedAt||'')}</span><button class="memo-del" onclick="_memoDel('notes','${n.id}')" title="삭제">✕</button></div></div>`).join('')
+    `<div class="memo-note-foot"><span>${escHtml(n.updatedAt||'')}</span><div class="memo-acts">${_memoRowActs('notes',n.id)}</div></div></div>`).join('')
     : `<div class="memo-empty">${q?'검색 결과가 없습니다.':'저장된 메모가 없습니다.'}</div>`;
 }
 function _memoFilter(v){ _memoQ=v; const inner=document.getElementById('memoInner'); if(inner) inner.innerHTML=_memoRowsFor(_memoTab, _wmemoGet()); }
-function _memoDel(coll,id){ const m=_wmemoGet(); m[coll]=(m[coll]||[]).filter(x=>x.id!==id); _wmemoSave(m); _memoRender(); }
+// 삭제는 실행취소 토스트로 되돌릴 수 있게 한다(메모는 localStorage 전용·복구 불가라 오삭제 방지).
+let _memoUndo=null, _memoUndoT=null;
+function _memoDel(coll,id){
+  const m=_wmemoGet(); const arr=m[coll]||[];
+  const idx=arr.findIndex(x=>x.id===id); if(idx<0) return;
+  const removed=arr[idx];
+  m[coll]=arr.filter(x=>x.id!==id); _wmemoSave(m); _memoRender();
+  _memoUndo={coll, item:removed, idx};
+  let t=document.getElementById('memoUndoToast');
+  if(!t){ t=document.createElement('div'); t.id='memoUndoToast'; t.className='memo-undo'; document.body.appendChild(t); }
+  t.innerHTML=`<span>🗑 삭제됨</span><button type="button" onclick="_memoUndoDel()">실행취소</button>`;
+  t.classList.add('show');
+  clearTimeout(_memoUndoT); _memoUndoT=setTimeout(()=>{ t.classList.remove('show'); _memoUndo=null; }, 5000);
+}
+function _memoUndoDel(){
+  if(!_memoUndo) return;
+  const {coll,item,idx}=_memoUndo; const m=_wmemoGet(); const arr=m[coll]||[];
+  arr.splice(Math.min(idx,arr.length), 0, item); m[coll]=arr; _wmemoSave(m); _memoRender();
+  _memoUndo=null; clearTimeout(_memoUndoT);
+  const t=document.getElementById('memoUndoToast'); if(t) t.classList.remove('show');
+}
 // 메뉴 배지: 지난·오늘 마감 할 일 + 오늘 일정(긴급) 개수
 function _memoUpdateBadge(){ const b=document.getElementById('memoBadge'); if(!b) return;
   const m=_wmemoGet();
@@ -3709,7 +3799,7 @@ function openExpense(){
   const p=document.getElementById('assistantPanel');
   p.innerHTML=`<div class="assist-head"><span class="assist-h-ic">🧾</span>`+
     `<span class="assist-h-t">지출결의서 본문 작성</span>`+
-    `<span class="assist-h-hint">구분을 고르고 입력하면 ERP 본문에 붙여넣을 내용이 완성됩니다. 서식은 ERP를 사용하세요.</span></div>`+
+    `<span class="assist-h-hint">구분을 고르고 입력하면 ERP 본문에 붙여넣을 내용이 완성됩니다. 서식은 ERP를 사용하세요.</span>`+_assistCloseBtn()+`</div>`+
     `<div class="exp-segset" id="expSeg">${seg}</div>`+
     `<div class="exp-wrap">`+
       `<div class="exp-form" id="expForm"><div id="expFields"></div>`+
@@ -3948,7 +4038,8 @@ function _expHwpxPayload(){
   if(t==='promo'){
     const pm=_expState.promo; const people=_digits(pm.people), total=_digits(pm.total);
     const per=people>0?Math.floor(total/people):0; const g=n=>_wonGeum(n);
-    return {title:'지출결의서 (업무추진비)', filename:'지출결의서_업무추진비', colCnt:4, colWidths:[8000,15814,8000,15814], rows:[
+    return {title:'지출결의서 (업무추진비)', filename:'지출결의서_업무추진비', colCnt:4, colWidths:[8000,15814,8000,15814],
+      empty: !((pm.basis||'').trim()||(pm.purpose||'').trim()||pm.date||(pm.place||'').trim()||(pm.targets||'').trim()||total||(pm.note||'').trim()), rows:[
       [{t:'관련근거',hd:1},{t:pm.basis||'',cs:3}],
       [{t:'집행목적',hd:1},{t:pm.purpose||'',cs:3}],
       [{t:'일 시',hd:1},{t:_dotDate(pm.date)},{t:'장 소',hd:1},{t:pm.place||''}],
@@ -3965,7 +4056,8 @@ function _expHwpxPayload(){
       ['금액','일금 '+_hanAmount(total)+'원정 ('+_won(total)+')'],
       ['결제방식',[g.method,acct&&('('+acct+')')].filter(Boolean).join(' ')]]
       .map(r=>[{t:r[0],hd:1},{t:r[1]}]);
-    return {title:'지출결의서 (일반)', filename:'지출결의서_일반', colCnt:2, colWidths:[9000,38628], rows};
+    return {title:'지출결의서 (일반)', filename:'지출결의서_일반', colCnt:2, colWidths:[9000,38628],
+      empty: !(vendor||(g.desc||'').trim()||(g.budget||'').trim()||total), rows};
   }
   const tv=_expState.travel; const rws=(tv.rows||[]).filter(r=>r.content||r.amt||r.date||r.place);
   const total=rws.reduce((a,r)=>a+_digits(r.amt),0); const rows=[];
@@ -3973,10 +4065,11 @@ function _expHwpxPayload(){
   rows.push([{t:'순번',hd:1},{t:'일자',hd:1},{t:'출장지',hd:1},{t:'출장목적',hd:1},{t:'금액',hd:1}]);
   rws.forEach((r,i)=>rows.push([{t:String(i+1)},{t:_fmtKDate(r.date)},{t:r.place||''},{t:r.content||''},{t:_won(_digits(r.amt))}]));
   rows.push([{t:'합계',hd:1,cs:4},{t:_won(total)}]);
-  return {title:'지출결의서 (여비)', filename:'지출결의서_여비', colCnt:5, colWidths:[4000,9000,9000,17628,8000], rows};
+  return {title:'지출결의서 (여비)', filename:'지출결의서_여비', colCnt:5, colWidths:[4000,9000,9000,17628,8000], empty: rws.length===0, rows};
 }
 function downloadHwpx(btn){
-  const payload=_expHwpxPayload(); if(!payload.rows.length) return;
+  const payload=_expHwpxPayload();
+  if(payload.empty || !payload.rows.length){ alert('먼저 지출 내역을 입력한 뒤 내려받아 주세요.'); return; }
   const orig=btn?btn.textContent:''; if(btn){ btn.disabled=true; btn.textContent='생성 중...'; }
   fetch('/api/expense/hwpx',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
     .then(r=>{ if(!r.ok) return r.json().then(j=>{throw new Error(j.error||'생성 실패');}); return r.blob(); })
@@ -6894,12 +6987,14 @@ function openFavModal(){
   document.getElementById('favTabBtn')?.classList.add('active');
   document.getElementById('tbFav')?.classList.add('active');
   renderFavList();
+  _modalFocusIn('favModalBg');
 }
 function closeFavModal(){
   _favModalOpen=false;
   const bg=document.getElementById('favModalBg'); if(bg) bg.classList.remove('show');
   document.getElementById('favTabBtn')?.classList.remove('active');
   document.getElementById('tbFav')?.classList.remove('active');
+  _modalFocusOut();
 }
 // 즐겨찾기 항목 클릭 → 본문을 해당 카테고리로 이동시켜 항목 표시 + 모달 닫기
 function _favOpenItem(i){
@@ -7133,8 +7228,19 @@ function renderFpArts(arts){
 const PROV_NAMES={claude:'Claude',gpt:'GPT',gemini:'Gemini',ollama:'Ollama'};
 let currentProv='claude';
 
-function openAiModal(){loadAiSettings();document.getElementById('aiModalBg').classList.add('show');}
-function closeAiModal(){document.getElementById('aiModalBg').classList.remove('show');}
+// 모달 접근성: 열 때 내부 첫 컨트롤로 포커스 이동, 닫을 때 직전 요소로 복원(키보드/스크린리더).
+let _modalPrevFocus=null;
+function _modalFocusIn(id){
+  _modalPrevFocus=document.activeElement;
+  setTimeout(()=>{ try{
+    const root=document.getElementById(id); if(!root) return;
+    const f=root.querySelector('input:not([type=hidden]),textarea,select,button,a[href],[tabindex]:not([tabindex="-1"])');
+    (f||root).focus();
+  }catch(e){} }, 40);
+}
+function _modalFocusOut(){ try{ if(_modalPrevFocus&&_modalPrevFocus.focus) _modalPrevFocus.focus(); }catch(e){} _modalPrevFocus=null; }
+function openAiModal(){loadAiSettings();document.getElementById('aiModalBg').classList.add('show');_modalFocusIn('aiModalBg');}
+function closeAiModal(){document.getElementById('aiModalBg').classList.remove('show');_modalFocusOut();}
 
 function setProv(prov){
   currentProv=prov;
@@ -7437,10 +7543,22 @@ function retryAiInterpret(retryBtn){
   }
 }
 
+// 공용 텍스트 복사 — 비보안(http) 컨텍스트에서 navigator.clipboard 가 없으면
+// execCommand 폴백(_expCopyFb)으로 처리해 조용히 실패하지 않도록 한다.
+function _copyText(text, ok){
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(()=>ok&&ok()).catch(()=>_expCopyFb(text, ok));
+      return;
+    }
+  }catch(e){}
+  _expCopyFb(text, ok);
+}
+
 function copyAiResult(btn){
   const text = decodeURIComponent(btn.dataset.text||'');
   if(!text) return;
-  navigator.clipboard.writeText(text).then(()=>{
+  _copyText(text, ()=>{
     const orig=btn.textContent; btn.textContent='✓ 복사됨';
     setTimeout(()=>btn.textContent=orig, 1500);
   });
@@ -7455,10 +7573,10 @@ function copyArticleByIdx(btnEl){
   const title=art['조문제목']||'';
   const content=art['조문내용']||'';
   const text=`${no?no+' ':''}${title}\n${content}`.trim();
-  navigator.clipboard.writeText(text).then(()=>{
+  _copyText(text, ()=>{
     btnEl.textContent='✓ 복사됨'; btnEl.classList.add('copied');
     setTimeout(()=>{btnEl.textContent='⎘ 복사'; btnEl.classList.remove('copied');},2000);
-  }).catch(()=>{btnEl.textContent='복사 실패';});
+  });
 }
 
 // 버그5 수정: fpPrint header 타입 건너뜀
@@ -7830,6 +7948,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(document.getElementById('internalTree')?.classList.contains('open')){ closeInternalTree(); return; }
       if(document.getElementById('fpRight')?.classList.contains('open')){ closeRefPanel(); return; }
       if(isOpen){ closePanel(); return; }
+      if(_assistMode){ closeAssist(); return; }   // 공공조회 도우미·업무메모·지출결의서 닫기
     }
 
     // 패널 열려있을 때만 적용
@@ -8299,6 +8418,11 @@ async function wsOpen(name, docType, url, org, type){
   _wsPanes.push(pane);
   _wsEnterId=id;               // 오른쪽에서 미끄러져 들어오는 진입 애니메이션
   wsRenderShell();
+  await _wsLoadPane(pane);
+}
+// 창 문서 로드(내규 전문 / 법령 조문). wsOpen·wsRetry 공용.
+async function _wsLoadPane(pane){
+  const {id, name, docType}=pane;
   try{
     if(docType==='internal'){
       const r=await fetch(`/api/internal/doc?name=${encodeURIComponent(name)}`);
@@ -8324,6 +8448,13 @@ async function wsOpen(name, docType, url, org, type){
   if(docType==='internal' && !pane.error){
     loadRegNames().then(()=>{ try{ const el=document.getElementById('wsbody_'+id); if(el){ _collapseSpacedNames(el); markInternalRefs(el); } }catch(e){} });
   }
+}
+// 로드 실패한 창을 다시 시도(같은 자리에서 재요청)
+function wsRetry(id){
+  const p=_wsPanes.find(x=>x.id===id); if(!p) return;
+  p.loading=true; p.error=''; p.arts=null; p.text=null; p.structured=null; p.abbrevMap={};
+  wsRenderPaneBody(p);
+  _wsLoadPane(p);
 }
 // 레이아웃 계산: 펼친 창 [최초 규정 + 오른쪽 최근 N창] + 하단 책갈피(자동 넘침 + 수동 최소화)
 function _wsLayout(){
@@ -8638,9 +8769,13 @@ function _wsTileReorderStart(ev,p){
 function wsBodyHtml(p){
   if(p.loading) return `<div class="fp-loading"><div class="spinner" style="margin:0 auto 10px;"></div>불러오는 중...</div>`;
   if(p.error){
-    const u=safeUrl('https://www.law.go.kr/법령/'+encodeURIComponent(p.name));
+    const retry=`<button class="ws-retry" onclick="wsRetry(${p.id})">🔄 다시 시도</button>`;
+    // 외부 링크는 법령일 때만(법제처) — 내규는 법제처에 없으므로 표시하지 않음
+    const ext = p.docType==='law'
+      ? `<a href="${safeUrl('https://www.law.go.kr/법령/'+encodeURIComponent(p.name))}" target="_blank" rel="noopener" style="color:var(--g);">법제처에서 보기 →</a>`
+      : '';
     return `<div class="fp-empty">⚠ ${escHtml(p.error)}<br>
-      <a href="${u}" target="_blank" rel="noopener" style="color:var(--g);">법제처에서 보기 →</a></div>`;
+      <div class="ws-err-acts">${retry}${ext}</div></div>`;
   }
   return p.docType==='internal' ? wsInternalHtml(p) : wsLawHtml(p);
 }
@@ -9633,10 +9768,12 @@ function openKwEditor(){
   _renderAgencyList();
   _selectAgency(_kwEditAgency);
   document.getElementById('kwModalBg').classList.add('show');
+  _modalFocusIn('kwModalBg');
 }
 
 function closeKwEditor(){
   document.getElementById('kwModalBg').classList.remove('show');
+  _modalFocusOut();
 }
 
 function _renderAgencyList(){
@@ -10284,8 +10421,8 @@ function getCollections(){
 }
 function saveCollections(c){localStorage.setItem('lawCollections',JSON.stringify(c));}
 
-function openCollModal(){renderCollModal();document.getElementById('collModalBg').classList.add('show');}
-function closeCollModal(){document.getElementById('collModalBg').classList.remove('show');}
+function openCollModal(){renderCollModal();document.getElementById('collModalBg').classList.add('show');_modalFocusIn('collModalBg');}
+function closeCollModal(){document.getElementById('collModalBg').classList.remove('show');_modalFocusOut();}
 
 function renderCollModal(){
   const colls=getCollections();
