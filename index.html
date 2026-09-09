@@ -126,7 +126,12 @@ body.dark .stgl.active{background:#20222a;}
 .assist-note a:hover{text-decoration:underline;}
 .assist-loading{display:flex;align-items:center;justify-content:center;gap:8px;padding:24px;color:var(--mu);font-size:13px;}
 /* ── 특허 조회: 필터 + 목록 + 상세 ── */
-.pat-filters{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+/* 필터 구역 박스 디자인 */
+.pat-filters{display:flex;flex-direction:column;gap:11px;margin-bottom:14px;
+  background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);}
+.pat-filters-h{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:800;color:var(--tx);
+  margin:-2px 0 2px;padding-bottom:9px;border-bottom:1px solid var(--bd);}
+.pat-filters-h .pat-fh-ic{font-size:14px;}
 .pat-frow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .pat-flabel{font-size:12px;font-weight:800;color:var(--mu);flex-shrink:0;}
 .pat-appl{display:flex;flex-wrap:wrap;gap:6px;}
@@ -148,6 +153,20 @@ body.dark .stgl.active{background:#20222a;}
 .pat-year{width:120px;flex-shrink:0;}
 .pat-sel{padding:9px 12px;border:1px solid var(--bd);border-radius:9px;font-size:13px;background:var(--sf);color:var(--tx);cursor:pointer;font-family:var(--font);flex-shrink:0;}
 .pat-tilde{color:var(--mu);flex-shrink:0;}
+/* 기간: 숫자 직접입력(YYYY-MM-DD) + 달력 선택 */
+.pat-daterange{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.pat-datefield{position:relative;display:inline-flex;align-items:center;}
+.pat-ymd{width:130px;flex-shrink:0;border-radius:9px 0 0 9px;}
+.pat-calbtn{margin-left:-1px;border:1px solid var(--bd);border-left:none;border-radius:0 9px 9px 0;
+  background:var(--sf);color:var(--mu);cursor:pointer;padding:9px 10px;font-size:13px;line-height:1;transition:.12s;}
+.pat-calbtn:hover{background:var(--gl);border-color:var(--g);color:var(--g);}
+.pat-cal-hidden{position:absolute;right:0;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;border:none;padding:0;}
+/* 특허 검색 결과 2열 배치(.pat-list 뒤에 정의된 기본 규칙을 이기도록 클래스 2개로 지정) */
+.pat-list.pat-list-2col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+  border:none;background:none;overflow:visible;}
+.pat-list.pat-list-2col .pat-rw{border:1px solid var(--bd);border-radius:10px;background:var(--card);}
+.pat-list.pat-list-2col .pat-rw:hover{background:var(--gl);border-color:var(--g);}
+@media (max-width:640px){ .pat-list.pat-list-2col{grid-template-columns:1fr;} }
 .pat-count{font-size:12px;color:var(--mu);margin-bottom:8px;}
 .pat-listhd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
 .pat-listhd .pat-count{margin-bottom:0;}
@@ -2681,6 +2700,7 @@ function _patFiltersHtml(){
   const stat=PAT_STATUS.map(([v,l],i)=>
     `<button class="pat-chip pat-schip s-${v||'all'}${i===0?' active':''}" data-v="${v}" onclick="_patStatusPick(this)">${escHtml(l)}</button>`).join('');
   return `<div class="pat-filters">`+
+    `<div class="pat-filters-h"><span class="pat-fh-ic">🔎</span>특허 검색 필터</div>`+
     `<div class="pat-frow"><span class="pat-flabel">출원인</span><div class="pat-appl" id="patAppl">${appl}</div></div>`+
     `<div class="pat-frow"><span class="pat-flabel">상태</span><div class="pat-appl" id="patStatus">${stat}</div></div>`+
     `<div class="pat-frow"><span class="pat-flabel" title="출원일(신청일) 기준으로 거릅니다">기간<span class="pat-flabel-sub">출원일</span></span><div class="pat-appl" id="patPeriod">`+
@@ -2689,9 +2709,19 @@ function _patFiltersHtml(){
       `<button class="pat-chip" data-y="2" onclick="_patPeriod(2,this)">최근 2년</button>`+
       `<button class="pat-chip" data-y="3" onclick="_patPeriod(3,this)">최근 3년</button>`+
       `<span class="pat-pdiv"></span>`+
-      `<input id="patFrom" class="pat-inp pat-year" inputmode="numeric" maxlength="4" placeholder="시작(YYYY)" oninput="_patPeriodManual()">`+
-      `<span class="pat-tilde">~</span>`+
-      `<input id="patTo" class="pat-inp pat-year" inputmode="numeric" maxlength="4" placeholder="종료(YYYY)" oninput="_patPeriodManual()">`+
+      `<div class="pat-daterange">`+
+        `<div class="pat-datefield">`+
+          `<input id="patFrom" class="pat-inp pat-ymd" inputmode="numeric" maxlength="10" placeholder="시작 YYYY-MM-DD" oninput="_patDateText('from')" onkeydown="if(event.key==='Enter')runPatent()">`+
+          `<button type="button" class="pat-calbtn" title="달력에서 시작일 선택" onclick="_patOpenCal('from')">📅</button>`+
+          `<input id="patFromD" type="date" class="pat-cal-hidden" tabindex="-1" aria-hidden="true" onchange="_patDatePick('from')">`+
+        `</div>`+
+        `<span class="pat-tilde">~</span>`+
+        `<div class="pat-datefield">`+
+          `<input id="patTo" class="pat-inp pat-ymd" inputmode="numeric" maxlength="10" placeholder="종료 YYYY-MM-DD" oninput="_patDateText('to')" onkeydown="if(event.key==='Enter')runPatent()">`+
+          `<button type="button" class="pat-calbtn" title="달력에서 종료일 선택" onclick="_patOpenCal('to')">📅</button>`+
+          `<input id="patToD" type="date" class="pat-cal-hidden" tabindex="-1" aria-hidden="true" onchange="_patDatePick('to')">`+
+        `</div>`+
+      `</div>`+
     `</div></div>`+
     `<div class="pat-frow pat-frow2">`+
       `<input id="patQuery" class="pat-inp" placeholder="키워드(발명의 명칭 등, 선택)" onkeydown="if(event.key==='Enter')runPatent()">`+
@@ -2714,20 +2744,63 @@ function _patStatusPick(btn){
     if(!cont.querySelector('.pat-chip.active') && allBtn) allBtn.classList.add('active');
   }
 }
-function _patPeriod(y, btn){
-  document.querySelectorAll('#patPeriod .pat-chip').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  const yr=new Date().getFullYear();
-  const f=document.getElementById('patFrom'), t=document.getElementById('patTo');
-  if(y===0){ if(f)f.value=''; if(t)t.value=''; }
-  else { if(f)f.value=String(yr-y+1); if(t)t.value=String(yr); }
+// 날짜 3종 입력(숫자 직접입력 텍스트 + 달력) 동기화 헬퍼
+function _patFmtYmd(s){
+  s=String(s||'').replace(/\D/g,'').slice(0,8);
+  let out=s.slice(0,4); if(s.length>4) out+='-'+s.slice(4,6); if(s.length>6) out+='-'+s.slice(6,8);
+  return out;
 }
-function _patPeriodManual(){ document.querySelectorAll('#patPeriod .pat-chip').forEach(b=>b.classList.remove('active')); }
+function _patChipsOff(){ document.querySelectorAll('#patPeriod .pat-chip').forEach(b=>b.classList.remove('active')); }
+// 조회 전송용: 입력값(YYYY/YYYY-MM/YYYY-MM-DD)을 8자리(YYYYMMDD)로 보정
+function _patNormDate(s, end){
+  s=String(s||'').replace(/\D/g,'');
+  if(!s) return '';
+  if(s.length>=8) return s.slice(0,8);
+  if(s.length===6){ const y=+s.slice(0,4), m=+s.slice(4,6);
+    if(end){ const last=new Date(y, m, 0).getDate()||31; return s+String(last).padStart(2,'0'); }
+    return s+'01'; }
+  if(s.length>=4) return end ? s.slice(0,4)+'1231' : s.slice(0,4)+'0101';
+  return '';   // 4자리 미만은 무시
+}
+// 숫자 직접입력: YYYY-MM-DD 형태로 자동 정리 + 완성 시 달력값 동기화
+function _patDateText(which){
+  const tid=which==='from'?'patFrom':'patTo', did=which==='from'?'patFromD':'patToD';
+  const inp=document.getElementById(tid); if(!inp) return;
+  inp.value=_patFmtYmd(inp.value);
+  _patChipsOff();
+  const d=document.getElementById(did);
+  const digits=inp.value.replace(/\D/g,'');
+  if(d) d.value = digits.length===8 ? inp.value : '';
+}
+// 달력 선택 → 텍스트칸 반영
+function _patDatePick(which){
+  const tid=which==='from'?'patFrom':'patTo', did=which==='from'?'patFromD':'patToD';
+  const d=document.getElementById(did), inp=document.getElementById(tid);
+  if(d&&inp&&d.value){ inp.value=d.value; _patChipsOff(); }
+}
+// 달력 열기(숫자칸 옆 📅). showPicker 미지원 시 포커스로 폴백
+function _patOpenCal(which){
+  const d=document.getElementById(which==='from'?'patFromD':'patToD'); if(!d) return;
+  try{ if(typeof d.showPicker==='function'){ d.showPicker(); return; } }catch(e){}
+  d.focus();
+}
+// 빠른 기간 칩: 시작·종료 텍스트칸과 달력칸을 실제 날짜(YYYY-MM-DD)로 채움
+function _patPeriod(y, btn){
+  _patChipsOff();
+  if(btn) btn.classList.add('active');
+  const f=document.getElementById('patFrom'), t=document.getElementById('patTo');
+  const fd=document.getElementById('patFromD'), td=document.getElementById('patToD');
+  if(y===0){ [f,t,fd,td].forEach(el=>{ if(el) el.value=''; }); return; }
+  const iso=dt=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  const now=new Date(), from=new Date(now); from.setFullYear(now.getFullYear()-y);
+  const a=iso(from), b=iso(now);
+  if(f) f.value=a; if(fd) fd.value=a; if(t) t.value=b; if(td) td.value=b;
+}
+function _patPeriodManual(){ _patChipsOff(); }
 // 결과가 적을 때 원클릭 필터 완화(재조회)
 function _patClearPeriod(){
-  const f=document.getElementById('patFrom'), t=document.getElementById('patTo');
-  if(f) f.value=''; if(t) t.value='';
-  document.querySelectorAll('#patPeriod .pat-chip').forEach(b=>b.classList.remove('active'));
+  ['patFrom','patTo','patFromD','patToD'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  _patChipsOff();
   const all=document.querySelector('#patPeriod .pat-chip[data-y="0"]'); if(all) all.classList.add('active');
   runPatent();
 }
@@ -3192,8 +3265,8 @@ function runPatent(){
   const q=((document.getElementById('patQuery')||{}).value||'').trim(); if(q) p.set('query',q);
   _patStatuses=[...document.querySelectorAll('#patStatus .pat-chip.active')].map(b=>b.dataset.v).filter(Boolean);
   if(_patStatuses.length===1) p.set('status',_patStatuses[0]);   // 단일=서버필터, 다중=결과필터
-  const from=((document.getElementById('patFrom')||{}).value||'').replace(/\D/g,''); if(from) p.set('date_from',from);
-  const to=((document.getElementById('patTo')||{}).value||'').replace(/\D/g,''); if(to) p.set('date_to',to);
+  const from=_patNormDate((document.getElementById('patFrom')||{}).value, false); if(from) p.set('date_from',from);
+  const to=_patNormDate((document.getElementById('patTo')||{}).value, true);      if(to) p.set('date_to',to);
   _patParams=p.toString();                 // 엑셀 내보내기·페이지 이동에서 동일 필터 재사용
   _patFetchPage(1);
 }
@@ -3259,7 +3332,7 @@ function _renderPatentList(d){
   }
   return `<div class="pat-listhd"><span class="pat-count">${items.length}건 표시${total}${pageTxt}</span>`+
          `<button class="pat-xlsx" onclick="exportPatents(this)" title="현재 필터의 전체 결과를 엑셀(CSV)로 저장">⬇ 엑셀 다운로드</button></div>`+
-         fb+widen+`<div class="pat-list">${rows}</div>`+nav;
+         fb+widen+`<div class="pat-list pat-list-2col">${rows}</div>`+nav;
 }
 // 현재 필터의 특허 전체 결과를 여러 페이지로 모아 엑셀(CSV)로 저장
 async function exportPatents(btn){
