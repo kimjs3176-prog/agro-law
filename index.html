@@ -939,6 +939,11 @@ body.dark .ws-dock-card.int .ws-dock-badge{background:rgba(45,212,191,.16);color
   display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;}
 .ws-art-no{color:var(--g);font-weight:800;flex-shrink:0;}
 .ws-art-b{font-size:13.5px;line-height:1.72;color:#333;}
+/* 조문 단위 즐겨찾기 별표 */
+.art-fav{flex-shrink:0;border:none;background:transparent;color:var(--ht);font-size:14px;line-height:1;cursor:pointer;padding:0 2px;border-radius:5px;vertical-align:middle;}
+.art-fav:hover{color:#f5b301;background:var(--gl);}
+.art-fav.on{color:#f5b301;}
+.rf-art .art-fav{margin-right:5px;}
 .ws-art-h2{font-size:12px;font-weight:800;color:var(--mu);letter-spacing:.02em;
   margin:14px 0 6px;padding-bottom:4px;border-bottom:2px solid rgba(0,0,0,.08);}
 .ws-flash{animation:wsFlash .9s ease;}
@@ -6710,7 +6715,7 @@ function _favBucket(type){ const t=String(type||'');
   if(t==='internal') return 'internal';
   if(['company','patent','support','procurement'].indexOf(t)>=0) return t;
   return 'law'; }
-function _favKey(f){ return _favBucket(f.type)+'|'+(f.name||'')+'|'+(f.url||f.bno||f.appno||''); }
+function _favKey(f){ return _favBucket(f.type)+'|'+(f.name||'')+'|'+(f.url||f.bno||f.appno||'')+'|'+(f.art||''); }
 function _favEq(a, b){ return _favKey(a)===_favKey(b); }
 function favHas(item){ return getFavs().some(f=>_favEq(f,item)); }
 // 항목 토글(최신 앞, 최대 60개)
@@ -6790,6 +6795,7 @@ function _favOpenItem(i){
   if(bkt==='internal'||bkt==='law'){
     if(_assistMode && typeof closeAssist==='function') closeAssist();   // 도우미 패널이 떠 있으면 닫고 전문 표시
     wsOpen(f.name, bkt, bkt==='law'?(f.url||''):undefined);
+    if(f.art) _wsJumpAfterOpen(f.name, bkt, f.art);   // 조문 단위 즐겨찾기 → 전문 열고 해당 조문으로 이동
   }
   else if(bkt==='company') favOpenCompany(f.name);
   else if(bkt==='patent'){
@@ -6816,9 +6822,12 @@ function _favDelFolder(name){
 function _favMoveItem(i, sel){ _favSetItemFolder(i, sel && sel.value || ''); renderFavList(); }
 function _favItemCard(f, i, folderOpts){
   const bkt=_favBucket(f.type);
-  const label=bkt==='law'?(f.type||'법령'):(_FAV_TYPE_LABEL[bkt]||'기타');
+  let label=bkt==='law'?(f.type||'법령'):(_FAV_TYPE_LABEL[bkt]||'기타');
+  if(f.art) label='📑 '+(bkt==='internal'?'내규':'법령')+' 조문';   // 조문 단위 즐겨찾기
   let sub=f.subtitle||f.org||'';
+  if(f.art){ const at=[f.art, f.artTitle&&('('+f.artTitle+')')].filter(Boolean).join(''); sub=(f.name?f.name+' · ':'')+at; }
   if((bkt==='support'||bkt==='procurement')&&(f.endText||f.end)) sub=(sub?sub+' · ':'')+'마감 '+(f.endText||f.end);
+  const dispName=f.art?(f.artTitle?f.art+' '+f.artTitle:f.art):f.name;
   const cur=String(f.folder||'');
   const sel=`<select class="fav-move" title="폴더 이동" onclick="event.stopPropagation()" onchange="_favMoveItem(${i},this)">`
     +`<option value=""${cur?'':' selected'}>📂 미분류</option>`
@@ -6828,7 +6837,7 @@ function _favItemCard(f, i, folderOpts){
       <div class="favm-open">
         <span class="favm-ltype${bkt==='internal'?' int':''}">${escHtml(label)}</span>
         <div class="favm-main">
-          <div class="favm-name">${escHtml(f.name)}</div>
+          <div class="favm-name">${escHtml(dispName)}</div>
           ${sub?`<div class="favm-sub">${escHtml(sub)}</div>`:''}
         </div>
       </div>
@@ -8375,10 +8384,13 @@ function wsRenderShell(){
 function _wsPostRender(){
   const {visible}=_wsLayout();
   visible.forEach(p=>{
-    if(p.loading || p.error || p.docType!=='internal') return;
+    if(p.loading || p.error) return;
     const b=document.getElementById('wsbody_'+p.id); if(!b) return;
-    try{ const host=b.querySelector('.ws-doc')||b; buildApxIndex(host); linkifyApxRefs(host); }catch(e){}
-    try{ if(_regNames){ _collapseSpacedNames(b); markInternalRefs(b); } }catch(e){}
+    if(p.docType==='internal'){
+      try{ const host=b.querySelector('.ws-doc')||b; buildApxIndex(host); linkifyApxRefs(host); }catch(e){}
+      try{ if(_regNames){ _collapseSpacedNames(b); markInternalRefs(b); } }catch(e){}
+    }
+    try{ _wsInjectArtFav(b, p); }catch(e){}   // 조문 단위 즐겨찾기 별표(내규·법령)
   });
 }
 // 스택의 문서를 다시 펼침(가장 최근 창으로 승격 → 보이는 영역 진입)
@@ -8460,6 +8472,7 @@ function wsRenderPaneBody(pane){
   if(pane.docType==='internal' && !pane.error && !pane.loading){
     try{ const host=b.querySelector('.ws-doc')||b; buildApxIndex(host); linkifyApxRefs(host); }catch(e){}
   }
+  if(!pane.error && !pane.loading){ try{ _wsInjectArtFav(b, pane); }catch(e){} }
 }
 function wsFilter(id,val){
   const p=_wsPanes.find(x=>x.id===id); if(!p) return;
@@ -8531,6 +8544,62 @@ function wsJumpArt(paneEl, artNo){
     const n=parseInt((noEl?noEl.textContent:'').replace(/[^0-9]/g,''),10);
     if(n===artNo){ el.scrollIntoView({behavior:'smooth',block:'start'}); _wsFlash(el); return; }
   }
+}
+// ── 조문 단위 즐겨찾기 ─────────────────────────────────────────────────────
+// 전문(작업공간)의 각 조문 머리말에 ☆ 별표를 붙인다. 클릭 시 그 조문만 즐겨찾기.
+function _wsInjectArtFav(root, pane){
+  if(!root||!pane) return;
+  const docType=pane.docType, name=pane.name, url=pane.url||'';
+  const sub = docType==='internal' ? (pane.org||'사내 규정') : (pane.org||pane.type||'');
+  const heads = docType==='law' ? root.querySelectorAll('.ws-art > .ws-art-t')
+                                : root.querySelectorAll('.rulefmt .rf-art');
+  heads.forEach(h=>{
+    if(h.querySelector('.art-fav')) return;
+    let art='', artTitle='';
+    if(docType==='law'){
+      const noEl=h.querySelector('.ws-art-no'); if(!noEl) return;
+      const full=(h.textContent||'').trim(); art=(noEl.textContent||'').trim().replace(/\s+/g,'');
+      artTitle=full.replace(noEl.textContent||'','').trim();
+    } else {
+      const noEl=h.querySelector('.rf-art-no'); if(!noEl) return;
+      const mm=(noEl.textContent||'').trim().match(/^(제\s*\d+\s*조(?:의\s*\d+)?)\s*[\(（]?([^\)）]*)/);
+      if(!mm) return; art=mm[1].replace(/\s+/g,''); artTitle=(mm[2]||'').trim();
+    }
+    if(!/^제\d+조/.test(art)) return;
+    const item={type:docType, name, subtitle:sub, url, art, artTitle};
+    const on=favHas(item);
+    const btn=document.createElement('button');
+    btn.className='art-fav'+(on?' on':''); btn.type='button';
+    btn.title='이 조문 즐겨찾기'; btn.setAttribute('aria-pressed', on); btn.textContent=on?'★':'☆';
+    btn.addEventListener('click', ev=>{ ev.stopPropagation();
+      const added=toggleFavItem(item); btn.classList.toggle('on',added); btn.textContent=added?'★':'☆'; btn.setAttribute('aria-pressed',added); });
+    h.insertBefore(btn, h.firstChild);
+  });
+}
+// 조문 라벨("제3조" 등)로 해당 조문에 스크롤 — 법령(.ws-art)·내규(.rf-art) 모두 지원
+function _wsJumpToArt(paneEl, artStr){
+  if(!paneEl||!artStr) return false;
+  const norm=s=>String(s||'').replace(/\s+/g,''); const target=norm(artStr);
+  for(const el of paneEl.querySelectorAll('.ws-art')){
+    const noEl=el.querySelector('.ws-art-no'); const n=norm(noEl?noEl.textContent:'');
+    if(n && n===target){ el.scrollIntoView({behavior:'smooth',block:'start'}); _wsFlash(el); return true; }
+  }
+  for(const el of paneEl.querySelectorAll('.rf-art')){
+    const noEl=el.querySelector('.rf-art-no'); const n=norm(noEl?noEl.textContent:'');
+    if(n && n.startsWith(target)){ el.scrollIntoView({behavior:'smooth',block:'start'}); _wsFlash(el); return true; }
+  }
+  return false;
+}
+// 전문을 연 뒤(비동기 로딩) 해당 조문으로 이동 — 로딩 완료를 짧게 폴링
+function _wsJumpAfterOpen(name, docType, artStr){
+  let tries=0;
+  const tick=setInterval(()=>{ tries++;
+    try{ const p=_wsPanes.find(x=>_rnorm(x.name)===_rnorm(name) && x.docType===docType);
+      const el=p?document.getElementById('wspane_'+p.id):null;
+      if(el && (el.querySelector('.ws-art')||el.querySelector('.rf-art'))){ if(_wsJumpToArt(el, artStr)) { clearInterval(tick); return; } }
+    }catch(e){}
+    if(tries>30) clearInterval(tick);
+  }, 200);
 }
 // art-xref 요소의 전체 조문번호("15" 또는 "15의2") 추출
 function _artFullNo(el){
