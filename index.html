@@ -101,6 +101,11 @@ body.dark .stgl.active{background:#20222a;}
 .main-content.assist-on > #assistantPanel{display:block !important;}
 .assist-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:2px 0 14px;}
 .assist-head .assist-api-badge{margin-left:auto;align-self:center;}
+.assist-h-link{margin-left:auto;align-self:center;flex-shrink:0;font-size:12.5px;font-weight:700;
+  text-decoration:none;color:var(--g);background:var(--gl);border:1px solid transparent;border-radius:8px;
+  padding:6px 12px;white-space:nowrap;transition:.12s;}
+.assist-h-link:hover{background:var(--g);color:#fff;border-color:var(--g);}
+.assist-head .assist-api-badge + .assist-h-link{margin-left:8px;}
 .assist-h-ic{font-size:20px;align-self:center;}
 .assist-h-t{font-size:17px;font-weight:800;color:var(--tx);letter-spacing:-.3px;}
 .assist-h-hint{font-size:12.5px;color:var(--mu);}
@@ -2601,7 +2606,9 @@ async function openAssist(kind){
     (ok?'':`<span class="assist-api-badge no">서비스키 필요</span>`)+`</div>`;
   if(kind==='patent'){                       // 특허: 출원인·기간·상태 필터 + 목록
     _patLast=null;
-    p.innerHTML=head+_patFiltersHtml()+`<div id="patResults" class="pat-results"></div>`;
+    // 특허 심화 분석 외부 도구(AtipsUM) 바로가기 — 헤더 우측에 배치
+    const patAnalyze=`<a class="assist-h-link" href="https://atipsum.lovable.app/" target="_blank" rel="noopener noreferrer" title="특허분석 도구(AtipsUM)를 새 창에서 엽니다">🔬 특허분석 ↗</a>`;
+    p.innerHTML=head.replace('</div>', patAnalyze+'</div>')+_patFiltersHtml()+`<div id="patResults" class="pat-results"></div>`;
     const pq=document.getElementById('patQuery'); if(pq) pq.focus();
     return;
   }
