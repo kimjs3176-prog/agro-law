@@ -961,6 +961,25 @@ body.dark .ws-dock-card.int .ws-dock-badge{background:rgba(45,212,191,.16);color
 body.ws-resizing{cursor:col-resize;user-select:none;}
 body.ws-resizing.ws-resizing-col{cursor:row-resize;}
 body.ws-resizing .ws-pane-body{pointer-events:none;}
+/* 자유 배치(플로팅 창) 모드 */
+.ws-grid.ws-free{position:relative;display:block;height:calc(100vh - 210px);min-height:460px;
+  border:1px dashed rgba(0,0,0,.1);border-radius:14px;background:
+  repeating-linear-gradient(45deg,transparent,transparent 11px,rgba(0,0,0,.012) 11px,rgba(0,0,0,.012) 12px);
+  overflow:hidden;}
+.ws-grid.ws-free .ws-pane{position:absolute;height:auto;min-height:0;min-width:0;
+  box-shadow:0 10px 34px rgba(0,0,0,.20);transition:box-shadow .15s;}
+.ws-grid.ws-free .ws-pane.ws-moving{box-shadow:0 16px 44px rgba(0,0,0,.30);}
+.ws-grid.ws-free .ws-pane.ws-maxi{border-radius:12px;}
+.ws-grid.ws-free .ws-pane-head{cursor:grab;touch-action:none;}
+.ws-grid.ws-free .ws-pane.ws-moving .ws-pane-head{cursor:grabbing;}
+.ws-grip{position:absolute;right:0;bottom:0;width:20px;height:20px;cursor:nwse-resize;touch-action:none;z-index:3;
+  background:linear-gradient(135deg,transparent 42%,rgba(0,0,0,.28) 42%,rgba(0,0,0,.28) 52%,transparent 52%,
+  transparent 66%,rgba(0,0,0,.28) 66%,rgba(0,0,0,.28) 76%,transparent 76%);}
+body.dark .ws-grip{background:linear-gradient(135deg,transparent 42%,rgba(255,255,255,.34) 42%,rgba(255,255,255,.34) 52%,transparent 52%,
+  transparent 66%,rgba(255,255,255,.34) 66%,rgba(255,255,255,.34) 76%,transparent 76%);}
+body.ws-dragging{user-select:none;}
+body.ws-dragging .ws-pane-body{pointer-events:none;}
+.ws-pane.ws-reorder{opacity:.9;outline:2px dashed var(--g);outline-offset:-2px;}
 .ws-pane-body{flex:1;overflow:auto;padding:14px 16px 28px;}
 .ws-doc{font-size:14px;line-height:1.7;color:var(--tx);}
 .ws-art{padding:10px 0;border-bottom:1px solid rgba(0,0,0,.05);}
@@ -991,6 +1010,12 @@ mark.ws-hl{background:var(--mark-bg);color:var(--mark-fg);border-radius:2px;padd
   .ws-stack{flex:1 1 auto;flex-direction:row;padding-top:20px;gap:8px;overflow-x:auto;}
   .ws-stack-card{margin-bottom:0;min-height:56px;writing-mode:horizontal-tb;}
   .ws-stack-title{writing-mode:horizontal-tb;}
+  /* 모바일: 자유 배치는 좁은 화면에서 세로 스택으로 안전하게 대체 */
+  .ws-grid.ws-free{display:flex;flex-direction:column;height:auto;border:none;background:none;overflow:visible;}
+  .ws-grid.ws-free .ws-pane{position:static!important;left:auto!important;top:auto!important;
+    width:auto!important;height:auto!important;min-height:340px;max-height:75vh;box-shadow:var(--shadow);}
+  .ws-grip{display:none;}
+  .ws-grid.ws-free .ws-pane-head{cursor:default;}
 }
 body.dark .ws-bar,body.dark .ws-pane,body.dark .ws-stack-card{border-color:rgba(255,255,255,.08);}
 body.dark .ws-art-b{color:#c9ccd2;}
@@ -2365,11 +2390,16 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <span class="ws-bar-t">📑 열람 작업공간 <span class="ws-cnt" id="wsCnt">0</span></span>
       <span class="ws-hint" id="wsHint">문서를 더 열면 이 화면에서 나란히 비교할 수 있어요</span>
       <span style="flex:1"></span>
+      <span class="ws-seg" id="wsModeSeg" role="group" aria-label="창 배치 방식">
+        <button class="ws-seg-btn on" id="wsModeTile" title="타일: 창을 나란히 붙여 배치" onclick="_wsSetMode('tile')">▦ 타일</button>
+        <button class="ws-seg-btn" id="wsModeFree" title="자유: 창을 윈도우처럼 이동·크기조정" onclick="_wsSetMode('free')">🗗 자유</button>
+      </span>
       <span class="ws-seg" id="wsDirSeg" role="group" aria-label="창 배치 방향">
         <button class="ws-seg-btn on" id="wsDirRow" title="가로로 나란히 배치" onclick="_wsSetDir('row')">◫ 가로</button>
         <button class="ws-seg-btn" id="wsDirCol" title="세로로 위아래 배치" onclick="_wsSetDir('col')">⬓ 세로</button>
       </span>
-      <button class="ws-bar-btn" title="열린 창 크기를 균등하게 맞춥니다" onclick="_wsEqualize()">⇔ 균등</button>
+      <button class="ws-bar-btn" id="wsEqBtn" title="열린 창 크기를 균등하게 맞춥니다" onclick="_wsEqualize()">⇔ 균등</button>
+      <button class="ws-bar-btn" id="wsArrBtn" style="display:none;" title="열린 창을 겹치지 않게 격자로 정렬" onclick="_wsArrangeFree()">▤ 정렬</button>
       <button class="ws-bar-btn" onclick="wsCloseAll()">전체 닫기</button>
       <button class="ws-bar-btn" onclick="wsBackToList()">← 목록·검색으로</button>
     </div>
@@ -8271,6 +8301,8 @@ let _wsPanes=[];   // {id,name,docType,url,org,type,loading,error,arts,text,stru
 let _wsId=0;
 let _wsEnterId=0;  // 이번 렌더에서 '새로 들어온' 창(진입 애니메이션 대상)
 let _wsDir='row';  // 창 배치: 'row'(가로 나란히)|'col'(세로 위아래)
+let _wsMode='tile';  // 배치 방식: 'tile'(붙여 배치)|'free'(윈도우처럼 자유 이동·크기)
+let _wsZTop=10;      // 자유 배치 창의 z-index 최상단 카운터
 const WS_MAX_VISIBLE_RIGHT=2;  // 최초 규정 오른쪽으로 동시에 펼칠 최대 창 수
 function _wsKey(name,docType){ return _rnorm(name)+'|'+(docType||'law'); }
 function wsIsOpen(){ return _wsPanes.length>0; }
@@ -8359,6 +8391,8 @@ async function wsOpen(name, docType, url, org, type){
 function _wsLayout(){
   const active=_wsPanes.filter(p=>!p.minimized);      // 펼쳐진(비교뷰) 창
   const minimized=_wsPanes.filter(p=>p.minimized);    // 사용자가 최소화한 창
+  // 자유 배치: 모든 창을 동시에 띄운다(오른쪽 스택으로 밀지 않음)
+  if(_wsMode==='free'){ return {primary:active[0]||null, visible:active, docked:minimized}; }
   const primary=active[0]||null;
   const others=active.slice(1);
   const visibleOthers=others.slice(-WS_MAX_VISIBLE_RIGHT);
@@ -8369,21 +8403,37 @@ function _wsLayout(){
 }
 function wsPaneHtml(p, cls, pos){
   const isInt=p.docType==='internal';
-  const first=pos&&pos.first, last=pos&&pos.last;
-  const mvPrev=_wsDir==='row'?'◀':'▲', mvNext=_wsDir==='row'?'▶':'▼';
-  return `<section class="ws-pane${cls?' '+cls:''}" id="wspane_${p.id}" style="flex:${p.flex||1} 1 0;">
-    <header class="ws-pane-head">
+  const free=_wsMode==='free';
+  let style, headExtra='', moveBtns='', maxBtn='', grip='';
+  if(free){
+    _wsEnsureGeom(p);
+    style = p.maxi ? `left:0;top:0;width:100%;height:100%;z-index:${p.z||10};`
+                   : `left:${p.fx}px;top:${p.fy}px;width:${p.fw}px;height:${p.fh}px;z-index:${p.z||10};`;
+    if(p.maxi) cls=(cls?cls+' ':'')+'ws-maxi';
+    headExtra=` onpointerdown="_wsHeadPointerDown(event,${p.id})"`;
+    maxBtn=`<button class="ws-icon" title="${p.maxi?'이전 크기로 복원':'작업공간에 최대화'}" onclick="_wsToggleMax(${p.id})">${p.maxi?'❐':'▢'}</button>`;
+    grip=`<div class="ws-grip" title="드래그하여 창 크기 조절" onpointerdown="_wsFreeResizeStart(event,${p.id})"></div>`;
+  } else {
+    const first=pos&&pos.first, last=pos&&pos.last;
+    const mvPrev=_wsDir==='row'?'◀':'▲', mvNext=_wsDir==='row'?'▶':'▼';
+    style=`flex:${p.flex||1} 1 0;`;
+    headExtra=` onpointerdown="_wsHeadPointerDown(event,${p.id})"`;
+    moveBtns=`<button class="ws-icon ws-move" title="앞으로 이동(또는 제목표시줄을 드래그)" onclick="_wsMovePane(${p.id},-1)" ${first?'disabled':''}>${mvPrev}</button>`+
+             `<button class="ws-icon ws-move" title="뒤로 이동(또는 제목표시줄을 드래그)" onclick="_wsMovePane(${p.id},1)" ${last?'disabled':''}>${mvNext}</button>`;
+  }
+  return `<section class="ws-pane${cls?' '+cls:''}" id="wspane_${p.id}" style="${style}" onpointerdown="_wsFocus(${p.id})">
+    <header class="ws-pane-head"${headExtra}>
       <span class="ws-badge ws-badge-${isInt?'int':'law'}">${isInt?'내규':'법령'}</span>
       <span class="ws-pane-title" title="${escAttr(p.name)}">${escHtml(p.name)}</span>
       <input class="ws-pane-filter" placeholder="조문·키워드" value="${escAttr(p.filter||'')}"
              oninput="wsFilter(${p.id},this.value)" aria-label="이 문서 안에서 찾기">
-      <button class="ws-icon ws-move" title="앞으로 이동" onclick="_wsMovePane(${p.id},-1)" ${first?'disabled':''}>${mvPrev}</button>
-      <button class="ws-icon ws-move" title="뒤로 이동" onclick="_wsMovePane(${p.id},1)" ${last?'disabled':''}>${mvNext}</button>
+      ${moveBtns}${maxBtn}
       <button class="ws-icon" title="최소화 — 하단 책갈피로 내리기(내용 유지)" onclick="wsMinimize(${p.id})">⌄</button>
       <button class="ws-icon" title="전체화면·상세 기능(AI·메모·비교)" onclick="wsExpand(${p.id})">⤢</button>
       <button class="ws-icon" title="이 창 닫기" onclick="wsClose(${p.id})">✕</button>
     </header>
     <div class="ws-pane-body" id="wsbody_${p.id}">${wsBodyHtml(p)}</div>
+    ${grip}
   </section>`;
 }
 function wsRenderShell(){
@@ -8395,15 +8445,20 @@ function wsRenderShell(){
   grid.querySelectorAll('.ws-pane-body').forEach(b=>{ const m=(b.id||'').match(/^wsbody_(\d+)$/); if(m) _prevScroll[m[1]]=b.scrollTop; });
   const {visible, docked}=_wsLayout();
   const entering=_wsEnterId;
-  grid.className='ws-grid'+(_wsDir==='col'?' ws-dir-col':'');
-  _wsSyncDirSeg();
-  // 창 사이에 크기조정 손잡이(리사이저)를 넣어 나란히 비교하며 폭·높이를 조절
+  grid.className='ws-grid'+(_wsMode==='free'?' ws-free':(_wsDir==='col'?' ws-dir-col':''));
+  _wsSyncDirSeg(); _wsSyncModeSeg();
   let html='';
-  visible.forEach((p,i)=>{
-    const cls = p.id===entering ? 'ws-enter' : (entering ? 'ws-shift' : '');
-    if(i>0) html+=`<div class="ws-resizer" title="드래그하면 창 크기를 조절합니다" onpointerdown="_wsResizeStart(event,this)"></div>`;
-    html+=wsPaneHtml(p, cls, {first:i===0, last:i===visible.length-1});
-  });
+  if(_wsMode==='free'){
+    // 자유 배치: 각 창을 절대 위치로 띄운다(제목표시줄 드래그로 이동, 모서리로 크기조정)
+    visible.forEach(p=>{ html+=wsPaneHtml(p, '', null); });
+  } else {
+    // 타일 배치: 창 사이에 크기조정 손잡이(리사이저)를 넣어 나란히 비교하며 폭·높이를 조절
+    visible.forEach((p,i)=>{
+      const cls = p.id===entering ? 'ws-enter' : (entering ? 'ws-shift' : '');
+      if(i>0) html+=`<div class="ws-resizer" title="드래그하면 창 크기를 조절합니다" onpointerdown="_wsResizeStart(event,this)"></div>`;
+      html+=wsPaneHtml(p, cls, {first:i===0, last:i===visible.length-1});
+    });
+  }
   if(!visible.length && docked.length){
     html=`<div class="ws-allmin">📑 모든 문서를 책갈피로 내렸습니다.<br>아래 책갈피를 클릭하면 비교뷰로 다시 열립니다.</div>`;
   }
@@ -8513,6 +8568,134 @@ function _wsResizeStart(ev, resizer){
   }
   document.addEventListener('pointermove',move);
   document.addEventListener('pointerup',up);
+}
+// ── 자유 배치(플로팅 창) 모드 ─────────────────────────────────────────────
+// 타일 ↔ 자유 전환
+function _wsSetMode(mode){
+  if(mode!=='tile'&&mode!=='free') return;
+  if(_wsMode===mode){ _wsSyncModeSeg(); return; }
+  _wsMode=mode;
+  if(mode==='free'){ const {visible}=_wsLayout(); visible.forEach(p=>_wsEnsureGeom(p)); }
+  wsRenderShell();
+}
+function _wsSyncModeSeg(){
+  const t=document.getElementById('wsModeTile'), f=document.getElementById('wsModeFree');
+  const free=_wsMode==='free';
+  if(t) t.classList.toggle('on',!free);
+  if(f) f.classList.toggle('on',free);
+  const dir=document.getElementById('wsDirSeg'), eq=document.getElementById('wsEqBtn'), arr=document.getElementById('wsArrBtn');
+  if(dir) dir.style.display=free?'none':'';
+  if(eq) eq.style.display=free?'none':'';
+  if(arr) arr.style.display=free?'':'none';
+}
+// 창의 자유 배치 초기 위치·크기(계단식 배치)를 준비
+function _wsEnsureGeom(p){
+  if(p.fw) return;
+  const grid=document.getElementById('wsGrid');
+  const W=(grid&&grid.clientWidth)||900, H=(grid&&grid.clientHeight)||560;
+  const w=Math.min(560, Math.max(320, Math.round(W*0.52)));
+  const h=Math.min(560, Math.max(300, Math.round(H*0.86)));
+  const placed=_wsPanes.filter(x=>x.fw).length;
+  const off=(placed%6)*30;
+  p.fw=w; p.fh=h;
+  p.fx=Math.max(0, Math.min(off, W-w));
+  p.fy=Math.max(0, Math.min(off, Math.max(0,H-h)));
+  p.z=++_wsZTop;
+  p.maxi=false;
+}
+// 창을 맨 앞으로(자유 배치에서만)
+function _wsFocus(id){
+  if(_wsMode!=='free') return;
+  const p=_wsPanes.find(x=>x.id===id); if(!p) return;
+  if(p.z===_wsZTop) return;
+  p.z=++_wsZTop;
+  const el=document.getElementById('wspane_'+id); if(el) el.style.zIndex=p.z;
+}
+// 제목표시줄 pointerdown: 자유=이동, 타일=순서 드래그
+function _wsHeadPointerDown(ev,id){
+  if(ev.target&&ev.target.closest('button,input,.ws-icon,.art-fav,.ws-grip')) return;  // 컨트롤 조작은 그대로
+  if(ev.button!==undefined&&ev.button!==0) return;
+  const p=_wsPanes.find(x=>x.id===id); if(!p) return;
+  _wsFocus(id);
+  if(_wsMode==='free'){ if(p.maxi) return; _wsFreeMoveStart(ev,p); }
+  else { _wsTileReorderStart(ev,p); }
+}
+// 자유 배치: 제목표시줄 드래그로 창 이동
+function _wsFreeMoveStart(ev,p){
+  ev.preventDefault();
+  const grid=document.getElementById('wsGrid'), el=document.getElementById('wspane_'+p.id);
+  if(!grid||!el) return;
+  const gr=grid.getBoundingClientRect();
+  const sx=ev.clientX, sy=ev.clientY, ox=p.fx, oy=p.fy;
+  document.body.classList.add('ws-dragging'); el.classList.add('ws-moving');
+  function move(e){
+    let nx=ox+(e.clientX-sx), ny=oy+(e.clientY-sy);
+    nx=Math.max(0, Math.min(nx, Math.max(0, gr.width - el.offsetWidth)));
+    ny=Math.max(0, Math.min(ny, Math.max(0, gr.height - 44)));   // 제목표시줄은 항상 잡히도록
+    p.fx=nx; p.fy=ny; el.style.left=nx+'px'; el.style.top=ny+'px';
+  }
+  function up(){ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up);
+    document.body.classList.remove('ws-dragging'); el.classList.remove('ws-moving'); }
+  document.addEventListener('pointermove',move); document.addEventListener('pointerup',up);
+}
+// 자유 배치: 오른쪽 아래 모서리 드래그로 크기 조절
+function _wsFreeResizeStart(ev,id){
+  ev.preventDefault(); ev.stopPropagation();
+  const p=_wsPanes.find(x=>x.id===id); if(!p||p.maxi) return;
+  const grid=document.getElementById('wsGrid'), el=document.getElementById('wspane_'+id);
+  if(!grid||!el) return;
+  _wsFocus(id);
+  const gr=grid.getBoundingClientRect();
+  const sx=ev.clientX, sy=ev.clientY, ow=p.fw, oh=p.fh, MINW=260, MINH=200;
+  document.body.classList.add('ws-dragging');
+  function move(e){
+    let nw=ow+(e.clientX-sx), nh=oh+(e.clientY-sy);
+    nw=Math.max(MINW, Math.min(nw, gr.width - p.fx));
+    nh=Math.max(MINH, Math.min(nh, gr.height - p.fy));
+    p.fw=nw; p.fh=nh; el.style.width=nw+'px'; el.style.height=nh+'px';
+  }
+  function up(){ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up);
+    document.body.classList.remove('ws-dragging'); }
+  document.addEventListener('pointermove',move); document.addEventListener('pointerup',up);
+}
+// 자유 배치: 최대화 ↔ 복원
+function _wsToggleMax(id){
+  const p=_wsPanes.find(x=>x.id===id); if(!p) return;
+  p.maxi=!p.maxi; _wsFocus(id); wsRenderShell();
+}
+// 자유 배치: 열린 창을 겹치지 않게 격자로 정렬
+function _wsArrangeFree(){
+  const grid=document.getElementById('wsGrid'); if(!grid) return;
+  const {visible}=_wsLayout(); const n=visible.length; if(!n) return;
+  const W=grid.clientWidth, H=grid.clientHeight, gap=10;
+  const cols=Math.ceil(Math.sqrt(n)), rows=Math.ceil(n/cols);
+  const cw=Math.floor((W-gap*(cols+1))/cols), ch=Math.floor((H-gap*(rows+1))/rows);
+  visible.forEach((p,i)=>{ const r=Math.floor(i/cols), c=i%cols;
+    p.maxi=false; p.fx=gap+c*(cw+gap); p.fy=gap+r*(ch+gap); p.fw=cw; p.fh=ch; });
+  wsRenderShell();
+}
+// 타일 배치: 제목표시줄을 드래그해 창 순서를 바꿈(버튼 없이도 재배치)
+function _wsTileReorderStart(ev,p){
+  const startX=ev.clientX, startY=ev.clientY; let dragging=false, lockId=null;
+  function move(e){
+    if(!dragging){ if(Math.abs(e.clientX-startX)<6&&Math.abs(e.clientY-startY)<6) return;
+      dragging=true; document.body.classList.add('ws-dragging'); }
+    const {visible}=_wsLayout();
+    let over=null;
+    for(const q of visible){ if(q.id===p.id) continue;
+      const qe=document.getElementById('wspane_'+q.id); if(!qe) continue;
+      const r=qe.getBoundingClientRect();
+      if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){ over=q; break; } }
+    if(!over){ lockId=null; return; }
+    if(over.id===lockId) return;                 // 방금 자리를 바꾼 창과의 재교환(깜빡임) 방지
+    const a=_wsPanes.indexOf(p), b=_wsPanes.indexOf(over);
+    if(a>=0&&b>=0&&a!==b){ const t=_wsPanes[a]; _wsPanes[a]=_wsPanes[b]; _wsPanes[b]=t; lockId=over.id; wsRenderShell();
+      const me=document.getElementById('wspane_'+p.id); if(me) me.classList.add('ws-reorder'); }
+  }
+  function up(){ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up);
+    document.body.classList.remove('ws-dragging');
+    const me=document.getElementById('wspane_'+p.id); if(me) me.classList.remove('ws-reorder'); }
+  document.addEventListener('pointermove',move); document.addEventListener('pointerup',up);
 }
 function wsBodyHtml(p){
   if(p.loading) return `<div class="fp-loading"><div class="spinner" style="margin:0 auto 10px;"></div>불러오는 중...</div>`;
