@@ -706,6 +706,16 @@ body.dark .rec-chip{background:#20242c;}
 .rec-save-btn{flex-shrink:0;margin-left:auto;font-size:11px;font-weight:700;color:var(--g);background:var(--sf);
   border:1px solid var(--bd);border-radius:999px;padding:4px 11px;cursor:pointer;font-family:var(--font);transition:.12s;}
 .rec-save-btn:hover{background:var(--g);color:#fff;border-color:var(--g);}
+/* 자주 쓰는 문구(스니펫) */
+.snip-add{display:flex;gap:8px;margin-bottom:8px;}
+.snip-add .memo-input{flex:1;}
+.snip-hint{font-size:11.5px;color:var(--ht);margin-bottom:12px;}
+.snip-list{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow:auto;}
+.snip-item{display:flex;align-items:stretch;gap:4px;}
+.snip-text{flex:1;text-align:left;background:var(--card);border:1px solid var(--bd);border-radius:9px;padding:9px 12px;
+  font-size:13px;line-height:1.5;color:var(--tx);cursor:pointer;font-family:var(--font);white-space:pre-wrap;word-break:break-word;transition:.12s;}
+.snip-text:hover{border-color:var(--g);background:var(--gl);}
+.snip-empty{font-size:12.5px;color:var(--ht);text-align:center;padding:24px;border:1px dashed var(--bd);border-radius:10px;}
 /* 필터바 */
 .fbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
 .fbar select{padding:8px 12px;border:none;border-radius:10px;font-size:13px;background:var(--sf);color:var(--tx);cursor:pointer;outline:none;box-shadow:var(--shadow);font-family:var(--font);}
@@ -2106,6 +2116,18 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
     <div class="coll-body" id="ruleCheckBody"></div>
     <div class="fav-modal-foot">규칙 기반 점검(구조·상호참조·형식)이며, 의미적 조항 충돌은 담당자 확인이 필요합니다.</div>
+  </div>
+</div>
+
+<!-- 자주 쓰는 문구(스니펫) -->
+<div class="coll-modal-bg" id="snipBg" role="dialog" aria-modal="true" aria-label="자주 쓰는 문구" onclick="if(event.target===this)closeSnippets()">
+  <div class="coll-modal" style="width:min(560px,95vw);">
+    <div class="coll-hd">
+      <span style="font-size:15px;font-weight:700;flex:1;">🗂 자주 쓰는 문구</span>
+      <button class="fp-close" aria-label="닫기" onclick="closeSnippets()">✕</button>
+    </div>
+    <div class="coll-body" id="snipBody"></div>
+    <div class="fav-modal-foot">지출결의서·업무메모 입력칸에 붙여 쓰는 문구를 저장해 재사용합니다. 내 PC에만 저장됩니다.</div>
   </div>
 </div>
 
@@ -3850,7 +3872,7 @@ function _memoNoteView(m){
   const add=`<div class="memo-toolbar${ed?' editing':''}">`+
     `<input id="mnTitle" class="memo-input" placeholder="메모 제목" maxlength="80" value="${ed?escAttr(ed.title||''):''}">`+
     (ed?`<button class="memo-addbtn" onclick="_memoAddNote()">수정 저장</button><button class="memo-cancel" onclick="_memoCancelEdit()">취소</button>`
-       :`<button class="memo-addbtn" onclick="_memoAddNote()">추가</button>`)+`</div>`+
+       :`<button class="memo-addbtn" onclick="_memoAddNote()">추가</button><button class="memo-cancel" onclick="openSnippets()" title="자주 쓰는 문구 삽입">🗂 문구</button>`)+`</div>`+
     `<textarea id="mnBody" class="memo-search" style="height:70px;resize:vertical;" placeholder="메모 내용">${ed?escHtml(ed.body||''):''}</textarea>`+
     `<input id="mnLink" class="memo-search" placeholder="관련 링크(선택) — 규정·특허·공고 URL 붙여넣기" maxlength="500" value="${ed?escAttr(ed.link||''):''}">`+
     (ed?'':`<input class="memo-search" placeholder="메모 검색" value="${escAttr(_memoQ)}" oninput="_memoFilter(this.value)">`);
@@ -3980,6 +4002,7 @@ function openExpense(){
       `<div class="exp-form" id="expForm"><div id="expFields"></div>`+
         `<div class="exp-actions"><button class="exp-print" onclick="_expCopy(this)">📋 본문 복사</button>`+
           `<button class="exp-mini2" onclick="downloadHwpx(this)" title="표 서식을 한글(.hwpx) 파일로 저장">📄 한글(.hwpx)</button>`+
+          `<button class="exp-mini2" onclick="openSnippets()" title="자주 쓰는 문구를 입력칸에 삽입">🗂 문구</button>`+
           `<button class="exp-clear" onclick="_expReset()">초기화</button></div>`+
         `<div class="exp-hint2">여비·업무추진비의 <b>표</b>는 한글(HWP)·워드·ERP <b>서식 편집기</b>에 붙여넣어야 표로 유지됩니다. 표가 그대로 필요하면 <b>📄 한글(.hwpx)</b>로 받으세요.</div>`+
       `</div>`+
@@ -6626,6 +6649,40 @@ function loadSaved(){
     ? list.map(s=>`<span class="saved-chip-wrap"><button class="rec-chip" title="${escAttr(s.q)}" onclick="quick('${argAttr(s.q)}')">📌 ${escHtml(s.label||s.q)}</button><button class="saved-del" title="삭제" onclick="delSaved('${argAttr(s.q)}')" aria-label="삭제">✕</button></span>`).join('')
     : `<span class="saved-empty">자주 쓰는 검색을 <b>＋ 검색 저장</b>으로 모아두면 한 번에 다시 실행할 수 있어요.</span>`;
 }
+// ── 자주 쓰는 문구(스니펫) — 지출결의서·업무메모 입력칸에 삽입 ──
+const _SNIP_KEY='koat_snippets';
+let _snipTarget=null;   // 마지막으로 포커스한 입력칸(삽입 대상)
+document.addEventListener('focusin', e=>{ const t=e.target;
+  if(t && /^(INPUT|TEXTAREA)$/.test(t.tagName) && (t.tagName==='TEXTAREA'||t.type==='text'||!t.type)
+     && t.closest && t.closest('#expForm,#memoWrap')) _snipTarget=t; });
+function getSnippets(){ try{ const a=JSON.parse(localStorage.getItem(_SNIP_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch{ return []; } }
+function _setSnippets(a){ try{ localStorage.setItem(_SNIP_KEY, JSON.stringify(a)); }catch{} }
+function addSnippet(text){ text=String(text||'').trim(); if(!text) return; const a=getSnippets(); a.unshift({id:'s'+Date.now().toString(36), text}); if(a.length>100) a.length=100; _setSnippets(a); _snipRender(); }
+function delSnippet(id){ _setSnippets(getSnippets().filter(s=>s.id!==id)); _snipRender(); }
+function openSnippets(){ const bg=document.getElementById('snipBg'); if(!bg) return; _snipRender(); bg.classList.add('show'); _modalFocusIn('snipBg'); }
+function closeSnippets(){ const bg=document.getElementById('snipBg'); if(bg) bg.classList.remove('show'); _modalFocusOut(); }
+function _snipAdd(){ const el=document.getElementById('snipNew'); addSnippet(el&&el.value); if(el){ el.value=''; el.focus(); } }
+function _snipRender(){
+  const body=document.getElementById('snipBody'); if(!body) return;
+  const list=getSnippets();
+  const hasTgt=_snipTarget && document.body.contains(_snipTarget);
+  const add=`<div class="snip-add"><input id="snipNew" class="memo-input" placeholder="자주 쓰는 문구 입력 후 추가(예: 지출 적요·공문 상용구)" maxlength="500" onkeydown="if(event.key==='Enter')_snipAdd()"><button class="memo-addbtn" onclick="_snipAdd()">추가</button></div>`;
+  const hint=`<div class="snip-hint">${hasTgt?'문구를 클릭하면 방금 입력하던 칸에 삽입됩니다.':'삽입할 입력칸을 먼저 클릭한 뒤 문구를 고르면 자동 입력됩니다(대상이 없으면 복사).'}</div>`;
+  const rows=list.length? list.map(s=>`<div class="snip-item"><button class="snip-text" onclick="_snipUse('${s.id}')" title="삽입 또는 복사">${escHtml(s.text)}</button><button class="memo-del" onclick="delSnippet('${s.id}')" title="삭제">✕</button></div>`).join('')
+    : `<div class="snip-empty">저장된 문구가 없습니다. 위 칸에 자주 쓰는 문구를 추가하세요.</div>`;
+  body.innerHTML=add+hint+`<div class="snip-list">${rows}</div>`;
+}
+function _snipUse(id){
+  const s=getSnippets().find(x=>x.id===id); if(!s) return;
+  const t=_snipTarget;
+  if(t && document.body.contains(t)){
+    const v=t.value, st=(typeof t.selectionStart==='number')?t.selectionStart:v.length, en=(typeof t.selectionEnd==='number')?t.selectionEnd:v.length;
+    t.value=v.slice(0,st)+s.text+v.slice(en);
+    const pos=st+s.text.length; try{ t.selectionStart=t.selectionEnd=pos; }catch(e){}
+    t.dispatchEvent(new Event('input',{bubbles:true}));   // 저장 트리거(지출·메모 oninput)
+    closeSnippets(); setTimeout(()=>{ try{ t.focus(); }catch(e){} },0);
+  } else { _copyText(s.text, ()=>{}); closeSnippets(); }
+}
 async function loadRecent(){
   const rec = getRecent();
   const row = document.getElementById('recentRow');
@@ -8261,6 +8318,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(document.getElementById('diffPanel')?.classList.contains('show')){ closeDiff(); return; }
       if(document.getElementById('netPanel')?.classList.contains('show')){ closeNetPanel(); return; }
       if(document.getElementById('cmpPanel')?.classList.contains('show')){ closeCmp(); return; }
+      if(document.getElementById('snipBg')?.classList.contains('show')){ closeSnippets(); return; }
       if(document.getElementById('ruleCheckBg')?.classList.contains('show')){ closeRuleCheck(); return; }
       if(document.getElementById('favModalBg')?.classList.contains('show')){ closeFavModal(); return; }
       if(document.getElementById('collModalBg')?.classList.contains('show')){ closeCollModal(); return; }
