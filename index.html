@@ -358,6 +358,87 @@ body.dark .exp-limit.ok{background:rgba(34,197,94,.16);color:#6ee7a0;} body.dark
 /* ── 업무 메모(할 일·일정·연락처·메모, 로컬 저장) ───────────────────────────── */
 .sm-badge{min-width:16px;height:16px;padding:0 4px;margin-left:5px;border-radius:999px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;line-height:1;}
 .memo-wrap{max-width:960px;}
+/* 용역도우미 */
+.svc-wrap{max-width:840px;}
+.svc-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1px solid var(--bd);padding-bottom:2px;}
+.svc-tab{font-size:13px;font-weight:700;color:var(--mu);background:transparent;border:none;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;font-family:var(--font);}
+.svc-tab:hover{color:var(--tx);}
+.svc-tab.active{color:var(--g);border-bottom-color:var(--g);}
+.svc-card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow);}
+.svc-card-h{font-size:13.5px;font-weight:800;color:var(--tx);margin-bottom:10px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+.svc-sub{font-size:11px;font-weight:600;color:var(--mu);}
+.svc-hint{font-size:12.5px;color:var(--mu);margin-bottom:10px;line-height:1.6;}
+.svc-note{font-size:12px;color:var(--mu);line-height:1.7;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:11px 13px;margin-bottom:14px;}
+.svc-note b{color:var(--tx);}
+/* 판단 질문 */
+.svc-q-n{font-size:11px;font-weight:800;color:var(--g);margin-bottom:6px;}
+.svc-q-t{font-size:15px;font-weight:700;color:var(--tx);line-height:1.5;}
+.svc-q-ex{font-size:12px;color:var(--mu);margin:6px 0 12px;}
+.svc-q-btns{display:flex;gap:8px;margin-top:12px;}
+.svc-btn{font-size:13px;font-weight:700;border-radius:9px;padding:9px 20px;cursor:pointer;font-family:var(--font);border:1px solid var(--bd);background:var(--sf);color:var(--tx);transition:.12s;}
+.svc-btn.yes{background:var(--g);border-color:var(--g);color:#fff;}
+.svc-btn.yes:hover{background:var(--gd);}
+.svc-btn.no:hover{border-color:var(--g);color:var(--g);}
+.svc-btn.ghost{background:transparent;color:var(--mu);}
+.svc-btn.ghost:hover{color:var(--tx);border-color:var(--g);}
+.svc-btn.sm{font-size:12px;padding:6px 13px;margin-top:10px;}
+.svc-result{border-radius:10px;padding:12px 14px;margin-top:12px;}
+.svc-result.go{background:var(--gl);border:1px solid transparent;}
+.svc-result.stop{background:#fef2f2;border:1px solid #fecaca;}
+.svc-result.warn{background:#fff7ed;border:1px solid #fed7aa;}
+body.dark .svc-result.stop{background:rgba(220,38,38,.14);border-color:transparent;}
+body.dark .svc-result.warn{background:rgba(234,88,12,.16);border-color:transparent;}
+.svc-result-t{font-size:14px;font-weight:800;color:var(--tx);}
+.svc-result-d{font-size:12.5px;color:var(--mu);margin-top:4px;line-height:1.6;}
+.svc-checks{display:flex;flex-direction:column;gap:7px;margin-bottom:4px;}
+.svc-chk{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:var(--tx);cursor:pointer;line-height:1.5;}
+.svc-chk input{margin-top:3px;flex-shrink:0;}
+/* 금액대 선택 */
+.svc-tier{display:inline-flex;border:1px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+.svc-tier-b{font-size:13px;font-weight:700;color:var(--mu);background:transparent;border:none;padding:8px 18px;cursor:pointer;font-family:var(--font);border-right:1px solid var(--bd);}
+.svc-tier-b:last-child{border-right:none;}
+.svc-tier-b.on{background:var(--g);color:#fff;}
+/* 서류 체크리스트 */
+.svc-doc-h{display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:800;color:var(--tx);margin:10px 0 8px;}
+.svc-doc-h:first-child{margin-top:0;}
+.svc-prog{flex:1;height:6px;background:var(--bd);border-radius:3px;overflow:hidden;max-width:200px;}
+.svc-prog i{display:block;height:100%;background:var(--g);border-radius:3px;transition:width .2s;}
+.svc-doc-list{display:flex;flex-direction:column;gap:2px;}
+.svc-doc{display:flex;gap:9px;align-items:baseline;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:13px;}
+.svc-doc:hover{background:var(--bg);}
+.svc-doc.done .svc-doc-n{text-decoration:line-through;color:var(--ht);}
+.svc-doc input{flex-shrink:0;}
+.svc-doc-n{font-weight:600;color:var(--tx);flex-shrink:0;}
+.svc-doc-tags{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;min-width:0;}
+.svc-tag{font-size:10px;font-weight:800;border-radius:5px;padding:1px 7px;flex-shrink:0;}
+.svc-tag.form{color:var(--gp);background:var(--gl);}
+.svc-tag.firm{color:#9a3412;background:#ffedd5;}
+body.dark .svc-tag.firm{color:#fdba74;background:rgba(234,88,12,.18);}
+.svc-doc-note{font-size:11.5px;color:var(--mu);}
+.svc-erp{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--tx);line-height:1.5;}
+.svc-erp b{color:var(--g);}
+/* 절차 스텝 */
+.svc-steps{display:flex;flex-direction:column;}
+.svc-step{display:flex;gap:11px;padding:8px 0;border-bottom:1px dashed var(--bd);}
+.svc-step:last-child{border-bottom:none;}
+.svc-step-n{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--gl);color:var(--gp);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.svc-step-main{min-width:0;}
+.svc-step-t{font-size:13.5px;font-weight:600;color:var(--tx);line-height:1.5;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.svc-step-note{font-size:11.5px;color:var(--g);font-weight:600;}
+.svc-step-sub{font-size:12px;color:var(--mu);margin-top:3px;line-height:1.6;}
+.svc-actor{font-size:10px;font-weight:800;border-radius:5px;padding:1px 7px;flex-shrink:0;}
+.svc-actor.dept{color:var(--gp);background:var(--gl);}
+.svc-actor.firm{color:#9a3412;background:#ffedd5;}
+body.dark .svc-actor.firm{color:#fdba74;background:rgba(234,88,12,.18);}
+.svc-legend{font-size:11.5px;color:var(--mu);margin-top:10px;display:flex;align-items:center;gap:4px;}
+/* 참고 표 */
+.svc-ref-tbl{display:flex;flex-direction:column;gap:2px;}
+.svc-ref-row{display:flex;gap:10px;padding:6px 4px;border-bottom:1px solid var(--bd);font-size:12.5px;}
+.svc-ref-row:last-child{border-bottom:none;}
+.svc-ref-a{flex:0 0 42%;font-weight:700;color:var(--tx);}
+.svc-ref-b{flex:1;color:var(--mu);}
+.svc-ul{margin:0;padding-left:18px;font-size:12.5px;color:var(--tx);line-height:1.8;}
+@media (max-width:640px){ .svc-ref-a{flex-basis:48%;} }
 .memo-privacy{font-size:11.5px;color:var(--ht);background:var(--gl);border:1px solid var(--bd);border-radius:8px;padding:7px 11px;margin-bottom:12px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
 .memo-privacy b{color:var(--gp);}
 .memo-privacy .memo-io{margin-left:auto;display:flex;gap:6px;}
@@ -2431,6 +2512,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
         <button class="sm-item" id="smHome" onclick="openDashboard()" title="오늘의 업무 — 마감 임박·할 일·최근 검색 한눈에"><span class="sm-ic" aria-hidden="true">🏠</span><span>오늘의 업무</span><span id="dashBadge" class="sm-badge" hidden></span></button>
         <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 본문 작성"><span class="sm-ic" data-icon="expense"></span><span>지출결의서</span></button>
         <button class="sm-item" id="smMemo" onclick="openMemo()" title="업무 메모 — 할 일·일정·연락처·메모(내 PC에만 저장)"><span class="sm-ic" data-icon="memo"></span><span>업무메모</span><span id="memoBadge" class="sm-badge" hidden></span></button>
+        <button class="sm-item" id="smService" onclick="openService()" title="용역도우미 — 용역 여부·심의 판단, 금액별 필요서류 체크리스트·절차"><span class="sm-ic" aria-hidden="true">🧰</span><span>용역도우미</span></button>
       </div>
     </div>
   </aside>
@@ -3571,6 +3653,7 @@ function closeAssist(){
   const ex=document.getElementById('smExpense'); if(ex) ex.classList.remove('active');
   const mm=document.getElementById('smMemo'); if(mm) mm.classList.remove('active');
   const hm=document.getElementById('smHome'); if(hm) hm.classList.remove('active');
+  const sv=document.getElementById('smService'); if(sv) sv.classList.remove('active');
 }
 // ══════════════════════════════════════════════════════════════════════════
 // 오늘의 업무(개인 홈 대시보드) — 마감 임박·할 일·일정·최근 검색을 한 화면에.
@@ -4013,6 +4096,210 @@ function _hanAmount(n){
   return res;
 }
 function _fmtKDate(iso){ const m=String(iso||'').match(/(\d{4})-(\d{2})-(\d{2})/); return m?`${m[1]}.${m[2]}.${m[3]}`:String(iso||''); }
+
+// ══════════════════════════════════════════════════════════════════════════
+// 용역도우미 — 용역 여부·심의 대상 판단 + 금액대별 필요서류 체크리스트 + 절차 흐름도.
+// 출처: (공사/용역) 수의계약 흐름도·필요서류, 용역판단흐름도(위탁용역관리규칙). 서버·AI 없음.
+// ══════════════════════════════════════════════════════════════════════════
+let _svcTab='judge', _svcTier='over', _svcJudgeStep=0, _svcJudgeDone=null;
+const _SVC_KEY='koat_svc_chk';
+const SVC_JUDGE=[
+  {q:'외부 수행자로부터 서비스를 제공받고 대가를 지급하는 계약인가?', ex:'예) 정책연구·조사분석·설계·시설/장비 유지보수·행사운영 위탁 등',
+   yes:{title:'용역에 해당합니다', desc:'다음 「2. 심의 대상 여부」를 확인하세요.', kind:'go'}},
+  {q:'반복적 단순업무인가?', ex:'예) 단순 조사·데이터 입력·반복 작업 등',
+   yes:{title:'내부 처리를 우선 검토', desc:'상시·반복 단순업무는 내부 수행이 원칙입니다.', kind:'stop'}},
+  {q:'전문지식·기술이 필요한가?', ex:'예) 정책연구·조사분석·설계·자문 등',
+   yes:{title:'용역 검토 가능(위탁용역 추진 가능)', desc:'「2. 심의 대상 여부」도 함께 확인하세요.', kind:'go'}},
+  {q:'일회성·임시성 업무인가?', ex:'예) 일시적 인력·단기 지원·행사 운영 등',
+   yes:{title:'용역 검토 가능(위탁용역 추진 가능)', desc:'「2. 심의 대상 여부」도 함께 확인하세요.', kind:'go'},
+   no:{title:'용역 불필요 또는 추가 검토', desc:'상시·정규 업무는 내부 수행이 원칙입니다.', kind:'stop'}},
+];
+const SVC_REVIEW_EXEMPT=[
+  '[별표] 심의 제외 대상 기술용역·일반용역에 해당 (참고 탭)',
+  '다른 내규에 별도 심의 규정이 있는 경우',
+  '추정 소요예산 1천만원 이하',
+  '중앙정부·지방자치단체 수탁사업(위탁기관 승인 또는 협의된 용역, 기본·세부추진계획 포함사항)',
+  '고객만족도·전화친절도·청렴도 등 반복 설문조사',
+];
+const SVC_EXEMPT_TABLE={
+  '기술용역':[
+    ['건설용역','건설기술진흥법 제2조'],
+    ['엔지니어링활동용역','엔지니어링산업진흥법 제2조'],
+    ['건축설계와 공사감리용역','건축사법 제2조'],
+    ['전력설계와 감리용역','전력기술관리법 제2조'],
+    ['정보통신용역','정보통신공사업법 제2조 / 소프트웨어진흥법 제21조 / 정보시스템 구축·운영지침'],
+    ['소방시설용역','소방시설공사업법 제2조'],
+    ['주택사업용역','주택법 제24조'],
+    ['측량용역','공간정보의 구축 및 관리 등에 관한 법률 제2조'],
+    ['연구실안전점검·정밀안전진단용역','연구실 안전환경 조성에 관한 법률 제14조·제15조'],
+  ],
+  '일반용역':[
+    ['청소용역','공중위생관리법 제2조'],
+    ['경비용역','경비업법 제2조'],
+    ['폐기물처리용역','폐기물관리법 제25조'],
+    ['건설폐기물처리용역','건설폐기물의 재활용 촉진에 관한 법률 제2조'],
+    ['시설·장비관리용역','전기·소방·정보통신장비·수목 등 유지·보수'],
+  ],
+};
+const SVC_DOCS={
+  under:{ label:'1천만원 미만',
+    contract:[
+      {n:'승낙사항',form:1,note:'계약상대자 계약서 양식 활용 가능'},
+      {n:'수의계약 체결 제한 여부 확인서',form:1},
+      {n:'안전보건서약서',form:1,note:'시설/공사-필수, 용역-필요 시'},
+      {n:'사용인감계',form:1,note:'날인 도장과 인감증명서 상 도장이 상이한 경우'},
+      {n:'견적서',form:0,note:'날인'},
+      {n:'사업자등록증',form:0},
+      {n:'인감증명서',form:0,note:'법인-법인인감증명서'},
+      {n:'법인등기부등본',form:0,note:'법인인 경우'},
+      {n:'통장사본',form:0},
+    ],
+    payment:[ {n:'결과보고서',form:0,note:'공사-사진대지'},{n:'4대보험 완납증명서',form:0,note:'국민연금·건강보험 확인 필수'},{n:'세금계산서',form:0} ]
+  },
+  over:{ label:'1천만원 이상',
+    contract:[
+      {n:'표준계약서',form:1,note:'계약상대자 계약서 양식 활용 가능'},
+      {n:'보안각서',form:1},
+      {n:'보증금 지급각서',form:1},
+      {n:'수의계약 체결 제한 여부 확인서',form:1},
+      {n:'퇴직자 재직 여부 확인서',form:1,note:'계약상대자가 법인인 경우 필수'},
+      {n:'안전보건서약서(안전보건관리계획서)',form:1,note:'시설/공사-필수, 용역-필요 시'},
+      {n:'사용인감계',form:1,note:'날인 도장과 인감증명서 상 도장이 상이한 경우'},
+      {n:'견적서',form:0,note:'날인'},
+      {n:'사업자등록증',form:0},
+      {n:'인감증명서',form:0,note:'법인-법인인감증명서'},
+      {n:'법인등기부등본',form:0,note:'법인인 경우'},
+      {n:'통장사본',form:0},
+      {n:'수입인지(2만원)',form:0,note:'우체국 또는 전자수입인지 사이트에서 구입'},
+    ],
+    payment:[ {n:'결과보고서',form:0,note:'공사-사진대지'},{n:'4대보험 완납증명서',form:0,note:'국민연금·건강보험 확인 필수'},{n:'세금계산서',form:0} ]
+  }
+};
+const _SVC_FLOW_OVER=[
+  {a:'부서',t:'청구서 작성 (ERP 시스템)',sub:['과업지시서','산출내역서']},
+  {a:'부서',t:'계약업체에 계약서 및 제출서류 안내 (메일)'},
+  {a:'업체',t:'계약서 등 제반서류 제출 (문서24)'},
+  {a:'부서',t:'계약서에 직인 날인 후 계약업체에 회신 (공문)'},
+  {a:'부서',t:'ERP 계약체결/등록',sub:['계약서 등 관련 서류 등록']},
+  {a:'',t:'사업 시작'},
+  {a:'부서',t:'선금신청 안내 (메일)',note:'업체 요구 시'},
+  {a:'업체',t:'선금신청 서류제출 (문서24)'},
+  {a:'부서',t:'선금 지급 (최대 70%)'},
+  {a:'부서',t:'선금정산 안내 (메일)',note:'과업 종료 전'},
+  {a:'업체',t:'선금정산 서류제출 (문서24)'},
+  {a:'부서',t:'완료서류 제출안내 (메일)',sub:['4대보험 완납증명서','결과보고서','세금계산서']},
+  {a:'업체',t:'완료서류 제출 (문서24) 및 세금계산서 발행'},
+  {a:'부서',t:'완료대금 지급'},
+];
+const SVC_FLOW={
+  over:_SVC_FLOW_OVER,
+  under:[
+    {a:'부서',t:'청구서 작성 (ERP 시스템)',sub:['과업지시서','산출내역서']},
+    {a:'부서',t:'계약업체에 승낙사항 및 제출서류 안내 (메일)'},
+    {a:'업체',t:'승낙사항 등 제반서류 제출 (문서24)'},
+    {a:'부서',t:'ERP 계약체결/등록',sub:['계약서 등 관련 서류 등록']},
+    {a:'',t:'사업 시작'},
+    {a:'부서',t:'선금신청 안내 (메일)',note:'업체 요구 시'},
+    {a:'업체',t:'선금신청 서류제출 (문서24)'},
+    {a:'부서',t:'선금 지급 (최대 70%)'},
+    {a:'부서',t:'선금정산 안내 (메일)',note:'과업 종료 전'},
+    {a:'업체',t:'선금정산 서류제출 (문서24)'},
+    {a:'부서',t:'완료서류 제출안내 (메일)',sub:['4대보험 완납증명서','결과보고서','세금계산서']},
+    {a:'업체',t:'완료서류 제출 (문서24) 및 세금계산서 발행'},
+    {a:'부서',t:'완료대금 지급'},
+  ],
+};
+function _svcChk(){ try{ return JSON.parse(localStorage.getItem(_SVC_KEY)||'{}'); }catch{ return {}; } }
+function _svcChkSet(o){ try{ localStorage.setItem(_SVC_KEY, JSON.stringify(o)); }catch{} }
+function _svcToggle(tier,cat,i){ const o=_svcChk(); o[tier]=o[tier]||{}; o[tier][cat]=o[tier][cat]||{}; o[tier][cat][i]=!o[tier][cat][i]; _svcChkSet(o); _svcRender(); }
+function _svcResetChk(tier){ const o=_svcChk(); if(o[tier]){ delete o[tier]; _svcChkSet(o); } _svcRender(); }
+function openService(){
+  if(typeof wsBackToList==='function') wsBackToList();
+  document.querySelector('.main-content').classList.add('assist-on');
+  document.querySelectorAll('.sm-item.active').forEach(el=>el.classList.remove('active'));
+  const tab=document.getElementById('smService'); if(tab) tab.classList.add('active');
+  _assistMode='service'; _svcJudgeStep=0; _svcJudgeDone=null;
+  const p=document.getElementById('assistantPanel');
+  p.innerHTML=`<div class="assist-head"><span class="assist-h-ic">🧰</span>`+
+    `<span class="assist-h-t">용역도우미</span>`+
+    `<span class="assist-h-hint">용역 여부·심의 판단부터 금액대별 필요서류·절차까지. 「위탁용역관리규칙」·수의계약 기준 반영.</span>`+_assistCloseBtn()+`</div>`+
+    `<div class="svc-wrap" id="svcWrap"></div>`;
+  _svcRender();
+}
+function _svcSetTab(k){ _svcTab=k; _svcRender(); }
+function _svcSetTier(t){ _svcTier=t; _svcRender(); }
+function _svcRender(){
+  const w=document.getElementById('svcWrap'); if(!w) return;
+  const tabs=[['judge','⚖ 판단'],['docs','📋 필요서류'],['flow','🔀 절차'],['ref','📖 참고']];
+  const tabHtml=`<div class="svc-tabs">`+tabs.map(([k,l])=>`<button class="svc-tab${_svcTab===k?' active':''}" onclick="_svcSetTab('${k}')">${l}</button>`).join('')+`</div>`;
+  let body = _svcTab==='judge'?_svcJudgeView() : _svcTab==='docs'?_svcDocsView() : _svcTab==='flow'?_svcFlowView() : _svcRefView();
+  w.innerHTML=tabHtml+`<div class="svc-body">${body}</div>`;
+}
+function _svcAnswer(ans){
+  const q=SVC_JUDGE[_svcJudgeStep];
+  if(ans==='yes') _svcJudgeDone=q.yes;
+  else if(_svcJudgeStep<SVC_JUDGE.length-1) _svcJudgeStep++;
+  else _svcJudgeDone=q.no;
+  _svcRender();
+}
+function _svcJudgeReset(){ _svcJudgeStep=0; _svcJudgeDone=null; _svcRender(); }
+function _svcJudgeView(){
+  let j;
+  if(_svcJudgeDone){ const r=_svcJudgeDone;
+    j=`<div class="svc-result ${r.kind}"><div class="svc-result-t">${r.kind==='go'?'✅':'⛔'} ${escHtml(r.title)}</div><div class="svc-result-d">${escHtml(r.desc)}</div></div>`+
+      `<button class="svc-btn ghost sm" onclick="_svcJudgeReset()">↺ 다시 판단</button>`;
+  } else {
+    const q=SVC_JUDGE[_svcJudgeStep];
+    j=`<div class="svc-q"><div class="svc-q-n">Q${_svcJudgeStep+1} / ${SVC_JUDGE.length}</div>`+
+      `<div class="svc-q-t">${escHtml(q.q)}</div>`+(q.ex?`<div class="svc-q-ex">${escHtml(q.ex)}</div>`:'')+
+      `<div class="svc-q-btns"><button class="svc-btn yes" onclick="_svcAnswer('yes')">예</button><button class="svc-btn no" onclick="_svcAnswer('no')">아니오</button></div></div>`;
+  }
+  const judge=`<div class="svc-card"><div class="svc-card-h">1. 용역 해당 여부</div>${j}</div>`;
+  const rc=((_svcChk().review||{}).x)||{};
+  const anyEx=SVC_REVIEW_EXEMPT.some((_,i)=>rc[i]);
+  const rev=`<div class="svc-card"><div class="svc-card-h">2. 심의 대상 여부 <span class="svc-sub">「위탁용역관리규칙」 제12조</span></div>`+
+    `<div class="svc-hint">아래 <b>심의 제외 조건</b> 중 하나라도 해당하면 위원회 심의 없이 계약을 진행할 수 있습니다.</div>`+
+    `<div class="svc-checks">`+SVC_REVIEW_EXEMPT.map((t,i)=>`<label class="svc-chk"><input type="checkbox" ${rc[i]?'checked':''} onchange="_svcToggle('review','x',${i})"><span>${escHtml(t)}</span></label>`).join('')+`</div>`+
+    `<div class="svc-result ${anyEx?'go':'warn'}"><div class="svc-result-t">${anyEx?'✅ 심의 제외 대상':'📌 용역관리심의위원회 심의 대상'}</div>`+
+      `<div class="svc-result-d">${anyEx?'위원회 심의 없이 계약을 진행할 수 있습니다.':'용역계획서를 작성해 용역관리심의위원회 심의를 요청하세요. 심의 통과 후 계약을 추진합니다.'}</div></div>`+
+    `<div class="svc-note">※ 자체 추진·심의 완료 용역 모두 <b>중간점검보고(별지4호)·결과보고(별지5호)</b>를 기획조정실에 제출. 중간점검·협의 생략 가능: 자문형 용역 / 용역기간 2개월 / 2천만원 이하.</div></div>`;
+  return judge+rev;
+}
+function _svcTierSel(){ return `<div class="svc-tier">`+[['under','1천만원 미만'],['over','1천만원 이상']].map(([k,l])=>`<button class="svc-tier-b${_svcTier===k?' on':''}" onclick="_svcSetTier('${k}')">${l}</button>`).join('')+`</div>`; }
+function _svcDocsView(){
+  const d=SVC_DOCS[_svcTier], st=(_svcChk()[_svcTier])||{};
+  const list=(cat,items)=>{
+    const cc=st[cat]||{}; const done=items.filter((_,i)=>cc[i]).length; const pct=items.length?Math.round(done/items.length*100):0;
+    const rows=items.map((it,i)=>`<label class="svc-doc${cc[i]?' done':''}"><input type="checkbox" ${cc[i]?'checked':''} onchange="_svcToggle('${_svcTier}','${cat}',${i})">`+
+      `<span class="svc-doc-n">${escHtml(it.n)}</span>`+
+      `<span class="svc-doc-tags">${it.form?'<span class="svc-tag form">양식제공</span>':'<span class="svc-tag firm">업체준비</span>'}${it.note?`<span class="svc-doc-note">${escHtml(it.note)}</span>`:''}</span></label>`).join('');
+    return `<div class="svc-doc-h"><span>${cat==='contract'?'계약체결 서류':'대금지급 서류'}</span><span class="svc-prog"><i style="width:${pct}%"></i></span><b>${done}/${items.length}</b></div><div class="svc-doc-list">${rows}</div>`;
+  };
+  return _svcTierSel()+
+    `<div class="svc-card">${list('contract',d.contract)}${list('payment',d.payment)}`+
+    `<div style="text-align:right;margin-top:8px;"><button class="svc-btn ghost sm" onclick="_svcResetChk('${_svcTier}')">체크 초기화</button></div></div>`+
+    `<div class="svc-card"><div class="svc-card-h">ERP 첨부 단계</div><div class="svc-erp">`+
+      `<div><b>① 청구서 작성</b> — 과업지시서 · 산출내역서</div>`+
+      `<div><b>② 계약체결/등록</b> (zip 업로드) — 위 <b>계약체결 서류</b> 일체(해당 시 항목 제외)</div>`+
+      `<div><b>③ 대금지급</b> — 결과보고서 · 4대보험 완납증명서 · 세금계산서</div></div></div>`+
+    `<div class="svc-note"><b>안전보건서약서</b>는 계약상대자가 과업수행을 위해 외부활동을 하거나 우리 기관을 방문해 작업하는 경우 필수(예: 현장방문조사, 평지 물품 설치·수선). 위험 활동이거나 다수 인원이 집합하는 용역은 <b>안전보건관리계획서</b>를 받아야 합니다(예: 워크숍·박람회, 고소작업, 7일 이상 상주 용역).<br>※ 문서24로 수령한 문서는 원본과 동일한 효력. 비전자문서를 직접 수령한 경우 원본 별도 보관 필수.</div>`;
+}
+function _svcFlowView(){
+  const steps=SVC_FLOW[_svcTier];
+  const rows=steps.map((s,i)=>`<div class="svc-step">`+
+    `<span class="svc-step-n">${i+1}</span>`+
+    `<div class="svc-step-main"><div class="svc-step-t">${s.a?`<span class="svc-actor ${s.a==='부서'?'dept':'firm'}">${s.a}</span>`:''}${escHtml(s.t)}${s.note?`<span class="svc-step-note">* ${escHtml(s.note)}</span>`:''}</div>`+
+    (s.sub?`<div class="svc-step-sub">${s.sub.map(x=>'· '+escHtml(x)).join('<br>')}</div>`:'')+`</div></div>`).join('');
+  return _svcTierSel()+`<div class="svc-card"><div class="svc-card-h">${SVC_DOCS[_svcTier].label} 수의계약 절차</div><div class="svc-steps">${rows}</div>`+
+    `<div class="svc-legend"><span class="svc-actor dept">부서</span> 담당 부서 &nbsp; <span class="svc-actor firm">업체</span> 계약업체</div></div>`;
+}
+function _svcRefView(){
+  const tbl=k=>`<div class="svc-card"><div class="svc-card-h">${k}</div><div class="svc-ref-tbl">`+
+    SVC_EXEMPT_TABLE[k].map(([a,b])=>`<div class="svc-ref-row"><span class="svc-ref-a">${escHtml(a)}</span><span class="svc-ref-b">${escHtml(b)}</span></div>`).join('')+`</div></div>`;
+  const cond=`<div class="svc-card"><div class="svc-card-h">심의 제외 대상 (제12조)</div><ul class="svc-ul">`+SVC_REVIEW_EXEMPT.map(t=>`<li>${escHtml(t)}</li>`).join('')+`</ul></div>`;
+  return cond+tbl('기술용역')+tbl('일반용역')+
+    `<div class="svc-note">근거: 「위탁용역관리규칙」 제2조(정의)·제11조(심의요청)·제12조(심의 제외)·제14~18조·제21조. 심의 대상 여부는 본사업·수탁사업 등 예산목 기준으로 판단하지 않습니다.</div>`;
+}
 function openExpense(){
   if(typeof wsBackToList==='function') wsBackToList();
   document.querySelector('.main-content').classList.add('assist-on');
@@ -6702,6 +6989,7 @@ function _cmdkBuild(){
   act('오늘의 업무','도구',openDashboard);
   act('업무 메모','도구',openMemo);
   act('지출결의서','도구',openExpense);
+  act('용역도우미','도구',openService);
   act('자주 쓰는 문구','도구',openSnippets);
   act('즐겨찾기','도구',openFavModal);
   act('기업 조회','공공조회',()=>openAssist('company'));
