@@ -359,11 +359,18 @@ body.dark .exp-limit.ok{background:rgba(34,197,94,.16);color:#6ee7a0;} body.dark
 .sm-badge{min-width:16px;height:16px;padding:0 4px;margin-left:5px;border-radius:999px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;line-height:1;}
 .memo-wrap{max-width:960px;}
 /* 용역도우미 */
-.svc-wrap{max-width:840px;}
-.svc-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1px solid var(--bd);padding-bottom:2px;}
-.svc-tab{font-size:13px;font-weight:700;color:var(--mu);background:transparent;border:none;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;font-family:var(--font);}
-.svc-tab:hover{color:var(--tx);}
-.svc-tab.active{color:var(--g);border-bottom-color:var(--g);}
+.svc-wrap{max-width:1120px;}
+/* 2단 레이아웃: 왼쪽 판단·서류·절차(한 화면), 오른쪽 고정 참고 */
+.svc-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start;}
+.svc-main{min-width:0;}
+.svc-side{position:sticky;top:6px;max-height:calc(100vh - 150px);overflow:auto;}
+.svc-side-h{font-size:13px;font-weight:800;color:var(--tx);margin-bottom:10px;}
+.svc-side .svc-card{padding:12px 13px;margin-bottom:10px;}
+.svc-side .svc-card-h{font-size:12.5px;margin-bottom:8px;}
+.svc-sec-title{font-size:14.5px;font-weight:800;color:var(--g);margin:4px 0 12px;padding-top:8px;border-top:2px solid var(--gl);display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+.svc-sec-title:first-child{padding-top:0;border-top:none;}
+.svc-sec-sub{font-size:11.5px;font-weight:600;color:var(--mu);}
+@media (max-width:860px){ .svc-layout{grid-template-columns:1fr;} .svc-side{position:static;max-height:none;overflow:visible;} }
 .svc-card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow);}
 .svc-card-h{font-size:13.5px;font-weight:800;color:var(--tx);margin-bottom:10px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
 .svc-sub{font-size:11px;font-weight:600;color:var(--mu);}
@@ -4101,7 +4108,7 @@ function _fmtKDate(iso){ const m=String(iso||'').match(/(\d{4})-(\d{2})-(\d{2})/
 // 용역도우미 — 용역 여부·심의 대상 판단 + 금액대별 필요서류 체크리스트 + 절차 흐름도.
 // 출처: (공사/용역) 수의계약 흐름도·필요서류, 용역판단흐름도(위탁용역관리규칙). 서버·AI 없음.
 // ══════════════════════════════════════════════════════════════════════════
-let _svcTab='judge', _svcTier='over', _svcJudgeStep=0, _svcJudgeDone=null;
+let _svcTier='over', _svcJudgeStep=0, _svcJudgeDone=null;
 const _SVC_KEY='koat_svc_chk';
 const SVC_JUDGE=[
   {q:'외부 수행자로부터 서비스를 제공받고 대가를 지급하는 계약인가?', ex:'예) 정책연구·조사분석·설계·시설/장비 유지보수·행사운영 위탁 등',
@@ -4226,14 +4233,16 @@ function openService(){
     `<div class="svc-wrap" id="svcWrap"></div>`;
   _svcRender();
 }
-function _svcSetTab(k){ _svcTab=k; _svcRender(); }
 function _svcSetTier(t){ _svcTier=t; _svcRender(); }
+// 탭 전환 없이 판단·서류·절차를 한 화면에 세로로 배치하고, 참고는 오른쪽에 고정.
 function _svcRender(){
   const w=document.getElementById('svcWrap'); if(!w) return;
-  const tabs=[['judge','⚖ 판단'],['docs','📋 필요서류'],['flow','🔀 절차'],['ref','📖 참고']];
-  const tabHtml=`<div class="svc-tabs">`+tabs.map(([k,l])=>`<button class="svc-tab${_svcTab===k?' active':''}" onclick="_svcSetTab('${k}')">${l}</button>`).join('')+`</div>`;
-  let body = _svcTab==='judge'?_svcJudgeView() : _svcTab==='docs'?_svcDocsView() : _svcTab==='flow'?_svcFlowView() : _svcRefView();
-  w.innerHTML=tabHtml+`<div class="svc-body">${body}</div>`;
+  const main =
+    `<div class="svc-sec-title">⚖ 1) 판단</div>`+ _svcJudgeView()+
+    `<div class="svc-sec-title">📋 2) 필요서류 · 🔀 절차 <span class="svc-sec-sub">금액대를 고르면 아래 서류·절차가 함께 바뀝니다</span></div>`+
+    _svcTierSel()+ _svcDocsView()+ _svcFlowView();
+  const side = `<div class="svc-side-h">📖 참고 — 심의 제외 대상·근거</div>`+ _svcRefView();
+  w.innerHTML=`<div class="svc-layout"><div class="svc-main">${main}</div><aside class="svc-side">${side}</aside></div>`;
 }
 function _svcAnswer(ans){
   const q=SVC_JUDGE[_svcJudgeStep];
@@ -4275,8 +4284,7 @@ function _svcDocsView(){
       `<span class="svc-doc-tags">${it.form?'<span class="svc-tag form">양식제공</span>':'<span class="svc-tag firm">업체준비</span>'}${it.note?`<span class="svc-doc-note">${escHtml(it.note)}</span>`:''}</span></label>`).join('');
     return `<div class="svc-doc-h"><span>${cat==='contract'?'계약체결 서류':'대금지급 서류'}</span><span class="svc-prog"><i style="width:${pct}%"></i></span><b>${done}/${items.length}</b></div><div class="svc-doc-list">${rows}</div>`;
   };
-  return _svcTierSel()+
-    `<div class="svc-card">${list('contract',d.contract)}${list('payment',d.payment)}`+
+  return `<div class="svc-card">${list('contract',d.contract)}${list('payment',d.payment)}`+
     `<div style="text-align:right;margin-top:8px;"><button class="svc-btn ghost sm" onclick="_svcResetChk('${_svcTier}')">체크 초기화</button></div></div>`+
     `<div class="svc-card"><div class="svc-card-h">ERP 첨부 단계</div><div class="svc-erp">`+
       `<div><b>① 청구서 작성</b> — 과업지시서 · 산출내역서</div>`+
@@ -4290,7 +4298,7 @@ function _svcFlowView(){
     `<span class="svc-step-n">${i+1}</span>`+
     `<div class="svc-step-main"><div class="svc-step-t">${s.a?`<span class="svc-actor ${s.a==='부서'?'dept':'firm'}">${s.a}</span>`:''}${escHtml(s.t)}${s.note?`<span class="svc-step-note">* ${escHtml(s.note)}</span>`:''}</div>`+
     (s.sub?`<div class="svc-step-sub">${s.sub.map(x=>'· '+escHtml(x)).join('<br>')}</div>`:'')+`</div></div>`).join('');
-  return _svcTierSel()+`<div class="svc-card"><div class="svc-card-h">${SVC_DOCS[_svcTier].label} 수의계약 절차</div><div class="svc-steps">${rows}</div>`+
+  return `<div class="svc-card"><div class="svc-card-h">${SVC_DOCS[_svcTier].label} 수의계약 절차</div><div class="svc-steps">${rows}</div>`+
     `<div class="svc-legend"><span class="svc-actor dept">부서</span> 담당 부서 &nbsp; <span class="svc-actor firm">업체</span> 계약업체</div></div>`;
 }
 function _svcRefView(){
