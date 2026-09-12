@@ -356,7 +356,6 @@ body.dark .exp-limit.ok{background:rgba(34,197,94,.16);color:#6ee7a0;} body.dark
 .exp-hint2{margin-top:8px;font-size:11.5px;line-height:1.6;color:var(--ht);}
 .exp-hint2 b{color:var(--mu);font-weight:700;}
 /* ── 업무 메모(할 일·일정·연락처·메모, 로컬 저장) ───────────────────────────── */
-.sm-badge{min-width:16px;height:16px;padding:0 4px;margin-left:5px;border-radius:999px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;line-height:1;}
 .memo-wrap{max-width:960px;}
 /* 용역도우미 */
 .svc-wrap{max-width:1120px;}
@@ -511,6 +510,11 @@ body.dark .dday.soon{background:rgba(245,158,11,.18);color:#fbbf24;}
   background:#1f2430;color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 8px 26px rgba(0,0,0,.28);
   font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}
 .memo-undo.show{opacity:1;transform:translate(-50%,0);pointer-events:auto;}
+/* 공용 토스트(저장 실패 등 안내) */
+.app-toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);z-index:1300;max-width:min(520px,92vw);
+  background:#7f1d1d;color:#fff;padding:11px 16px;border-radius:10px;box-shadow:0 8px 26px rgba(0,0,0,.3);
+  font-size:13px;font-weight:600;line-height:1.5;text-align:center;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}
+.app-toast.show{opacity:1;transform:translate(-50%,0);}
 .memo-undo button{background:transparent;border:none;color:#8ab4ff;font-weight:800;font-size:13px;cursor:pointer;padding:2px 4px;}
 .memo-undo button:hover{color:#b9d1ff;text-decoration:underline;}
 .memo-del:hover{background:rgba(239,68,68,.1);color:#ef4444;}
@@ -2516,9 +2520,9 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <span class="sm-div" aria-hidden="true"></span>
       <div class="sm-group">
         <span class="sm-glabel">업무도구</span>
-        <button class="sm-item" id="smHome" onclick="openDashboard()" title="오늘의 업무 — 마감 임박·할 일·최근 검색 한눈에"><span class="sm-ic" aria-hidden="true">🏠</span><span>오늘의 업무</span><span id="dashBadge" class="sm-badge" hidden></span></button>
+        <button class="sm-item" id="smHome" onclick="openDashboard()" title="오늘의 업무 — 마감 임박·할 일·최근 검색 한눈에"><span class="sm-ic" aria-hidden="true">🏠</span><span>오늘의 업무</span></button>
         <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 본문 작성"><span class="sm-ic" data-icon="expense"></span><span>지출결의서</span></button>
-        <button class="sm-item" id="smMemo" onclick="openMemo()" title="업무 메모 — 할 일·일정·연락처·메모(내 PC에만 저장)"><span class="sm-ic" data-icon="memo"></span><span>업무메모</span><span id="memoBadge" class="sm-badge" hidden></span></button>
+        <button class="sm-item" id="smMemo" onclick="openMemo()" title="업무 메모 — 할 일·일정·연락처·메모(내 PC에만 저장)"><span class="sm-ic" data-icon="memo"></span><span>업무메모</span></button>
         <button class="sm-item" id="smService" onclick="openService()" title="용역도우미 — 용역 여부·심의 판단, 금액별 필요서류 체크리스트·절차"><span class="sm-ic" aria-hidden="true">🧰</span><span>용역도우미</span></button>
       </div>
     </div>
@@ -2848,11 +2852,35 @@ const ASSIST_CFG={
   procurement:{tab:'smProcurement',label:'조달공고 조회', ic:'📢', ph:'입찰공고 키워드 (예: 시설, 용역)',             hint:'나라장터 입찰공고(최근 30일) — 마감임박·관심일정 관리.', param:'query', oppty:true,
                presets:['농업','스마트팜','시설·공사','용역','기자재','시스템','연구']},
 };
+// 공공조회 응답 경쟁 방지: 결과 박스별 최신 요청 토큰(느린 이전 응답이 최신 결과를 덮어쓰지 않게)
+let _qSeq={};
+// ── 공용 토스트 & 안전한 localStorage 쓰기 ──────────────────────────────────
+let _toastT=null;
+function _toast(msg, ms){
+  let t=document.getElementById('appToast');
+  if(!t){ t=document.createElement('div'); t.id='appToast'; t.className='app-toast'; document.body.appendChild(t); }
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(_toastT); _toastT=setTimeout(()=>t.classList.remove('show'), ms||3500);
+}
+let _lsWarnAt=0;
+// 저장 실패(주로 용량 초과·사생활 보호 모드) 시 사용자에게 1회 안내. critical=서버 백업 없는 데이터(업무메모)
+function _lsSet(key, val, opts){
+  try{ localStorage.setItem(key, val); return true; }
+  catch(e){
+    const critical=opts&&opts.critical, now=Date.now();
+    if(critical || now-_lsWarnAt>8000){ _lsWarnAt=now;
+      _toast(critical
+        ? '⚠ 저장 공간이 부족해 저장하지 못했습니다. 업무메모는 서버 백업이 없으니 ‘백업(내보내기)’으로 보관하세요.'
+        : '⚠ 브라우저 저장 공간이 부족해 저장하지 못했습니다.', critical?6000:3500);
+    }
+    return false;
+  }
+}
 async function _loadAssistStatus(){
   if(_assistStatus) return _assistStatus;
-  try{ const r=await fetch('/api/assist/status'); _assistStatus=await r.json(); }
-  catch(e){ _assistStatus={}; }
-  return _assistStatus;
+  // 실패는 캐시하지 않는다 — 일시적 네트워크 오류로 전 세션 '서비스키 필요'가 뜨는 것을 방지
+  try{ const r=await fetch('/api/assist/status'); const d=await r.json(); _assistStatus=d||{}; return _assistStatus; }
+  catch(e){ return {}; }
 }
 async function openAssist(kind){
   const cfg=ASSIST_CFG[kind]; if(!cfg) return;
@@ -3041,8 +3069,9 @@ function runCompany(){
   if(!q){ box.innerHTML=`<div class="assist-note">회사명(DART) 또는 사업자등록번호를 입력하세요.</div>`; return; }
   _compFilter={region:'',q:'',sort:'rel'};
   box.innerHTML=`<div class="assist-loading"><div class="spinner"></div><span>기업 조회 중...</span></div>`;
-  fetch('/api/assist/company?query='+encodeURIComponent(q)).then(r=>r.json()).then(d=>{ _compLast=d; box.innerHTML=_renderCompanyList(d); })
-    .catch(e=>{ box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
+  const seq=(_qSeq.company=(_qSeq.company||0)+1);
+  fetch('/api/assist/company?query='+encodeURIComponent(q)).then(r=>r.json()).then(d=>{ if(seq!==_qSeq.company) return; _compLast=d; box.innerHTML=_renderCompanyList(d); })
+    .catch(e=>{ if(seq!==_qSeq.company) return; box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
 }
 function _renderCompanyList(d){
   if(d&&d.need_key){
@@ -3302,13 +3331,16 @@ async function runOppty(kind){
   const box=document.getElementById('oppResults'); if(!box) return;
   const q=((document.getElementById('oppQuery')||{}).value||'').trim();
   box.innerHTML=`<div class="assist-loading"><div class="spinner"></div><span>공고 조회 중...</span></div>`;
+  const sk='opp_'+kind, seq=(_qSeq[sk]=(_qSeq[sk]||0)+1);
   try{
     let url=`/api/assist/${kind}?query=${encodeURIComponent(q)}`;
     if(kind==='procurement') url+=`&type=${encodeURIComponent(_oppType)}`;
     const r=await fetch(url);
-    const d=await r.json(); d._q=q; d._kind=kind; _oppLast[kind]=d;
+    const d=await r.json();
+    if(seq!==_qSeq[sk]) return;
+    d._q=q; d._kind=kind; _oppLast[kind]=d;
     box.innerHTML=_renderOppty(kind);
-  }catch(e){ box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; }
+  }catch(e){ if(seq!==_qSeq[sk]) return; box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; }
 }
 function _fmtDT(s){ s=String(s||'').replace(/(\d{4})(\d{2})(\d{2})(\d{2})?(\d{2})?/g, (m,y,mo,d,h,mi)=>`${y}.${mo}.${d}`+(h?` ${h}:${mi||'00'}`:'')); return s; }
 function _dday(end){
@@ -3493,10 +3525,12 @@ function _patFetchPage(pg){
   pg=Math.max(1, parseInt(pg,10)||1);
   _patPage=pg;
   box.innerHTML=`<div class="assist-loading"><div class="spinner"></div><span>특허 조회 중...</span></div>`;
+  const seq=(_qSeq.patent=(_qSeq.patent||0)+1);
   fetch(`/api/assist/patent?${_patParams}&rows=${_PAT_PER}&page=${pg}`).then(r=>r.json()).then(d=>{
+    if(seq!==_qSeq.patent) return;
     _patLast=d; box.innerHTML=_renderPatentList(d);
     const p=document.getElementById('patResults'); if(p&&pg>1) p.scrollIntoView({behavior:'smooth',block:'start'});
-  }).catch(e=>{ box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
+  }).catch(e=>{ if(seq!==_qSeq.patent) return; box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
 }
 // 페이지 이동 네비게이션(총건수 기준). 다중 상태 필터 시 표시건수는 페이지 내 필터 결과.
 function _patPageNav(d){
@@ -3764,7 +3798,7 @@ function _wmemoGet(){ try{ const m=JSON.parse(localStorage.getItem(_MEMO_KEY)||'
   r.todos.forEach(t=>{ if(!t.status) t.status=t.done?'done':'todo'; t.done=(t.status==='done'); });
   return r; }
   catch{ return {todos:[],events:[],contacts:[],notes:[]}; } }
-function _wmemoSave(m){ try{ localStorage.setItem(_MEMO_KEY, JSON.stringify(m)); }catch(e){} _memoUpdateBadge(); }
+function _wmemoSave(m){ _lsSet(_MEMO_KEY, JSON.stringify(m), {critical:true}); }
 function _memoId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function _memoToday(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 // 날짜 문자열 → 남은 일수 배지 {n,label,cls}. 오늘 기준 로컬 계산.
@@ -4047,19 +4081,6 @@ function _memoUndoDel(){
   const t=document.getElementById('memoUndoToast'); if(t) t.classList.remove('show');
 }
 // 메뉴 배지: 지난·오늘 마감 할 일 + 오늘 일정(긴급) 개수
-function _memoUpdateBadge(){ const b=document.getElementById('memoBadge'); if(!b) return;
-  const m=_wmemoGet();
-  const urgent=[...m.todos.filter(t=>{ if(t.done||!t.due) return false; const d=_memoDday(t.due); return d&&d.n<=0; }),
-                ...m.events.filter(e=>{ const d=_memoDday(e.date); return d&&d.n===0; })].length;
-  if(urgent>0){ b.textContent=urgent>99?'99+':String(urgent); b.hidden=false; } else { b.hidden=true; }
-  try{ _dashUpdateBadge(); }catch(e){} }
-// 오늘의 업무 배지: 지난 할 일 + 임박(7일) 지원사업·조달 공고 개수
-function _dashUpdateBadge(){ const b=document.getElementById('dashBadge'); if(!b) return;
-  const m=_wmemoGet();
-  const overdue=(m.todos||[]).filter(t=>{ if(t.status==='done'||!t.due) return false; const d=_memoDday(t.due); return d&&d.n<0; }).length;
-  const oppHot=getFavs().filter(f=>{ const bk=_favBucket(f.type); if(bk!=='support'&&bk!=='procurement') return false; const dd=_dday(String(f.end||f.endText||'').replace(/\D/g,'').slice(0,8)); return dd&&dd.n>=0&&dd.n<=7; }).length;
-  const n=overdue+oppHot;
-  if(n>0){ b.textContent=n>99?'99+':String(n); b.hidden=false; } else b.hidden=true; }
 // 백업/복원(로컬 저장이므로 이관·보관 수단 제공)
 function _memoExport(){ try{ const blob=new Blob([JSON.stringify(_wmemoGet(),null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='업무메모_'+_memoToday()+'.json';
@@ -4089,7 +4110,7 @@ function _expDefault(){ return {type:'general',
   travel:{name:'',dept:'',rows:[{date:_today(),place:'',content:'',amt:''}]},
   promo:{basis:'',purpose:'',date:_today(),place:'',targets:'',people:'',total:'',note:''}}; }
 function _expLoadState(){ try{ const s=JSON.parse(localStorage.getItem(EXP_KEY)||'null'); if(s&&s.type){ const d=_expDefault(); return Object.assign(d,s,{general:Object.assign(d.general,s.general),travel:Object.assign(d.travel,s.travel),promo:Object.assign(d.promo,s.promo)}); } }catch(e){} return _expDefault(); }
-function _expSaveState(){ try{ localStorage.setItem(EXP_KEY, JSON.stringify(_expState)); }catch(e){} }
+function _expSaveState(){ _lsSet(EXP_KEY, JSON.stringify(_expState)); }
 function _won(n){ return '₩'+(Math.round(Number(n)||0)).toLocaleString('ko-KR'); }
 function _digits(v){ return parseInt(String(v||'').replace(/[^\d]/g,''),10)||0; }
 function _hanAmount(n){
@@ -4217,7 +4238,7 @@ const SVC_FLOW={
   ],
 };
 function _svcChk(){ try{ return JSON.parse(localStorage.getItem(_SVC_KEY)||'{}'); }catch{ return {}; } }
-function _svcChkSet(o){ try{ localStorage.setItem(_SVC_KEY, JSON.stringify(o)); }catch{} }
+function _svcChkSet(o){ _lsSet(_SVC_KEY, JSON.stringify(o)); }
 function _svcToggle(tier,cat,i){ const o=_svcChk(); o[tier]=o[tier]||{}; o[tier][cat]=o[tier][cat]||{}; o[tier][cat][i]=!o[tier][cat][i]; _svcChkSet(o); _svcRender(); }
 function _svcResetChk(tier){ const o=_svcChk(); if(o[tier]){ delete o[tier]; _svcChkSet(o); } _svcRender(); }
 function openService(){
@@ -4614,11 +4635,14 @@ async function runAssist(){
   const q=val.trim();
   if(!q){ box.innerHTML=`<div class="assist-note">검색어를 입력하세요.</div>`; return; }
   box.innerHTML=`<div class="assist-loading"><div class="spinner"></div><span>조회 중...</span></div>`;
+  const seq=(_qSeq.assist=(_qSeq.assist||0)+1);
   try{
     const r=await fetch(`/api/assist/${kind}?${cfg.param}=${encodeURIComponent(q)}`);
     const d=await r.json();
+    if(seq!==_qSeq.assist) return;
     box.innerHTML=_renderAssist(d, kind);
   }catch(e){
+    if(seq!==_qSeq.assist) return;
     box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`;
   }
 }
@@ -6945,13 +6969,13 @@ function addRecent(q){
   let a = getRecent().filter(x => x !== q);   // 중복 제거
   a.unshift(q);                                // 최신을 앞으로
   if(a.length > 10) a.length = 10;             // 최대 10개
-  try{ localStorage.setItem(_RECENT_KEY, JSON.stringify(a)); }catch{}
+  _lsSet(_RECENT_KEY, JSON.stringify(a));
   loadRecent();
 }
 // ── 저장된(핀) 검색 — 자주 쓰는 검색어를 이름 붙여 보관, 한 번에 재실행 ──
 const _SAVED_KEY='koat_saved_searches';
 function getSaved(){ try{ const a=JSON.parse(localStorage.getItem(_SAVED_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch{ return []; } }
-function _setSaved(a){ try{ localStorage.setItem(_SAVED_KEY, JSON.stringify(a)); }catch{} }
+function _setSaved(a){ _lsSet(_SAVED_KEY, JSON.stringify(a)); }
 function saveSearch(q, label){
   q=String(q||'').trim(); if(!q) return;
   const a=getSaved().filter(s=>s.q!==q); a.unshift({q, label:String(label||'').trim()||q});
@@ -6980,7 +7004,7 @@ document.addEventListener('focusin', e=>{ const t=e.target;
   if(t && /^(INPUT|TEXTAREA)$/.test(t.tagName) && (t.tagName==='TEXTAREA'||t.type==='text'||!t.type)
      && t.closest && t.closest('#expForm,#memoWrap')) _snipTarget=t; });
 function getSnippets(){ try{ const a=JSON.parse(localStorage.getItem(_SNIP_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch{ return []; } }
-function _setSnippets(a){ try{ localStorage.setItem(_SNIP_KEY, JSON.stringify(a)); }catch{} }
+function _setSnippets(a){ _lsSet(_SNIP_KEY, JSON.stringify(a), {critical:true}); }
 function addSnippet(text){ text=String(text||'').trim(); if(!text) return; const a=getSnippets(); a.unshift({id:'s'+Date.now().toString(36), text}); if(a.length>100) a.length=100; _setSnippets(a); _snipRender(); }
 function delSnippet(id){ _setSnippets(getSnippets().filter(s=>s.id!==id)); _snipRender(); }
 function openSnippets(){ const bg=document.getElementById('snipBg'); if(!bg) return; _snipRender(); bg.classList.add('show'); _modalFocusIn('snipBg'); }
@@ -7647,7 +7671,7 @@ function getFavs(){
     return arr;
   }catch{ return []; }
 }
-function _saveFavs(arr){ try{ localStorage.setItem(_FAV_KEY, JSON.stringify(arr)); }catch{} }
+function _saveFavs(arr){ _lsSet(_FAV_KEY, JSON.stringify(arr)); }
 // 기존 호출부 호환용 별칭
 function getLocalFavs(){ return getFavs(); }
 
@@ -8578,7 +8602,6 @@ function _hydrateIcons(root){
 document.addEventListener('DOMContentLoaded',()=>{
   _hydrateIcons();
   try{ _migrateCollections(); }catch(_){}
-  try{ _memoUpdateBadge(); }catch(_){}
   // ── 이벤트 위임: 클릭 ──────────────────────────────────────────────────
   document.addEventListener('click', e=>{
     // 작업공간(그리드) 창 내부의 참조 클릭 → 새 창(패널)으로 추가 열기
