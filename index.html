@@ -356,7 +356,6 @@ body.dark .exp-limit.ok{background:rgba(34,197,94,.16);color:#6ee7a0;} body.dark
 .exp-hint2{margin-top:8px;font-size:11.5px;line-height:1.6;color:var(--ht);}
 .exp-hint2 b{color:var(--mu);font-weight:700;}
 /* ── 업무 메모(할 일·일정·연락처·메모, 로컬 저장) ───────────────────────────── */
-.sm-badge{min-width:16px;height:16px;padding:0 4px;margin-left:5px;border-radius:999px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;line-height:1;}
 .memo-wrap{max-width:960px;}
 /* 용역도우미 */
 .svc-wrap{max-width:1120px;}
@@ -2516,9 +2515,9 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <span class="sm-div" aria-hidden="true"></span>
       <div class="sm-group">
         <span class="sm-glabel">업무도구</span>
-        <button class="sm-item" id="smHome" onclick="openDashboard()" title="오늘의 업무 — 마감 임박·할 일·최근 검색 한눈에"><span class="sm-ic" aria-hidden="true">🏠</span><span>오늘의 업무</span><span id="dashBadge" class="sm-badge" hidden></span></button>
+        <button class="sm-item" id="smHome" onclick="openDashboard()" title="오늘의 업무 — 마감 임박·할 일·최근 검색 한눈에"><span class="sm-ic" aria-hidden="true">🏠</span><span>오늘의 업무</span></button>
         <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 본문 작성"><span class="sm-ic" data-icon="expense"></span><span>지출결의서</span></button>
-        <button class="sm-item" id="smMemo" onclick="openMemo()" title="업무 메모 — 할 일·일정·연락처·메모(내 PC에만 저장)"><span class="sm-ic" data-icon="memo"></span><span>업무메모</span><span id="memoBadge" class="sm-badge" hidden></span></button>
+        <button class="sm-item" id="smMemo" onclick="openMemo()" title="업무 메모 — 할 일·일정·연락처·메모(내 PC에만 저장)"><span class="sm-ic" data-icon="memo"></span><span>업무메모</span></button>
         <button class="sm-item" id="smService" onclick="openService()" title="용역도우미 — 용역 여부·심의 판단, 금액별 필요서류 체크리스트·절차"><span class="sm-ic" aria-hidden="true">🧰</span><span>용역도우미</span></button>
       </div>
     </div>
@@ -3764,7 +3763,7 @@ function _wmemoGet(){ try{ const m=JSON.parse(localStorage.getItem(_MEMO_KEY)||'
   r.todos.forEach(t=>{ if(!t.status) t.status=t.done?'done':'todo'; t.done=(t.status==='done'); });
   return r; }
   catch{ return {todos:[],events:[],contacts:[],notes:[]}; } }
-function _wmemoSave(m){ try{ localStorage.setItem(_MEMO_KEY, JSON.stringify(m)); }catch(e){} _memoUpdateBadge(); }
+function _wmemoSave(m){ try{ localStorage.setItem(_MEMO_KEY, JSON.stringify(m)); }catch(e){} }
 function _memoId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function _memoToday(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 // 날짜 문자열 → 남은 일수 배지 {n,label,cls}. 오늘 기준 로컬 계산.
@@ -4047,19 +4046,6 @@ function _memoUndoDel(){
   const t=document.getElementById('memoUndoToast'); if(t) t.classList.remove('show');
 }
 // 메뉴 배지: 지난·오늘 마감 할 일 + 오늘 일정(긴급) 개수
-function _memoUpdateBadge(){ const b=document.getElementById('memoBadge'); if(!b) return;
-  const m=_wmemoGet();
-  const urgent=[...m.todos.filter(t=>{ if(t.done||!t.due) return false; const d=_memoDday(t.due); return d&&d.n<=0; }),
-                ...m.events.filter(e=>{ const d=_memoDday(e.date); return d&&d.n===0; })].length;
-  if(urgent>0){ b.textContent=urgent>99?'99+':String(urgent); b.hidden=false; } else { b.hidden=true; }
-  try{ _dashUpdateBadge(); }catch(e){} }
-// 오늘의 업무 배지: 지난 할 일 + 임박(7일) 지원사업·조달 공고 개수
-function _dashUpdateBadge(){ const b=document.getElementById('dashBadge'); if(!b) return;
-  const m=_wmemoGet();
-  const overdue=(m.todos||[]).filter(t=>{ if(t.status==='done'||!t.due) return false; const d=_memoDday(t.due); return d&&d.n<0; }).length;
-  const oppHot=getFavs().filter(f=>{ const bk=_favBucket(f.type); if(bk!=='support'&&bk!=='procurement') return false; const dd=_dday(String(f.end||f.endText||'').replace(/\D/g,'').slice(0,8)); return dd&&dd.n>=0&&dd.n<=7; }).length;
-  const n=overdue+oppHot;
-  if(n>0){ b.textContent=n>99?'99+':String(n); b.hidden=false; } else b.hidden=true; }
 // 백업/복원(로컬 저장이므로 이관·보관 수단 제공)
 function _memoExport(){ try{ const blob=new Blob([JSON.stringify(_wmemoGet(),null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='업무메모_'+_memoToday()+'.json';
@@ -8578,7 +8564,6 @@ function _hydrateIcons(root){
 document.addEventListener('DOMContentLoaded',()=>{
   _hydrateIcons();
   try{ _migrateCollections(); }catch(_){}
-  try{ _memoUpdateBadge(); }catch(_){}
   // ── 이벤트 위임: 클릭 ──────────────────────────────────────────────────
   document.addEventListener('click', e=>{
     // 작업공간(그리드) 창 내부의 참조 클릭 → 새 창(패널)으로 추가 열기
