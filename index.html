@@ -350,6 +350,20 @@ body.dark .cpat-b.reg{background:rgba(34,197,94,.16);color:#6ee7a0;}
 .exp-addrow{margin-top:4px;font-size:12px;font-weight:700;padding:7px 12px;border:1px dashed var(--bd);border-radius:8px;background:transparent;color:var(--g);cursor:pointer;width:100%;}
 .exp-addrow:hover{border-color:var(--g);background:var(--gl);}
 .exp-limit{margin-top:8px;font-size:12px;font-weight:700;padding:7px 10px;border-radius:8px;background:var(--bg);color:var(--mu);}
+/* 여비 계산기 */
+.exp-fg.tcalc{border-style:dashed;}
+.tcz-toggle{background:transparent;border:none;padding:0;font:inherit;font-size:12px;font-weight:800;color:var(--gp);cursor:pointer;text-align:left;width:100%;}
+.tcz-toggle .exp-hint2{font-weight:600;}
+.tcz-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:10px;}
+.tcz-grid label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;font-weight:700;color:var(--mu);}
+.tcz-grid input,.tcz-grid select{font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--bd);border-radius:7px;background:var(--card);color:var(--tx);}
+.tcz-sum{background:var(--bg);border-radius:9px;padding:8px 11px;margin-bottom:8px;}
+.tcz-li{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--tx);padding:3px 0;}
+.tcz-li b{font-weight:700;}
+.tcz-li.total{border-top:1px solid var(--bd);margin-top:4px;padding-top:7px;font-size:14px;}
+.tcz-li.total b{color:var(--g);font-size:15px;}
+.tcz-add{margin-top:0;}
+.tcz-note{margin-top:9px;font-size:11px;line-height:1.5;color:var(--ht);}
 .exp-limit.ok{background:#e7f6ec;color:#137a3e;} .exp-limit.over{background:#fde6e6;color:#c0342b;}
 body.dark .exp-limit.ok{background:rgba(34,197,94,.16);color:#6ee7a0;} body.dark .exp-limit.over{background:rgba(239,68,68,.18);color:#fca5a5;}
 .exp-actions{display:flex;gap:8px;margin-top:4px;}
@@ -635,10 +649,16 @@ body.dark .pmt th{background:rgba(255,255,255,.08);}
 .opp-cnt{display:inline-block;min-width:18px;text-align:center;font-size:11px;padding:0 5px;border-radius:999px;background:var(--g);color:#fff;margin-left:2px;}
 .opp-count{font-size:12px;color:var(--mu);margin:8px 0 6px;}
 .opp-active{color:var(--g);}
+.opp-new{color:#b45309;}
+.opp-saved{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 10px;}
+.opp-newbadge{display:inline-block;font-size:10px;font-weight:800;color:#fff;background:#f59e0b;border-radius:8px;padding:1px 6px;margin-left:3px;vertical-align:middle;}
 .opp-list{display:flex;flex-direction:column;gap:8px;}
 .opp-card{position:relative;border:1px solid var(--bd);border-radius:10px;padding:11px 40px 11px 13px;background:var(--sf);transition:.12s;}
 .opp-card:hover{border-color:var(--g);box-shadow:0 1px 6px rgba(37,110,244,.08);}
+.opp-card.is-new{border-color:#f59e0b;box-shadow:0 0 0 1px #f59e0b33;}
 .opp-card.is-done{opacity:.6;}
+.sbtn.ghost{background:transparent;color:var(--g);border:1px solid var(--bd);box-shadow:none;padding:12px 14px;font-size:13px;}
+.sbtn.ghost:hover{border-color:var(--g);background:var(--gl);}
 .opp-star{position:absolute;top:8px;right:8px;width:28px;height:28px;border:none;background:transparent;font-size:18px;line-height:1;color:var(--ht);cursor:pointer;border-radius:6px;}
 .opp-star:hover{background:var(--gl);}
 .opp-star.on{color:#f5b301;}
@@ -799,15 +819,35 @@ body.dark .rec-chip{background:#20242c;}
   border:1px solid var(--bd);border-radius:999px;padding:4px 11px;cursor:pointer;font-family:var(--font);transition:.12s;}
 .rec-save-btn:hover{background:var(--g);color:#fff;border-color:var(--g);}
 /* 자주 쓰는 문구(스니펫) */
-.snip-add{display:flex;gap:8px;margin-bottom:8px;}
+.snip-add{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
 .snip-add .memo-input{flex:1;}
+.snip-add .snip-in-t{flex:0 0 140px;max-width:140px;}
+.snip-add .snip-in-c{flex:0 0 110px;max-width:110px;}
+.snip-add .snip-in-x{flex:1 1 240px;min-width:200px;}
+.snip-filter{margin-bottom:10px;}
+.snip-filter .memo-input{width:100%;}
+.snip-cat{display:inline-block;font-size:10.5px;font-weight:700;color:#3730a3;background:#eef2ff;border-radius:8px;padding:1px 7px;margin-right:6px;vertical-align:middle;}
+.snip-tt{color:var(--g);}
 .snip-hint{font-size:11.5px;color:var(--ht);margin-bottom:12px;}
+.snip-hint b{color:var(--tx);}
 .snip-list{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow:auto;}
 .snip-item{display:flex;align-items:stretch;gap:4px;}
 .snip-text{flex:1;text-align:left;background:var(--card);border:1px solid var(--bd);border-radius:9px;padding:9px 12px;
   font-size:13px;line-height:1.5;color:var(--tx);cursor:pointer;font-family:var(--font);white-space:pre-wrap;word-break:break-word;transition:.12s;}
 .snip-text:hover{border-color:var(--g);background:var(--gl);}
 .snip-empty{font-size:12.5px;color:var(--ht);text-align:center;padding:24px;border:1px dashed var(--bd);border-radius:10px;}
+/* 북마크·메모한 조문 허브 */
+.hub-item{border:1px solid var(--bd);border-radius:11px;padding:11px 13px;margin-bottom:8px;cursor:pointer;background:var(--card);transition:.12s;}
+.hub-item:hover{border-color:var(--g);background:var(--gl);}
+.hub-top{display:flex;align-items:center;gap:8px;}
+.hub-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.hub-law{font-size:13.5px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hub-art{font-size:12px;color:var(--mu);}
+.hub-badges{display:flex;gap:4px;flex-shrink:0;}
+.hub-b{font-size:10.5px;font-weight:700;border-radius:8px;padding:2px 7px;white-space:nowrap;}
+.hub-b.bm{color:#1d4ed8;background:#eff6ff;}
+.hub-b.mo{color:#92400e;background:#fffbeb;}
+.hub-memo{margin-top:7px;font-size:12px;line-height:1.55;color:var(--tx);background:var(--bg);border-radius:8px;padding:7px 9px;white-space:pre-wrap;word-break:break-word;}
 /* 커맨드 팔레트 */
 .cmdk-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:900;display:none;align-items:flex-start;justify-content:center;padding-top:12vh;}
 .cmdk-bg.show{display:flex;}
@@ -2215,6 +2255,18 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
   </div>
 </div>
 
+<!-- 북마크·메모한 조문 허브 -->
+<div class="coll-modal-bg" id="bmHubBg" role="dialog" aria-modal="true" aria-label="북마크·메모한 조문" onclick="if(event.target===this)closeBmHub()">
+  <div class="coll-modal" style="width:min(680px,96vw);">
+    <div class="coll-hd">
+      <span style="font-size:15px;font-weight:700;flex:1;">🔖 북마크·메모한 조문 <span id="bmHubCount" class="fav-modal-cnt"></span></span>
+      <button class="fp-close" aria-label="닫기" onclick="closeBmHub()">✕</button>
+    </div>
+    <div class="coll-body" id="bmHubBody"></div>
+    <div class="fav-modal-foot">내규·법령 전문에서 담아둔 북마크·메모를 모아 봅니다. 클릭하면 해당 조문으로 이동합니다. 내 PC에만 저장됩니다.</div>
+  </div>
+</div>
+
 <!-- 내규 오류 점검 결과 -->
 <div class="coll-modal-bg" id="ruleCheckBg" role="dialog" aria-modal="true" aria-label="내규 오류 점검" onclick="if(event.target===this)closeRuleCheck()">
   <div class="coll-modal" style="width:min(720px,96vw);">
@@ -3267,6 +3319,7 @@ function _renderCompanyDetail(d){
 }
 // ── 기회 레이더: 지원사업·조달 공통(마감임박·적합도·관심 캘린더) ──
 let _oppLast={}, _oppSort='deadline', _oppItemMap={};
+let _oppNewIds=new Set();   // 새 공고 추적: 저장검색 재조회 시 직전 대비 새로 등장한 공고 id
 let _oppType='servc', _oppMethod='', _oppOpenOnly=false;   // 조달: 유형·계약방식 / 지원: 접수중만
 const OPP_AGRI=['농업','농촌','농산물','스마트팜','원예','축산','종자','농기계','귀농','청년농','친환경','식품','농가','재배','작물','과수','농진','기술보급','시설원예','임업'];
 const PROC_TYPES=[['servc','용역'],['thng','물품'],['cnstwk','공사'],['frgcpt','외자']];
@@ -3291,7 +3344,8 @@ function _oppInit(kind, head, cfg){
   _oppLast[kind]=null; _oppSort='deadline'; _oppType='servc'; _oppMethod=''; _oppOpenOnly=false;
   const p=document.getElementById('assistantPanel');
   p.innerHTML=head+
-    `<div class="assist-search"><input id="oppQuery" class="sinput" placeholder="${escHtml(cfg.ph)}" onkeydown="if(event.key==='Enter')runOppty('${kind}')" aria-label="${escHtml(cfg.label)} 검색어"><button class="sbtn" onclick="runOppty('${kind}')">조회</button></div>`+
+    `<div class="assist-search"><input id="oppQuery" class="sinput" placeholder="${escHtml(cfg.ph)}" onkeydown="if(event.key==='Enter')runOppty('${kind}')" aria-label="${escHtml(cfg.label)} 검색어"><button class="sbtn" onclick="runOppty('${kind}')">조회</button><button class="sbtn ghost" onclick="_oppSaveSearch('${kind}')" title="현재 검색을 저장(다시 조회 시 새 공고 표시)">📌 저장</button></div>`+
+    _oppSavedChipsHtml(kind)+
     _oppFilterHtml(kind, cfg)+
     `<div class="opp-bar">`+
       `<div class="opp-sorts">`+
@@ -3307,6 +3361,39 @@ function _oppInit(kind, head, cfg){
     `<div id="oppResults" class="opp-results"></div>`;
   _oppUpdateStarUI();
   runOppty(kind);
+}
+// ── 공공조회 저장검색 + 새 공고 추적 ──────────────────────────────────────
+function _oppSavedList(kind){ try{ return getSaved().filter(s=>(s.kind||'')===kind); }catch(e){ return []; } }
+function _oppSavedChipsHtml(kind){
+  const list=_oppSavedList(kind);
+  const inner=list.length? list.map(s=>{
+    const nc=s.newCount||0;
+    return `<span class="saved-chip-wrap"><button class="rec-chip" title="${escAttr(s.q)}" onclick="_oppRunSaved('${argAttr(kind)}','${argAttr(s.q)}')">📌 ${escHtml(s.label||s.q)}${nc?` <span class="opp-newbadge">새 ${nc}</span>`:''}</button><button class="saved-del" title="삭제" onclick="_oppDelSaved('${argAttr(kind)}','${argAttr(s.q)}')" aria-label="삭제">✕</button></span>`;
+  }).join('') : `<span class="saved-empty">자주 보는 검색을 <b>📌 저장</b>해 두면, 다시 조회할 때 <b>새로 올라온 공고</b>를 표시해 드려요.</span>`;
+  return `<div class="opp-saved" id="oppSaved">${inner}</div>`;
+}
+function _oppRenderSavedChips(kind){ const el=document.getElementById('oppSaved'); if(el) el.outerHTML=_oppSavedChipsHtml(kind); }
+function _oppSaveSearch(kind){
+  const q=((document.getElementById('oppQuery')||{}).value||'').trim();
+  if(!q){ alert('먼저 검색어를 입력하세요.'); return; }
+  const label=prompt('저장할 이름 (비우면 검색어 그대로):', q); if(label===null) return;
+  saveSearch(q, label, kind);
+  if(typeof _toast==='function') _toast('검색을 저장했습니다. 다시 조회하면 새 공고를 표시합니다.', 2800);
+  _oppRenderSavedChips(kind);
+}
+function _oppDelSaved(kind, q){ delSaved(q, kind); _oppRenderSavedChips(kind); }
+function _oppRunSaved(kind, q){ const el=document.getElementById('oppQuery'); if(el){ el.value=q; runOppty(kind); } }
+// 조회 결과를 저장검색 스냅샷과 비교해 새 공고 표시(첫 조회는 기준선만 설정)
+function _oppTrack(kind, q, d){
+  _oppNewIds=new Set();
+  try{
+    const items=(d&&d.items)||[]; const ids=items.map(it=>_oppId(kind,it));
+    const saved=getSaved(); const entry=saved.find(s=>(s.kind||'')===kind && s.q===q);
+    if(!entry) return;
+    if(entry.seen){ const seen=new Set(entry.seen); ids.forEach(id=>{ if(!seen.has(id)) _oppNewIds.add(id); }); }
+    entry.seen=ids; entry.newCount=_oppNewIds.size; entry.checkedAt=Date.now();
+    _setSaved(saved); _oppRenderSavedChips(kind);
+  }catch(e){}
 }
 function _oppPreset(kind, btn){
   document.querySelectorAll('.opp-presets .opp-chip').forEach(b=>b.classList.toggle('active',b===btn));
@@ -3339,6 +3426,7 @@ async function runOppty(kind){
     const d=await r.json();
     if(seq!==_qSeq[sk]) return;
     d._q=q; d._kind=kind; _oppLast[kind]=d;
+    _oppTrack(kind, q, d);
     box.innerHTML=_renderOppty(kind);
   }catch(e){ if(seq!==_qSeq[sk]) return; box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; }
 }
@@ -3417,12 +3505,15 @@ function _renderOppty(kind){
   _oppItemMap={};
   const cards=items.map(it=>_oppCard(kind,it,q)).join('');
   const active=items.filter(it=>it._dd&&it._dd.n>=0).length;
+  const newN=items.filter(it=>_oppNewIds.has(_oppId(kind,it))).length;
   const sortLabel=_oppSort==='deadline'?'마감임박순':(_oppSort==='relevance'?'적합도순':'최신순');
-  const head=`<div class="opp-count">${items.length}건 · <b class="opp-active">진행 ${active}건</b> · ${escHtml(sortLabel)}</div>`;
+  const head=`<div class="opp-count">${items.length}건 · <b class="opp-active">진행 ${active}건</b>${newN?` · <b class="opp-new">🆕 새 ${newN}건</b>`:''} · ${escHtml(sortLabel)}</div>`;
   return head+`<div class="opp-list">${cards}</div>`;
 }
 function _oppCard(kind, it, q){
   const id=_oppId(kind,it); _oppItemMap[id]=Object.assign({kind},it);
+  const isNew=_oppNewIds.has(id);
+  const newBadge=isNew?'<span class="opp-newbadge">🆕 새 공고</span>':'';
   const dd=it._dd;
   const ddBadge=dd?`<span class="opp-dd ${dd.cls}">${escHtml(dd.label)}</span>`:`<span class="opp-dd none">기간 확인</span>`;
   const on=_oppIsStar(id);
@@ -3438,8 +3529,8 @@ function _oppCard(kind, it, q){
     const grid=rows.map(r=>`<div class="opp-grow"><span class="opp-gk">${escHtml(r[0])}</span><span class="opp-gv">${escHtml(String(r[1]))}</span></div>`).join('');
     const sub=(it.subtitle||it.bidNo)?`<div class="opp-card-sub">${it.subtitle?escHtml(it.subtitle):''}${it.bidNo?`<span class="opp-no">공고번호 ${escHtml(it.bidNo)}</span>`:''}</div>`:'';
     const link=it.url?`<a class="assist-card-link" href="${escHtml(it.url)}" target="_blank" rel="noopener">공고 바로가기 →</a>`:'';
-    return `<div class="opp-card${dd&&dd.cls==='done'?' is-done':''}">${star}`+
-      `<div class="opp-card-h">${ddBadge}${statusB}${typeB}</div>`+
+    return `<div class="opp-card${dd&&dd.cls==='done'?' is-done':''}${isNew?' is-new':''}">${star}`+
+      `<div class="opp-card-h">${newBadge}${ddBadge}${statusB}${typeB}</div>`+
       `<div class="opp-card-t">${_oppHi(it.title||'',q)}</div>${sub}`+
       (grid?`<div class="opp-grid">${grid}</div>`:'')+link+`</div>`;
   }
@@ -3464,8 +3555,8 @@ function _oppCard(kind, it, q){
       (it.applyUrl?`<a class="opp-btn primary" href="${escHtml(it.applyUrl)}" target="_blank" rel="noopener">신청 바로가기 →</a>`:'');
   }
   const btns=`<div class="opp-btns">${btnHtml}</div>`;
-  return `<div class="opp-card${dd&&dd.cls==='done'?' is-done':''}">${star}`+
-    `<div class="opp-card-h">${ddBadge}${statusB}${orgB}</div>`+
+  return `<div class="opp-card${dd&&dd.cls==='done'?' is-done':''}${isNew?' is-new':''}">${star}`+
+    `<div class="opp-card-h">${newBadge}${ddBadge}${statusB}${orgB}</div>`+
     `<div class="opp-card-t">${_oppHi(it.title||'',q)}</div>`+
     (grid?`<div class="opp-grid">${grid}</div>`:'')+tags+btns+`</div>`;
 }
@@ -3729,6 +3820,8 @@ function _dashRender(){
   const evs=(m.events||[]).map(e=>({e, dd:_memoDday(e.date)})).filter(x=>x.dd&&x.dd.n>=0).sort((a,b)=>a.dd.n-b.dd.n);
   // 4) 최근 검색
   const rec=getRecent();
+  // 5) 북마크·메모한 조문
+  const hub=(typeof _hubScan==='function')?_hubScan():[];
 
   const now=new Date();
   const wd=['일','월','화','수','목','금','토'][now.getDay()];
@@ -3778,12 +3871,27 @@ function _dashRender(){
   const recInner = rec.length ? `<div class="dash-chips">`+rec.slice(0,12).map(r=>`<button class="rec-chip" onclick="_dashQuick('${argAttr(r)}')">${escHtml(r)}</button>`).join('')+`</div>`
     : `<div class="dash-empty">최근 검색 기록이 없습니다.</div>`;
 
+  // 북마크·메모한 조문
+  const hubInner = hub.length ? `<div class="dash-list">`+hub.slice(0,6).map((it,i)=>{
+      const dtLabel=it.docType==='internal'?'내규':'법령';
+      const artLabel=[it.no,it.title].filter(Boolean).join(' ');
+      const tag=(it.bm?'🔖':'')+(it.memo?'📝':'');
+      return `<button class="dash-item" onclick="_hubFromDash(${i})" title="${escAttr((it.law||'')+' '+artLabel)}">`+
+        `<span class="dash-dday ok">${tag||dtLabel}</span>`+
+        `<span class="dash-item-main"><span class="dash-item-t">${escHtml(it.law||'(문서)')}${artLabel?' · '+escHtml(artLabel):''}</span>`+
+        `<span class="dash-item-m">${dtLabel}${it.memo?' · '+escHtml(it.memo.slice(0,40)):''}</span></span></button>`;
+    }).join('')+`</div>` : `<div class="dash-empty">내규·법령 전문에서 조문을 🔖 북마크하거나 📝 메모하면 여기에 모입니다.</div>`;
+  _dashHubItems=hub;
+
   w.innerHTML=summary+
     sec('⏳ 마감 임박 공고','즐겨찾기','openFavModal()',oppInner)+
     sec('✅ 할 일','업무메모',"_dashOpenMemo('todo')",todoInner)+
     sec('📅 다가오는 일정','일정',"_dashOpenMemo('event')",evInner)+
+    sec('🔖 북마크·메모한 조문','모아보기','openBmHub()',hubInner)+
     sec('🔍 최근 검색','',null,recInner);
 }
+let _dashHubItems=[];
+function _hubFromDash(i){ const it=_dashHubItems[i]; if(!it) return; _bmHubItems=_dashHubItems; _hubOpen(i); }
 
 // ══════════════════════════════════════════════════════════════════════════
 // 업무 메모 — 할 일·일정·연락처·메모. 전적으로 내 PC(localStorage)에만 저장.
@@ -4105,11 +4213,15 @@ function _wonGeum(n){ return '금'+(Math.round(Number(n)||0)).toLocaleString('ko
 function _dotDate(iso){ const m=String(iso||'').match(/(\d{4})-(\d{2})-(\d{2})/); return m?`${m[1]}. ${+m[2]}. ${+m[3]}.`:String(iso||''); }
 function _today(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 const _GANADA=['가','나','다','라','마','바','사','아','자','차','카','타','파','하'];
+// 여비 계산기 기본값 — 공무원 국내여비(참고) 기준. 소속기관 「여비규정」에 맞게 수정해 사용.
+const TRAV_LODGE={seoul:'100000', metro:'80000', etc:'70000'};
+function _tcalcDefault(){ return {open:false, days:'1', nights:'0', region:'etc', ilbi:'25000', meal:'25000', lodge:'70000', km:'', kmRate:''}; }
 function _expDefault(){ return {type:'general',
   general:{vendor:'',bno:'',ceo:'',desc:'',budget:'',supply:'',vat:'',method:'계좌이체',bank:'',holder:'',account:''},
   travel:{name:'',dept:'',rows:[{date:_today(),place:'',content:'',amt:''}]},
+  tcalc:_tcalcDefault(),
   promo:{basis:'',purpose:'',date:_today(),place:'',targets:'',people:'',total:'',note:''}}; }
-function _expLoadState(){ try{ const s=JSON.parse(localStorage.getItem(EXP_KEY)||'null'); if(s&&s.type){ const d=_expDefault(); return Object.assign(d,s,{general:Object.assign(d.general,s.general),travel:Object.assign(d.travel,s.travel),promo:Object.assign(d.promo,s.promo)}); } }catch(e){} return _expDefault(); }
+function _expLoadState(){ try{ const s=JSON.parse(localStorage.getItem(EXP_KEY)||'null'); if(s&&s.type){ const d=_expDefault(); return Object.assign(d,s,{general:Object.assign(d.general,s.general),travel:Object.assign(d.travel,s.travel),tcalc:Object.assign(d.tcalc,s.tcalc||{}),promo:Object.assign(d.promo,s.promo)}); } }catch(e){} return _expDefault(); }
 function _expSaveState(){ _lsSet(EXP_KEY, JSON.stringify(_expState)); }
 function _won(n){ return '₩'+(Math.round(Number(n)||0)).toLocaleString('ko-KR'); }
 function _digits(v){ return parseInt(String(v||'').replace(/[^\d]/g,''),10)||0; }
@@ -4401,6 +4513,7 @@ function _expRenderFields(){
       `<div class="exp-fg"><div class="exp-fgt">출장자</div><div class="exp-frow">`+
         `<label>성명<input id="tvName" value="${_ev(tv.name)}"></label>`+
         `<label>소속<input id="tvDept" value="${_ev(tv.dept)}" placeholder="예: 기술사업부"></label></div></div>`+
+      _travCalcHtml()+
       `<div class="exp-fg"><div class="exp-fgt">출장 내역 <span class="exp-hint2">건별 일자·출장지·목적·금액 (다건이면 행 추가)</span></div>`+
         `<div id="tvRows">${rows}</div>`+
         `<button type="button" class="exp-addrow" onclick="_expTravelAdd()">＋ 행 추가</button></div>`;
@@ -4443,7 +4556,58 @@ function _expSync(){
 function _expVatAuto(){ _expSync(); _expState.general.vat=String(Math.round(_digits(_expState.general.supply)*0.1));
   const el=document.getElementById('gVat'); if(el) el.value=_expState.general.vat; _expUpdate(); _expSaveState(); }
 function _expTravelAdd(){ _expSync(); _expState.travel.rows.push({date:_today(),place:'',content:'',amt:''}); _expRenderFields(); _expUpdate(); _expSaveState(); }
-function _expTravelDel(i){ _expSync(); _expState.travel.rows.splice(i,1); if(!_expState.travel.rows.length) _expState.travel.rows=[{date:_today(),place:'',content:'',amt:''}]; _expRenderFields(); _expUpdate(); _expSaveState(); }
+// ── 국내여비 자동 계산 ─────────────────────────────────────────────────
+// 일비·식비·숙박비·자가용 이동비를 편집 가능한 단가로 산정. 서버·AI 없음.
+function _tc(){ if(!_expState.tcalc) _expState.tcalc=_tcalcDefault(); return _expState.tcalc; }
+function _travCalc(){ const c=_tc();
+  const days=_digits(c.days), nights=_digits(c.nights);
+  const ilbi=days*_digits(c.ilbi), meal=days*_digits(c.meal), lodge=nights*_digits(c.lodge);
+  const km=_digits(c.km), kmRate=_digits(c.kmRate), car=km*kmRate;
+  return {days,nights,ilbi,meal,lodge,km,kmRate,car,total:ilbi+meal+lodge+car}; }
+function _travCalcHtml(){ const c=_tc(); const r=_travCalc();
+  const regionOpt=[['seoul','서울'],['metro','광역시'],['etc','그 밖']].map(([v,l])=>`<option value="${v}"${c.region===v?' selected':''}>${l}</option>`).join('');
+  const li=(label,val)=>`<div class="tcz-li"><span>${label}</span><b>${_won(val)}</b></div>`;
+  return `<div class="exp-fg tcalc"><div class="exp-fgt"><button type="button" class="tcz-toggle" onclick="_travCalcToggle()">${c.open?'▾':'▸'} 🧮 국내여비 자동 계산 <span class="exp-hint2">(단가는 편집 가능 · 소속기관 「여비규정」에 맞게 확인)</span></button></div>`+
+    (c.open?`<div class="tcz-body">
+      <div class="tcz-grid">
+        <label>출장일수(일)<input id="tcDays" inputmode="numeric" value="${_ev(c.days)}" oninput="_travCalcSync()"></label>
+        <label>숙박일수(박)<input id="tcNights" inputmode="numeric" value="${_ev(c.nights)}" oninput="_travCalcSync()"></label>
+        <label>숙박지역(상한)<select id="tcRegion" onchange="_travCalcRegion(this.value)">${regionOpt}</select></label>
+        <label>일비(1일)<input id="tcIlbi" inputmode="numeric" value="${_ev(c.ilbi)}" oninput="_travCalcSync()"></label>
+        <label>식비(1일)<input id="tcMeal" inputmode="numeric" value="${_ev(c.meal)}" oninput="_travCalcSync()"></label>
+        <label>숙박비(1박 상한)<input id="tcLodge" inputmode="numeric" value="${_ev(c.lodge)}" oninput="_travCalcSync()"></label>
+        <label>자가용 이동(km)<input id="tcKm" inputmode="numeric" value="${_ev(c.km)}" oninput="_travCalcSync()" placeholder="선택"></label>
+        <label>km당 단가(원)<input id="tcKmRate" inputmode="numeric" value="${_ev(c.kmRate)}" oninput="_travCalcSync()" placeholder="기관 기준"></label>
+      </div>
+      <div class="tcz-sum" id="tcSum">
+        ${li('일비 ('+r.days+'일)',r.ilbi)}${li('식비 ('+r.days+'일)',r.meal)}${li('숙박비 ('+r.nights+'박)',r.lodge)}${r.car?li('자가용 ('+r.km+'km)',r.car):''}
+        <div class="tcz-li total"><span>합계</span><b>${_won(r.total)}</b></div>
+      </div>
+      <button type="button" class="exp-addrow tcz-add" onclick="_travCalcAdd()">＋ 계산 결과를 출장 내역에 추가</button>
+      <div class="tcz-note">※ 기본값은 참고용(공무원 국내여비 기준)이며 실제 지급 기준·상한은 소속기관 「여비규정」을 따릅니다. 운임(교통비)은 실비로 별도 입력하세요.</div>
+    </div>`:'')+`</div>`;
+}
+function _travCalcToggle(){ _tc().open=!_tc().open; _expRenderFields(); _expSaveState(); }
+function _travCalcRegion(v){ const c=_tc(); c.region=v; c.lodge=TRAV_LODGE[v]||c.lodge; _expRenderFields(); _expSaveState(); }
+function _travCalcReadInputs(){ const c=_tc(); const g=id=>((document.getElementById(id)||{}).value||'');
+  c.days=g('tcDays'); c.nights=g('tcNights'); c.ilbi=g('tcIlbi'); c.meal=g('tcMeal'); c.lodge=g('tcLodge'); c.km=g('tcKm'); c.kmRate=g('tcKmRate'); }
+function _travCalcSync(){ _travCalcReadInputs(); try{ _expSync(); }catch(e){} const r=_travCalc();
+  const sum=document.getElementById('tcSum'); if(sum){
+    const li=(label,val)=>`<div class="tcz-li"><span>${label}</span><b>${_won(val)}</b></div>`;
+    sum.innerHTML=li('일비 ('+r.days+'일)',r.ilbi)+li('식비 ('+r.days+'일)',r.meal)+li('숙박비 ('+r.nights+'박)',r.lodge)+(r.car?li('자가용 ('+r.km+'km)',r.car):'')+`<div class="tcz-li total"><span>합계</span><b>${_won(r.total)}</b></div>`;
+  }
+  _expSaveState();
+}
+function _travCalcAdd(){ _travCalcReadInputs(); const r=_travCalc();
+  if(r.total<=0){ alert('계산할 금액이 없습니다. 일수·단가를 입력하세요.'); return; }
+  const parts=[]; if(r.ilbi)parts.push('일비 '+r.days+'일'); if(r.meal)parts.push('식비 '+r.days+'일'); if(r.lodge)parts.push('숙박 '+r.nights+'박'); if(r.car)parts.push('이동 '+r.km+'km');
+  _expSync();
+  const rowsArr=_expState.travel.rows;
+  const blank=rowsArr.find(x=>!x.content&&!x.amt);
+  const row={date:_today(), place:'', content:'국내여비('+parts.join('·')+')', amt:String(r.total)};
+  if(blank){ Object.assign(blank,row); } else { rowsArr.push(row); }
+  _expRenderFields(); _expUpdate(); _expSaveState();
+}
 function _expBuild(){
   const t=_expState.type; let html='', text=''; _expRich='';
   if(t==='general'){
@@ -6976,10 +7140,11 @@ function addRecent(q){
 const _SAVED_KEY='koat_saved_searches';
 function getSaved(){ try{ const a=JSON.parse(localStorage.getItem(_SAVED_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch{ return []; } }
 function _setSaved(a){ _lsSet(_SAVED_KEY, JSON.stringify(a)); }
-function saveSearch(q, label){
-  q=String(q||'').trim(); if(!q) return;
-  const a=getSaved().filter(s=>s.q!==q); a.unshift({q, label:String(label||'').trim()||q});
-  if(a.length>20) a.length=20; _setSaved(a); loadSaved();
+function saveSearch(q, label, kind){
+  q=String(q||'').trim(); if(!q) return; kind=kind||'';
+  const a=getSaved().filter(s=>!(s.q===q && (s.kind||'')===kind));
+  a.unshift({q, label:String(label||'').trim()||q, kind});
+  if(a.length>40) a.length=40; _setSaved(a); if(!kind) loadSaved();
 }
 function saveCurrentSearch(){
   const q=((document.getElementById('q')||{}).value||'').trim();
@@ -6988,11 +7153,11 @@ function saveCurrentSearch(){
   if(label===null) return;
   saveSearch(q, label);
 }
-function delSaved(q){ _setSaved(getSaved().filter(s=>s.q!==q)); loadSaved(); }
+function delSaved(q, kind){ kind=kind||''; _setSaved(getSaved().filter(s=>!(s.q===q && (s.kind||'')===kind))); if(!kind) loadSaved(); }
 function loadSaved(){
   const row=document.getElementById('savedRow'), el=document.getElementById('savedChips'); if(!row||!el) return;
   row.style.display = (mode==='internal'||mode==='law') ? 'flex' : 'none';
-  const list=getSaved();
+  const list=getSaved().filter(s=>!s.kind);   // 내규·법령 검색만(공공조회 저장은 각 패널에서 표시)
   el.innerHTML = list.length
     ? list.map(s=>`<span class="saved-chip-wrap"><button class="rec-chip" title="${escAttr(s.q)}" onclick="quick('${argAttr(s.q)}')">📌 ${escHtml(s.label||s.q)}</button><button class="saved-del" title="삭제" onclick="delSaved('${argAttr(s.q)}')" aria-label="삭제">✕</button></span>`).join('')
     : `<span class="saved-empty">자주 쓰는 검색을 <b>＋ 검색 저장</b>으로 모아두면 한 번에 다시 실행할 수 있어요.</span>`;
@@ -7001,12 +7166,31 @@ function loadSaved(){
 const _SNIP_KEY='koat_snippets';
 let _snipTarget=null;   // 마지막으로 포커스한 입력칸(삽입 대상)
 document.addEventListener('focusin', e=>{ const t=e.target;
-  if(t && /^(INPUT|TEXTAREA)$/.test(t.tagName) && (t.tagName==='TEXTAREA'||t.type==='text'||!t.type)
-     && t.closest && t.closest('#expForm,#memoWrap')) _snipTarget=t; });
+  if(t && /^(INPUT|TEXTAREA)$/.test(t.tagName) && (t.tagName==='TEXTAREA'||t.type==='text'||t.type==='search'||!t.type)
+     && t.closest && (t.closest('#expForm,#memoWrap,#assistantPanel,#fullpanel')
+        || ['q','assistInput','oppQuery','cmpQuery'].indexOf(t.id)>=0)) _snipTarget=t; });
 function getSnippets(){ try{ const a=JSON.parse(localStorage.getItem(_SNIP_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch{ return []; } }
 function _setSnippets(a){ _lsSet(_SNIP_KEY, JSON.stringify(a), {critical:true}); }
-function addSnippet(text){ text=String(text||'').trim(); if(!text) return; const a=getSnippets(); a.unshift({id:'s'+Date.now().toString(36), text}); if(a.length>100) a.length=100; _setSnippets(a); _snipRender(); }
+// 치환 변수 확장: {{오늘}} 등 날짜류는 자동, 그 외({{성명}}·{{금액}})는 삽입 시 입력받아 치환
+function _snipExpand(text){
+  const d=new Date(), pad=n=>String(n).padStart(2,'0');
+  const iso=x=>x.getFullYear()+'-'+pad(x.getMonth()+1)+'-'+pad(x.getDate());
+  const wd=['일','월','화','수','목','금','토'][d.getDay()];
+  const rel=n=>{ const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+  const map={ '오늘':iso(d), '날짜':iso(d), '어제':iso(rel(-1)), '내일':iso(rel(1)),
+    '올해':String(d.getFullYear()), '이번달':d.getFullYear()+'-'+pad(d.getMonth()+1), '요일':wd,
+    '한글오늘':`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`, '한글날짜':`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일` };
+  return String(text||'').replace(/\{\{\s*([^}]+?)\s*\}\}/g,(m,key)=>{
+    key=key.trim(); if(map[key]!=null) return map[key];
+    const v=prompt(key+' 입력:', ''); return v==null?'':v;
+  });
+}
+function addSnippet(text, title, cat){ text=String(text||'').trim(); if(!text) return; const a=getSnippets();
+  a.unshift({id:'s'+Date.now().toString(36), text, title:String(title||'').trim(), cat:String(cat||'').trim()});
+  if(a.length>100) a.length=100; _setSnippets(a); _snipRender(); }
 function delSnippet(id){ _setSnippets(getSnippets().filter(s=>s.id!==id)); _snipRender(); }
+let _snipFilter='';
+function _snipSetFilter(v){ _snipFilter=String(v||''); _snipRender(); }
 function openSnippets(){ const bg=document.getElementById('snipBg'); if(!bg) return; _snipRender(); bg.classList.add('show'); _modalFocusIn('snipBg'); }
 function closeSnippets(){ const bg=document.getElementById('snipBg'); if(bg) bg.classList.remove('show'); _modalFocusOut(); }
 
@@ -7024,6 +7208,7 @@ function _cmdkBuild(){
   act('용역도우미','도구',openService);
   act('자주 쓰는 문구','도구',openSnippets);
   act('즐겨찾기','도구',openFavModal);
+  act('북마크·메모한 조문','도구',openBmHub);
   act('기업 조회','공공조회',()=>openAssist('company'));
   act('특허 조회','공공조회',()=>openAssist('patent'));
   act('지원사업 조회','공공조회',()=>openAssist('support'));
@@ -7037,7 +7222,19 @@ function _cmdkBuild(){
   try{ [..._regNameOrig.values()].forEach(nm=>{ if(nm) A.push({label:nm,hint:'내규 전문',run:()=>{ if(_assistMode)closeAssist(); wsOpen(nm,'internal'); }}); }); }catch(e){}
   // 저장된 검색
   try{ getSaved().forEach(s=>A.push({label:s.label||s.q,hint:'📌 저장된 검색',run:()=>_dashQuick?_dashQuick(s.q):quick(s.q)})); }catch(e){}
+  // 내 자료: 업무메모(노트·연락처·할 일)·스니펫도 Ctrl+K로 바로 찾기
+  try{ const mm=_wmemoGet();
+    (mm.notes||[]).forEach(n=>{ const lb=(n.title||n.body||'').slice(0,60); if(lb) A.push({label:lb,hint:'🗒 메모',run:()=>_dashOpenMemo('note')}); });
+    (mm.contacts||[]).forEach(c=>{ const lb=[c.name,c.org||c.role].filter(Boolean).join(' · '); if(lb) A.push({label:lb,hint:'👤 연락처',run:()=>_cmdkContact(c)}); });
+    (mm.todos||[]).filter(t=>t.status!=='done').forEach(t=>{ if(t.text) A.push({label:t.text,hint:'✅ 할 일',run:()=>_dashOpenMemo('todo')}); });
+  }catch(e){}
+  try{ getSnippets().forEach(s=>{ const lb=s.title||s.text; if(lb) A.push({label:lb.slice(0,70),hint:'✂ 문구(삽입/복사)',run:()=>{ const tx=_snipExpand(s.text); _copyText(tx,()=>{}); if(typeof _toast==='function')_toast('문구를 복사했습니다.',2000); }}); }); }catch(e){}
   _cmdkAll=A;
+}
+function _cmdkContact(c){
+  const v=c.phone||c.email;
+  if(v){ _copyText(v,()=>{}); if(typeof _toast==='function')_toast((c.phone?'전화번호':'이메일')+' 복사됨: '+v,2500); }
+  else _dashOpenMemo('contact');
 }
 function _cmdkScore(q, s){
   // 간단 서브시퀀스 매칭(대소문자·공백 무시). 반환: 점수(작을수록 우수), 매칭 실패 시 -1
@@ -7088,27 +7285,41 @@ function openCmdk(){
 function closeCmdk(){ const bg=document.getElementById('cmdkBg'); if(bg) bg.classList.remove('show');
   try{ if(_cmdkPrevFocus&&_cmdkPrevFocus.focus) _cmdkPrevFocus.focus(); }catch(e){} _cmdkPrevFocus=null; }
 function toggleCmdk(){ const bg=document.getElementById('cmdkBg'); if(bg&&bg.classList.contains('show')) closeCmdk(); else openCmdk(); }
-function _snipAdd(){ const el=document.getElementById('snipNew'); addSnippet(el&&el.value); if(el){ el.value=''; el.focus(); } }
+function _snipAdd(){ const el=document.getElementById('snipNew'), tl=document.getElementById('snipTitle'), ct=document.getElementById('snipCat');
+  addSnippet(el&&el.value, tl&&tl.value, ct&&ct.value); if(el){ el.value=''; el.focus(); } if(tl) tl.value=''; }
 function _snipRender(){
   const body=document.getElementById('snipBody'); if(!body) return;
   const list=getSnippets();
   const hasTgt=_snipTarget && document.body.contains(_snipTarget);
-  const add=`<div class="snip-add"><input id="snipNew" class="memo-input" placeholder="자주 쓰는 문구 입력 후 추가(예: 지출 적요·공문 상용구)" maxlength="500" onkeydown="if(event.key==='Enter')_snipAdd()"><button class="memo-addbtn" onclick="_snipAdd()">추가</button></div>`;
-  const hint=`<div class="snip-hint">${hasTgt?'문구를 클릭하면 방금 입력하던 칸에 삽입됩니다.':'삽입할 입력칸을 먼저 클릭한 뒤 문구를 고르면 자동 입력됩니다(대상이 없으면 복사).'}</div>`;
-  const rows=list.length? list.map(s=>`<div class="snip-item"><button class="snip-text" onclick="_snipUse('${s.id}')" title="삽입 또는 복사">${escHtml(s.text)}</button><button class="memo-del" onclick="delSnippet('${s.id}')" title="삭제">✕</button></div>`).join('')
-    : `<div class="snip-empty">저장된 문구가 없습니다. 위 칸에 자주 쓰는 문구를 추가하세요.</div>`;
-  body.innerHTML=add+hint+`<div class="snip-list">${rows}</div>`;
+  const cats=[...new Set(list.map(s=>s.cat).filter(Boolean))].sort();
+  const catOpts=cats.map(c=>`<option value="${escAttr(c)}"></option>`).join('');
+  const add=`<div class="snip-add">`+
+      `<input id="snipTitle" class="memo-input snip-in-t" placeholder="제목(선택)" maxlength="60" onkeydown="if(event.key==='Enter')_snipAdd()">`+
+      `<input id="snipCat" class="memo-input snip-in-c" list="snipCatList" placeholder="분류(선택)" maxlength="30">`+
+      `<input id="snipNew" class="memo-input snip-in-x" placeholder="문구 입력 후 추가. {{오늘}}·{{성명}} 등 치환변수 사용 가능" maxlength="1000" onkeydown="if(event.key==='Enter')_snipAdd()">`+
+      `<button class="memo-addbtn" onclick="_snipAdd()">추가</button>`+
+      `<datalist id="snipCatList">${catOpts}</datalist></div>`;
+  const filterBox= list.length? `<div class="snip-filter"><input class="memo-input" placeholder="🔎 제목·문구·분류 검색" value="${escAttr(_snipFilter)}" oninput="_snipSetFilter(this.value)"></div>`:'';
+  const hint=`<div class="snip-hint">${hasTgt?'문구를 클릭하면 방금 입력하던 칸에 삽입됩니다.':'삽입할 입력칸을 먼저 클릭한 뒤 문구를 고르면 자동 입력됩니다(대상이 없으면 복사).'} <b>{{오늘}}·{{날짜}}·{{내일}}·{{이번달}}·{{요일}}</b>은 자동 치환, <b>{{성명}}·{{금액}}</b> 등은 삽입 시 입력받습니다.</div>`;
+  const q=_snipFilter.trim().toLowerCase();
+  const filtered=list.filter(s=>!q||((s.title||'')+' '+(s.text||'')+' '+(s.cat||'')).toLowerCase().includes(q));
+  const rows=filtered.length? filtered.map(s=>`<div class="snip-item"><button class="snip-text" onclick="_snipUse('${s.id}')" title="삽입 또는 복사">`+
+      `${s.cat?`<span class="snip-cat">${escHtml(s.cat)}</span>`:''}${s.title?`<b class="snip-tt">${escHtml(s.title)}</b> `:''}${escHtml(s.text)}</button>`+
+      `<button class="memo-del" onclick="delSnippet('${s.id}')" title="삭제">✕</button></div>`).join('')
+    : (list.length?`<div class="snip-empty">검색 결과가 없습니다.</div>`:`<div class="snip-empty">저장된 문구가 없습니다. 위 칸에 자주 쓰는 문구를 추가하세요.</div>`);
+  body.innerHTML=add+filterBox+hint+`<div class="snip-list">${rows}</div>`;
 }
 function _snipUse(id){
   const s=getSnippets().find(x=>x.id===id); if(!s) return;
+  const text=_snipExpand(s.text);
   const t=_snipTarget;
   if(t && document.body.contains(t)){
     const v=t.value, st=(typeof t.selectionStart==='number')?t.selectionStart:v.length, en=(typeof t.selectionEnd==='number')?t.selectionEnd:v.length;
-    t.value=v.slice(0,st)+s.text+v.slice(en);
-    const pos=st+s.text.length; try{ t.selectionStart=t.selectionEnd=pos; }catch(e){}
+    t.value=v.slice(0,st)+text+v.slice(en);
+    const pos=st+text.length; try{ t.selectionStart=t.selectionEnd=pos; }catch(e){}
     t.dispatchEvent(new Event('input',{bubbles:true}));   // 저장 트리거(지출·메모 oninput)
     closeSnippets(); setTimeout(()=>{ try{ t.focus(); }catch(e){} },0);
-  } else { _copyText(s.text, ()=>{}); closeSnippets(); }
+  } else { _copyText(text, ()=>{}); closeSnippets(); }
 }
 async function loadRecent(){
   const rec = getRecent();
@@ -7869,6 +8080,7 @@ async function renderFavList(){
       onkeydown="if(event.key==='Enter'){event.preventDefault();_favNewFolder();}">
     <button class="abtn primary" onclick="_favNewFolder()">＋ 폴더 추가</button>
     ${favs.length?`<button class="abtn" onclick="_favExportCSV()" title="전체 즐겨찾기를 CSV로 저장(보고·인수인계용)">⬇ CSV</button>`:''}
+    <button class="abtn" onclick="closeFavModal();openBmHub()" title="내규·법령 전문에서 북마크·메모한 조문 모아보기">🔖 북마크 조문</button>
   </div>`;
   if(!favs.length && !folders.length){
     body.innerHTML=toolbar+'<div class="fav-empty">⭐ 즐겨찾기가 없습니다.<br>내규·법령·기업·특허·지원사업 등 각 조회 결과의 ☆ 버튼으로 담고,<br>폴더를 만들어 항목별로 분류할 수 있어요.</div>';
@@ -7901,6 +8113,94 @@ async function renderFavList(){
   body.innerHTML=html;
 }
 
+// ── 북마크·메모한 조문 허브 ─────────────────────────────────────────────
+// renderFpArts에서 저장한 bm__/memo__ 키를 스캔해 한 곳에 모아 바로 이동.
+// 내규(내부규정) 명칭 여부 추정 — 메모는 docType 정보가 없어 내규 사전으로 판별
+function _isInternalName(name){
+  try{ if(typeof _regNameOrig!=='undefined' && _regNameOrig && _regNameOrig.size){
+    const n=(typeof _rnorm==='function')?_rnorm(name):name;
+    for(const v of _regNameOrig.values()){ if(((typeof _rnorm==='function')?_rnorm(v):v)===n) return true; }
+  } }catch(e){}
+  return false;
+}
+function _hubScan(){
+  const map={};   // (docType|law|idx) → 항목 병합(북마크+메모)
+  const put=(o)=>{ const gk=(o.docType||'law')+'|'+o.law+'|'+o.idx; const cur=map[gk]||{law:o.law,idx:o.idx,docType:o.docType||'law',no:'',title:'',bm:false,memo:'',savedAt:''};
+    if(o.no) cur.no=o.no; if(o.title) cur.title=o.title; if(o.bm) cur.bm=true; if(o.memo) cur.memo=o.memo;
+    if(o.savedAt && o.savedAt>cur.savedAt) cur.savedAt=o.savedAt; if(o.docType) cur.docType=o.docType; map[gk]=cur; };
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i); if(!k) continue;
+      if(k.indexOf('bm__')===0){
+        const rest=k.slice(4), li=rest.lastIndexOf('__'); if(li<0) continue;
+        let law=''; try{ law=decodeURIComponent(rest.slice(0,li)); }catch(e){ law=rest.slice(0,li); }
+        const idx=parseInt(rest.slice(li+2),10); if(isNaN(idx)) continue;
+        let d={}; try{ d=JSON.parse(localStorage.getItem(k)||'{}'); }catch(e){ d={}; }
+        const nm=d.law||law;
+        const dt=d.docType || (_isInternalName(nm)?'internal':'law');
+        put({law:nm, idx, docType:dt, no:d.no||'', title:d.title||'', bm:true, savedAt:d.savedAt||''});
+      } else if(k.indexOf('memo__')===0){
+        const rest=k.slice(6), fi=rest.indexOf('__'); if(fi<0) continue;
+        const idx=parseInt(rest.slice(0,fi),10); if(isNaN(idx)) continue;
+        let law=''; const enc=rest.slice(fi+2); try{ law=decodeURIComponent(enc); }catch(e){ law=enc; }
+        const text=(localStorage.getItem(k)||'').trim(); if(!text) continue;
+        put({law, idx, docType:_isInternalName(law)?'internal':'law', memo:text});
+      }
+    }
+  }catch(e){}
+  const arr=Object.keys(map).map(k=>map[k]);
+  arr.sort((a,b)=>(b.savedAt||'').localeCompare(a.savedAt||'')||String(a.law).localeCompare(String(b.law))||(a.idx-b.idx));
+  return arr;
+}
+function openBmHub(){ const bg=document.getElementById('bmHubBg'); if(!bg) return; _bmHubRender(); bg.classList.add('show'); _modalFocusIn('bmHubBg'); }
+function closeBmHub(){ const bg=document.getElementById('bmHubBg'); if(bg) bg.classList.remove('show'); _modalFocusOut(); }
+function _bmHubRender(){
+  const body=document.getElementById('bmHubBody'); if(!body) return;
+  const items=_hubScan();
+  const cnt=document.getElementById('bmHubCount'); if(cnt) cnt.textContent=items.length?`(${items.length})`:'';
+  if(!items.length){ body.innerHTML=`<div class="fav-empty">🔖 북마크하거나 📝 메모한 조문이 없습니다.<br>내규·법령 전문에서 조문의 <b>🔖 북마크</b>·<b>📝 메모</b> 버튼으로 담아두면 여기에 모여 바로 찾을 수 있어요.</div>`; return; }
+  body.innerHTML=items.map((it,i)=>{
+    const dtLabel=it.docType==='internal'?'내규':'법령';
+    const artLabel=[it.no,it.title].filter(Boolean).join(' ');
+    const badges=(it.bm?'<span class="hub-b bm">🔖 북마크</span>':'')+(it.memo?'<span class="hub-b mo">📝 메모</span>':'');
+    const memoPrev=it.memo?`<div class="hub-memo">${escHtml(it.memo.length>140?it.memo.slice(0,140)+'…':it.memo)}</div>`:'';
+    return `<div class="hub-item" onclick="_hubOpen(${i})" title="클릭하면 전문에서 해당 조문 열기">
+        <div class="hub-top"><span class="favm-ltype${it.docType==='internal'?' int':''}">${dtLabel}</span>
+          <span class="hub-main"><span class="hub-law">${escHtml(it.law||'(문서)')}</span>
+          ${artLabel?`<span class="hub-art">${escHtml(artLabel)}</span>`:''}</span>
+          <span class="hub-badges">${badges}</span></div>
+        ${memoPrev}
+      </div>`;
+  }).join('');
+  // 인덱스 참조용으로 최신 스캔 결과 캐시
+  _bmHubItems=items;
+}
+let _bmHubItems=[];
+function _hubOpen(i){
+  const it=_bmHubItems[i]; if(!it) return;
+  closeBmHub();
+  if(_assistMode && typeof closeAssist==='function') closeAssist();
+  const dt=it.docType||'law';
+  if(dt==='internal') openInternalPanel(it.law);
+  else openFullPanel(it.law, `https://www.law.go.kr/법령/${encodeURIComponent(it.law)}`, '', '법률');
+  _hubScrollTo(it.idx);
+}
+function _hubScrollTo(idx){
+  if(idx==null||isNaN(idx)) return;
+  let tries=0;
+  const tick=setInterval(()=>{ tries++;
+    const el=document.getElementById('fpa'+idx);
+    if(el){ clearInterval(tick);
+      const body=document.getElementById('fpbody'+idx);
+      if(body && body.style.display!=='block'){ try{ toggleFpArt(idx); }catch(e){} }
+      el.scrollIntoView({behavior:'smooth',block:'center'});
+      el.style.transition='background .25s'; el.style.background='var(--gl)';
+      setTimeout(()=>{ el.style.background=''; },2500);
+      return;
+    }
+    if(tries>40) clearInterval(tick);
+  },150);
+}
 function toggleCard2(id){document.getElementById(id).classList.toggle('open');}
 
 function removeFavAt(i){
@@ -8944,10 +9244,11 @@ function toggleBookmark(idx, key){
   } else {
     const no=artNoLabel(art);
     const title=art['조문제목']||'';
-    const data=JSON.stringify({law:lawName, no, title, idx,
-      url:`https://www.law.go.kr/법령/${encodeURIComponent(lawName)}`,
+    const docType=(_leftDoc&&_leftDoc.docType)||'law';
+    const data=JSON.stringify({law:lawName, no, title, idx, docType,
+      url: docType==='internal' ? '' : `https://www.law.go.kr/법령/${encodeURIComponent(lawName)}`,
       savedAt:new Date().toISOString().slice(0,10)});
-    localStorage.setItem(key, data);
+    _lsSet(key, data);
     if(btn){btn.textContent='🔖 북마크됨'; btn.classList.add('active');}
   }
 }
