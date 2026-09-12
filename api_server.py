@@ -2472,22 +2472,38 @@ def _save_reg_manifest(man: list) -> None:
     os.replace(tmp, REG_MANIFEST_PATH)
 
 
-def _find_reg_original(name: str) -> dict | None:
-    """규정명으로 원본 PDF 항목을 찾는다(정확 일치 → 포함 관계)."""
+def _find_reg_exact(name: str) -> dict | None:
+    """규정명 '정확 일치'만 반환(공백·대소문자 무시). 유사명 매칭을 하지 않는다."""
     man = _load_reg_manifest()
-    if not man:
-        return None
     key = _norm_key(name)
-    if not key:
+    if not man or not key:
         return None
-    for m in man:                                  # 1) 정확 일치
+    for m in man:
         if _norm_key(m.get("title", "")) == key:
             return m
-    cands = [m for m in man                        # 2) 포함 관계(가장 긴 제목 우선)
+    return None
+
+
+def _find_reg_original(name: str) -> dict | None:
+    """규정명으로 원본 항목을 찾는다(정확 일치 → 포함 관계).
+
+    포함 관계 매칭은 '가장 가까운' 제목을 고른다. 예전에는 '가장 긴 제목'을
+    골라 '감사규정' 조회가 '감사규정 시행세칙'으로 잘못 연결되는 문제가 있었다.
+    이제 질의어와 길이 차가 가장 작은(=가장 근접한) 제목을 우선한다.
+    """
+    m = _find_reg_exact(name)                      # 1) 정확 일치
+    if m:
+        return m
+    man = _load_reg_manifest()
+    key = _norm_key(name)
+    if not man or not key:
+        return None
+    cands = [m for m in man                        # 2) 포함 관계(가장 근접한 제목 우선)
              if _norm_key(m.get("title", "")) and
              (_norm_key(m["title"]) in key or key in _norm_key(m["title"]))]
     if cands:
-        return max(cands, key=lambda m: len(m.get("title", "")))
+        return min(cands, key=lambda m: (abs(len(_norm_key(m.get("title", ""))) - len(key)),
+                                         len(m.get("title", ""))))
     return None
 
 
@@ -4326,6 +4342,18 @@ def internal_doc():
                         "text": local_text, "structured": None,
                         "source": "upload", "revision": m_local.get("revision", ""),
                         "uploaded_at": m_local.get("uploaded_at", "")})
+
+    # 정확한 규정명이 로컬(번들/업로드)에 있으면 그 본문을 MCP보다 우선한다.
+    # 외부 MCP의 유사명 검색이 '감사규정' → '감사규정 시행세칙'처럼 접두어가
+    # 같은 다른 규정으로 잘못 연결하는 것을 원천 차단한다(업로드 개정본은 위에서 처리).
+    m_exact = _find_reg_exact(name)
+    if m_exact:
+        body = _reg_body_text(m_exact.get("slug", ""))
+        if body and len(body) >= 40:
+            return jsonify({"success": True, "name": m_exact.get("title", name),
+                            "tool": "local-html", "is_full": True,
+                            "text": body, "structured": None, "source": "local",
+                            "revision": m_exact.get("revision", "")})
 
     # 번들된 규정 HTML 본문으로 전문을 구성(오프라인/무MCP 리더 지원).
     def _local_doc():
