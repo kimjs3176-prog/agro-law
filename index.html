@@ -5635,6 +5635,7 @@ async function openInternalPanel(name){
       ? d.structured.map(it=>{ const t=it.title||it.name||it['제목']||it['규정명']||''; const c=it.content||it.text||it['내용']||it['본문']||''; return (t?t+'\n':'')+String(c); }).join('\n')
       : raw;
     let html='';
+    try{ _intAbbrevMap = extractInternalAbbrevs(_intCheckText||raw, name)||{}; }catch(e){ _intAbbrevMap={}; }
     if(Array.isArray(d.structured)&&d.structured.length){
       html=d.structured.map(it=>{
         const t=it.title||it.name||it['제목']||it['규정명']||'';
@@ -5821,6 +5822,36 @@ function matchInternalRule(name){
     if(bySuf.length===1) return _regNameOrig.get(bySuf[0]);
   }
   return null;
+}
+// 문서가 스스로 정의한 약칭(예: 시행세칙의 "감사규정(이하 "규정"이라 한다)")을
+// 스캔해 {약칭 → 실제 내규명} 맵 반환. 자기 자신을 가리키는 약칭(예: "세칙")은 제외.
+let _intAbbrevMap={};   // formatRuleText 렌더 직전에 문서 단위로 설정
+function _resolveInternalRegName(full){
+  if(!_regNames) return null;
+  const k=_rnorm(full); if(!k) return null;
+  if(_regNames.has(k)) return _regNameOrig.get(k);
+  // 기관명 접두어가 붙은 경우: 알려진 내규명으로 끝나면 그 내규로(가장 긴 것 우선)
+  let best=null;
+  for(const rk of _regNames){ if(rk.length>=3 && k.endsWith(rk) && (!best||rk.length>best.length)) best=rk; }
+  if(best) return _regNameOrig.get(best);
+  return matchInternalRule(full);
+}
+function extractInternalAbbrevs(text, currentName){
+  const map={};
+  if(!text || !_regNames) return map;
+  const cur=_rnorm(currentName||'');
+  // <정식 내규명>(이하 "약칭"이라 한다) — 「」 괄호 없이 내규 원문 표기까지 대응
+  const re=/([가-힣A-Za-z0-9()·\s]{2,40}?(?:규정|규칙|세칙|지침|예규|훈령|기준|정관|규약|준칙|요령|요강))\s*[(（]\s*이하\s*["'"“”＂']?\s*([가-힣]{1,12}?)\s*["'"“”＂']?\s*(?:이?라(?:고)?)?\s*한다/g;
+  let m;
+  while((m=re.exec(text))){
+    const full=(m[1]||'').trim(), ab=(m[2]||'').trim();
+    if(!full||!ab||map[ab]) continue;
+    const resolved=_resolveInternalRegName(full);
+    if(!resolved) continue;
+    if(_rnorm(resolved)===cur) continue;    // 자기 자신 약칭 → 같은 문서 이동(기본 동작 유지)
+    map[ab]=resolved;
+  }
+  return map;
 }
 // 본문의 참조 중 내규인 것에 배지를 달아 시각적으로 구분
 function markInternalRefs(root){
@@ -6048,7 +6079,7 @@ function formatRuleText(raw){
     }
     merged.push(lines[i]);
   }
-  const seg=s=>applyXref(applyTermTooltip(escHtml(s)),'',{});
+  const seg=s=>applyXref(applyTermTooltip(escHtml(s)),'',{},_intAbbrevMap);
   // 마크다운 표 판별 도우미
   const isTableRow=s=>/\|/.test(s) && s.replace(/[^|]/g,'').length>=1;
   const isSepRow=s=>{
@@ -9373,7 +9404,7 @@ function extractLawAbbrevs(arts, currentLawName){
   return map;
 }
 
-function applyXref(html, lawName, abbrevMap={}){
+function applyXref(html, lawName, abbrevMap={}, intAbbrev={}){
   // 1) 「법령명」 → 준용 법령 링크
   //    접미사: 법률·법·시행령·시행규칙·고시·예규·세칙·령·규칙·조례·훈령·규정·지침·기준
   //    괄호 변형 허용: 「」·｢｣ 뿐 아니라 『』·《》·〈〉 도 인식(원문마다 표기가 다르다).
@@ -9542,6 +9573,22 @@ function applyXref(html, lawName, abbrevMap={}){
         artXrefTag.replace('<span class="art-xref"', `<span class="art-xref" data-reflaw="${safe}"`);
     }
   );
+  // 1c-i) 문서 자체 정의 약칭 → 내규 참조 링크 (part 2 이후 후처리)
+  //   예) 시행세칙에서 "규정"=상위 「감사규정」. "규정 제7조"의 제7조를 감사규정 제7조로 연결.
+  //   바로 뒤 art-xref 하나에만 적용 → 같은 문장의 "세칙 제5조"(자기 자신)엔 번지지 않는다.
+  //   (extractInternalAbbrevs가 자기 자신 약칭은 이미 제외)
+  if(intAbbrev && Object.keys(intAbbrev).length > 0){
+    Object.entries(intAbbrev).forEach(([ab, reg]) => {
+      if(!reg || reg === lawName) return;
+      const abE  = ab.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const safe = reg.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const re = new RegExp(`(?<![가-힣])(${abE})( +)(<span class="art-xref"(?![^>]*data-reflaw)[^>]*>)`, 'g');
+      finalHtml = finalHtml.replace(re, (m, a, sp, tag) =>
+        `<span class="law-ref" data-reflaw="${safe}" data-refinternal="${safe}" title="「${safe}」 조문 보기">${a}</span>${sp}`+
+        tag.replace('<span class="art-xref"', `<span class="art-xref" data-reflaw="${safe}"`)
+      );
+    });
+  }
   return finalHtml;
 }
 
@@ -9984,6 +10031,7 @@ function wsBodyHtml(p){
 }
 function wsInternalHtml(p){
   let html='';
+  try{ _intAbbrevMap = extractInternalAbbrevs(_wsPlainText(p), p.name)||{}; }catch(e){ _intAbbrevMap={}; }
   if(Array.isArray(p.structured)&&p.structured.length){
     html=p.structured.map(it=>{
       const t=it.title||it.name||it['제목']||it['규정명']||'';
@@ -10416,6 +10464,7 @@ function renderActiveRefTab(){
   if(t.docType==='internal'){
     const body=document.getElementById('fpRightBody');
     let html;
+    try{ const ftext=(Array.isArray(t.structured)&&t.structured.length)?t.structured.map(it=>(it.title||it.name||it['제목']||it['규정명']||'')+'\n'+(it.content||it.text||it['내용']||it['본문']||'')).join('\n'):(t.text||''); _intAbbrevMap = extractInternalAbbrevs(ftext, t.name)||{}; }catch(e){ _intAbbrevMap={}; }
     if(Array.isArray(t.structured)&&t.structured.length){
       html=t.structured.map(it=>{
         const tt=it.title||it.name||it['제목']||it['규정명']||'';
