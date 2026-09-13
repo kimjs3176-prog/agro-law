@@ -124,6 +124,10 @@ body.dark .stgl.active{background:#20222a;}
 .dash-more{font-size:12px;font-weight:700;color:var(--g);background:transparent;border:none;cursor:pointer;padding:2px 4px;}
 .dash-more:hover{text-decoration:underline;}
 .dash-list{display:flex;flex-direction:column;gap:7px;}
+.dash-item-wrap{display:flex;align-items:stretch;gap:6px;}
+.dash-item-wrap .dash-item{flex:1;min-width:0;}
+.dash-cal{flex-shrink:0;width:38px;border:1px solid var(--bd);background:var(--card);border-radius:10px;cursor:pointer;font-size:15px;line-height:1;transition:.12s;}
+.dash-cal:hover{border-color:var(--g);background:var(--gl);}
 .dash-item{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:var(--card);border:1px solid var(--bd);
   border-radius:10px;padding:10px 12px;cursor:pointer;font-family:var(--font);transition:.12s;}
 .dash-item:hover{border-color:var(--g);box-shadow:0 2px 10px rgba(37,110,244,.1);}
@@ -321,6 +325,10 @@ body.dark .cpat-b.reg{background:rgba(34,197,94,.16);color:#6ee7a0;}
 .cpat-more:hover{text-decoration:underline;}
 /* ── 지출결의서 본문 작성기 ── */
 .exp-segset{display:inline-flex;background:var(--gl);border-radius:10px;padding:3px;gap:2px;margin:10px 0 14px;}
+.exp-tplbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px;}
+.exp-tpl-save{flex-shrink:0;font-size:12px;font-weight:700;padding:6px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--g);cursor:pointer;}
+.exp-tpl-save:hover{border-color:var(--g);background:var(--gl);}
+.exp-tpl-list{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
 .exp-seg{font-size:13px;font-weight:700;padding:7px 18px;border:none;border-radius:8px;background:transparent;color:var(--mu);cursor:pointer;font-family:var(--font);transition:.12s;}
 .exp-seg:hover{color:var(--gp);}
 .exp-seg.active{background:var(--sf);color:var(--gp);box-shadow:0 1px 3px rgba(17,18,23,.1);}
@@ -1797,6 +1805,8 @@ body.dark .scenario-caution{background:#451a03;border-color:#b45309;color:#fde68
 .favm-item:hover .favm-go{color:var(--g);}
 .favm-star{flex-shrink:0;width:30px;height:30px;border:none;background:transparent;font-size:15px;line-height:1;color:#f5b301;cursor:pointer;border-radius:7px;}
 .favm-star:hover{background:rgba(245,179,1,.14);}
+.favm-cal{flex-shrink:0;width:30px;height:30px;border:none;background:transparent;font-size:14px;line-height:1;cursor:pointer;border-radius:7px;}
+.favm-cal:hover{background:var(--gl);}
 .favm-item .fav-move{max-width:130px;margin-left:0;}
 .favm-ltype{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;background:var(--gl);color:var(--gp);flex-shrink:0;}
 .favm-ltype.int{background:rgba(37,110,244,.15);color:#7fb3fb;}
@@ -3846,10 +3856,14 @@ function _dashRender(){
   // 마감 임박 공고
   const oppInner = opp.length ? `<div class="dash-list">`+opp.slice(0,6).map(x=>{
       const b=_favBucket(x.f.type); const kind=b==='support'?'지원사업':'조달';
-      return `<button class="dash-item" onclick="_favOpenItem(${x.i})" title="${escAttr(x.f.name||'')}">`+
+      const endRaw=String(x.f.end||x.f.endText||'');
+      return `<div class="dash-item-wrap">`+
+        `<button class="dash-item" onclick="_favOpenItem(${x.i})" title="${escAttr(x.f.name||'')}">`+
         `<span class="dash-dday ${x.dd.cls}">${escHtml(x.dd.label)}</span>`+
         `<span class="dash-item-main"><span class="dash-item-t">${escHtml(x.f.name||'(제목 없음)')}</span>`+
-        `<span class="dash-item-m">${kind}${x.f.subtitle?' · '+escHtml(x.f.subtitle):''}${(x.f.endText||x.f.end)?' · 마감 '+escHtml(String(x.f.endText||x.f.end)):''}</span></span></button>`;
+        `<span class="dash-item-m">${kind}${x.f.subtitle?' · '+escHtml(x.f.subtitle):''}${(x.f.endText||x.f.end)?' · 마감 '+escHtml(String(x.f.endText||x.f.end)):''}</span></span></button>`+
+        `<button class="dash-cal" title="마감을 업무메모 일정에 담기(.ics 내보내기 연동)" onclick="_calAddDeadline('${argAttr(x.f.name||'')}','${argAttr(endRaw)}','${kind}')">📅</button>`+
+      `</div>`;
     }).join('')+`</div>` : `<div class="dash-empty">즐겨찾기한 지원사업·조달 공고가 없습니다. 조회 화면에서 ☆로 담아두면 마감이 여기 모입니다.</div>`;
 
   // 할 일
@@ -4108,6 +4122,21 @@ function _memoExportICS(){
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='업무메모_일정_'+_memoToday()+'.ics';
   document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
+// 마감 공고(즐겨찾기 지원사업·조달)를 업무메모 '일정'으로 담기 — 중복 방지, .ics 내보내기 연동
+function _calAddDeadline(title, endRaw, kindLabel){
+  const d=String(endRaw||'').replace(/\D/g,'').slice(0,8);
+  if(d.length<8){ if(typeof _toast==='function') _toast('마감일 정보가 없어 일정에 담을 수 없습니다.', 3000); return; }
+  const date=d.slice(0,4)+'-'+d.slice(4,6)+'-'+d.slice(6,8);
+  const t=(kindLabel?('['+kindLabel+' 마감] '):'[마감] ')+String(title||'').trim();
+  const m=_wmemoGet();
+  if((m.events||[]).some(e=>e.title===t && String(e.date||'').slice(0,10)===date)){
+    if(typeof _toast==='function') _toast('이미 일정에 담긴 공고입니다.', 2600); return;
+  }
+  m.events.push({id:_memoId(), title:t, date, time:'', place:''});
+  _wmemoSave(m);
+  if(typeof _toast==='function') _toast('📅 일정에 담았습니다 ('+date+'). 업무메모 › 일정에서 .ics로 내보낼 수 있어요.', 3800);
+  if(_assistMode==='home' && typeof _dashRender==='function') _dashRender();   // 대시보드 '다가오는 일정' 갱신
+}
 // ── 연락처 ──
 function _memoContactView(m){
   const ed=_memoEditItem('contacts');
@@ -4230,6 +4259,45 @@ function _expLoadState(){ try{ const s=JSON.parse(localStorage.getItem(EXP_KEY)|
     if(p){ delete p.targets; delete p.people; }
     return st; } }catch(e){} return _expDefault(); }
 function _expSaveState(){ _lsSet(EXP_KEY, JSON.stringify(_expState)); }
+// ── 지출결의서 템플릿(프리셋) — 반복 서식을 이름 붙여 저장/적용 ──────────────
+const _EXP_TPL_KEY='koat_exp_templates';
+const _EXP_TYPE_LABEL={general:'일반',travel:'여비',promo:'업무추진비'};
+function _expTplGet(){ try{ const a=JSON.parse(localStorage.getItem(_EXP_TPL_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch{ return []; } }
+function _expTplSet(a){ _lsSet(_EXP_TPL_KEY, JSON.stringify(a), {critical:true}); }
+function _expTplSave(){
+  _expSync();
+  const def=(_EXP_TYPE_LABEL[_expState.type]||'')+' 서식';
+  const name=prompt('템플릿 이름:', def); if(name===null) return;
+  const nm=String(name).trim()||def;
+  const a=_expTplGet();
+  a.unshift({id:'t'+Date.now().toString(36), name:nm, type:_expState.type, state:JSON.parse(JSON.stringify(_expState)), ts:_today()});
+  if(a.length>30) a.length=30; _expTplSet(a);
+  if(typeof _toast==='function') _toast('템플릿 "'+nm+'" 저장됨.', 2600);
+  _expTplRender();
+}
+function _expTplApply(id){
+  const t=_expTplGet().find(x=>x.id===id); if(!t) return;
+  const d=_expDefault();
+  const s=t.state||{};
+  _expState=Object.assign(d, s, {general:Object.assign(d.general,s.general||{}),
+    travel:Object.assign(d.travel,s.travel||{}), tcalc:Object.assign(d.tcalc,s.tcalc||{}),
+    promo:Object.assign(d.promo,s.promo||{})});
+  // 구 단일 집행대상 → 외부 이관(마이그레이션 일관성)
+  const p=_expState.promo; if(p&&(p.targets||p.people)&&!p.targetsExt&&!p.targetsInt){ p.targetsExt=p.targets||''; p.peopleExt=p.people||''; }
+  if(p){ delete p.targets; delete p.people; }
+  _expSaveState();
+  document.querySelectorAll('#expSeg .exp-seg').forEach((b,i)=>b.classList.toggle('active',['general','travel','promo'][i]===_expState.type));
+  _expRenderFields(); _expUpdate();
+  if(typeof _toast==='function') _toast('템플릿 "'+t.name+'" 적용됨.', 2400);
+}
+function _expTplDel(id){ _expTplSet(_expTplGet().filter(x=>x.id!==id)); _expTplRender(); }
+function _expTplRender(){
+  const bar=document.getElementById('expTplBar'); if(!bar) return;
+  const list=_expTplGet();
+  const chips=list.map(t=>`<span class="saved-chip-wrap"><button class="rec-chip" title="${escAttr((_EXP_TYPE_LABEL[t.type]||'')+' · '+(t.ts||''))}" onclick="_expTplApply('${t.id}')">📄 ${escHtml(t.name)}</button><button class="saved-del" title="삭제" onclick="_expTplDel('${t.id}')" aria-label="삭제">✕</button></span>`).join('');
+  bar.innerHTML=`<button class="exp-tpl-save" onclick="_expTplSave()" title="현재 입력 내용을 템플릿으로 저장">💾 템플릿 저장</button>`+
+    (list.length?`<span class="exp-tpl-list">${chips}</span>`:`<span class="saved-empty">반복 서식을 저장해 한 번에 불러올 수 있어요.</span>`);
+}
 function _won(n){ return '₩'+(Math.round(Number(n)||0)).toLocaleString('ko-KR'); }
 function _digits(v){ return parseInt(String(v||'').replace(/[^\d]/g,''),10)||0; }
 function _hanAmount(n){
@@ -4462,6 +4530,7 @@ function openExpense(){
     `<span class="assist-h-t">지출결의서 본문 작성</span>`+
     `<span class="assist-h-hint">구분을 고르고 입력하면 ERP 본문에 붙여넣을 내용이 완성됩니다. 서식은 ERP를 사용하세요.</span>`+_assistCloseBtn()+`</div>`+
     `<div class="exp-segset" id="expSeg">${seg}</div>`+
+    `<div class="exp-tplbar" id="expTplBar"></div>`+
     `<div class="exp-wrap">`+
       `<div class="exp-form" id="expForm"><div id="expFields"></div>`+
         `<div class="exp-actions"><button class="exp-print" onclick="_expCopy(this)">📋 본문 복사</button>`+
@@ -4475,7 +4544,7 @@ function openExpense(){
   const form=document.getElementById('expForm');
   if(form){ const h=()=>{ if(_expRendering) return; _expSync(); _expUpdate(); _expSaveState(); };
     form.addEventListener('input', h); form.addEventListener('change', h); }
-  _expRenderFields(); _expUpdate();
+  _expRenderFields(); _expUpdate(); _expTplRender();
 }
 function _expSetType(t){ _expSync(); _expState.type=t; _expSaveState();
   document.querySelectorAll('#expSeg .exp-seg').forEach((b,i)=>b.classList.toggle('active',['general','travel','promo'][i]===t));
@@ -8063,6 +8132,8 @@ function _favItemCard(f, i, folderOpts){
   if((bkt==='support'||bkt==='procurement')&&(f.endText||f.end)) sub=(sub?sub+' · ':'')+'마감 '+(f.endText||f.end);
   const dispName=f.art?(f.artTitle?f.art+' '+f.artTitle:f.art):f.name;
   const cur=String(f.folder||'');
+  const canCal=(bkt==='support'||bkt==='procurement')&&(f.end||f.endText);
+  const calBtn=canCal?`<button class="favm-cal" onclick="event.stopPropagation();_calAddDeadline('${argAttr(f.name||'')}','${argAttr(String(f.end||f.endText||''))}','${bkt==='support'?'지원사업':'조달'}')" title="마감을 업무메모 일정에 담기(.ics 연동)">📅</button>`:'';
   const sel=`<select class="fav-move" title="폴더 이동" onclick="event.stopPropagation()" onchange="_favMoveItem(${i},this)">`
     +`<option value=""${cur?'':' selected'}>📂 미분류</option>`
     +folderOpts.map(fn=>`<option value="${escAttr(fn)}"${fn===cur?' selected':''}>📁 ${escHtml(fn)}</option>`).join('')+`</select>`;
@@ -8076,6 +8147,7 @@ function _favItemCard(f, i, folderOpts){
         </div>
       </div>
       ${sel}
+      ${calBtn}
       <button class="favm-star" onclick="event.stopPropagation();removeFavAt(${i});" title="즐겨찾기 제거">★</button>
       <span class="favm-go">›</span>
     </div>`;
