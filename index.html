@@ -374,6 +374,30 @@ body.dark .cpat-b.reg{background:rgba(34,197,94,.16);color:#6ee7a0;}
 .tcz-li.total b{color:var(--g);font-size:15px;}
 .tcz-add{margin-top:0;}
 .tcz-note{margin-top:9px;font-size:11px;line-height:1.5;color:var(--ht);}
+/* 출장 증빙 서식(Excel) */
+.exp-fg.rcpt{border-style:dashed;}
+.rcpt-sec-t{font-size:11.5px;font-weight:800;color:var(--mu);margin:10px 0 6px;}
+.rcpt-sec-t:first-of-type{margin-top:2px;}
+.rcpt-frow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+.rcpt-f{flex:1 1 180px;display:flex;flex-direction:column;gap:3px;font-size:11.5px;font-weight:700;color:var(--mu);}
+.rcpt-f input{font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--bd);border-radius:7px;background:var(--card);color:var(--tx);}
+.rcpt-thead{display:flex;gap:5px;font-size:10.5px;font-weight:700;color:var(--ht);padding:0 2px 3px;}
+.rcpt-thead span:nth-child(1){flex:1 1 40%;} .rcpt-thead span:nth-child(2){flex:0 0 84px;}
+.rcpt-thead span:nth-child(3),.rcpt-thead span:nth-child(4){flex:1 1 22%;} .rcpt-thead span:nth-child(5){flex:0 0 26px;}
+.rcpt-trow{display:flex;gap:5px;margin-bottom:5px;align-items:center;}
+.rcpt-tin{font:inherit;font-size:12.5px;padding:6px 7px;border:1px solid var(--bd);border-radius:7px;background:var(--card);color:var(--tx);min-width:0;}
+.rcpt-tin.rc-c{flex:1 1 40%;} .rcpt-tin.rc-d{flex:0 0 84px;} .rcpt-tin.rc-a{flex:1 1 22%;}
+.rcpt-imgs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+.rcpt-thumb{position:relative;width:84px;height:84px;border:1px solid var(--bd);border-radius:8px;overflow:hidden;background:var(--bg);}
+.rcpt-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.rcpt-thumb button{position:absolute;top:2px;right:2px;width:20px;height:20px;border:none;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:12px;line-height:1;cursor:pointer;}
+.rcpt-empty{font-size:11.5px;color:var(--ht);padding:12px;border:1px dashed var(--bd);border-radius:8px;width:100%;text-align:center;}
+.rcpt-attach{display:inline-block;font-size:12px;font-weight:700;padding:7px 12px;border:1px dashed var(--bd);border-radius:8px;color:var(--g);cursor:pointer;}
+.rcpt-attach:hover{border-color:var(--g);background:var(--gl);}
+.rcpt-actions{margin-top:12px;}
+.rcpt-gen{width:100%;font-size:13px;font-weight:800;padding:11px;border:none;border-radius:10px;background:var(--g);color:#fff;cursor:pointer;box-shadow:0 2px 10px rgba(37,110,244,.28);}
+.rcpt-gen:hover{filter:brightness(1.05);}
+.rcpt-gen:disabled{opacity:.6;cursor:default;}
 .exp-limit.ok{background:#e7f6ec;color:#137a3e;} .exp-limit.over{background:#fde6e6;color:#c0342b;}
 body.dark .exp-limit.ok{background:rgba(34,197,94,.16);color:#6ee7a0;} body.dark .exp-limit.over{background:rgba(239,68,68,.18);color:#fca5a5;}
 .exp-actions{display:flex;gap:8px;margin-top:4px;}
@@ -4251,9 +4275,10 @@ function _expDefault(){ return {type:'general',
   general:{vendor:'',bno:'',ceo:'',desc:'',budget:'',supply:'',vat:'',method:'계좌이체',bank:'',holder:'',account:''},
   travel:{name:'',dept:'',rows:[{date:_today(),place:'',content:'',amt:''}]},
   tcalc:_tcalcDefault(),
+  receipt:{user:'',dept:'',region:'',summary:'',rows:[],init:false},
   promo:{basis:'',purpose:'',date:_today(),place:'',targetsExt:'',peopleExt:'',targetsInt:'',peopleInt:'',total:'',note:''}}; }
 function _expLoadState(){ try{ const s=JSON.parse(localStorage.getItem(EXP_KEY)||'null'); if(s&&s.type){ const d=_expDefault();
-    const st=Object.assign(d,s,{general:Object.assign(d.general,s.general),travel:Object.assign(d.travel,s.travel),tcalc:Object.assign(d.tcalc,s.tcalc||{}),promo:Object.assign(d.promo,s.promo)});
+    const st=Object.assign(d,s,{general:Object.assign(d.general,s.general),travel:Object.assign(d.travel,s.travel),tcalc:Object.assign(d.tcalc,s.tcalc||{}),receipt:Object.assign(d.receipt,s.receipt||{}),promo:Object.assign(d.promo,s.promo)});
     // 마이그레이션: 구 버전의 단일 집행대상(targets/people) → 외부 항목으로 이관
     const p=st.promo; if(p && (p.targets||p.people) && !p.targetsExt && !p.targetsInt){ p.targetsExt=p.targets||''; p.peopleExt=p.people||''; }
     if(p){ delete p.targets; delete p.people; }
@@ -4592,7 +4617,8 @@ function _expRenderFields(){
       _travCalcHtml()+
       `<div class="exp-fg"><div class="exp-fgt">출장 내역 <span class="exp-hint2">건별 일자·출장지·목적·금액 (다건이면 행 추가)</span></div>`+
         `<div id="tvRows">${rows}</div>`+
-        `<button type="button" class="exp-addrow" onclick="_expTravelAdd()">＋ 행 추가</button></div>`;
+        `<button type="button" class="exp-addrow" onclick="_expTravelAdd()">＋ 행 추가</button></div>`+
+      _rcptSectionHtml();
   } else {
     const pm=_expState.promo;
     box.innerHTML=
@@ -4687,6 +4713,146 @@ function _travCalcAdd(){ _travCalcReadInputs(); const r=_travCalc();
   const row={date:_today(), place:'', content:'국내여비('+parts.join('·')+')', amt:String(r.total)};
   if(blank){ Object.assign(blank,row); } else { rowsArr.push(row); }
   _expRenderFields(); _expUpdate(); _expSaveState();
+}
+// ── 출장 증빙 서식(Excel) 자동 작성 ─────────────────────────────────────────
+// 여비 내역 + 첨부 증빙 사진으로 기관 '출장 증빙 서식'(.xlsx)을 서버에서 자동 완성해 내려받는다.
+let _rcptImages=[];   // 첨부 증빙 사진 dataURL (메모리 전용, localStorage 미저장 — 용량 보호)
+function _rcpt(){ if(!_expState.receipt) _expState.receipt={user:'',dept:'',region:'',summary:'',rows:[],init:false}; return _expState.receipt; }
+function _rcptEnsure(){
+  const rc=_rcpt(); if(rc.init) return rc;
+  const tv=_expState.travel||{};
+  const trows=(tv.rows||[]).filter(r=>r.content||r.amt||r.date||r.place);
+  if(!rc.user) rc.user=tv.name||'';
+  if(!rc.dept) rc.dept=tv.dept||'';
+  if(!rc.region) rc.region=[...new Set(trows.map(r=>String(r.place||'').trim()).filter(Boolean))].join(', ');
+  if(!rc.summary) rc.summary=trows[0]?String(trows[0].content||''):'';
+  if(!rc.rows||!rc.rows.length){
+    rc.rows= trows.length? trows.map(r=>({content:r.content||'', date:r.date||'', transit:String(r.amt||''), lodging:''}))
+                         : [{content:'',date:_today(),transit:'',lodging:''}];
+  }
+  rc.init=true; _expSaveState(); return rc;
+}
+function _rcptSectionHtml(){
+  const rc=_rcptEnsure();
+  return `<div class="exp-fg rcpt"><div class="exp-fgt">📷 출장 증빙 서식(Excel) 자동 작성 <span class="exp-hint2">여비 내역·증빙 사진으로 기관 서식(.xlsx)을 완성</span></div>`+
+    `<div id="rcptBox">${_rcptInnerHtml(rc)}</div></div>`;
+}
+function _rcptInnerHtml(rc){
+  const f=(id,label,val,ph)=>`<label class="rcpt-f">${label}<input id="rc_${id}" value="${_ev(val)}" placeholder="${ph||''}" oninput="_rcptField('${id}',this.value)"></label>`;
+  const head=`<div class="rcpt-frow">${f('user','사용자',rc.user,'성명')}${f('dept','부서명',rc.dept,'예: 기술거래이전팀')}</div>`+
+    `<div class="rcpt-frow">${f('region','사용지역',rc.region,'예: 세종특별자치시')}${f('summary','적요',rc.summary,'출장 목적 요약')}</div>`;
+  const rows=(rc.rows||[]).map((r,i)=>`<div class="rcpt-trow">`+
+    `<input class="rcpt-tin rc-c" value="${_ev(r.content)}" placeholder="내용" oninput="_rcptRow(${i},'content',this.value)">`+
+    `<input class="rcpt-tin rc-d" value="${_ev(r.date)}" placeholder="날짜" oninput="_rcptRow(${i},'date',this.value)">`+
+    `<input class="rcpt-tin rc-a" inputmode="numeric" value="${_ev(r.transit)}" placeholder="대중교통비" oninput="_rcptRow(${i},'transit',this.value)">`+
+    `<input class="rcpt-tin rc-a" inputmode="numeric" value="${_ev(r.lodging)}" placeholder="숙박비용" oninput="_rcptRow(${i},'lodging',this.value)">`+
+    `<button type="button" class="exp-trdel" onclick="_rcptDelRow(${i})" title="행 삭제" ${rc.rows.length<=1?'disabled':''}>✕</button></div>`).join('');
+  const table=`<div class="rcpt-thead"><span>내용</span><span>날짜</span><span>대중교통비</span><span>숙박비용</span><span></span></div>${rows}`+
+    `<button type="button" class="exp-addrow" onclick="_rcptAddRow()">＋ 내역 행 추가</button>`;
+  const imgs=`<div class="rcpt-imgs" id="rcptImgs">${_rcptThumbsHtml()}</div>`+
+    `<label class="rcpt-attach">📎 증빙 사진 첨부<input type="file" accept="image/*" multiple style="display:none" onchange="_rcptPickImages(this)"></label>`;
+  return `<div class="rcpt-sec-t">문서 정보</div>${head}`+
+    `<div class="rcpt-sec-t">사용내역 <span class="exp-hint2">여비 내역에서 자동 채움 · 대중교통비/숙박비용으로 구분</span></div>${table}`+
+    `<div class="rcpt-sec-t">증빙 사진</div>${imgs}`+
+    `<div class="rcpt-actions"><button type="button" class="rcpt-gen" onclick="_rcptGenerate(this)">📄 증빙 엑셀 생성·다운로드</button></div>`+
+    `<div class="tcz-note">🔒 첨부한 사진은 <b>서버로 전송하지 않고</b> 브라우저에서 엑셀에 삽입해 바로 내려받습니다(로컬 처리). 사진은 내 PC에만 있습니다.</div>`;
+}
+function _rcptField(id,val){ _rcpt()[id]=val; _expSaveState(); }
+function _rcptRow(i,k,val){ const rc=_rcpt(); if(rc.rows[i]){ rc.rows[i][k]=val; _expSaveState(); } }
+function _rcptAddRow(){ _rcpt().rows.push({content:'',date:_today(),transit:'',lodging:''}); _rcptRerender(); _expSaveState(); }
+function _rcptDelRow(i){ const rc=_rcpt(); rc.rows.splice(i,1); if(!rc.rows.length) rc.rows=[{content:'',date:_today(),transit:'',lodging:''}]; _rcptRerender(); _expSaveState(); }
+function _rcptRerender(){ const b=document.getElementById('rcptBox'); if(b) b.innerHTML=_rcptInnerHtml(_rcpt()); }
+function _rcptThumbsHtml(){
+  if(!_rcptImages.length) return `<div class="rcpt-empty">첨부한 증빙 사진이 없습니다. 아래 버튼으로 영수증·승차권 등을 담으세요.</div>`;
+  return _rcptImages.map((d,i)=>`<div class="rcpt-thumb"><img src="${d}" alt="증빙${i+1}"><button type="button" onclick="_rcptDelImage(${i})" title="삭제">✕</button></div>`).join('');
+}
+function _rcptRenderThumbs(){ const el=document.getElementById('rcptImgs'); if(el) el.innerHTML=_rcptThumbsHtml(); }
+function _rcptPickImages(input){
+  const files=[...(input.files||[])]; if(!files.length) return;
+  let pending=files.length;
+  const done=()=>{ pending--; if(pending<=0) _rcptRenderThumbs(); };
+  files.forEach(f=>{
+    if(!/^image\//.test(f.type)){ if(typeof _toast==='function')_toast('이미지 파일만 첨부할 수 있습니다.',2600); return done(); }
+    if(f.size>8*1024*1024){ if(typeof _toast==='function')_toast('8MB 이하 이미지만 첨부할 수 있습니다.',3000); return done(); }
+    const rd=new FileReader();
+    rd.onload=()=>{ if(_rcptImages.length<20) _rcptImages.push(rd.result); done(); };
+    rd.onerror=()=>done();
+    rd.readAsDataURL(f);
+  });
+  input.value='';
+}
+function _rcptDelImage(i){ _rcptImages.splice(i,1); _rcptRenderThumbs(); }
+// exceljs 지연 로드(앱에 내장된 로컬 파일) — 첨부 사진을 서버로 보내지 않고 브라우저에서 처리
+let _exceljsP=null;
+function _loadExcelJS(){
+  if(window.ExcelJS) return Promise.resolve(window.ExcelJS);
+  if(_exceljsP) return _exceljsP;
+  _exceljsP=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='/assets/exceljs.min.js';
+    s.onload=()=>window.ExcelJS?res(window.ExcelJS):rej(new Error('엑셀 라이브러리 로드 실패'));
+    s.onerror=()=>rej(new Error('엑셀 라이브러리를 불러오지 못했습니다.')); document.head.appendChild(s); });
+  return _exceljsP;
+}
+function _imgDims(dataURL){ return new Promise(res=>{ const im=new Image();
+  im.onload=()=>res({w:im.naturalWidth||300,h:im.naturalHeight||200}); im.onerror=()=>res({w:300,h:200}); im.src=dataURL; }); }
+async function _rcptGenerate(btn){
+  const rc=_rcpt();
+  const rows=(rc.rows||[]).filter(r=>r.content||r.date||r.transit||r.lodging);
+  if(!rc.user && !rows.length && !_rcptImages.length){ alert('사용자·내역 또는 증빙 사진 중 하나 이상을 입력/첨부해 주세요.'); return; }
+  const orig=btn?btn.textContent:''; if(btn){ btn.disabled=true; btn.textContent='생성 중...'; }
+  try{
+    const ExcelJS=await _loadExcelJS();
+    const resp=await fetch('/assets/expense_receipt_template.xlsx');
+    if(!resp.ok) throw new Error('증빙 서식 템플릿을 불러오지 못했습니다.');
+    const buf=await resp.arrayBuffer();
+    const wb=new ExcelJS.Workbook(); await wb.xlsx.load(buf);
+    const ws=wb.worksheets[0];
+    const digits=v=>parseInt(String(v||'').replace(/[^\d]/g,''),10)||0;
+    ws.getCell('B3').value=rc.user||'';
+    if((rc.dept||'').trim()) ws.getCell('G3').value=rc.dept.trim();
+    ws.getCell('B4').value=rc.region||'';
+    ws.getCell('B5').value=rc.summary||'';
+    const BASE_FIRST=8, BASE_LAST=10, BASE_SUM=11;
+    const extra=Math.max(0, rows.length-(BASE_LAST-BASE_FIRST+1));
+    if(extra){
+      ws.spliceRows(BASE_LAST+1, 0, ...Array.from({length:extra},()=>[]));   // 합계행 위로 빈 행 삽입
+      for(let k=0;k<extra;k++){
+        const dr=BASE_LAST+1+k;
+        try{ ws.getRow(dr).height=ws.getRow(BASE_FIRST).height; }catch(e){}
+        for(let col=1;col<=10;col++){ try{ ws.getRow(dr).getCell(col).style=JSON.parse(JSON.stringify(ws.getRow(BASE_FIRST).getCell(col).style||{})); }catch(e){} }
+        ['C{r}:D{r}','E{r}:G{r}','H{r}:J{r}'].forEach(m=>{ try{ ws.mergeCells(m.replace(/\{r\}/g,dr)); }catch(e){} });
+      }
+    }
+    let st=0, sl=0;
+    rows.forEach((r,i)=>{ const rr=BASE_FIRST+i;
+      ws.getRow(rr).getCell(2).value=r.content||'';
+      ws.getRow(rr).getCell(3).value=r.date||'';
+      const tv=digits(r.transit), lv=digits(r.lodging);
+      if(tv) ws.getRow(rr).getCell(5).value=tv;
+      if(lv) ws.getRow(rr).getCell(8).value=lv;
+      st+=tv; sl+=lv;
+    });
+    const sumRow=BASE_SUM+extra;
+    if(st) ws.getRow(sumRow).getCell(5).value=st;
+    if(sl) ws.getRow(sumRow).getCell(8).value=sl;
+    // 증빙 사진: '<증빙>' 라벨(합계행+2) 다음 행부터 세로 배치 — 전부 브라우저에서 삽입
+    let anchor=sumRow+3;   // 1-based
+    for(const d of _rcptImages.slice(0,20)){
+      const dim=await _imgDims(d);
+      let w=dim.w, h=dim.h; const maxw=600; if(w>maxw){ h=Math.round(h*maxw/w); w=maxw; }
+      const mm=/^data:image\/([a-zA-Z0-9.+-]+);base64,([\s\S]*)$/.exec(d); if(!mm) continue;
+      let ext=(mm[1]||'png').toLowerCase(); if(ext==='jpg') ext='jpeg'; if(ext!=='png'&&ext!=='jpeg'&&ext!=='gif') ext='png';
+      const id=wb.addImage({base64:mm[2], extension:ext});
+      ws.addImage(id, {tl:{col:0, row:anchor-1}, ext:{width:w, height:h}, editAs:'oneCell'});
+      anchor += Math.max(2, Math.round(h/20)+2);
+    }
+    const outBuf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([outBuf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const fn='출장증빙서식_'+_memoToday()+'.xlsx';
+    const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=fn;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    if(typeof _toast==='function') _toast('증빙 엑셀을 내려받았습니다(사진은 서버 전송 없이 로컬 처리).',3200);
+  }catch(e){ alert('증빙 엑셀 생성 실패: '+(e.message||e)); }
+  finally{ if(btn){ btn.disabled=false; btn.textContent=orig||'📄 증빙 엑셀 생성·다운로드'; } }
 }
 function _expBuild(){
   const t=_expState.type; let html='', text=''; _expRich='';
@@ -5635,6 +5801,7 @@ async function openInternalPanel(name){
       ? d.structured.map(it=>{ const t=it.title||it.name||it['제목']||it['규정명']||''; const c=it.content||it.text||it['내용']||it['본문']||''; return (t?t+'\n':'')+String(c); }).join('\n')
       : raw;
     let html='';
+    try{ _intAbbrevMap = extractInternalAbbrevs(_intCheckText||raw, name)||{}; }catch(e){ _intAbbrevMap={}; }
     if(Array.isArray(d.structured)&&d.structured.length){
       html=d.structured.map(it=>{
         const t=it.title||it.name||it['제목']||it['규정명']||'';
@@ -5821,6 +5988,36 @@ function matchInternalRule(name){
     if(bySuf.length===1) return _regNameOrig.get(bySuf[0]);
   }
   return null;
+}
+// 문서가 스스로 정의한 약칭(예: 시행세칙의 "감사규정(이하 "규정"이라 한다)")을
+// 스캔해 {약칭 → 실제 내규명} 맵 반환. 자기 자신을 가리키는 약칭(예: "세칙")은 제외.
+let _intAbbrevMap={};   // formatRuleText 렌더 직전에 문서 단위로 설정
+function _resolveInternalRegName(full){
+  if(!_regNames) return null;
+  const k=_rnorm(full); if(!k) return null;
+  if(_regNames.has(k)) return _regNameOrig.get(k);
+  // 기관명 접두어가 붙은 경우: 알려진 내규명으로 끝나면 그 내규로(가장 긴 것 우선)
+  let best=null;
+  for(const rk of _regNames){ if(rk.length>=3 && k.endsWith(rk) && (!best||rk.length>best.length)) best=rk; }
+  if(best) return _regNameOrig.get(best);
+  return matchInternalRule(full);
+}
+function extractInternalAbbrevs(text, currentName){
+  const map={};
+  if(!text || !_regNames) return map;
+  const cur=_rnorm(currentName||'');
+  // <정식 내규명>(이하 "약칭"이라 한다) — 「」 괄호 없이 내규 원문 표기까지 대응
+  const re=/([가-힣A-Za-z0-9()·\s]{2,40}?(?:규정|규칙|세칙|지침|예규|훈령|기준|정관|규약|준칙|요령|요강))\s*[(（]\s*이하\s*["'"“”＂']?\s*([가-힣]{1,12}?)\s*["'"“”＂']?\s*(?:이?라(?:고)?)?\s*한다/g;
+  let m;
+  while((m=re.exec(text))){
+    const full=(m[1]||'').trim(), ab=(m[2]||'').trim();
+    if(!full||!ab||map[ab]) continue;
+    const resolved=_resolveInternalRegName(full);
+    if(!resolved) continue;
+    if(_rnorm(resolved)===cur) continue;    // 자기 자신 약칭 → 같은 문서 이동(기본 동작 유지)
+    map[ab]=resolved;
+  }
+  return map;
 }
 // 본문의 참조 중 내규인 것에 배지를 달아 시각적으로 구분
 function markInternalRefs(root){
@@ -6048,7 +6245,7 @@ function formatRuleText(raw){
     }
     merged.push(lines[i]);
   }
-  const seg=s=>applyXref(applyTermTooltip(escHtml(s)),'',{});
+  const seg=s=>applyXref(applyTermTooltip(escHtml(s)),'',{},_intAbbrevMap);
   // 마크다운 표 판별 도우미
   const isTableRow=s=>/\|/.test(s) && s.replace(/[^|]/g,'').length>=1;
   const isSepRow=s=>{
@@ -9373,7 +9570,7 @@ function extractLawAbbrevs(arts, currentLawName){
   return map;
 }
 
-function applyXref(html, lawName, abbrevMap={}){
+function applyXref(html, lawName, abbrevMap={}, intAbbrev={}){
   // 1) 「법령명」 → 준용 법령 링크
   //    접미사: 법률·법·시행령·시행규칙·고시·예규·세칙·령·규칙·조례·훈령·규정·지침·기준
   //    괄호 변형 허용: 「」·｢｣ 뿐 아니라 『』·《》·〈〉 도 인식(원문마다 표기가 다르다).
@@ -9542,6 +9739,22 @@ function applyXref(html, lawName, abbrevMap={}){
         artXrefTag.replace('<span class="art-xref"', `<span class="art-xref" data-reflaw="${safe}"`);
     }
   );
+  // 1c-i) 문서 자체 정의 약칭 → 내규 참조 링크 (part 2 이후 후처리)
+  //   예) 시행세칙에서 "규정"=상위 「감사규정」. "규정 제7조"의 제7조를 감사규정 제7조로 연결.
+  //   바로 뒤 art-xref 하나에만 적용 → 같은 문장의 "세칙 제5조"(자기 자신)엔 번지지 않는다.
+  //   (extractInternalAbbrevs가 자기 자신 약칭은 이미 제외)
+  if(intAbbrev && Object.keys(intAbbrev).length > 0){
+    Object.entries(intAbbrev).forEach(([ab, reg]) => {
+      if(!reg || reg === lawName) return;
+      const abE  = ab.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const safe = reg.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const re = new RegExp(`(?<![가-힣])(${abE})( +)(<span class="art-xref"(?![^>]*data-reflaw)[^>]*>)`, 'g');
+      finalHtml = finalHtml.replace(re, (m, a, sp, tag) =>
+        `<span class="law-ref" data-reflaw="${safe}" data-refinternal="${safe}" title="「${safe}」 조문 보기">${a}</span>${sp}`+
+        tag.replace('<span class="art-xref"', `<span class="art-xref" data-reflaw="${safe}"`)
+      );
+    });
+  }
   return finalHtml;
 }
 
@@ -9984,6 +10197,7 @@ function wsBodyHtml(p){
 }
 function wsInternalHtml(p){
   let html='';
+  try{ _intAbbrevMap = extractInternalAbbrevs(_wsPlainText(p), p.name)||{}; }catch(e){ _intAbbrevMap={}; }
   if(Array.isArray(p.structured)&&p.structured.length){
     html=p.structured.map(it=>{
       const t=it.title||it.name||it['제목']||it['규정명']||'';
@@ -10416,6 +10630,7 @@ function renderActiveRefTab(){
   if(t.docType==='internal'){
     const body=document.getElementById('fpRightBody');
     let html;
+    try{ const ftext=(Array.isArray(t.structured)&&t.structured.length)?t.structured.map(it=>(it.title||it.name||it['제목']||it['규정명']||'')+'\n'+(it.content||it.text||it['내용']||it['본문']||'')).join('\n'):(t.text||''); _intAbbrevMap = extractInternalAbbrevs(ftext, t.name)||{}; }catch(e){ _intAbbrevMap={}; }
     if(Array.isArray(t.structured)&&t.structured.length){
       html=t.structured.map(it=>{
         const tt=it.title||it.name||it['제목']||it['규정명']||'';
