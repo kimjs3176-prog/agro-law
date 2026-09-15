@@ -175,6 +175,10 @@ body.dark .dash-dday.soon{background:rgba(234,88,12,.2);color:#fdba74;}
 .pat-chip{font-size:12.5px;font-weight:700;color:var(--mu);background:var(--sf);border:1px solid var(--bd);border-radius:999px;padding:6px 13px;cursor:pointer;font-family:var(--font);transition:.12s;}
 .pat-chip:hover{border-color:var(--g);color:var(--tx);}
 .pat-chip.active{background:var(--gl);border-color:transparent;color:var(--gp);}
+/* 기간 기준일(출원일/등록일) 토글 — 프리셋 칩과 구분되게 채움형 */
+.pat-dfchip{padding:6px 12px;}
+.pat-dfchip.active{background:var(--g);border-color:transparent;color:#fff;}
+.pat-widen-btn.primary{background:var(--g);color:#fff;border-color:transparent;}
 /* 상태 칩: 활성 시 상태별 색상 */
 .pat-schip{padding:6px 12px;}
 .pat-schip.active{color:#fff;}
@@ -3021,6 +3025,12 @@ const PAT_APPLICANTS=['농촌진흥청','농림축산검역본부','국립농산
 const PAT_STATUS=[['','전체 상태'],['R','등록'],['A','공개'],['J','거절'],['F','소멸'],['C','취하'],['I','무효'],['G','포기']];
 const PAT_CODE_LABEL={R:'등록',A:'공개',J:'거절',F:'소멸',C:'취하',I:'무효',G:'포기'};
 let _patLast=null, _patParams='', _patStatuses=[], _patPage=1;   // 다중 선택 상태 코드·현재 페이지
+let _patDateField='application';   // 기간 기준일: 'application'(출원일) | 'register'(등록일)
+function _patSetDateField(v, btn){
+  _patDateField=(v==='register')?'register':'application';
+  document.querySelectorAll('#patPeriod .pat-dfchip').forEach(b=>b.classList.toggle('active', b===btn));
+  const sub=document.getElementById('patDfSub'); if(sub) sub.textContent=(_patDateField==='register')?'등록일':'출원일';
+}
 function _patStatusMatch(it){
   if(!_patStatuses.length) return true;
   const s=String(it&&it.status||'');
@@ -3036,7 +3046,10 @@ function _patFiltersHtml(){
     `<div class="pat-filters-h"><span class="pat-fh-ic">🔎</span>특허 검색 필터</div>`+
     `<div class="pat-frow"><span class="pat-flabel">출원인</span><div class="pat-appl" id="patAppl">${appl}</div></div>`+
     `<div class="pat-frow"><span class="pat-flabel">상태</span><div class="pat-appl" id="patStatus">${stat}</div></div>`+
-    `<div class="pat-frow"><span class="pat-flabel" title="출원일(신청일) 기준으로 거릅니다">기간<span class="pat-flabel-sub">출원일</span></span><div class="pat-appl" id="patPeriod">`+
+    `<div class="pat-frow"><span class="pat-flabel" title="선택한 기준일(출원일 또는 등록일) 범위로 거릅니다">기간<span class="pat-flabel-sub" id="patDfSub">출원일</span></span><div class="pat-appl" id="patPeriod">`+
+      `<button class="pat-chip pat-dfchip active" data-df="application" onclick="_patSetDateField('application',this)" title="출원(신청)일 기준">출원일</button>`+
+      `<button class="pat-chip pat-dfchip" data-df="register" onclick="_patSetDateField('register',this)" title="등록일 기준(최근 등록 특허 조회에 사용)">등록일</button>`+
+      `<span class="pat-pdiv"></span>`+
       `<button class="pat-chip active" data-y="0" onclick="_patPeriod(0,this)">전체</button>`+
       `<button class="pat-chip" data-y="1" onclick="_patPeriod(1,this)">최근 1년</button>`+
       `<button class="pat-chip" data-y="2" onclick="_patPeriod(2,this)">최근 2년</button>`+
@@ -3083,7 +3096,7 @@ function _patFmtYmd(s){
   let out=s.slice(0,4); if(s.length>4) out+='-'+s.slice(4,6); if(s.length>6) out+='-'+s.slice(6,8);
   return out;
 }
-function _patChipsOff(){ document.querySelectorAll('#patPeriod .pat-chip').forEach(b=>b.classList.remove('active')); }
+function _patChipsOff(){ document.querySelectorAll('#patPeriod .pat-chip:not(.pat-dfchip)').forEach(b=>b.classList.remove('active')); }
 // 조회 전송용: 입력값(YYYY/YYYY-MM/YYYY-MM-DD)을 8자리(YYYYMMDD)로 보정
 function _patNormDate(s, end){
   s=String(s||'').replace(/\D/g,'');
@@ -3143,6 +3156,8 @@ function _patClearStatus(){
     const all=cont.querySelector('.pat-chip[data-v=""]'); if(all) all.classList.add('active'); }
   runPatent();
 }
+// 기간 필터를 등록일 기준으로 바꿔 재조회('최근 N년 등록 특허')
+function _patUseRegDate(){ const b=document.querySelector('#patPeriod .pat-dfchip[data-df="register"]'); if(b) _patSetDateField('register',b); runPatent(); }
 // ── 기업 조회: 통합 키워드 검색 + 결과 필터(지역·정렬·결과내검색) + 상세 ──
 let _compLast=null, _compScope='all', _compFilter={region:'',q:'',sort:'rel'};
 const COMP_SIDO=[['서울','서울'],['부산','부산'],['대구','대구'],['인천','인천'],['광주','광주'],['대전','대전'],['울산','울산'],['세종','세종'],['경기','경기'],['강원','강원'],['충북','충청북'],['충남','충청남'],['전북','전라북'],['전남','전라남'],['경북','경상북'],['경남','경상남'],['제주','제주']];
@@ -3643,6 +3658,7 @@ function runPatent(){
   if(_patStatuses.length===1) p.set('status',_patStatuses[0]);   // 단일=서버필터, 다중=결과필터
   const from=_patNormDate((document.getElementById('patFrom')||{}).value, false); if(from) p.set('date_from',from);
   const to=_patNormDate((document.getElementById('patTo')||{}).value, true);      if(to) p.set('date_to',to);
+  if(_patDateField==='register') p.set('date_field','register');   // 등록일 기준(최근 등록 특허)
   _patParams=p.toString();                 // 엑셀 내보내기·페이지 이동에서 동일 필터 재사용
   _patFetchPage(1);
 }
@@ -3693,7 +3709,7 @@ function _renderPatentList(d){
   const rows=items.map(it=>{
     const _si=_patStatusInfo(it.status,it.regno);
     const st=it.status?`<span class="pat-sb ${_si.cls}">${escHtml(_si.label)}</span>`:'';
-    const metaBits=[it.appno&&('출원 '+it.appno), it.appdate&&_fmtDate(it.appdate), it.regno&&('등록 '+it.regno)].filter(Boolean).map(escHtml).join(' · ');
+    const metaBits=[it.appno&&('출원 '+it.appno), it.appdate&&_fmtDate(it.appdate), it.regno&&('등록 '+it.regno), it.regdate&&('등록일 '+_fmtDate(it.regdate))].filter(Boolean).map(escHtml).join(' · ');
     const kurl=_kiprisUrl(it.appno);
     const favItem={type:'patent',name:it.title||'',subtitle:it.applicant||'',appno:it.appno||'',url:kurl};
     const on=favHas(favItem);
@@ -3713,9 +3729,14 @@ function _renderPatentList(d){
   const statActive=(_patStatuses||[]).length>0;
   let widen='';
   if(totalN>0 && totalN<=20 && (perActive||statActive)){
-    const acts=(perActive?`<button class="pat-widen-btn" onclick="_patClearPeriod()">기간 전체로</button>`:'')
+    const regBtn=(perActive&&_patDateField!=='register')?`<button class="pat-widen-btn primary" onclick="_patUseRegDate()">등록일 기준으로 조회</button>`:'';
+    const acts=regBtn
+      +(perActive?`<button class="pat-widen-btn" onclick="_patClearPeriod()">기간 전체로</button>`:'')
       +(statActive?`<button class="pat-widen-btn" onclick="_patClearStatus()">상태 전체로</button>`:'');
-    widen=`<div class="pat-widen">🔎 결과가 적나요? <b>기간은 출원일 기준</b>이라 ‘최근 출원 + 등록’은 자연히 적게 나옵니다(심사·등록에 보통 1~3년). 필터를 완화해 더 보기:${acts}</div>`;
+    const why=(_patDateField==='register')
+      ? '등록일 기준으로 조회 중입니다.'
+      : '기간이 <b>출원일 기준</b>이라 ‘최근 등록’ 특허는 적게 나옵니다(출원~등록에 보통 1~3년). <b>최근 등록 특허</b>를 보려면 등록일 기준으로 바꿔보세요.';
+    widen=`<div class="pat-widen">🔎 결과가 적나요? ${why} 필터를 완화해 더 보기:${acts}</div>`;
   }
   return `<div class="pat-listhd"><span class="pat-count">${items.length}건 표시${total}${pageTxt}</span>`+
          `<button class="pat-xlsx" onclick="exportPatents(this)" title="현재 필터의 전체 결과를 엑셀(CSV)로 저장">⬇ 엑셀 다운로드</button></div>`+
