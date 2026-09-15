@@ -5371,6 +5371,10 @@ def assist_patent():
     page = re.sub(r"\D", "", request.args.get("page", "1")) or "1"
     rows = re.sub(r"\D", "", request.args.get("rows", "30")) or "30"
     rows = str(max(1, min(500, int(rows))))     # KIPRIS numOfRows 상한 보호
+    # 기간 기준일: application(출원일, 기본) | register(등록일).
+    # '최근 1년 등록 특허'처럼 등록일 기준 조회는 출원일로 거르면 대부분 누락된다
+    # (등록은 출원 후 수년 뒤에 이뤄지므로). 사용자가 선택하면 등록일로 필터한다.
+    date_field = "register" if request.args.get("date_field", "").strip().lower().startswith("reg") else "application"
     if not applicant and not query:
         return jsonify({"success": False, "error": "출원인 또는 검색어를 입력하세요."})
     base = "http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice"
@@ -5385,7 +5389,8 @@ def assist_patent():
     def _search(query_field):
         """query_field: 검색어를 넣을 KIPRIS 필드명('inventionTitle' 정밀 / 'word' 자유). None=검색어 미사용."""
         params = {"ServiceKey": key, "numOfRows": rows, "pageNo": page,
-                  "patent": "true", "utility": "true", "sortSpec": "AD", "descSort": "true"}
+                  "patent": "true", "utility": "true",
+                  "sortSpec": ("RD" if date_field == "register" else "AD"), "descSort": "true"}
         if applicant:
             params["applicant"] = applicant
         if query and query_field:
@@ -5393,7 +5398,8 @@ def assist_patent():
         if status:
             params["lastvalue"] = status
         if a or b:
-            params["applicationDate"] = f"{a or '00000000'}~{b or '99991231'}"
+            rng = f"{a or '00000000'}~{b or '99991231'}"
+            params["registerDate" if date_field == "register" else "applicationDate"] = rng
         r = _SESSION.get(f"{base}/getAdvancedSearch", params=params, timeout=20)
         root = _xml_fromstring(r.content)
         te = root.find(".//totalCount")
@@ -5412,6 +5418,7 @@ def assist_patent():
                 "appno": g("applicationNumber", "ApplicationNumber"),
                 "appdate": g("applicationDate", "ApplicationDate"),
                 "regno": g("registerNumber", "RegistrationNumber"),
+                "regdate": g("registerDate", "RegistrationDate"),
                 "status": g("registerStatus", "RegistrationStatus", "lastValue"),
                 "ipc": g("ipcNumber", "InternationalpatentclassificationNumber")})
         # F09: 외부 API 오류(인증·권한·쿼터·HTTP)를 '0건'과 구분한다.
