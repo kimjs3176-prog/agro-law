@@ -5435,24 +5435,46 @@ def assist_patent():
                 err = msg or "KIPRIS 조회 오류 — 서비스키 인증·활용신청·쿼터를 확인하세요."
         return r, root, total, items, params, err
 
+    def _code_unreliable(items, name):
+        """특허고객번호 검색 결과가 신뢰 불가한지 판단.
+        0건이거나, 반환된 출원인명 다수가 기대 출원인명과 무관하면 True.
+        (일부 출원인은 KIPRIS가 12자리 고객번호 필터를 무시하고 전체를 반환하는데,
+         예: 경기도 → 9만여 건. 이때 결과 출원인명이 기대 출원인과 어긋난다.)"""
+        if not items:
+            return True
+        key = re.sub(r"\s+", "", name or "")
+        if not key:                               # 기대 이름 없음 → 판별 불가, 결과 유지
+            return False
+        matched = sum(1 for it in items
+                      if key in re.sub(r"\s+", "", it.get("applicant", "")))
+        return matched * 2 < len(items)           # 절반 미만 일치 → 필터 무시로 간주
+
     try:
         # 1차: 발명의 명칭(inventionTitle) 정밀 매칭 — 관련도 높은 결과 우선.
         # 2차: 결과가 없고 검색어가 있으면 자유검색(word, 명칭+요약+청구항)으로 폴백.
         #      (긴 제목 전체를 붙여넣는 경우 명칭 완전일치가 어려워 0건이 되던 문제 대응)
         field = "inventionTitle" if query else None
-        # 출원인은 KIPRIS 'applicant' 필드가 '이름'만 지원한다. 12자리 특허고객번호를 넣으면
-        # 필터가 무시돼 전체가 반환되므로(0건이 아님) 이름 폴백도 걸리지 않는다.
-        # → 고객번호는 KIPRIS 질의에 쓰지 않고 항상 출원인'명'으로 검색한다(화면 참고용 보관).
-        r, root, total, items, params, err = _search(field, applicant)
+        # 출원인은 특허고객번호(applicant_code) 우선 검색 → 정확도 최상.
+        # 단, KIPRIS가 12자리 고객번호 필터를 무시하고 전체를 반환하는 출원인이 있어
+        # (예: 경기도), 반환된 출원인명이 기대 출원인과 어긋나거나(=필터 무시) 0건이면
+        # 출원인'명'으로 재검색해 폴백한다.
+        appl_primary = applicant_code or applicant
+        appl_used = appl_primary
+        r, root, total, items, params, err = _search(field, appl_primary)
         if err:                                   # 인증/권한/쿼터/HTTP 오류 → 0건으로 위장하지 않음
             resp = {"success": False, "error": err, "kind": "api"}
             if request.args.get("debug"):
                 resp["_debug"] = {"http": r.status_code,
                                   "snippet": r.content[:600].decode("utf-8", "replace")}
             return jsonify(resp)
+        if applicant_code and applicant and _code_unreliable(items, applicant):
+            r2, root2, total2, items2, params2, err2 = _search(field, applicant)
+            if not err2:                          # 폴백 오류면 고객번호 결과 유지
+                r, root, total, items, params = r2, root2, total2, items2, params2
+                appl_used = applicant
         fell_back = False
         if query and not items:
-            r2, root2, total2, items2, params2, err2 = _search("word", applicant)
+            r2, root2, total2, items2, params2, err2 = _search("word", appl_used)
             if not err2 and items2:               # 폴백 오류면 정상 0건 유지
                 r, root, total, items, params = r2, root2, total2, items2, params2
                 fell_back = True
