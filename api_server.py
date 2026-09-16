@@ -5364,6 +5364,7 @@ def assist_patent():
     if not key:
         return _assist_need_key("patent")
     applicant = request.args.get("applicant", "").strip()
+    applicant_code = re.sub(r"\D", "", request.args.get("applicant_code", ""))
     query = request.args.get("query", "").strip()
     status = request.args.get("status", "").strip()
     df = re.sub(r"\D", "", request.args.get("date_from", ""))
@@ -5386,13 +5387,14 @@ def assist_patent():
         return v[:8] if len(v) >= 8 else v + ("1231" if end else "0101")
     a, b = _d(df), _d(dt, True)
 
-    def _search(query_field):
-        """query_field: 검색어를 넣을 KIPRIS 필드명('inventionTitle' 정밀 / 'word' 자유). None=검색어 미사용."""
+    def _search(query_field, appl=None):
+        """query_field: 검색어 필드('inventionTitle' 정밀 / 'word' 자유). None=검색어 미사용.
+        appl: 출원인 검색값(특허고객번호 12자리 또는 출원인명)."""
         params = {"ServiceKey": key, "numOfRows": rows, "pageNo": page,
                   "patent": "true", "utility": "true",
                   "sortSpec": ("RD" if date_field == "register" else "AD"), "descSort": "true"}
-        if applicant:
-            params["applicant"] = applicant
+        if appl:
+            params["applicant"] = appl
         if query and query_field:
             params[query_field] = query
         if status:
@@ -5438,16 +5440,24 @@ def assist_patent():
         # 2차: 결과가 없고 검색어가 있으면 자유검색(word, 명칭+요약+청구항)으로 폴백.
         #      (긴 제목 전체를 붙여넣는 경우 명칭 완전일치가 어려워 0건이 되던 문제 대응)
         field = "inventionTitle" if query else None
-        r, root, total, items, params, err = _search(field)
+        # 출원인은 특허고객번호(applicant_code)로 우선 검색 → 0건이면 출원인명으로 폴백.
+        # (기관 출원인은 이름이 도명·부서로 등록돼 이름만으로는 누락되기 쉬움. 예: 각 도 농업기술원)
+        appl_primary = applicant_code or applicant
+        r, root, total, items, params, err = _search(field, appl_primary)
         if err:                                   # 인증/권한/쿼터/HTTP 오류 → 0건으로 위장하지 않음
             resp = {"success": False, "error": err, "kind": "api"}
             if request.args.get("debug"):
                 resp["_debug"] = {"http": r.status_code,
                                   "snippet": r.content[:600].decode("utf-8", "replace")}
             return jsonify(resp)
+        # 고객번호 0건 → 출원인명으로 재시도(KIPRIS가 고객번호 검색을 지원하지 않는 경우 대비)
+        if (not items) and applicant_code and applicant:
+            r2, root2, total2, items2, params2, err2 = _search(field, applicant)
+            if not err2 and items2:
+                r, root, total, items, params = r2, root2, total2, items2, params2
         fell_back = False
         if query and not items:
-            r2, root2, total2, items2, params2, err2 = _search("word")
+            r2, root2, total2, items2, params2, err2 = _search("word", appl_primary)
             if not err2 and items2:               # 폴백 오류면 정상 0건 유지
                 r, root, total, items, params = r2, root2, total2, items2, params2
                 fell_back = True
