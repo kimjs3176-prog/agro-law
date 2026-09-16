@@ -5440,24 +5440,19 @@ def assist_patent():
         # 2차: 결과가 없고 검색어가 있으면 자유검색(word, 명칭+요약+청구항)으로 폴백.
         #      (긴 제목 전체를 붙여넣는 경우 명칭 완전일치가 어려워 0건이 되던 문제 대응)
         field = "inventionTitle" if query else None
-        # 출원인은 특허고객번호(applicant_code)로 우선 검색 → 0건이면 출원인명으로 폴백.
-        # (기관 출원인은 이름이 도명·부서로 등록돼 이름만으로는 누락되기 쉬움. 예: 각 도 농업기술원)
-        appl_primary = applicant_code or applicant
-        r, root, total, items, params, err = _search(field, appl_primary)
+        # 출원인은 KIPRIS 'applicant' 필드가 '이름'만 지원한다. 12자리 특허고객번호를 넣으면
+        # 필터가 무시돼 전체가 반환되므로(0건이 아님) 이름 폴백도 걸리지 않는다.
+        # → 고객번호는 KIPRIS 질의에 쓰지 않고 항상 출원인'명'으로 검색한다(화면 참고용 보관).
+        r, root, total, items, params, err = _search(field, applicant)
         if err:                                   # 인증/권한/쿼터/HTTP 오류 → 0건으로 위장하지 않음
             resp = {"success": False, "error": err, "kind": "api"}
             if request.args.get("debug"):
                 resp["_debug"] = {"http": r.status_code,
                                   "snippet": r.content[:600].decode("utf-8", "replace")}
             return jsonify(resp)
-        # 고객번호 0건 → 출원인명으로 재시도(KIPRIS가 고객번호 검색을 지원하지 않는 경우 대비)
-        if (not items) and applicant_code and applicant:
-            r2, root2, total2, items2, params2, err2 = _search(field, applicant)
-            if not err2 and items2:
-                r, root, total, items, params = r2, root2, total2, items2, params2
         fell_back = False
         if query and not items:
-            r2, root2, total2, items2, params2, err2 = _search("word", appl_primary)
+            r2, root2, total2, items2, params2, err2 = _search("word", applicant)
             if not err2 and items2:               # 폴백 오류면 정상 0건 유지
                 r, root, total, items, params = r2, root2, total2, items2, params2
                 fell_back = True
