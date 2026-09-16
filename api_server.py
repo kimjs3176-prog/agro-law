@@ -5519,11 +5519,15 @@ def assist_patent_detail():
             return ""
 
         def joined(container_tag, name_tag):
+            # name_tag(예: 'name')는 출원인·발명자 배열에 공통으로 쓰이므로,
+            # 반드시 해당 컨테이너(applicantInfoArray/inventorInfoArray) 안에서만
+            # 수집해야 출원인과 발명자가 섞이지 않는다.
             vals = []
-            for el in root.iter(name_tag):
-                v = (el.text or "").strip()
-                if v and v not in vals:
-                    vals.append(v)
+            for cont in root.iter(container_tag):
+                for el in cont.iter(name_tag):
+                    v = (el.text or "").strip()
+                    if v and v not in vals:
+                        vals.append(v)
             return " · ".join(vals)
 
         detail = {
