@@ -3039,7 +3039,21 @@ async function openAssist(kind){
   const inp=document.getElementById('assistInput'); if(inp) inp.focus();
 }
 // ── 특허 조회: 출원인 프리셋·기간·상태 필터 + 목록/상세 ──
-const PAT_APPLICANTS=['농촌진흥청','농림축산검역본부','국립농산물품질관리원','국립종자원','농업기술원'];
+// 출원인 프리셋 — 이름 + KIPRIS 특허고객번호(12자리). 고객번호로 우선 검색, 0건이면 이름으로 폴백.
+// 농업기술원은 단일 출원인이 아니라 각 도(경기도·경상남도 등)로 등록돼 있어 개별 항목으로 둔다.
+const PAT_APPLICANTS=[
+  {name:'농촌진흥청', code:'219980050314'},
+  {name:'농림축산검역본부', code:'219981064455'},
+  {name:'국립농산물품질관리원', code:'219999001749'},
+  {name:'국립종자원', code:'220040383104'},
+  {name:'경기도', code:'219904100008', label:'경기도(농업기술원)'},
+  {name:'경상남도', code:'219987006391', label:'경상남도(농업기술원)'},
+  {name:'경상북도(농업기술원)', code:'220000556951', label:'경상북도(농업기술원)'},
+  {name:'전북특별자치도(농업기술원)', code:'219990203845', label:'전북(농업기술원)'},
+  {name:'강원특별자치도', code:'219999023197', label:'강원(농업기술원)'},
+  {name:'충청북도', code:'220000010295', label:'충청북도(농업기술원)'},
+  {name:'충청남도', code:'219987105788', label:'충청남도(농업기술원)'},
+];
 const PAT_STATUS=[['','전체 상태'],['R','등록'],['A','공개'],['J','거절'],['F','소멸'],['C','취하'],['I','무효'],['G','포기']];
 const PAT_CODE_LABEL={R:'등록',A:'공개',J:'거절',F:'소멸',C:'취하',I:'무효',G:'포기'};
 let _patLast=null, _patParams='', _patStatuses=[], _patPage=1;   // 다중 선택 상태 코드·현재 페이지
@@ -3057,7 +3071,7 @@ function _patStatusMatch(it){
 function _patFiltersHtml(){
   const appl=`<button class="pat-chip active" data-v="" onclick="_patApplPick(this)">전체</button>`+
     PAT_APPLICANTS.map(a=>
-    `<button class="pat-chip" data-v="${argAttr(a)}" onclick="_patApplPick(this)">${escHtml(a==='농업기술원'?'농업기술원(각 도)':a)}</button>`).join('');
+    `<button class="pat-chip" data-v="${argAttr(a.name)}" data-code="${argAttr(a.code||'')}" title="특허고객번호 ${escAttr(a.code||'')}" onclick="_patApplPick(this)">${escHtml(a.label||a.name)}</button>`).join('');
   const stat=PAT_STATUS.map(([v,l],i)=>
     `<button class="pat-chip pat-schip s-${v||'all'}${i===0?' active':''}" data-v="${v}" onclick="_patStatusPick(this)">${escHtml(l)}</button>`).join('');
   return `<div class="pat-filters">`+
@@ -3671,6 +3685,7 @@ function runPatent(){
   const appl=(document.querySelector('#patAppl .pat-chip.active')||{}).dataset;
   const p=new URLSearchParams();
   if(appl&&appl.v) p.set('applicant',appl.v);
+  if(appl&&appl.code) p.set('applicant_code',appl.code);   // 특허고객번호 우선 검색(0건이면 이름 폴백)
   const q=((document.getElementById('patQuery')||{}).value||'').trim(); if(q) p.set('query',q);
   _patStatuses=[...document.querySelectorAll('#patStatus .pat-chip.active')].map(b=>b.dataset.v).filter(Boolean);
   if(_patStatuses.length===1) p.set('status',_patStatuses[0]);   // 단일=서버필터, 다중=결과필터
