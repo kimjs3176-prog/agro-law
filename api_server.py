@@ -4736,6 +4736,8 @@ def debug_law_xml():
 #   DATA_GO_KR_KEY  : 공공데이터포털 서비스키 (국세청 사업자상태·나라장터 입찰공고·지원사업)
 #   KIPRIS_API_KEY  : 키프리스 플러스 서비스키 (특허·상표·디자인)
 #   BIZINFO_API_KEY : 공공데이터포털(기업마당·중소벤처기업부) 인증키 (정부 지원사업 공고)
+#   PATENT_REG_API_KEY : 공공데이터포털 지식재산처 '등록원부 실시간 정보조회'(15124946) 서비스키
+#                        — 특허 상세의 등록원부(권리자·연차·권리변동) 표시. 미설정 시 DATA_GO_KR_KEY 폴백.
 # 기업조회는 DART(회사명 검색)와 공공데이터포털(국세청 사업자상태)을 함께 활용한다.
 # ══════════════════════════════════════════════════════════════════════════
 _ASSIST_ENV = {"company": "DART_API_KEY", "patent": "KIPRIS_API_KEY",
@@ -5553,6 +5555,186 @@ def assist_patent_detail():
         return jsonify({"success": True, "detail": detail})
     except Exception as e:
         return jsonify({"success": False, "error": f"상세 조회 실패: {e}"})
+
+def _patreg_key() -> str:
+    """등록원부 실시간 조회(공공데이터포털) 서비스키.
+
+    전용 PATENT_REG_API_KEY 우선, 없으면 DATA_GO_KR_KEY로 폴백. data.go.kr은
+    Encoding/Decoding 두 형태를 발급하므로 퍼센트 인코딩이 보이면 Decoding으로 정규화한다.
+    """
+    k = (os.environ.get("PATENT_REG_API_KEY", "")
+         or os.environ.get("DATA_GO_KR_KEY", "") or "").strip()
+    if k and re.search(r"%[0-9A-Fa-f]{2}", k):
+        try:
+            return unquote(k)
+        except Exception:
+            return k
+    return k
+
+def _reg_walk_dicts(obj):
+    """중첩된 dict/list 구조 안의 모든 dict를 순회 yield(응답 래퍼 구조에 무관하게 파싱)."""
+    if isinstance(obj, dict):
+        yield obj
+        for v in obj.values():
+            yield from _reg_walk_dicts(v)
+    elif isinstance(obj, list):
+        for v in obj:
+            yield from _reg_walk_dicts(v)
+
+def _reg_scalar(obj, *keys):
+    """중첩 구조에서 주어진 키의 첫 비어있지 않은 스칼라 값(리스트면 첫 원소)."""
+    for d in _reg_walk_dicts(obj):
+        for k in keys:
+            if k in d:
+                v = d.get(k)
+                if isinstance(v, list):
+                    v = v[0] if v else ""
+                if isinstance(v, (str, int, float)):
+                    s = str(v).strip()
+                    if s:
+                        return s
+    return ""
+
+def _reg_groups(obj, marker):
+    """marker 키(예: 'ownerName')를 가진 모든 dict를 반복그룹 항목으로 수집."""
+    out = []
+    for d in _reg_walk_dicts(obj):
+        if isinstance(d, dict) and marker in d:
+            v = d.get(marker)
+            if isinstance(v, (str, int, float)) and str(v).strip():
+                out.append(d)
+    return out
+
+def _reg_s(d, *keys):
+    for k in keys:
+        v = d.get(k)
+        if isinstance(v, list):
+            v = v[0] if v else ""
+        if isinstance(v, (str, int, float)) and str(v).strip():
+            return str(v).strip()
+    return ""
+
+@app.route("/api/assist/patent/register")
+def assist_patent_register():
+    """특허 등록원부 실시간 이력조회 — 공공데이터포털 PttRgstRtInfoInqSvc/getPatentRegisterHistory.
+
+    등록번호(rgstNo, 13자리) 기준으로 기본정보·연차·출원인·발명자·권리자·권리변동·
+    대리인·우선권·실시권 이력을 제공한다. 응답 래퍼 구조가 유동적이라 필드는 재귀 수집한다.
+    """
+    key = _patreg_key()
+    if not key:
+        return jsonify({"success": False, "need_key": True,
+                        "provider": "공공데이터포털(지식재산처 등록원부)",
+                        "apply_url": "https://www.data.go.kr/data/15124946/openapi.do",
+                        "message": "등록원부 조회 서비스키(PATENT_REG_API_KEY)가 설정되지 않았습니다."})
+    rgst = re.sub(r"\D", "", request.args.get("rgstNo", "") or request.args.get("regno", ""))
+    if not rgst:
+        return jsonify({"success": False, "error": "등록번호가 필요합니다."})
+    base = "https://apis.data.go.kr/1430000/PttRgstRtInfoInqSvc/getPatentRegisterHistory"
+    try:
+        r = _SESSION.get(base, params={"serviceKey": key, "type": "json", "rgstNo": rgst},
+                         timeout=20)
+        raw = r.content.decode("utf-8", "replace")
+        try:
+            data = r.json()
+        except Exception:
+            data = None
+        if data is None:                          # JSON 아님 → 대개 인증/쿼터 오류 XML
+            m = (re.search(r"<returnAuthMsg>(.*?)</returnAuthMsg>", raw)
+                 or re.search(r"<errMsg>(.*?)</errMsg>", raw)
+                 or re.search(r"<resultMsg>(.*?)</resultMsg>", raw))
+            msg = m.group(1) if m else "응답을 해석할 수 없습니다(비 JSON)."
+            out = {"success": False, "kind": "api",
+                   "error": f"등록원부 응답 오류: {msg} (HTTP {r.status_code}). "
+                            f"PATENT_REG_API_KEY의 활용신청·Decoding 키 여부를 확인하세요."}
+            if request.args.get("debug"):
+                out["_debug"] = {"http": r.status_code, "snippet": raw[:800]}
+            return jsonify(out)
+        code = _reg_scalar(data, "resultCode")
+        msg = _reg_scalar(data, "resultMsg")
+        ok = (code in ("", "000", "00", "0")) or ("SUCC" in msg.upper())
+        record = None
+        for d in _reg_walk_dicts(data):           # 본문 레코드 = rgstNo + 기본항목을 가진 dict
+            if "rgstNo" in d and any(k in d for k in
+                                     ("title", "rgstDate", "lastDspst", "cndrtExptnDate", "applNo")):
+                record = d
+                break
+        if record is None and not ok:
+            out = {"success": False, "kind": "api",
+                   "error": f"등록원부 조회 오류: {msg or code or '실패'}"}
+            if request.args.get("debug"):
+                out["_debug"] = {"http": r.status_code, "code": code, "msg": msg, "snippet": raw[:900]}
+            return jsonify(out)
+        if record is None:                        # 성공이지만 해당 등록번호 데이터 없음
+            resp = {"success": True, "register": None, "empty": True}
+            if request.args.get("debug"):
+                resp["_debug"] = {"http": r.status_code, "code": code, "msg": msg, "snippet": raw[:900]}
+            return jsonify(resp)
+
+        def _people(marker, name_key, addr_key=None, natl_key=None):
+            out = []
+            for d in _reg_groups(data, name_key):
+                out.append({"name": _reg_s(d, name_key),
+                            "addr": _reg_s(d, addr_key) if addr_key else "",
+                            "natl": _reg_s(d, natl_key) if natl_key else ""})
+            return out
+
+        owners = []
+        for d in _reg_groups(data, "ownerName"):
+            owners.append({"name": _reg_s(d, "ownerName"), "addr": _reg_s(d, "ownerAddr"),
+                           "natl": _reg_s(d, "ownerNatl"),
+                           "final": _reg_s(d, "finalOwnerYn").upper() == "Y",
+                           "csName": _reg_s(d, "ownerRgstCsName"),
+                           "csReason": _reg_s(d, "ownerRgstCsReason"),
+                           "csDate": _reg_s(d, "ownerRgstCsDate")})
+        pays = []
+        for d in _reg_groups(data, "payDate"):
+            pays.append({"start": _reg_s(d, "statAnnl"), "last": _reg_s(d, "lastAnnl"),
+                         "date": _reg_s(d, "payDate"), "amount": _reg_s(d, "payAmount")})
+        rights = []
+        for d in _reg_groups(data, "rgstCsName"):
+            rights.append({"name": _reg_s(d, "rgstCsName"), "date": _reg_s(d, "rgstCsDate"),
+                           "reason": _reg_s(d, "rgstCsReason"), "purpose": _reg_s(d, "rgstCsPupos")})
+        priorities = []
+        for d in _reg_groups(data, "cofprDate"):
+            priorities.append({"natl": _reg_s(d, "cofprNatl"), "date": _reg_s(d, "cofprDate"),
+                               "applno": _reg_s(d, "cofprApplno")})
+
+        def _lcns(name_key, pfx):
+            out = []
+            for d in _reg_groups(data, name_key):
+                out.append({"name": _reg_s(d, name_key), "reason": _reg_s(d, pfx + "RgstCsNm"),
+                            "region": _reg_s(d, pfx + "RgnLcns"), "content": _reg_s(d, pfx + "ContLcns"),
+                            "start": _reg_s(d, pfx + "StartDate"), "end": _reg_s(d, pfx + "EndDate")})
+            return out
+
+        reg = {
+            "rgstNo": rgst,
+            "rgstDate": _reg_scalar(data, "rgstDate"),
+            "applNo": _reg_scalar(data, "applNo"),
+            "applDate": _reg_scalar(data, "applDate"),
+            "title": _reg_scalar(data, "title"),
+            "cndrtExptnDate": _reg_scalar(data, "cndrtExptnDate"),
+            "lastDspst": _reg_scalar(data, "lastDspst"),
+            "applTpcd": _reg_scalar(data, "applTpcd"),
+            "claimCount": _reg_scalar(data, "claimCount"),
+            "owners": owners,
+            "applicants": _people("applicant", "applicantName", "applicantAddr", "applicantNatl"),
+            "inventors": _people("inventor", "inventorName", "inventorAddr", "inventorNatl"),
+            "pays": pays,
+            "rights": rights,
+            "priorities": priorities,
+            "applAgents": _people("applAgent", "applAgentName", "applAgentAddr", "applAgentNatl"),
+            "rgstAgents": _people("rgstAgent", "rgstAgentName", "rgstAgentAddr", "rgstAgentNatl"),
+            "elsLcns": _lcns("elsLcnsPsnNm", "elsLcns"),
+            "noelsLcns": _lcns("noelsLcnsPsnNm", "noelsLcns"),
+        }
+        resp = {"success": True, "register": reg}
+        if request.args.get("debug"):
+            resp["_debug"] = {"http": r.status_code, "code": code, "msg": msg, "snippet": raw[:1200]}
+        return jsonify(resp)
+    except Exception as e:
+        return jsonify({"success": False, "error": f"등록원부 조회 실패: {e}"})
 
 def _pick_dates(s):
     """문자열에서 날짜(YYYYMMDD·YYYY-MM-DD·YYYY.MM.DD 등)를 모두 추출."""

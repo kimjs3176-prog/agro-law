@@ -276,6 +276,17 @@ body.dark .comp-badge.closed{background:rgba(239,68,68,.2);color:#fca5a5;}
 .pat-d-v{color:var(--tx);word-break:break-word;}
 .pat-d-abs{margin-top:10px;padding-top:12px;border-top:1px solid var(--bd);}
 .pat-d-abs p{font-size:12.5px;line-height:1.8;color:var(--tx);margin-top:6px;white-space:pre-wrap;}
+/* 등록원부(실시간) — 권리 변동 이력·실시권 등 */
+.pat-live{display:inline-block;font-size:10px;font-weight:800;color:#137a3e;background:#e7f6ec;border-radius:999px;padding:1px 8px;vertical-align:middle;margin-left:6px;letter-spacing:.02em;}
+body.dark .pat-live{background:rgba(34,197,94,.16);color:#6ee7a0;}
+.pat-reg-blk{margin-top:12px;padding-top:12px;border-top:1px solid var(--bd);}
+.pat-reg-blk-h{font-size:12px;font-weight:800;color:var(--mu);margin-bottom:8px;}
+.pat-reg-hi{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;padding:6px 0;font-size:12.5px;border-bottom:1px dashed var(--bd);}
+.pat-reg-hi:last-child{border-bottom:0;}
+.pat-reg-hd{color:var(--mu);font-variant-numeric:tabular-nums;flex-shrink:0;min-width:78px;}
+.pat-reg-hn{color:var(--tx);font-weight:700;}
+.pat-reg-hp{color:var(--mu);font-size:11.5px;}
+.pat-reg-src{margin-top:10px;font-size:10.5px;color:var(--mu);}
 /* 특허 상세 — 상태 배지·요약 카드·원문 버튼(기업 상세와 동일 톤) */
 .pat-sb{font-size:11px;font-weight:800;border-radius:999px;padding:2px 10px;flex-shrink:0;}
 .pat-sb.reg{background:#e7f6ec;color:#137a3e;}
@@ -3809,7 +3820,8 @@ function _fmtDate(s){ s=String(s||'').replace(/\D/g,''); return s.length>=8?`${s
 function patDetail(appno){
   const box=document.getElementById('patResults'); if(!box||!appno) return;
   box.innerHTML=`<button class="pat-back" onclick="patBackToList()">← 목록으로</button><div class="assist-loading"><div class="spinner"></div><span>상세 불러오는 중...</span></div>`;
-  fetch('/api/assist/patent/detail?appno='+encodeURIComponent(appno)).then(r=>r.json()).then(d=>{ box.innerHTML=`<button class="pat-back" onclick="patBackToList()">← 목록으로</button>`+_renderPatentDetail(d); })
+  fetch('/api/assist/patent/detail?appno='+encodeURIComponent(appno)).then(r=>r.json()).then(d=>{ box.innerHTML=`<button class="pat-back" onclick="patBackToList()">← 목록으로</button>`+_renderPatentDetail(d);
+      const t=d&&d.detail; if(t&&t.regno) _patLoadRegister(t.regno); })   // 등록특허면 등록원부(실시간) 비동기 로딩
     .catch(e=>{ box.innerHTML=`<button class="pat-back" onclick="patBackToList()">← 목록으로</button><div class="assist-note">상세를 불러오지 못했습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
 }
 function patBackToList(){ const box=document.getElementById('patResults'); if(box) box.innerHTML=_renderPatentList(_patLast||{success:true,items:[]}); }
@@ -3859,12 +3871,51 @@ function _renderPatentDetail(d){
     ['공개번호',t.openno],['공개일',_fmtDate(t.opendate)],['등록번호',t.regno],['등록일',_fmtDate(t.regdate)]]);
   const parties=_patSection('👥','권리자 정보',[['출원인',(t.applicant||'').replace(/\|/g,' · ')],
     ['발명자',(t.inventor||'').replace(/\|/g,' · ')],['대리인',t.agent]]);
+  // 등록원부(실시간) 섹션 — 등록특허일 때 비동기 로딩(_patLoadRegister)로 채움
+  const regSlot=t.regno?`<div id="patRegSec" class="pat-reg-slot"></div>`:'';
   const ipcSec=ipcs.length?`<div class="comp-sec"><div class="comp-sec-h">🏷️ 기술 분류(IPC) <span class="comp-sec-n">${ipcs.length}개</span></div>`+
     `<div class="comp-skills">${ipcs.map(c=>`<span class="comp-skill">${escHtml(c)}</span>`).join('')}</div></div>`:'';
   const abs=t.abstract?`<div class="comp-sec"><div class="comp-sec-h">📝 요약(초록)</div><div class="pat-abs-card">${escHtml(t.abstract)}</div></div>`:'';
   const link=kurl?`<div class="pat-orig-wrap"><a class="pat-orig-btn" href="${escHtml(kurl)}" target="_blank" rel="noopener">📄 KIPRIS에서 특허 상세·원문 보기 ↗</a></div>`:'';
   return `<div class="pat-detail"><div class="pat-d-title">${escHtml(t.title||'(제목 없음)')}${badge}${favBtn}</div>`+
-    stats+biblio+parties+ipcSec+abs+link+`</div>`;
+    stats+biblio+parties+regSlot+ipcSec+abs+link+`</div>`;
+}
+// 등록원부(실시간) — 등록번호(13자리) 기준 공공데이터포털 조회 후 상세에 주입
+function _patLoadRegister(regno){
+  const slot=document.getElementById('patRegSec'); if(!slot) return;
+  const rg=String(regno||'').replace(/\D/g,''); if(rg.length<8){ slot.innerHTML=''; return; }
+  slot.innerHTML=`<div class="comp-sec"><div class="comp-sec-h">⚖️ 등록원부 <span class="pat-live">실시간</span></div>`+
+    `<div class="assist-loading" style="padding:10px 4px"><div class="spinner"></div><span>등록원부 조회 중...</span></div></div>`;
+  fetch('/api/assist/patent/register?rgstNo='+encodeURIComponent(rg)).then(r=>r.json())
+    .then(d=>{ slot.innerHTML=_renderRegisterSection(d); })
+    .catch(()=>{ slot.innerHTML=''; });
+}
+function _renderRegisterSection(d){
+  const H=inner=>`<div class="comp-sec"><div class="comp-sec-h">⚖️ 등록원부 <span class="pat-live">실시간</span></div>${inner}</div>`;
+  if(!d) return '';
+  if(d.need_key) return H(`<div class="assist-note" style="margin:0">등록원부 조회 서비스키가 설정되지 않았습니다.<br><small>관리자에게 <code>PATENT_REG_API_KEY</code> 설정을 요청하세요.</small></div>`);
+  if(d.empty) return H(`<div class="assist-note" style="margin:0">해당 등록번호의 등록원부 정보가 없습니다.</div>`);
+  if(d.success===false) return H(`<div class="assist-note" style="margin:0">등록원부를 불러오지 못했습니다.<br><small>${escHtml(d.error||'')}</small></div>`);
+  const g=d.register||{}; if(!g||!g.rgstNo) return '';
+  const owners=(g.owners||[]); const fo=owners.filter(o=>o.final);
+  const so=(fo.length?fo:owners);
+  const ownerNames=so.map(o=>o.name).filter(Boolean).map(escHtml).join(' · ');
+  const pays=(g.pays||[]).slice().sort((a,b)=>(parseInt(b.last||'0',10)||0)-(parseInt(a.last||'0',10)||0));
+  const lp=pays[0];
+  const won=v=>{ const n=parseInt(String(v||'').replace(/\D/g,''),10); return isNaN(n)?'':n.toLocaleString()+'원'; };
+  const rowsArr=[['최종 권리자',ownerNames],['존속기간 만료일',_fmtDate(g.cndrtExptnDate)],
+    ['최종 처분',g.lastDspst],['출원 구분',g.applTpcd],['청구항 수',g.claimCount?g.claimCount+'개':'']];
+  if(lp) rowsArr.push(['연차 납입',[lp.last?lp.last+'년차':'',lp.date?'최근 '+_fmtDate(lp.date):'',won(lp.amount)].filter(Boolean).join(' · ')]);
+  const rows=rowsArr.filter(x=>x[1]);
+  const grid=rows.length?`<div class="pat-d-grid comp-grid">`+rows.map(x=>`<div class="pat-d-row"><span class="pat-d-k">${escHtml(x[0])}</span><span class="pat-d-v">${escHtml(String(x[1]))}</span></div>`).join('')+`</div>`:'';
+  const rights=(g.rights||[]);
+  const hist=rights.length?`<div class="pat-reg-blk"><div class="pat-reg-blk-h">권리 변동 이력 <span class="comp-sec-n">${rights.length}건</span></div>`+
+    rights.map(rt=>`<div class="pat-reg-hi"><span class="pat-reg-hd">${escHtml(_fmtDate(rt.date)||'-')}</span><span class="pat-reg-hn">${escHtml(rt.name||'')}</span>${rt.purpose?`<span class="pat-reg-hp">${escHtml(rt.purpose)}</span>`:''}</div>`).join('')+`</div>`:'';
+  const lic=[].concat((g.elsLcns||[]).map(x=>['전용실시권',x]),(g.noelsLcns||[]).map(x=>['통상실시권',x]));
+  const licHtml=lic.length?`<div class="pat-reg-blk"><div class="pat-reg-blk-h">실시권 <span class="comp-sec-n">${lic.length}건</span></div>`+
+    lic.map(a=>`<div class="pat-reg-hi"><span class="pat-reg-hn">${escHtml(a[0])} · ${escHtml(a[1].name||'')}</span>${a[1].region?`<span class="pat-reg-hp">${escHtml(a[1].region)}</span>`:''}</div>`).join('')+`</div>`:'';
+  if(!grid&&!hist&&!licHtml) return H(`<div class="assist-note" style="margin:0">표시할 등록원부 항목이 없습니다.</div>`);
+  return H(grid+hist+licHtml+`<div class="pat-reg-src">출처: 공공데이터포털 · 지식재산처 등록원부 실시간 정보조회</div>`);
 }
 // 도우미·메모·지출결의서 패널 헤더의 닫기(✕) 버튼 — 목록/검색 화면으로 복귀
 function _assistCloseBtn(){ return `<button class="assist-close" title="닫기 (Esc)" aria-label="닫기" onclick="closeAssist()">✕</button>`; }
