@@ -5093,23 +5093,24 @@ function _expBuild(){
       const vs=(g.vendors||[]).filter(v=>v.vendor||v.bno||v.ceo||v.desc||v.amt||v.budget);
       const total=vs.reduce((a,v)=>a+_digits(v.amt),0);
       const te=document.getElementById('gvTotal'); if(te) te.textContent='합계 '+_won(total)+' · 거래처 '+(g.vendors||[]).length+'곳';
-      const trHtml=vs.map((v,i)=>`<tr><td>${i+1}</td><td class="tl">${_ev(v.vendor)}</td><td>${_ev(v.bno)}</td><td>${_ev(v.ceo)}</td><td class="tl">${_ev(v.desc)}</td><td class="tl">${_ev(v.budget)}</td><td>${_ev(v.method||'')}</td><td class="tr">${_won(_digits(v.amt))}</td></tr>`).join('')
-        || `<tr><td colspan="8" class="expd-empty">거래처를 입력하세요</td></tr>`;
+      // 출력 표는 순번·거래처·거래내용·과목·금액 5열로 정리(사업자번호·대표자·지급방식은 입력만 유지, 표엔 미표시)
+      const trHtml=vs.map((v,i)=>`<tr><td>${i+1}</td><td class="tl">${_ev(v.vendor)}</td><td class="tl">${_ev(v.desc)}</td><td class="tl">${_ev(v.budget)}</td><td class="tr">${_won(_digits(v.amt))}</td></tr>`).join('')
+        || `<tr><td colspan="5" class="expd-empty">거래처를 입력하세요</td></tr>`;
       html=`<div class="expd-tag">일반 지출 · 여러 거래처</div>`+
-        `<table class="expd-tbl"><thead><tr><th>순번</th><th>거래처</th><th>사업자번호</th><th>대표자</th><th>거래내용</th><th>지출과목</th><th>지급방식</th><th>금액</th></tr></thead>`+
-        `<tbody>${trHtml}</tbody><tfoot><tr><td colspan="7">합계</td><td class="tr">${_won(total)}</td></tr></tfoot></table>`+
+        `<table class="expd-tbl"><thead><tr><th>순번</th><th>거래처</th><th>거래내용</th><th>과목</th><th>금액</th></tr></thead>`+
+        `<tbody>${trHtml}</tbody><tfoot><tr><td colspan="4">합계</td><td class="tr">${_won(total)}</td></tr></tfoot></table>`+
         `<div class="expd-sum">합계 일금 ${_hanAmount(total)}원정 (${_won(total)})</div>`;
       // 붙여넣기용(HWP·ERP 리치에디터에 표 유지) — 인라인 스타일
       const tci='border:1px solid #808080;padding:6px 10px;font-size:14px;vertical-align:middle;';
       const tch='background:#efefef;font-weight:bold;text-align:center;white-space:nowrap;'+tci;
-      const rr=vs.map((v,i)=>`<tr><td style="${tci};text-align:center">${i+1}</td><td style="${tci}">${_ev(v.vendor)}</td><td style="${tci}">${_ev(v.bno)}</td><td style="${tci}">${_ev(v.ceo)}</td><td style="${tci}">${_ev(v.desc)}</td><td style="${tci}">${_ev(v.budget)}</td><td style="${tci}">${_ev(v.method||'')}</td><td style="${tci};text-align:right">${_won(_digits(v.amt))}</td></tr>`).join('');
+      const rr=vs.map((v,i)=>`<tr><td style="${tci};text-align:center">${i+1}</td><td style="${tci}">${_ev(v.vendor)}</td><td style="${tci}">${_ev(v.desc)}</td><td style="${tci}">${_ev(v.budget)}</td><td style="${tci};text-align:right">${_won(_digits(v.amt))}</td></tr>`).join('');
       _expRich='<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;width:100%"><tbody>'+
-        `<tr><th style="${tch}">순번</th><th style="${tch}">거래처</th><th style="${tch}">사업자번호</th><th style="${tch}">대표자</th><th style="${tch}">거래내용</th><th style="${tch}">지출과목</th><th style="${tch}">지급방식</th><th style="${tch}">금액</th></tr>`+
-        (rr||`<tr><td style="${tci};text-align:center" colspan="8">(내역 없음)</td></tr>`)+
-        `<tr><td style="${tch}" colspan="7">합계</td><td style="${tci};text-align:right;font-weight:bold">${_won(total)}</td></tr></tbody></table>`;
-      const tlines=vs.map((v,i)=>`  ${i+1}) ${v.vendor||'-'} | ${v.bno||'-'} | ${v.ceo||'-'} | ${v.desc||'-'} | ${v.budget||'-'} | ${v.method||'-'} | ${_won(_digits(v.amt))}`).join('\n');
+        `<tr><th style="${tch}">순번</th><th style="${tch}">거래처</th><th style="${tch}">거래내용</th><th style="${tch}">과목</th><th style="${tch}">금액</th></tr>`+
+        (rr||`<tr><td style="${tci};text-align:center" colspan="5">(내역 없음)</td></tr>`)+
+        `<tr><td style="${tch}" colspan="4">합계</td><td style="${tci};text-align:right;font-weight:bold">${_won(total)}</td></tr></tbody></table>`;
+      const tlines=vs.map((v,i)=>`  ${i+1}) ${v.vendor||'-'} | ${v.desc||'-'} | ${v.budget||'-'} | ${_won(_digits(v.amt))}`).join('\n');
       text='[일반 지출 · 여러 거래처]\n'+
-        `· 거래처 내역 (거래처 | 사업자번호 | 대표자 | 거래내용 | 지출과목 | 지급방식 | 금액)\n${tlines||'  (내역 없음)'}\n· 합계: 일금 ${_hanAmount(total)}원정 (${_won(total)})`;
+        `· 거래처 내역 (거래처 | 거래내용 | 과목 | 금액)\n${tlines||'  (내역 없음)'}\n· 합계: 일금 ${_hanAmount(total)}원정 (${_won(total)})`;
     } else {
       const sup=_digits(g.supply), vat=_digits(g.vat), total=sup+vat;
       const vendor=[g.vendor||'—', g.bno&&('사업자 '+g.bno), g.ceo&&('대표 '+g.ceo)].filter(Boolean).join(', ');
@@ -5273,11 +5274,11 @@ function _expHwpxPayload(){
       const vs=(g.vendors||[]).filter(v=>v.vendor||v.bno||v.ceo||v.desc||v.amt||v.budget);
       const total=vs.reduce((a,v)=>a+_digits(v.amt),0);
       const rows=[];
-      rows.push([{t:'순번',hd:1},{t:'거래처',hd:1},{t:'사업자번호',hd:1},{t:'대표자',hd:1},{t:'거래내용',hd:1},{t:'지출과목',hd:1},{t:'지급방식',hd:1},{t:'금액',hd:1}]);
-      vs.forEach((v,i)=>rows.push([{t:String(i+1)},{t:v.vendor||''},{t:v.bno||''},{t:v.ceo||''},{t:v.desc||''},{t:v.budget||''},{t:v.method||''},{t:_won(_digits(v.amt))}]));
-      rows.push([{t:'합계',hd:1,cs:7},{t:_won(total)}]);
-      return {title:'지출결의서 (일반·여러 거래처)', filename:'지출결의서_일반_거래처목록', colCnt:8,
-        colWidths:[3000,8000,7000,5000,8000,6000,5000,5628], empty: vs.length===0, rows};
+      rows.push([{t:'순번',hd:1},{t:'거래처',hd:1},{t:'거래내용',hd:1},{t:'과목',hd:1},{t:'금액',hd:1}]);
+      vs.forEach((v,i)=>rows.push([{t:String(i+1)},{t:v.vendor||''},{t:v.desc||''},{t:v.budget||''},{t:_won(_digits(v.amt))}]));
+      rows.push([{t:'합계',hd:1,cs:4},{t:_won(total)}]);
+      return {title:'지출결의서 (일반·여러 거래처)', filename:'지출결의서_일반_거래처목록', colCnt:5,
+        colWidths:[3600,12000,16000,8000,8028], empty: vs.length===0, rows};
     }
     const sup=_digits(g.supply),vat=_digits(g.vat),total=sup+vat;
     const vendor=[g.vendor,g.bno&&('사업자 '+g.bno),g.ceo&&('대표 '+g.ceo)].filter(Boolean).join(', ');
