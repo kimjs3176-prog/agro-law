@@ -299,8 +299,9 @@ body.dark .pat-sb.dead{background:rgba(255,255,255,.08);color:#a7a7b2;}
 .pat-orig-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;box-sizing:border-box;padding:11px 14px;font-size:13px;font-weight:800;color:#fff;background:var(--g);border-radius:10px;text-decoration:none;transition:filter .12s,box-shadow .12s;}
 .pat-orig-btn:hover{filter:brightness(1.06);box-shadow:0 3px 12px rgba(37,110,244,.28);}
 /* 기업 상세: 표(그리드) 형식 — 셀 사이 얇은 구분선 */
-.comp-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1px;background:var(--bd);border:1px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:0;}
-.comp-grid .pat-d-row{background:var(--sf);padding:10px 13px;gap:12px;align-items:baseline;}
+/* flex-wrap: 마지막 줄 셀이 남는 폭을 채워(grid auto-fill의 빈 트랙에 회색 배경이 비치던 여백 제거) */
+.comp-grid{display:flex;flex-wrap:wrap;gap:1px;background:var(--bd);border:1px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:0;}
+.comp-grid .pat-d-row{background:var(--sf);padding:10px 13px;gap:12px;align-items:baseline;flex:1 1 300px;min-width:0;}
 .comp-grid .pat-d-k{min-width:92px;}
 .comp-fbar{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--bd);}
 .comp-qf{margin-left:auto;flex:0 1 220px;min-width:150px;}
@@ -383,10 +384,28 @@ body.dark .cpat-b.reg{background:rgba(34,197,94,.16);color:#6ee7a0;}
 .exp-tin{font-size:12.5px!important;padding:7px 8px!important;}
 .exp-trdel{border:1px solid var(--bd);background:var(--sf);color:var(--mu);border-radius:6px;width:26px;height:30px;cursor:pointer;font-size:12px;}
 .exp-trdel:hover:not(:disabled){border-color:#f04452;color:#f04452;}
-/* 일반 지출: 거래처 다중 입력 행 */
-.exp-vrow{display:grid;grid-template-columns:22px 1fr 108px 80px 96px 26px;gap:5px;align-items:center;border:1px solid var(--bd);border-radius:9px;padding:7px 8px;margin-bottom:7px;}
+/* 일반 지출: 거래처 다중 입력 행 (1행: 상호·사업자번호·조회·대표자·금액·삭제 / 2행: 거래내용·지출과목·지급방식) */
+.exp-vrow{display:grid;grid-template-columns:22px minmax(90px,1fr) 100px 40px 76px 92px 26px;gap:5px;align-items:center;border:1px solid var(--bd);border-radius:9px;padding:7px 8px;margin-bottom:7px;}
 .exp-vin{font-size:12.5px!important;padding:7px 8px!important;min-width:0;}
-.exp-vrow .v-desc{grid-column:2/-1;}
+.exp-vrow .v-desc{grid-column:2/4;}
+.exp-vrow .v-budget{grid-column:4/6;}
+.exp-vrow .v-method{grid-column:6/8;}
+.exp-vrow .v-biz{grid-column:4/5;}
+/* 사업자번호 조회 버튼 */
+.exp-bizbtn{border:1px solid var(--bd);background:var(--sf);color:var(--g);border-radius:6px;height:30px;padding:0 8px;cursor:pointer;font-size:11.5px;font-weight:700;font-family:var(--font);white-space:nowrap;}
+.exp-bizbtn:hover{border-color:var(--g);background:var(--gl);}
+.exp-bnowrap{display:flex;gap:5px;align-items:center;}
+.exp-bnowrap input{flex:1 1 auto;min-width:0;}
+/* 사업자번호 후보 팝업 */
+.exp-bizpop{display:none;margin:6px 0 2px;border:1px solid var(--bd);border-radius:9px;overflow:hidden;background:var(--sf);}
+.exp-bizpop.on{display:block;}
+.exp-bizhd{display:flex;justify-content:space-between;align-items:center;padding:8px 11px;font-size:12px;font-weight:700;color:var(--mu);background:var(--gl);}
+.exp-bizx{border:none;background:transparent;color:var(--mu);cursor:pointer;font-size:13px;line-height:1;padding:2px 4px;}
+.exp-bizit{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;border:none;border-top:1px solid var(--bd);background:var(--sf);padding:9px 12px;cursor:pointer;font-family:var(--font);}
+.exp-bizit:hover{background:var(--gl);}
+.exp-bizn{font-size:13px;font-weight:700;color:var(--tx);}
+.exp-bizb{font-size:11.5px;color:var(--mu);}
+.exp-bizmsg{padding:10px 12px;font-size:12.5px;color:var(--mu);}
 .exp-genmode{margin-top:0;margin-bottom:0;}
 .exp-trdel:disabled{opacity:.35;cursor:default;}
 .exp-addrow{margin-top:4px;font-size:12px;font-weight:700;padding:7px 12px;border:1px dashed var(--bd);border-radius:8px;background:transparent;color:var(--g);cursor:pointer;width:100%;}
@@ -1696,12 +1715,16 @@ body.dark .int-law-chip{background:#161920;color:#aecbfd;}
   .pat-year{width:84px;}
   .opp-bar{gap:6px;} .opp-sort,.opp-tool{font-size:11.5px;padding:6px 9px;}
   .opp-card{padding:11px 36px 11px 12px;}
-  .opp-grid,.comp-grid,.fin-grid{grid-template-columns:1fr;}
+  .opp-grid,.fin-grid{grid-template-columns:1fr;}
+  .comp-grid .pat-d-row{flex-basis:100%;}   /* 모바일: 정보 셀 1열로 */
   .comp-fbar .comp-qf{margin-left:0;flex-basis:100%;}
   /* ── 지출결의서: 여비 행 세로 정렬·표 가로 스크롤 ── */
   .exp-segset{width:100%;} .exp-seg{flex:1;text-align:center;padding:8px 6px;}
   .exp-trow{display:flex;flex-wrap:wrap;gap:5px;}
   .exp-vrow{display:flex;flex-wrap:wrap;gap:5px;}
+  .exp-vrow .v-nm{flex:1 1 55%;} .exp-vrow .v-bno{flex:1 1 40%;} .exp-vrow .v-biz{flex:0 0 auto;}
+  .exp-vrow .v-ceo{flex:1 1 45%;} .exp-vrow .v-amt{flex:1 1 45%;}
+  .exp-vrow .v-desc{flex:1 1 100%;} .exp-vrow .v-budget{flex:1 1 55%;} .exp-vrow .v-method{flex:1 1 38%;}
   .exp-trn{flex:0 0 100%;text-align:left;}
   .exp-trow .td{flex:1 1 45%;} .exp-trow .tp{flex:1 1 45%;} .exp-trow .ta{flex:1 1 60%;} .exp-trow .tc{flex:1 1 100%;grid-column:auto;}
   .exp-doc{padding:16px 14px;}
@@ -4378,7 +4401,7 @@ const TRAV_LODGE={seoul:'100000', metro:'80000', etc:'70000'};
 function _tcalcDefault(){ return {open:false, days:'1', nights:'0', region:'etc', ilbi:'25000', meal:'25000', lodge:'70000', km:'', kmRate:''}; }
 function _expDefault(){ return {type:'general',
   general:{vendor:'',bno:'',ceo:'',desc:'',budget:'',supply:'',vat:'',method:'계좌이체',bank:'',holder:'',account:'',
-           multi:false, vendors:[{vendor:'',bno:'',ceo:'',desc:'',amt:''}]},
+           multi:false, vendors:[{vendor:'',bno:'',ceo:'',desc:'',amt:'',budget:'',method:'계좌이체'}]},
   travel:{name:'',dept:'',rows:[{date:_today(),place:'',content:'',amt:''}]},
   tcalc:_tcalcDefault(),
   receipt:{user:'',dept:'',region:'',summary:'',rows:[],init:false},
@@ -4388,6 +4411,9 @@ function _expLoadState(){ try{ const s=JSON.parse(localStorage.getItem(EXP_KEY)|
     // 마이그레이션: 구 버전의 단일 집행대상(targets/people) → 외부 항목으로 이관
     const p=st.promo; if(p && (p.targets||p.people) && !p.targetsExt && !p.targetsInt){ p.targetsExt=p.targets||''; p.peopleExt=p.people||''; }
     if(p){ delete p.targets; delete p.people; }
+    // 마이그레이션: 다건 거래처에 개별 지출과목·지급방식 필드 보정
+    if(st.general && Array.isArray(st.general.vendors))
+      st.general.vendors=st.general.vendors.map(v=>Object.assign({vendor:'',bno:'',ceo:'',desc:'',amt:'',budget:'',method:'계좌이체'},v||{}));
     return st; } }catch(e){} return _expDefault(); }
 function _expSaveState(){ _lsSet(EXP_KEY, JSON.stringify(_expState)); }
 // ── 지출결의서 템플릿(프리셋) — 반복 서식을 이름 붙여 저장/적용 ──────────────
@@ -4703,8 +4729,9 @@ function _expRenderFields(){
       box.innerHTML=modeToggle+
         `<div class="exp-fg"><div class="exp-fgt">거래처</div><div class="exp-frow">`+
           `<label>거래처(상호)<input id="gVendor" value="${_ev(g.vendor)}" placeholder="예: (주)그린애그로텍"></label>`+
-          `<label>사업자등록번호<input id="gBno" value="${_ev(g.bno)}" placeholder="000-00-00000"></label></div>`+
-          `<div class="exp-frow"><label>대표자<input id="gCeo" value="${_ev(g.ceo)}"></label></div></div>`+
+          `<label>사업자등록번호<span class="exp-bnowrap"><input id="gBno" value="${_ev(g.bno)}" placeholder="000-00-00000"><button type="button" class="exp-bizbtn" onclick="_expBizLookup('single',0)" title="상호로 사업자번호 조회">조회</button></span></label></div>`+
+          `<div class="exp-frow"><label>대표자<input id="gCeo" value="${_ev(g.ceo)}"></label></div>`+
+          `<div id="gBizPop" class="exp-bizpop"></div></div>`+
         `<div class="exp-fg"><div class="exp-fgt">거래 내용</div>`+
           `<label class="exp-full">거래내용(적요)<textarea id="gDesc" rows="2" placeholder="예: 스마트팜 실증 기자재 구매">${_ev(g.desc)}</textarea></label>`+
           `<div class="exp-frow"><label>지출과목(예산과목)<input id="gBudget" value="${_ev(g.budget)}" placeholder="예: 자산취득비"></label></div></div>`+
@@ -4714,25 +4741,27 @@ function _expRenderFields(){
           `<div class="exp-vatrow"><button type="button" class="exp-mini" onclick="_expVatAuto()">부가세 10% 자동</button></div></div>`+
         pay;
     } else {
-      if(!g.vendors||!g.vendors.length) g.vendors=[{vendor:'',bno:'',ceo:'',desc:'',amt:''}];
+      _expNormVendors(g);
+      const mOpts=v=>EXP_METHODS.map(m=>`<option${(v.method||'계좌이체')===m?' selected':''}>${m}</option>`).join('');
       const rows=g.vendors.map((v,i)=>`<div class="exp-vrow">`+
         `<span class="exp-trn">${i+1}</span>`+
         `<input class="exp-vin v-nm" id="gvVendor${i}" value="${_ev(v.vendor)}" placeholder="거래처(상호)">`+
         `<input class="exp-vin v-bno" id="gvBno${i}" value="${_ev(v.bno)}" placeholder="사업자번호">`+
+        `<button type="button" class="exp-bizbtn v-biz" onclick="_expBizLookup('multi',${i})" title="상호로 사업자번호 조회">조회</button>`+
         `<input class="exp-vin v-ceo" id="gvCeo${i}" value="${_ev(v.ceo)}" placeholder="대표자">`+
         `<input class="exp-vin v-amt" id="gvAmt${i}" inputmode="numeric" value="${_ev(v.amt)}" placeholder="금액(원)">`+
         `<button type="button" class="exp-trdel" onclick="_expVendorDel(${i})" title="행 삭제" ${g.vendors.length<=1?'disabled':''}>✕</button>`+
         `<input class="exp-vin v-desc" id="gvDesc${i}" value="${_ev(v.desc)}" placeholder="거래내용(적요)">`+
+        `<input class="exp-vin v-budget" id="gvBudget${i}" value="${_ev(v.budget)}" placeholder="지출과목(예산과목)">`+
+        `<select class="exp-vin v-method" id="gvMethod${i}" title="지급방식">${mOpts(v)}</select>`+
         `</div>`).join('');
       const gtot=g.vendors.reduce((a,v)=>a+_digits(v.amt),0);
       box.innerHTML=modeToggle+
-        `<div class="exp-fg"><div class="exp-fgt">거래처 목록 <span class="exp-hint2">거래처별 상호·사업자번호·대표자·금액·거래내용</span></div>`+
+        `<div class="exp-fg"><div class="exp-fgt">거래처 목록 <span class="exp-hint2">거래처별 상호·사업자번호·대표자·금액 / 거래내용·지출과목·지급방식</span></div>`+
           `<div id="gvRows">${rows}</div>`+
+          `<div id="gvBizPop" class="exp-bizpop"></div>`+
           `<button type="button" class="exp-addrow" onclick="_expVendorAdd()">＋ 거래처 추가</button>`+
-          `<div class="exp-limit" id="gvTotal">합계 ${_won(gtot)} · 거래처 ${g.vendors.length}곳</div></div>`+
-        `<div class="exp-fg"><div class="exp-fgt">지출과목</div>`+
-          `<div class="exp-frow"><label class="exp-full">지출과목(예산과목)<input id="gBudget" value="${_ev(g.budget)}" placeholder="예: 자산취득비"></label></div></div>`+
-        pay;
+          `<div class="exp-limit" id="gvTotal">합계 ${_won(gtot)} · 거래처 ${g.vendors.length}곳</div></div>`;
     }
   } else if(t==='travel'){
     const tv=_expState.travel; if(!tv.rows||!tv.rows.length) tv.rows=[{date:_today(),place:'',content:'',amt:''}];
@@ -4780,15 +4809,17 @@ function _expSync(){
   const g=id=>((document.getElementById(id)||{}).value||'').trim();
   const t=_expState.type;
   // 렌더 중이거나 현재 구분의 입력이 DOM에 없으면 무시(다른 구분 상태 훼손 방지)
-  const anchor={general:'gBudget',travel:'tvName',promo:'pmDate'}[t];   // gBudget은 단일·다중 모두 존재
+  // general은 단일/다중 앵커가 다르다(다중엔 공통 지출과목/지급란이 없음)
+  const anchor=(t==='general')?(_expState.general.multi?'gvVendor0':'gVendor')
+    :{travel:'tvName',promo:'pmDate'}[t];
   if(_expRendering || (anchor && !document.getElementById(anchor))) return;
   if(t==='general'){
     const gg=_expState.general;
     if(gg.multi){
       const n=(gg.vendors||[]).length; const vs=[];
-      for(let i=0;i<n;i++){ vs.push({vendor:g('gvVendor'+i),bno:g('gvBno'+i),ceo:g('gvCeo'+i),desc:g('gvDesc'+i),amt:g('gvAmt'+i)}); }
+      for(let i=0;i<n;i++){ vs.push({vendor:g('gvVendor'+i),bno:g('gvBno'+i),ceo:g('gvCeo'+i),desc:g('gvDesc'+i),
+        amt:g('gvAmt'+i),budget:g('gvBudget'+i),method:g('gvMethod'+i)||'계좌이체'}); }
       if(vs.length) gg.vendors=vs;
-      gg.budget=g('gBudget'); gg.method=g('gMethod'); gg.bank=g('gBank'); gg.holder=g('gHolder'); gg.account=g('gAccount');
     } else {
       Object.assign(gg, {vendor:g('gVendor'),bno:g('gBno'),ceo:g('gCeo'),desc:g('gDesc'),budget:g('gBudget'),
         supply:g('gSupply'),vat:g('gVat'),method:g('gMethod'),bank:g('gBank'),holder:g('gHolder'),account:g('gAccount')});
@@ -4804,18 +4835,62 @@ function _expSync(){
 function _expVatAuto(){ _expSync(); _expState.general.vat=String(Math.round(_digits(_expState.general.supply)*0.1));
   const el=document.getElementById('gVat'); if(el) el.value=_expState.general.vat; _expUpdate(); _expSaveState(); }
 // ── 일반 지출: 거래처 단일/다중 모드 ─────────────────────────────────────────
+function _expVNew(){ return {vendor:'',bno:'',ceo:'',desc:'',amt:'',budget:'',method:'계좌이체'}; }
+function _expNormVendors(g){ if(!g.vendors||!g.vendors.length){ g.vendors=[_expVNew()]; return; }
+  g.vendors=g.vendors.map(v=>Object.assign(_expVNew(),v||{})); }
 function _expGenMode(multi){ _expSync(); const g=_expState.general; g.multi=!!multi;
   if(multi){
-    if(!g.vendors||!g.vendors.length) g.vendors=[{vendor:'',bno:'',ceo:'',desc:'',amt:''}];
+    _expNormVendors(g);
     const empty=g.vendors.every(v=>!(v.vendor||v.bno||v.ceo||v.desc||v.amt));
-    if(empty && (g.vendor||g.desc||g.supply||g.vat)){   // 단일 입력을 첫 행으로 이관
-      g.vendors=[{vendor:g.vendor||'',bno:g.bno||'',ceo:g.ceo||'',desc:g.desc||'',amt:String((_digits(g.supply)+_digits(g.vat))||'')}];
+    if(empty && (g.vendor||g.desc||g.supply||g.vat)){   // 단일 입력을 첫 행으로 이관(지출과목·지급방식 포함)
+      g.vendors=[Object.assign(_expVNew(),{vendor:g.vendor||'',bno:g.bno||'',ceo:g.ceo||'',desc:g.desc||'',
+        amt:String((_digits(g.supply)+_digits(g.vat))||''),budget:g.budget||'',method:g.method||'계좌이체'})];
     }
   }
   _expRenderFields(); _expUpdate(); _expSaveState();
 }
-function _expVendorAdd(){ _expSync(); _expState.general.vendors.push({vendor:'',bno:'',ceo:'',desc:'',amt:''}); _expRenderFields(); _expUpdate(); _expSaveState(); }
-function _expVendorDel(i){ _expSync(); const vs=_expState.general.vendors; vs.splice(i,1); if(!vs.length) _expState.general.vendors=[{vendor:'',bno:'',ceo:'',desc:'',amt:''}]; _expRenderFields(); _expUpdate(); _expSaveState(); }
+function _expVendorAdd(){ _expSync(); _expState.general.vendors.push(_expVNew()); _expRenderFields(); _expUpdate(); _expSaveState(); }
+function _expVendorDel(i){ _expSync(); const vs=_expState.general.vendors; vs.splice(i,1); if(!vs.length) _expState.general.vendors=[_expVNew()]; _expRenderFields(); _expUpdate(); _expSaveState(); }
+// ── 사업자번호 공공데이터 조회(회사명 → 사업자번호·대표자) — /api/assist/company 재사용 ──
+function _bnoFmt(b){ const d=String(b||'').replace(/\D/g,''); return d.length===10?`${d.slice(0,3)}-${d.slice(3,5)}-${d.slice(5)}`:String(b||''); }
+function _expBizPopEl(scope){ return document.getElementById(scope==='multi'?'gvBizPop':'gBizPop'); }
+function _expBizMsg(scope,msg){ const el=_expBizPopEl(scope); if(el){ el.className='exp-bizpop on'; el.innerHTML=`<div class="exp-bizmsg">${escHtml(msg)}</div>`; } }
+function _expBizClose(scope){ const el=_expBizPopEl(scope); if(el){ el.className='exp-bizpop'; el.innerHTML=''; el.removeAttribute('data-items'); el.removeAttribute('data-idx'); } }
+function _expBizLookup(scope, idx){
+  _expSync();
+  const nm=((document.getElementById(scope==='multi'?('gvVendor'+idx):'gVendor')||{}).value||'').trim();
+  if(!nm){ _expBizMsg(scope,'거래처(상호)를 먼저 입력하세요.'); return; }
+  _expBizMsg(scope,'"'+nm+'" 사업자번호 조회 중...');
+  fetch('/api/assist/company?query='+encodeURIComponent(nm)).then(r=>r.json()).then(d=>{
+    if(d&&d.need_key){ _expBizMsg(scope,'공공데이터 서비스키(DATA_GO_KR_KEY)가 설정되지 않았습니다.'); return; }
+    if(!d||d.success===false){ _expBizMsg(scope,'조회 실패: '+((d&&d.error)||'네트워크 오류')); return; }
+    const items=(d.items||[]).filter(it=>it.bno);
+    if(!items.length){ _expBizMsg(scope,'사업자번호가 확인되는 기업이 없습니다. (개인·소규모 사업자는 공공데이터 미등록일 수 있어요)'); return; }
+    _expBizShowResults(scope, idx, items);
+  }).catch(()=>_expBizMsg(scope,'조회 실패 — 잠시 후 다시 시도하세요.'));
+}
+function _expBizShowResults(scope, idx, items){
+  const el=_expBizPopEl(scope); if(!el) return;
+  const list=items.slice(0,8);
+  el.dataset.items=JSON.stringify(list); el.dataset.idx=String(idx);
+  const head=(scope==='multi'?('행 '+(idx+1)+' · '):'')+'거래처 후보를 선택하세요';
+  el.className='exp-bizpop on';
+  el.innerHTML=`<div class="exp-bizhd"><span>${escHtml(head)}</span><button type="button" class="exp-bizx" onclick="_expBizClose('${scope}')" title="닫기">✕</button></div>`+
+    list.map((it,k)=>`<button type="button" class="exp-bizit" onclick="_expBizPick('${scope}',${k})">`+
+      `<span class="exp-bizn">${escHtml(it.name||'')}</span>`+
+      `<span class="exp-bizb">${escHtml(_bnoFmt(it.bno))}${it.ceo?(' · 대표 '+escHtml(it.ceo)):''}${it.addr?(' · '+escHtml(it.addr)):''}</span></button>`).join('');
+}
+function _expBizPick(scope, k){
+  const el=_expBizPopEl(scope); if(!el) return;
+  let list=[]; try{ list=JSON.parse(el.dataset.items||'[]'); }catch(e){}
+  const idx=parseInt(el.dataset.idx||'0',10)||0; const it=list[k]; if(!it) return;
+  _expSync();
+  const bno=_bnoFmt(it.bno);
+  if(scope==='multi'){ const v=_expState.general.vendors[idx]; if(v){ v.bno=bno; if(!v.ceo&&it.ceo) v.ceo=it.ceo; if(!v.vendor&&it.name) v.vendor=it.name; } }
+  else { const g=_expState.general; g.bno=bno; if(!g.ceo&&it.ceo) g.ceo=it.ceo; if(!g.vendor&&it.name) g.vendor=it.name; }
+  _expBizClose(scope); _expRenderFields(); _expUpdate(); _expSaveState();
+  if(typeof _toast==='function') _toast('사업자번호를 불러왔습니다.',2200);
+}
 function _expTravelAdd(){ _expSync(); _expState.travel.rows.push({date:_today(),place:'',content:'',amt:''}); _expRenderFields(); _expUpdate(); _expSaveState(); }
 // ── 국내여비 자동 계산 ─────────────────────────────────────────────────
 // 일비·식비·숙박비·자가용 이동비를 편집 가능한 단가로 산정. 서버·AI 없음.
@@ -5014,29 +5089,28 @@ function _expBuild(){
   if(t==='general'){
     const g=_expState.general;
     if(g.multi){
-      const vs=(g.vendors||[]).filter(v=>v.vendor||v.bno||v.ceo||v.desc||v.amt);
+      _expNormVendors(g);
+      const vs=(g.vendors||[]).filter(v=>v.vendor||v.bno||v.ceo||v.desc||v.amt||v.budget);
       const total=vs.reduce((a,v)=>a+_digits(v.amt),0);
-      const acct=[g.bank,g.account,g.holder&&('예금주 '+g.holder)].filter(Boolean).join(' ');
       const te=document.getElementById('gvTotal'); if(te) te.textContent='합계 '+_won(total)+' · 거래처 '+(g.vendors||[]).length+'곳';
-      const trHtml=vs.map((v,i)=>`<tr><td>${i+1}</td><td class="tl">${_ev(v.vendor)}</td><td>${_ev(v.bno)}</td><td>${_ev(v.ceo)}</td><td class="tl">${_ev(v.desc)}</td><td class="tr">${_won(_digits(v.amt))}</td></tr>`).join('')
-        || `<tr><td colspan="6" class="expd-empty">거래처를 입력하세요</td></tr>`;
-      const meta=[['지출과목',g.budget],['결제방식',[g.method,acct&&('('+acct+')')].filter(Boolean).join(' ')]].filter(x=>x[1]);
-      html=`<div class="expd-tag">일반 지출 · 여러 거래처</div>`+(meta.length?_expLines(meta):'')+
-        `<table class="expd-tbl"><thead><tr><th>순번</th><th>거래처</th><th>사업자번호</th><th>대표자</th><th>거래내용</th><th>금액</th></tr></thead>`+
-        `<tbody>${trHtml}</tbody><tfoot><tr><td colspan="5">합계</td><td class="tr">${_won(total)}</td></tr></tfoot></table>`+
+      // 출력 표는 순번·거래처·거래내용·과목·금액 5열로 정리(사업자번호·대표자·지급방식은 입력만 유지, 표엔 미표시)
+      const trHtml=vs.map((v,i)=>`<tr><td>${i+1}</td><td class="tl">${_ev(v.vendor)}</td><td class="tl">${_ev(v.desc)}</td><td class="tl">${_ev(v.budget)}</td><td class="tr">${_won(_digits(v.amt))}</td></tr>`).join('')
+        || `<tr><td colspan="5" class="expd-empty">거래처를 입력하세요</td></tr>`;
+      html=`<div class="expd-tag">일반 지출 · 여러 거래처</div>`+
+        `<table class="expd-tbl"><thead><tr><th>순번</th><th>거래처</th><th>거래내용</th><th>과목</th><th>금액</th></tr></thead>`+
+        `<tbody>${trHtml}</tbody><tfoot><tr><td colspan="4">합계</td><td class="tr">${_won(total)}</td></tr></tfoot></table>`+
         `<div class="expd-sum">합계 일금 ${_hanAmount(total)}원정 (${_won(total)})</div>`;
       // 붙여넣기용(HWP·ERP 리치에디터에 표 유지) — 인라인 스타일
       const tci='border:1px solid #808080;padding:6px 10px;font-size:14px;vertical-align:middle;';
       const tch='background:#efefef;font-weight:bold;text-align:center;white-space:nowrap;'+tci;
-      const rr=vs.map((v,i)=>`<tr><td style="${tci};text-align:center">${i+1}</td><td style="${tci}">${_ev(v.vendor)}</td><td style="${tci}">${_ev(v.bno)}</td><td style="${tci}">${_ev(v.ceo)}</td><td style="${tci}">${_ev(v.desc)}</td><td style="${tci};text-align:right">${_won(_digits(v.amt))}</td></tr>`).join('');
-      const metaP=meta.length?`<p style="margin:0 0 6px;font-size:14px">${meta.map(x=>_ev(x[0])+': '+_ev(x[1])).join(' / ')}</p>`:'';
-      _expRich=metaP+'<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;width:100%"><tbody>'+
-        `<tr><th style="${tch}">순번</th><th style="${tch}">거래처</th><th style="${tch}">사업자번호</th><th style="${tch}">대표자</th><th style="${tch}">거래내용</th><th style="${tch}">금액</th></tr>`+
-        (rr||`<tr><td style="${tci};text-align:center" colspan="6">(내역 없음)</td></tr>`)+
-        `<tr><td style="${tch}" colspan="5">합계</td><td style="${tci};text-align:right;font-weight:bold">${_won(total)}</td></tr></tbody></table>`;
-      const tlines=vs.map((v,i)=>`  ${i+1}) ${v.vendor||'-'} | ${v.bno||'-'} | ${v.ceo||'-'} | ${v.desc||'-'} | ${_won(_digits(v.amt))}`).join('\n');
-      text='[일반 지출 · 여러 거래처]\n'+meta.map(x=>`· ${x[0]}: ${x[1]}`).join('\n')+
-        `${meta.length?'\n':''}· 거래처 내역 (거래처 | 사업자번호 | 대표자 | 거래내용 | 금액)\n${tlines||'  (내역 없음)'}\n· 합계: 일금 ${_hanAmount(total)}원정 (${_won(total)})`;
+      const rr=vs.map((v,i)=>`<tr><td style="${tci};text-align:center">${i+1}</td><td style="${tci}">${_ev(v.vendor)}</td><td style="${tci}">${_ev(v.desc)}</td><td style="${tci}">${_ev(v.budget)}</td><td style="${tci};text-align:right">${_won(_digits(v.amt))}</td></tr>`).join('');
+      _expRich='<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;width:100%"><tbody>'+
+        `<tr><th style="${tch}">순번</th><th style="${tch}">거래처</th><th style="${tch}">거래내용</th><th style="${tch}">과목</th><th style="${tch}">금액</th></tr>`+
+        (rr||`<tr><td style="${tci};text-align:center" colspan="5">(내역 없음)</td></tr>`)+
+        `<tr><td style="${tch}" colspan="4">합계</td><td style="${tci};text-align:right;font-weight:bold">${_won(total)}</td></tr></tbody></table>`;
+      const tlines=vs.map((v,i)=>`  ${i+1}) ${v.vendor||'-'} | ${v.desc||'-'} | ${v.budget||'-'} | ${_won(_digits(v.amt))}`).join('\n');
+      text='[일반 지출 · 여러 거래처]\n'+
+        `· 거래처 내역 (거래처 | 거래내용 | 과목 | 금액)\n${tlines||'  (내역 없음)'}\n· 합계: 일금 ${_hanAmount(total)}원정 (${_won(total)})`;
     } else {
       const sup=_digits(g.supply), vat=_digits(g.vat), total=sup+vat;
       const vendor=[g.vendor||'—', g.bno&&('사업자 '+g.bno), g.ceo&&('대표 '+g.ceo)].filter(Boolean).join(', ');
@@ -5196,18 +5270,15 @@ function _expHwpxPayload(){
   if(t==='general'){
     const g=_expState.general;
     if(g.multi){
-      const vs=(g.vendors||[]).filter(v=>v.vendor||v.bno||v.ceo||v.desc||v.amt);
+      _expNormVendors(g);
+      const vs=(g.vendors||[]).filter(v=>v.vendor||v.bno||v.ceo||v.desc||v.amt||v.budget);
       const total=vs.reduce((a,v)=>a+_digits(v.amt),0);
-      const acct=[g.bank,g.account,g.holder&&('예금주 '+g.holder)].filter(Boolean).join(' ');
       const rows=[];
-      rows.push([{t:'순번',hd:1},{t:'거래처',hd:1},{t:'사업자번호',hd:1},{t:'대표자',hd:1},{t:'거래내용',hd:1},{t:'금액',hd:1}]);
-      vs.forEach((v,i)=>rows.push([{t:String(i+1)},{t:v.vendor||''},{t:v.bno||''},{t:v.ceo||''},{t:v.desc||''},{t:_won(_digits(v.amt))}]));
-      rows.push([{t:'합계',hd:1,cs:5},{t:_won(total)}]);
-      if((g.budget||'').trim()) rows.push([{t:'지출과목',hd:1},{t:g.budget,cs:5}]);
-      const payv=[g.method,acct&&('('+acct+')')].filter(Boolean).join(' ');
-      if(payv) rows.push([{t:'결제방식',hd:1},{t:payv,cs:5}]);
-      return {title:'지출결의서 (일반·여러 거래처)', filename:'지출결의서_일반_거래처목록', colCnt:6,
-        colWidths:[3600,11000,8000,6000,11028,8000], empty: vs.length===0, rows};
+      rows.push([{t:'순번',hd:1},{t:'거래처',hd:1},{t:'거래내용',hd:1},{t:'과목',hd:1},{t:'금액',hd:1}]);
+      vs.forEach((v,i)=>rows.push([{t:String(i+1)},{t:v.vendor||''},{t:v.desc||''},{t:v.budget||''},{t:_won(_digits(v.amt))}]));
+      rows.push([{t:'합계',hd:1,cs:4},{t:_won(total)}]);
+      return {title:'지출결의서 (일반·여러 거래처)', filename:'지출결의서_일반_거래처목록', colCnt:5,
+        colWidths:[3600,12000,16000,8000,8028], empty: vs.length===0, rows};
     }
     const sup=_digits(g.supply),vat=_digits(g.vat),total=sup+vat;
     const vendor=[g.vendor,g.bno&&('사업자 '+g.bno),g.ceo&&('대표 '+g.ceo)].filter(Boolean).join(', ');
