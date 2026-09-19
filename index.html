@@ -246,6 +246,14 @@ body.dark .det-fav.on{background:rgba(245,179,1,.16);color:#fbbf24;}
 .pat-row-m{display:flex;gap:6px 10px;flex-wrap:wrap;font-size:11.5px;align-items:center;}
 .pat-row-appl{color:var(--g);font-weight:700;}
 .pat-row-meta{color:var(--mu);}
+.pat-ipc-tag{flex-shrink:0;font-size:10px;font-weight:700;color:var(--gd);background:var(--gl);border-radius:5px;padding:1px 7px;font-variant-numeric:tabular-nums;}
+/* 존속기간(예상) 배지 — 등록특허 출원일+20년 기준 */
+.pat-term{flex-shrink:0;font-size:10px;font-weight:800;border-radius:999px;padding:1px 8px;white-space:nowrap;}
+.pat-term.okterm{color:var(--mu);background:var(--gl);}
+.pat-term.soon{color:#b8730a;background:#fff4e5;}
+.pat-term.expired{color:#d32f2f;background:#fdecec;}
+body.dark .pat-term.soon{background:rgba(245,158,11,.16);color:#fbbf24;}
+body.dark .pat-term.expired{background:rgba(239,68,68,.16);color:#fca5a5;}
 .pat-list .pat-sb{font-size:10.5px;padding:1px 8px;}
 .pat-count-pg{color:var(--ht);font-weight:600;}
 .pat-pgnav{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:14px;}
@@ -3126,6 +3134,8 @@ const PAT_APPLICANTS=[
 const PAT_STATUS=[['','전체 상태'],['R','등록'],['A','공개'],['J','거절'],['F','소멸'],['C','취하'],['I','무효'],['G','포기']];
 const PAT_CODE_LABEL={R:'등록',A:'공개',J:'거절',F:'소멸',C:'취하',I:'무효',G:'포기'};
 let _patLast=null, _patParams='', _patStatuses=[], _patPage=1;   // 다중 선택 상태 코드·현재 페이지
+let _patQ='';           // 최근 자유검색어(목록·상세 하이라이트용)
+let _patLocal=null;     // 다중 상태 필터 시: 취합·클라이언트 필터 결과(로컬 페이지네이션)
 let _patDateField='application';   // 기간 기준일: 'application'(출원일) | 'register'(등록일)
 function _patSetDateField(v, btn){
   _patDateField=(v==='register')?'register':'application';
@@ -3137,6 +3147,39 @@ function _patStatusMatch(it){
   const s=String(it&&it.status||'');
   return _patStatuses.some(code=>{ const l=PAT_CODE_LABEL[code]||''; return l&&s.indexOf(l)>=0; });
 }
+// 등록특허 존속기간(예상) — 출원일+20년. 연차료 미납 소멸 등은 반영 못하므로 '예상' 표기.
+function _patTermInfo(it){
+  if(!it||!it.regno) return '';
+  const si=_patStatusInfo(it.status,it.regno); if(si.cls==='dead') return '';   // 이미 소멸/무효/취하 등은 상태배지로 표시
+  const s=String(it.appdate||'').replace(/\D/g,''); if(s.length<8) return '';
+  const y=+s.slice(0,4), mo=+s.slice(4,6), da=+s.slice(6,8); if(!y) return '';
+  const exp=new Date(y+20,(mo||1)-1,da||1), now=new Date();
+  const ey=exp.getFullYear(), em=String(exp.getMonth()+1).padStart(2,'0');
+  const days=(exp-now)/86400000;
+  if(days<0) return `<span class="pat-term expired" title="존속기간 만료(예상, 출원일+20년)">존속만료(예상)</span>`;
+  if(days<=730) return `<span class="pat-term soon" title="존속기간 만료 임박(예상). 연차료·상태 확인 권장">소멸임박 ~${ey}.${em}</span>`;
+  return `<span class="pat-term okterm" title="존속기간 만료 예상(출원일+20년)">존속 ~${ey}.${em}</span>`;
+}
+// 목록 행 1건 렌더(단일·다중 공용). 자유검색어 하이라이트 + 대표 IPC 태그 + 존속기간(예상).
+function _patRowHtml(it){
+  const _si=_patStatusInfo(it.status,it.regno);
+  const st=it.status?`<span class="pat-sb ${_si.cls}">${escHtml(_si.label)}</span>`:'';
+  const term=_patTermInfo(it);
+  const ipc0=String(it.ipc||'').split(/[|·,]/).map(s=>s.trim()).filter(Boolean)[0]||'';
+  const ipcTag=ipc0?`<span class="pat-ipc-tag" title="대표 IPC">${escHtml(ipc0)}</span>`:'';
+  const metaBits=[it.appno&&('출원 '+it.appno), it.appdate&&_fmtDate(it.appdate), it.regno&&('등록 '+it.regno), it.regdate&&('등록일 '+_fmtDate(it.regdate))].filter(Boolean).map(escHtml).join(' · ');
+  const kurl=_kiprisUrl(it.appno);
+  const favItem={type:'patent',name:it.title||'',subtitle:it.applicant||'',appno:it.appno||'',url:kurl};
+  const on=favHas(favItem);
+  const kws=_patQ?[_patQ]:[];
+  const ttl=highlightKwsSafe(escHtml(it.title||'(제목 없음)'),kws);
+  const appl=highlightKwsSafe(escHtml(it.applicant||''),kws);
+  return `<div class="pat-rw"><button class="pat-row" onclick="patDetail('${argAttr(it.appno||'')}')" title="${escHtml(it.title||'상세 보기')}">`+
+    `<div class="pat-row-t"><span class="pat-ttl">${ttl}</span>${st}${term}</div>`+
+    `<div class="pat-row-m"><span class="pat-row-appl">${appl}</span>${ipcTag}${metaBits?'<span class="pat-row-meta">'+metaBits+'</span>':''}</div></button>`+
+    `<button class="pat-fav${on?' on':''}" data-fav="${_favData(favItem)}" data-style="row" onclick="favToggleEl(this)" title="즐겨찾기" aria-pressed="${on}">${on?'★':'☆'}</button></div>`;
+}
+function _patRowsHtml(items){ return items.map(_patRowHtml).join(''); }
 function _patFiltersHtml(){
   const appl=`<button class="pat-chip active" data-v="" onclick="_patApplPick(this)">전체</button>`+
     PAT_APPLICANTS.map(a=>
@@ -3755,14 +3798,52 @@ function runPatent(){
   const p=new URLSearchParams();
   if(appl&&appl.v) p.set('applicant',appl.v);
   if(appl&&appl.code) p.set('applicant_code',appl.code);   // 특허고객번호 우선 검색(0건이면 이름 폴백)
-  const q=((document.getElementById('patQuery')||{}).value||'').trim(); if(q) p.set('query',q);
+  const q=((document.getElementById('patQuery')||{}).value||'').trim(); _patQ=q; if(q) p.set('query',q);
   _patStatuses=[...document.querySelectorAll('#patStatus .pat-chip.active')].map(b=>b.dataset.v).filter(Boolean);
-  if(_patStatuses.length===1) p.set('status',_patStatuses[0]);   // 단일=서버필터, 다중=결과필터
+  if(_patStatuses.length===1) p.set('status',_patStatuses[0]);   // 단일=서버필터
   const from=_patNormDate((document.getElementById('patFrom')||{}).value, false); if(from) p.set('date_from',from);
   const to=_patNormDate((document.getElementById('patTo')||{}).value, true);      if(to) p.set('date_to',to);
   if(_patDateField==='register') p.set('date_field','register');   // 등록일 기준(최근 등록 특허)
   _patParams=p.toString();                 // 엑셀 내보내기·페이지 이동에서 동일 필터 재사용
-  _patFetchPage(1);
+  if(_patStatuses.length>1){ _patFetchFiltered(); }   // 다중 상태=취합 후 정확 필터(페이징 일관)
+  else { _patLocal=null; _patFetchPage(1); }
+}
+// 다중 상태 필터: 기준 결과를 한 번에(최대 500건) 받아 클라이언트 필터 → 로컬 페이지네이션(건수 일관)
+function _patFetchFiltered(){
+  const box=document.getElementById('patResults'); if(!box) return;
+  box.innerHTML=`<div class="assist-loading"><div class="spinner"></div><span>특허 조회 중...</span></div>`;
+  const seq=(_qSeq.patent=(_qSeq.patent||0)+1);
+  fetch(`/api/assist/patent?${_patParams}&rows=500&page=1`).then(r=>r.json()).then(d=>{
+    if(seq!==_qSeq.patent) return;
+    _patLast=d;
+    if(d && (d.need_key||d.success===false)){ _patLocal=null; box.innerHTML=_renderPatentList(d); return; }
+    const src=(d.items||[]);
+    _patLocal={items:src.filter(_patStatusMatch), page:1, srcCount:src.length,
+               srcTotal:parseInt(d.total||'0',10)||0, matchMode:d.matchMode};
+    box.innerHTML=_renderPatentListLocal();
+  }).catch(e=>{ if(seq!==_qSeq.patent) return; box.innerHTML=`<div class="assist-note">서버에 연결할 수 없습니다.<br><small>${escHtml(e.message||'')}</small></div>`; });
+}
+function _patLocalPage(pg){ if(!_patLocal) return; _patLocal.page=Math.max(1,parseInt(pg,10)||1);
+  const box=document.getElementById('patResults'); if(box){ box.innerHTML=_renderPatentListLocal(); if(pg>1) box.scrollIntoView({behavior:'smooth',block:'start'}); } }
+function _patLocalNav(){
+  const per=_PAT_PER, n=_patLocal.items.length, pages=Math.ceil(n/per)||1, cur=_patLocal.page;
+  if(pages<=1) return '';
+  const prev=`<button class="pat-pg" ${cur>1?`onclick="_patLocalPage(${cur-1})"`:'disabled'}>← 이전</button>`;
+  const next=`<button class="pat-pg" ${cur<pages?`onclick="_patLocalPage(${cur+1})"`:'disabled'}>다음 →</button>`;
+  return `<div class="pat-pgnav">${prev}<span class="pat-pginfo">${cur} / ${pages} 페이지</span>${next}</div>`;
+}
+function _renderPatentListLocal(){
+  const L=_patLocal; if(!L) return '';
+  const trunc=L.srcTotal>L.srcCount;
+  if(!L.items.length){
+    return `<div class="assist-note">선택한 상태에 해당하는 특허가 없습니다.${trunc?'<br><small>기준 결과 상위 '+L.srcCount+'건 내에서 필터한 결과입니다. 기간·출원인으로 범위를 좁혀 보세요.</small>':''}</div>`;
+  }
+  const per=_PAT_PER, cur=L.page, slice=L.items.slice((cur-1)*per, cur*per);
+  const fb=L.matchMode==='word'?`<div class="pat-fbnote">🔎 명칭 정확일치 결과가 없어 <b>자유검색</b>(명칭·요약·청구항)으로 대체했습니다.</div>`:'';
+  const truncNote=trunc?`<span class="pat-count-pg">(기준 상위 ${L.srcCount}건 중)</span>`:'';
+  const hd=`<div class="pat-listhd"><span class="pat-count">${L.items.length}건 <span class="pat-count-pg">· 상태 필터 적용</span>${truncNote}</span>`+
+    `<button class="pat-xlsx" onclick="exportPatents(this)" title="현재 필터의 전체 결과를 엑셀(CSV)로 저장">⬇ 엑셀 다운로드</button></div>`;
+  return hd+fb+`<div class="pat-list pat-list-2col">${_patRowsHtml(slice)}</div>`+_patLocalNav();
 }
 // 특허 목록 페이지 조회(필터는 _patParams 재사용). 30건 제한 없이 페이지 단위로 탐색.
 function _patFetchPage(pg){
@@ -3808,18 +3889,7 @@ function _renderPatentList(d){
     }
     return `<div class="assist-note">조건에 맞는 특허가 없습니다.</div>`;
   }
-  const rows=items.map(it=>{
-    const _si=_patStatusInfo(it.status,it.regno);
-    const st=it.status?`<span class="pat-sb ${_si.cls}">${escHtml(_si.label)}</span>`:'';
-    const metaBits=[it.appno&&('출원 '+it.appno), it.appdate&&_fmtDate(it.appdate), it.regno&&('등록 '+it.regno), it.regdate&&('등록일 '+_fmtDate(it.regdate))].filter(Boolean).map(escHtml).join(' · ');
-    const kurl=_kiprisUrl(it.appno);
-    const favItem={type:'patent',name:it.title||'',subtitle:it.applicant||'',appno:it.appno||'',url:kurl};
-    const on=favHas(favItem);
-    return `<div class="pat-rw"><button class="pat-row" onclick="patDetail('${argAttr(it.appno||'')}')" title="${escHtml(it.title||'상세 보기')}">`+
-      `<div class="pat-row-t"><span class="pat-ttl">${escHtml(it.title||'(제목 없음)')}</span>${st}</div>`+
-      `<div class="pat-row-m"><span class="pat-row-appl">${escHtml(it.applicant||'')}</span>${metaBits?'<span class="pat-row-meta">'+metaBits+'</span>':''}</div></button>`+
-      `<button class="pat-fav${on?' on':''}" data-fav="${_favData(favItem)}" data-style="row" onclick="favToggleEl(this)" title="즐겨찾기" aria-pressed="${on}">${on?'★':'☆'}</button></div>`;
-  }).join('');
+  const rows=_patRowsHtml(items);
   const totalN=parseInt(d.total||'0',10)||0;
   const total=(totalN && totalN!==items.length)?` / 총 ${escHtml(String(totalN))}건${multiStat?'<span class="pat-count-pg">(상태 필터 전)</span>':''}`:'';
   const pageTxt=(totalN>_PAT_PER)?` <span class="pat-count-pg">(${_patPage}페이지)</span>`:'';
@@ -3933,9 +4003,10 @@ function _renderPatentDetail(d){
   const regSlot=t.regno?`<div id="patRegSec" class="pat-reg-slot"></div>`:'';
   const ipcSec=ipcs.length?`<div class="comp-sec"><div class="comp-sec-h">🏷️ 기술 분류(IPC) <span class="comp-sec-n">${ipcs.length}개</span></div>`+
     `<div class="comp-skills">${ipcs.map(c=>`<span class="comp-skill">${escHtml(c)}</span>`).join('')}</div></div>`:'';
-  const abs=t.abstract?`<div class="comp-sec"><div class="comp-sec-h">📝 요약(초록)</div><div class="pat-abs-card">${escHtml(t.abstract)}</div></div>`:'';
+  const _kws=_patQ?[_patQ]:[];
+  const abs=t.abstract?`<div class="comp-sec"><div class="comp-sec-h">📝 요약(초록)</div><div class="pat-abs-card">${highlightKwsSafe(escHtml(t.abstract),_kws)}</div></div>`:'';
   const link=kurl?`<div class="pat-orig-wrap"><a class="pat-orig-btn" href="${escHtml(kurl)}" target="_blank" rel="noopener">📄 KIPRIS에서 특허 상세·원문 보기 ↗</a></div>`:'';
-  return `<div class="pat-detail"><div class="pat-d-title">${escHtml(t.title||'(제목 없음)')}${badge}${favBtn}</div>`+
+  return `<div class="pat-detail"><div class="pat-d-title">${highlightKwsSafe(escHtml(t.title||'(제목 없음)'),_kws)}${badge}${favBtn}</div>`+
     stats+biblio+parties+regSlot+ipcSec+abs+link+`</div>`;
 }
 // 등록원부(실시간) — 등록번호(13자리) 기준 공공데이터포털 조회 후 상세에 주입
