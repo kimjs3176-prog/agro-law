@@ -406,6 +406,16 @@ body.dark .cpat-b.reg{background:rgba(34,197,94,.16);color:#6ee7a0;}
 .exp-bizn{font-size:13px;font-weight:700;color:var(--tx);}
 .exp-bizb{font-size:11.5px;color:var(--mu);}
 .exp-bizmsg{padding:10px 12px;font-size:12.5px;color:var(--mu);}
+/* 사업자 상태 배지 (계속/휴업/폐업) */
+.exp-bnostat{display:inline-block;margin-top:6px;font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 10px;}
+.exp-vstat{grid-column:1/-1;justify-self:start;font-size:11px;font-weight:700;border-radius:6px;padding:2px 9px;margin-top:1px;}
+.exp-bnostat.ok,.exp-vstat.ok{background:#e7f6ec;color:#137a3e;}
+.exp-bnostat.warn,.exp-vstat.warn{background:#fff4e5;color:#b8730a;}
+.exp-bnostat.dead,.exp-vstat.dead{background:#fdecec;color:#d32f2f;}
+.exp-bnostat.load,.exp-vstat.load{background:var(--gl);color:var(--mu);}
+body.dark .exp-bnostat.ok,body.dark .exp-vstat.ok{background:rgba(34,197,94,.16);color:#6ee7a0;}
+body.dark .exp-bnostat.warn,body.dark .exp-vstat.warn{background:rgba(245,158,11,.16);color:#fbbf24;}
+body.dark .exp-bnostat.dead,body.dark .exp-vstat.dead{background:rgba(239,68,68,.16);color:#fca5a5;}
 .exp-genmode{margin-top:0;margin-bottom:0;}
 .exp-trdel:disabled{opacity:.35;cursor:default;}
 .exp-addrow{margin-top:4px;font-size:12px;font-weight:700;padding:7px 12px;border:1px dashed var(--bd);border-radius:8px;background:transparent;color:var(--g);cursor:pointer;width:100%;}
@@ -1323,7 +1333,31 @@ body.ws-dragging .ws-pane-body{pointer-events:none;}
 .art-fav{flex-shrink:0;border:none;background:transparent;color:var(--ht);font-size:14px;line-height:1;cursor:pointer;padding:0 2px;border-radius:5px;vertical-align:middle;}
 .art-fav:hover{color:#f5b301;background:var(--gl);}
 .art-fav.on{color:#f5b301;}
-.rf-art .art-fav{margin-right:5px;}
+.rf-art .art-fav{margin-right:2px;}
+/* 내규 조문 도구(☆북마크📝) + 인라인 메모 편집기 */
+.rf-art-tools{display:inline-flex;align-items:center;gap:1px;margin-right:5px;vertical-align:middle;}
+.art-bm,.art-memo{flex-shrink:0;border:none;background:transparent;font-size:12px;line-height:1;cursor:pointer;padding:1px 3px;border-radius:5px;filter:grayscale(1) opacity(.5);transition:filter .12s,background .12s;}
+.art-bm:hover,.art-memo:hover{background:var(--gl);filter:grayscale(0) opacity(1);}
+.art-bm.on,.art-memo.on{filter:grayscale(0) opacity(1);}
+.rf-memo-ed{margin:2px 0 8px;padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--sf);}
+.rf-memo-ta{width:100%;box-sizing:border-box;min-height:56px;font-size:12.5px;font-family:var(--font);border:1px solid var(--bd);border-radius:6px;padding:7px 8px;resize:vertical;background:var(--bg);color:var(--tx);}
+.rf-memo-acts{display:flex;gap:6px;margin-top:6px;}
+.rf-memo-save,.rf-memo-del{font-size:12px;font-weight:700;border-radius:6px;padding:5px 12px;cursor:pointer;border:1px solid var(--bd);font-family:var(--font);}
+.rf-memo-save{background:var(--g);color:#fff;border-color:var(--g);}
+.rf-memo-del{background:transparent;color:var(--mu);}
+.rf-memo-del:hover{border-color:#f04452;color:#f04452;}
+/* 내규 조문 목차 팝오버 */
+.ws-toc{position:absolute;top:44px;right:8px;width:min(260px,72%);max-height:60%;display:flex;flex-direction:column;
+  background:var(--sf);border:1px solid var(--bd);border-radius:10px;box-shadow:0 8px 28px rgba(17,18,23,.18);z-index:30;overflow:hidden;}
+.ws-toc-h{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;font-size:12px;font-weight:800;color:var(--mu);background:var(--gl);}
+.ws-toc-n{font-weight:700;color:var(--gd);}
+.ws-toc-x{border:none;background:transparent;color:var(--mu);cursor:pointer;font-size:13px;line-height:1;padding:2px 4px;}
+.ws-toc-list{overflow:auto;padding:4px;}
+.ws-toc-i{display:block;width:100%;text-align:left;border:none;background:transparent;cursor:pointer;font-family:var(--font);
+  font-size:12.5px;color:var(--tx);padding:6px 9px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ws-toc-i:hover{background:var(--gl);}
+.ws-toc-i.toc-h1{font-weight:800;color:var(--gd);margin-top:2px;}
+.ws-toc-i.toc-art{padding-left:16px;color:var(--tx);}
 .ws-art-h2{font-size:12px;font-weight:800;color:var(--mu);letter-spacing:.02em;
   margin:14px 0 6px;padding-bottom:4px;border-bottom:2px solid rgba(0,0,0,.08);}
 .ws-flash{animation:wsFlash .9s ease;}
@@ -1725,6 +1759,7 @@ body.dark .int-law-chip{background:#161920;color:#aecbfd;}
   .exp-vrow .v-nm{flex:1 1 55%;} .exp-vrow .v-bno{flex:1 1 40%;} .exp-vrow .v-biz{flex:0 0 auto;}
   .exp-vrow .v-ceo{flex:1 1 45%;} .exp-vrow .v-amt{flex:1 1 45%;}
   .exp-vrow .v-desc{flex:1 1 100%;} .exp-vrow .v-budget{flex:1 1 55%;} .exp-vrow .v-method{flex:1 1 38%;}
+  .exp-vrow .exp-vstat{flex:1 1 100%;}
   .exp-trn{flex:0 0 100%;text-align:left;}
   .exp-trow .td{flex:1 1 45%;} .exp-trow .tp{flex:1 1 45%;} .exp-trow .ta{flex:1 1 60%;} .exp-trow .tc{flex:1 1 100%;grid-column:auto;}
   .exp-doc{padding:16px 14px;}
@@ -4401,7 +4436,8 @@ const TRAV_LODGE={seoul:'100000', metro:'80000', etc:'70000'};
 function _tcalcDefault(){ return {open:false, days:'1', nights:'0', region:'etc', ilbi:'25000', meal:'25000', lodge:'70000', km:'', kmRate:''}; }
 function _expDefault(){ return {type:'general',
   general:{vendor:'',bno:'',ceo:'',desc:'',budget:'',supply:'',vat:'',method:'계좌이체',bank:'',holder:'',account:'',
-           multi:false, vendors:[{vendor:'',bno:'',ceo:'',desc:'',amt:'',budget:'',method:'계좌이체'}]},
+           bnoStatus:'',bnoStatusCls:'',
+           multi:false, vendors:[{vendor:'',bno:'',ceo:'',desc:'',amt:'',budget:'',method:'계좌이체',status:'',statusCls:''}]},
   travel:{name:'',dept:'',rows:[{date:_today(),place:'',content:'',amt:''}]},
   tcalc:_tcalcDefault(),
   receipt:{user:'',dept:'',region:'',summary:'',rows:[],init:false},
@@ -4413,7 +4449,7 @@ function _expLoadState(){ try{ const s=JSON.parse(localStorage.getItem(EXP_KEY)|
     if(p){ delete p.targets; delete p.people; }
     // 마이그레이션: 다건 거래처에 개별 지출과목·지급방식 필드 보정
     if(st.general && Array.isArray(st.general.vendors))
-      st.general.vendors=st.general.vendors.map(v=>Object.assign({vendor:'',bno:'',ceo:'',desc:'',amt:'',budget:'',method:'계좌이체'},v||{}));
+      st.general.vendors=st.general.vendors.map(v=>Object.assign(_expVNew(),v||{}));
     return st; } }catch(e){} return _expDefault(); }
 function _expSaveState(){ _lsSet(EXP_KEY, JSON.stringify(_expState)); }
 // ── 지출결의서 템플릿(프리셋) — 반복 서식을 이름 붙여 저장/적용 ──────────────
@@ -4699,7 +4735,14 @@ function openExpense(){
       `<div class="exp-preview"><div class="exp-doc" id="expDoc"></div></div>`+
     `</div>`;
   const form=document.getElementById('expForm');
-  if(form){ const h=()=>{ if(_expRendering) return; _expSync(); _expUpdate(); _expSaveState(); };
+  if(form){ const h=(e)=>{ if(_expRendering) return;
+      const tgt=e&&e.target, cl=tgt&&tgt.classList;
+      if(cl&&cl.contains('exp-money')) _expMoneyInput(tgt);
+      if(e&&e.type==='change'&&cl){
+        if(cl.contains('exp-vname')&&_expVendorAutofill(tgt)) return;   // 기억된 거래처로 자동채움(재렌더)
+        if(cl.contains('exp-bno')){ const info=_expScopeOf(tgt.id); if(info){ _expSync(); _expBnoStatus(info.scope,info.idx); } }
+      }
+      _expSync(); _expUpdate(); _expSaveState(); };
     form.addEventListener('input', h); form.addEventListener('change', h); }
   _expRenderFields(); _expUpdate(); _expTplRender();
 }
@@ -4728,16 +4771,17 @@ function _expRenderFields(){
     if(!g.multi){
       box.innerHTML=modeToggle+
         `<div class="exp-fg"><div class="exp-fgt">거래처</div><div class="exp-frow">`+
-          `<label>거래처(상호)<input id="gVendor" value="${_ev(g.vendor)}" placeholder="예: (주)그린애그로텍"></label>`+
-          `<label>사업자등록번호<span class="exp-bnowrap"><input id="gBno" value="${_ev(g.bno)}" placeholder="000-00-00000"><button type="button" class="exp-bizbtn" onclick="_expBizLookup('single',0)" title="상호로 사업자번호 조회">조회</button></span></label></div>`+
+          `<label>거래처(상호)<input id="gVendor" class="exp-vname" list="expVendorDL" value="${_ev(g.vendor)}" placeholder="예: (주)그린애그로텍"></label>`+
+          `<label>사업자등록번호<span class="exp-bnowrap"><input id="gBno" class="exp-bno" value="${_ev(g.bno)}" placeholder="000-00-00000"><button type="button" class="exp-bizbtn" onclick="_expBizLookup('single',0)" title="상호로 사업자번호 조회">조회</button></span></label></div>`+
           `<div class="exp-frow"><label>대표자<input id="gCeo" value="${_ev(g.ceo)}"></label></div>`+
-          `<div id="gBizPop" class="exp-bizpop"></div></div>`+
+          `<span id="gBnoStatus" class="exp-bnostat ${_ev(g.bnoStatusCls)}" style="${g.bnoStatus?'':'display:none'}">${_ev(g.bnoStatus)}</span>`+
+          `<div id="gBizPop" class="exp-bizpop"></div>`+_expVendorDLHtml()+`</div>`+
         `<div class="exp-fg"><div class="exp-fgt">거래 내용</div>`+
           `<label class="exp-full">거래내용(적요)<textarea id="gDesc" rows="2" placeholder="예: 스마트팜 실증 기자재 구매">${_ev(g.desc)}</textarea></label>`+
           `<div class="exp-frow"><label>지출과목(예산과목)<input id="gBudget" value="${_ev(g.budget)}" placeholder="예: 자산취득비"></label></div></div>`+
         `<div class="exp-fg"><div class="exp-fgt">금액</div><div class="exp-frow">`+
-          `<label>공급가액(원)<input id="gSupply" inputmode="numeric" value="${_ev(g.supply)}"></label>`+
-          `<label>부가세(원)<input id="gVat" inputmode="numeric" value="${_ev(g.vat)}"></label></div>`+
+          `<label>공급가액(원)<input id="gSupply" class="exp-money" inputmode="numeric" value="${_ev(_commaFmt(g.supply))}"></label>`+
+          `<label>부가세(원)<input id="gVat" class="exp-money" inputmode="numeric" value="${_ev(_commaFmt(g.vat))}"></label></div>`+
           `<div class="exp-vatrow"><button type="button" class="exp-mini" onclick="_expVatAuto()">부가세 10% 자동</button></div></div>`+
         pay;
     } else {
@@ -4745,15 +4789,16 @@ function _expRenderFields(){
       const mOpts=v=>EXP_METHODS.map(m=>`<option${(v.method||'계좌이체')===m?' selected':''}>${m}</option>`).join('');
       const rows=g.vendors.map((v,i)=>`<div class="exp-vrow">`+
         `<span class="exp-trn">${i+1}</span>`+
-        `<input class="exp-vin v-nm" id="gvVendor${i}" value="${_ev(v.vendor)}" placeholder="거래처(상호)">`+
-        `<input class="exp-vin v-bno" id="gvBno${i}" value="${_ev(v.bno)}" placeholder="사업자번호">`+
+        `<input class="exp-vin v-nm exp-vname" id="gvVendor${i}" list="expVendorDL" value="${_ev(v.vendor)}" placeholder="거래처(상호)">`+
+        `<input class="exp-vin v-bno exp-bno" id="gvBno${i}" value="${_ev(v.bno)}" placeholder="사업자번호">`+
         `<button type="button" class="exp-bizbtn v-biz" onclick="_expBizLookup('multi',${i})" title="상호로 사업자번호 조회">조회</button>`+
         `<input class="exp-vin v-ceo" id="gvCeo${i}" value="${_ev(v.ceo)}" placeholder="대표자">`+
-        `<input class="exp-vin v-amt" id="gvAmt${i}" inputmode="numeric" value="${_ev(v.amt)}" placeholder="금액(원)">`+
+        `<input class="exp-vin v-amt exp-money" id="gvAmt${i}" inputmode="numeric" value="${_ev(_commaFmt(v.amt))}" placeholder="금액(원)">`+
         `<button type="button" class="exp-trdel" onclick="_expVendorDel(${i})" title="행 삭제" ${g.vendors.length<=1?'disabled':''}>✕</button>`+
         `<input class="exp-vin v-desc" id="gvDesc${i}" value="${_ev(v.desc)}" placeholder="거래내용(적요)">`+
         `<input class="exp-vin v-budget" id="gvBudget${i}" value="${_ev(v.budget)}" placeholder="지출과목(예산과목)">`+
         `<select class="exp-vin v-method" id="gvMethod${i}" title="지급방식">${mOpts(v)}</select>`+
+        `<span id="gvStat${i}" class="exp-vstat ${_ev(v.statusCls)}" style="${v.status?'':'display:none'}">${_ev(v.status)}</span>`+
         `</div>`).join('');
       const gtot=g.vendors.reduce((a,v)=>a+_digits(v.amt),0);
       box.innerHTML=modeToggle+
@@ -4761,7 +4806,8 @@ function _expRenderFields(){
           `<div id="gvRows">${rows}</div>`+
           `<div id="gvBizPop" class="exp-bizpop"></div>`+
           `<button type="button" class="exp-addrow" onclick="_expVendorAdd()">＋ 거래처 추가</button>`+
-          `<div class="exp-limit" id="gvTotal">합계 ${_won(gtot)} · 거래처 ${g.vendors.length}곳</div></div>`;
+          `<div class="exp-limit" id="gvTotal">합계 ${_won(gtot)} · 거래처 ${g.vendors.length}곳</div></div>`+
+        _expVendorDLHtml();
     }
   } else if(t==='travel'){
     const tv=_expState.travel; if(!tv.rows||!tv.rows.length) tv.rows=[{date:_today(),place:'',content:'',amt:''}];
@@ -4769,7 +4815,7 @@ function _expRenderFields(){
       `<span class="exp-trn">${i+1}</span>`+
       `<input class="exp-tin td" id="tvDate${i}" type="date" value="${_ev(r.date)}">`+
       `<input class="exp-tin tp" id="tvPlace${i}" value="${_ev(r.place)}" placeholder="출장지">`+
-      `<input class="exp-tin ta" id="tvAmt${i}" inputmode="numeric" value="${_ev(r.amt)}" placeholder="금액(원)">`+
+      `<input class="exp-tin ta exp-money" id="tvAmt${i}" inputmode="numeric" value="${_ev(_commaFmt(r.amt))}" placeholder="금액(원)">`+
       `<button type="button" class="exp-trdel" onclick="_expTravelDel(${i})" title="행 삭제" ${tv.rows.length<=1?'disabled':''}>✕</button>`+
       `<input class="exp-tin tc" id="tvContent${i}" value="${_ev(r.content)}" placeholder="출장목적 / 용무">`+
       `</div>`).join('');
@@ -4798,7 +4844,7 @@ function _expRenderFields(){
         `<div class="exp-subh">🏢 내부 (우리 기관 직원)</div>`+
         `<label class="exp-full">내부 참석자<textarea id="pmTargetsInt" rows="2" placeholder="내부 참석자·부서·직위 (예: 기술사업부 □□과장 등)">${_ev(pm.targetsInt)}</textarea></label>`+
         `<div class="exp-frow"><label>내부 인원(명)<input id="pmPeopleInt" inputmode="numeric" value="${_ev(pm.peopleInt)}"></label>`+
-        `<label>금액(원)<input id="pmTotal" inputmode="numeric" value="${_ev(pm.total)}"></label></div>`+
+        `<label>금액(원)<input id="pmTotal" class="exp-money" inputmode="numeric" value="${_ev(_commaFmt(pm.total))}"></label></div>`+
         `<div class="exp-limit" id="pmLimit"></div></div>`+
       `<div class="exp-fg"><div class="exp-fgt">비고</div>`+
         `<label class="exp-full"><input id="pmNote" value="${_ev(pm.note)}" placeholder="(선택)"></label></div>`;
@@ -4833,11 +4879,55 @@ function _expSync(){
   }
 }
 function _expVatAuto(){ _expSync(); _expState.general.vat=String(Math.round(_digits(_expState.general.supply)*0.1));
-  const el=document.getElementById('gVat'); if(el) el.value=_expState.general.vat; _expUpdate(); _expSaveState(); }
+  const el=document.getElementById('gVat'); if(el) el.value=_commaFmt(_expState.general.vat); _expUpdate(); _expSaveState(); }
 // ── 일반 지출: 거래처 단일/다중 모드 ─────────────────────────────────────────
-function _expVNew(){ return {vendor:'',bno:'',ceo:'',desc:'',amt:'',budget:'',method:'계좌이체'}; }
+function _expVNew(){ return {vendor:'',bno:'',ceo:'',desc:'',amt:'',budget:'',method:'계좌이체',status:'',statusCls:''}; }
 function _expNormVendors(g){ if(!g.vendors||!g.vendors.length){ g.vendors=[_expVNew()]; return; }
   g.vendors=g.vendors.map(v=>Object.assign(_expVNew(),v||{})); }
+// ── 금액 천단위 콤마 자동표시 (상태에는 콤마 포함 저장 — _digits가 제거하므로 계산은 안전) ──
+function _commaFmt(v){ const d=String(v==null?'':v).replace(/[^\d]/g,''); return d?Number(d).toLocaleString('en-US'):''; }
+function _expMoneyInput(el){ if(!el) return; const before=String(el.value||''); const start=el.selectionStart||0;
+  const dBefore=before.slice(0,start).replace(/[^\d]/g,'').length; const fmt=_commaFmt(before);
+  if(fmt===before) return; el.value=fmt;
+  let pos=0,seen=0; while(pos<fmt.length&&seen<dBefore){ const c=fmt.charCodeAt(pos); if(c>=48&&c<=57) seen++; pos++; }
+  try{ el.setSelectionRange(pos,pos); }catch(e){} }
+// ── 거래처·사업자번호 기억(자동완성) — 로컬 저장, 서버 전송 없음 ──
+const _EXP_VENDOR_KEY='koat_exp_vendors';
+function _expVendorsMem(){ try{ const a=JSON.parse(localStorage.getItem(_EXP_VENDOR_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function _expRememberVendor(v){ if(!v) return; const nm=(v.vendor||'').trim(), bno=(v.bno||'').trim();
+  if(!nm||!bno) return; const key=nm.replace(/\s+/g,'');
+  let a=_expVendorsMem().filter(x=>(x.vendor||'').replace(/\s+/g,'')!==key);
+  a.unshift({vendor:nm,bno:bno,ceo:(v.ceo||'').trim()}); a=a.slice(0,50);
+  try{ localStorage.setItem(_EXP_VENDOR_KEY, JSON.stringify(a)); }catch(e){} }
+function _expRememberFromState(){ const g=_expState&&_expState.general; if(!g) return;
+  if(g.multi){ (g.vendors||[]).forEach(v=>_expRememberVendor(v)); } else { _expRememberVendor({vendor:g.vendor,bno:g.bno,ceo:g.ceo}); } }
+function _expVendorDLHtml(){ const opts=_expVendorsMem().map(v=>`<option value="${_ev(v.vendor)}">${_ev([_bnoFmt(v.bno),v.ceo].filter(Boolean).join(' · '))}</option>`).join(''); return `<datalist id="expVendorDL">${opts}</datalist>`; }
+function _expScopeOf(id){ if(id==='gVendor'||id==='gBno') return {scope:'single',idx:0};
+  const m=/^gv(?:Vendor|Bno)(\d+)$/.exec(id||''); return m?{scope:'multi',idx:parseInt(m[1],10)}:null; }
+function _expVendorAutofill(el){ const info=_expScopeOf(el&&el.id); if(!info) return false;
+  const name=(el.value||'').trim(); if(!name) return false;
+  const key=name.replace(/\s+/g,''); const mem=_expVendorsMem().find(v=>(v.vendor||'').replace(/\s+/g,'')===key);
+  if(!mem||!mem.bno) return false;
+  _expSync();
+  if(info.scope==='single'){ const g=_expState.general; if(g.bno) return false; g.bno=_bnoFmt(mem.bno); if(!g.ceo&&mem.ceo) g.ceo=mem.ceo; }
+  else { const v=_expState.general.vendors[info.idx]; if(!v||v.bno) return false; v.bno=_bnoFmt(mem.bno); if(!v.ceo&&mem.ceo) v.ceo=mem.ceo; }
+  _expRenderFields(); _expUpdate(); _expSaveState(); _expBnoStatus(info.scope,info.idx);
+  if(typeof _toast==='function') _toast('기억된 거래처 정보를 불러왔습니다.',2000); return true; }
+// ── 사업자 상태(국세청) 배지 — /api/assist/company?query=<10자리> (mode:bno) ──
+function _bnoStatusCls(text, closed){ const t=String(text||''); if(closed||/폐업/.test(t)) return 'dead'; if(/휴업/.test(t)) return 'warn'; if(/계속/.test(t)) return 'ok'; return 'warn'; }
+function _expFetchBnoStatus(bno){ const d=String(bno||'').replace(/\D/g,''); if(d.length!==10) return Promise.resolve(null);
+  return fetch('/api/assist/company?query='+d).then(r=>r.json()).then(j=>{
+    if(!j||j.success===false) return null;
+    if(j.mode==='bno'){ if((j.count||0)===0) return {text:'국세청 상태 정보 없음',cls:'warn'}; const it=(j.items||[])[0]||{};
+      return {text:it.biz||'상태 확인됨', cls:_bnoStatusCls(it.biz||'', it.closed)}; }
+    return null; }).catch(()=>null); }
+function _setStatEl(id, s, base){ const el=document.getElementById(id); if(!el) return;
+  el.className=base+' '+((s&&s.cls)||''); el.textContent=(s&&s.text)||''; el.style.display=(s&&s.text)?'':'none'; }
+function _expBnoStatus(scope, idx){
+  if(scope==='single'){ const g=_expState.general; _setStatEl('gBnoStatus',{text:'확인 중...',cls:'load'},'exp-bnostat');
+    _expFetchBnoStatus(g.bno).then(s=>{ g.bnoStatus=s?s.text:''; g.bnoStatusCls=s?s.cls:''; _setStatEl('gBnoStatus',s,'exp-bnostat'); _expSaveState(); }); }
+  else { const v=_expState.general.vendors[idx]; if(!v) return; _setStatEl('gvStat'+idx,{text:'확인 중...',cls:'load'},'exp-vstat');
+    _expFetchBnoStatus(v.bno).then(s=>{ v.status=s?s.text:''; v.statusCls=s?s.cls:''; _setStatEl('gvStat'+idx,s,'exp-vstat'); _expSaveState(); }); } }
 function _expGenMode(multi){ _expSync(); const g=_expState.general; g.multi=!!multi;
   if(multi){
     _expNormVendors(g);
@@ -4889,6 +4979,9 @@ function _expBizPick(scope, k){
   if(scope==='multi'){ const v=_expState.general.vendors[idx]; if(v){ v.bno=bno; if(!v.ceo&&it.ceo) v.ceo=it.ceo; if(!v.vendor&&it.name) v.vendor=it.name; } }
   else { const g=_expState.general; g.bno=bno; if(!g.ceo&&it.ceo) g.ceo=it.ceo; if(!g.vendor&&it.name) g.vendor=it.name; }
   _expBizClose(scope); _expRenderFields(); _expUpdate(); _expSaveState();
+  const nm=(scope==='multi'?(_expState.general.vendors[idx]||{}).vendor:_expState.general.vendor)||it.name;
+  _expRememberVendor({vendor:nm,bno:bno,ceo:it.ceo});   // 거래처 기억(자동완성)
+  _expBnoStatus(scope, idx);                            // 국세청 상태 배지
   if(typeof _toast==='function') _toast('사업자번호를 불러왔습니다.',2200);
 }
 function _expTravelAdd(){ _expSync(); _expState.travel.rows.push({date:_today(),place:'',content:'',amt:''}); _expRenderFields(); _expUpdate(); _expSaveState(); }
@@ -5196,6 +5289,7 @@ function _expUpdate(){
 }
 function _expCopy(btn){
   _expUpdate();                       // 복사 직전 최신 상태로 _expRich·_expPlain 갱신
+  if(_expState.type==='general') _expRememberFromState();   // 수기 입력 거래처도 기억
   const text=_expPlain||''; if(!text && !_expRich){ return; }
   const done=(rich)=>{ if(btn){ const o=btn.dataset.label||btn.textContent; btn.dataset.label=o;
       btn.textContent=rich?'✓ 표로 복사됨':'✓ 복사됨'; setTimeout(()=>{btn.textContent=o;},1600); } };
@@ -5301,6 +5395,7 @@ function _expHwpxPayload(){
 function downloadHwpx(btn){
   const payload=_expHwpxPayload();
   if(payload.empty || !payload.rows.length){ alert('먼저 지출 내역을 입력한 뒤 내려받아 주세요.'); return; }
+  if(_expState.type==='general') _expRememberFromState();   // 수기 입력 거래처도 기억
   const orig=btn?btn.textContent:''; if(btn){ btn.disabled=true; btn.textContent='생성 중...'; }
   fetch('/api/expense/hwpx',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
     .then(r=>{ if(!r.ok) return r.json().then(j=>{throw new Error(j.error||'생성 실패');}); return r.blob(); })
@@ -5762,11 +5857,13 @@ function previewArticle(el, artNo){
   el.classList.add('on');
   const no=parseInt(artNo,10);
   if(kind==='internal'){
-    wsOpen(name,'internal');
-  }else{
-    wsOpen(name,'law',card.dataset.docUrl||'',card.dataset.docOrg||'',card.dataset.docType||'');
+    wsOpen(name,'internal',undefined,undefined,undefined,_lastInternalQ);   // 하이라이트
+    const full=String(artNo).replace(/[^0-9의]/g,'')||String(no||'');
+    if(full) _wsScrollAfterOpen(name,'internal', full);                     // 해당 조문으로 이동
+    return;
   }
-  if(!no || kind==='internal') return;
+  wsOpen(name,'law',card.dataset.docUrl||'',card.dataset.docOrg||'',card.dataset.docType||'');
+  if(!no) return;
   // 창(법령)이 로드된 뒤 해당 조문으로 스크롤(로딩 시간 고려해 몇 차례 시도)
   let tries=0;
   const tick=setInterval(()=>{
@@ -7320,8 +7417,10 @@ function parseInternalGrouped(text, kw){
   }));
 }
 
+let _lastInternalQ='';   // 최근 내규 검색어 — 전문 열 때 하이라이트에 사용
 async function doSearchInternal(q, _mySeq){
   if(_mySeq==null) _mySeq = _searchSeq;   // 직접 호출 대비
+  _lastInternalQ=(q||'').trim();
   setStatus(`"${q}" 내규 검색 중...`,true);
   addRecent(q);
   // 클라이언트 캐시(5분) — 동일 검색 즉시 응답
@@ -7525,9 +7624,10 @@ function _internalArticleJump(items, q){
     let hit=null; try{ hit=matchInternalRule(rest); }catch(e){}
     if(hit){ const hk=_rnorm(hit); const m2=items.filter(it=>_rnorm(it.name||'')===hk); if(m2.length===1) named=m2; }
   }
+  const artFull=artNo+(m[2]?'의'+m[2]:'');
   const singleTarget = named.length===1 ? named[0] : null;
   if(singleTarget){
-    jumpInternalArticle(singleTarget.name, artNo);   // 단일 명확 대상 → 자동 이동
+    jumpInternalArticle(singleTarget.name, artFull);   // 단일 명확 대상 → 자동 이동
     return;
   }
   // 애매하면 강제 이동 대신 최상단 카드에 '제N조로 이동' 버튼만 제공
@@ -7539,19 +7639,14 @@ function _internalArticleJump(items, q){
   b.className='abtn primary reg-artjump-btn';
   b.textContent=`${artLabel}로 이동`;
   b.title=`「${nm}」 전문에서 ${artLabel}로 이동`;
-  b.onclick=()=>jumpInternalArticle(nm, artNo);
+  b.onclick=()=>jumpInternalArticle(nm, artFull);
   acts.insertBefore(b, acts.firstChild);
 }
-// 내규 전문을 열고 특정 조문으로 스크롤(전문 로드 후 재시도)
+// 내규 전문을 작업공간 창으로 열고 특정 조문으로 스크롤(로드 후 재시도) — 검색어 하이라이트 포함
 function jumpInternalArticle(name, artNo){
-  openInternalPanel(name);
-  const no=parseInt(artNo,10); if(!no) return;
-  let tries=0;
-  const tick=setInterval(()=>{
-    tries++;
-    try{ if(typeof jumpToArt==='function' && document.querySelector('#fpBody .fp-art')){ jumpToArt(no); clearInterval(tick); return; } }catch(e){}
-    if(tries>24) clearInterval(tick);
-  },220);
+  const full=String(artNo).replace(/[^0-9의]/g,'') || String(parseInt(artNo,10)||'');
+  wsOpen(name,'internal',undefined,undefined,undefined,_lastInternalQ);
+  if(full) _wsScrollAfterOpen(name,'internal', full);
 }
 
 // 교차 패널: 내규 모드 → 관련 법령 칩
@@ -8681,6 +8776,11 @@ function _isInternalName(name){
   } }catch(e){}
   return false;
 }
+// 내규 조문 라벨 ↔ 정수 인코딩(허브 idx용). 제7조→700, 제7조의2→702
+function _artKeyNo(label){ const mm=String(label||'').match(/제\s*(\d+)\s*조(?:\s*의\s*(\d+))?/);
+  if(!mm) return null; const a=parseInt(mm[1],10), s=mm[2]?parseInt(mm[2],10):0;
+  return {enc:a*100+s, full:a+(s?'의'+s:''), no:'제'+a+'조'+(s?'의'+s:'')}; }
+function _artFullFromEnc(enc){ const n=parseInt(enc,10)||0; const a=Math.floor(n/100), s=n%100; return a+(s?'의'+s:''); }
 function _hubScan(){
   const map={};   // (docType|law|idx) → 항목 병합(북마크+메모)
   const put=(o)=>{ const gk=(o.docType||'law')+'|'+o.law+'|'+o.idx; const cur=map[gk]||{law:o.law,idx:o.idx,docType:o.docType||'law',no:'',title:'',bm:false,memo:'',savedAt:''};
@@ -8710,7 +8810,9 @@ function _hubScan(){
   arr.sort((a,b)=>(b.savedAt||'').localeCompare(a.savedAt||'')||String(a.law).localeCompare(String(b.law))||(a.idx-b.idx));
   return arr;
 }
-function openBmHub(){ const bg=document.getElementById('bmHubBg'); if(!bg) return; _bmHubRender(); bg.classList.add('show'); _modalFocusIn('bmHubBg'); }
+function openBmHub(){ const bg=document.getElementById('bmHubBg'); if(!bg) return; _bmHubRender(); bg.classList.add('show'); _modalFocusIn('bmHubBg');
+  try{ loadRegNames().then(()=>_bmHubRender()); }catch(e){}   // 내규명 로드 후 재분류(메모 docType 판별)
+}
 function closeBmHub(){ const bg=document.getElementById('bmHubBg'); if(bg) bg.classList.remove('show'); _modalFocusOut(); }
 function _bmHubRender(){
   const body=document.getElementById('bmHubBody'); if(!body) return;
@@ -8739,8 +8841,13 @@ function _hubOpen(i){
   closeBmHub();
   if(_assistMode && typeof closeAssist==='function') closeAssist();
   const dt=it.docType||'law';
-  if(dt==='internal') openInternalPanel(it.law);
-  else openFullPanel(it.law, `https://www.law.go.kr/법령/${encodeURIComponent(it.law)}`, '', '법률');
+  if(dt==='internal'){
+    const full=_artFullFromEnc(it.idx);   // 내규는 작업공간 창으로 열고 조문번호로 스크롤
+    wsOpen(it.law,'internal');
+    if(full) _wsScrollAfterOpen(it.law,'internal', full);
+    return;
+  }
+  openFullPanel(it.law, `https://www.law.go.kr/법령/${encodeURIComponent(it.law)}`, '', '법률');
   _hubScrollTo(it.idx);
 }
 function _hubScrollTo(idx){
@@ -10083,7 +10190,7 @@ function wsReopen(){
   if(!_wsPanes.length) return;
   wsShow(); wsRenderShell();
 }
-async function wsOpen(name, docType, url, org, type){
+async function wsOpen(name, docType, url, org, type, q){
   name=(name||'').trim(); if(!name) return;
   docType = docType||'internal';
   wsShow();
@@ -10097,7 +10204,8 @@ async function wsOpen(name, docType, url, org, type){
   }
   const id=++_wsId;
   const pane={id,name,docType,url:url||'',org:org||'',type:type||'',loading:true,minimized:false,flex:1,
-              error:'',arts:null,text:null,structured:null,abbrevMap:{},filter:''};
+              error:'',arts:null,text:null,structured:null,abbrevMap:{},
+              filter:(docType==='internal'&&q)?String(q).trim():''};   // 내규: 검색어를 필터에 넣어 자동 하이라이트
   _wsPanes.push(pane);
   _wsEnterId=id;               // 오른쪽에서 미끄러져 들어오는 진입 애니메이션
   wsRenderShell();
@@ -10129,7 +10237,8 @@ async function _wsLoadPane(pane){
   wsRenderPaneBody(pane);
   wsUpdateCnt();
   if(docType==='internal' && !pane.error){
-    loadRegNames().then(()=>{ try{ const el=document.getElementById('wsbody_'+id); if(el){ _collapseSpacedNames(el); markInternalRefs(el); } }catch(e){} });
+    loadRegNames().then(()=>{ try{ const el=document.getElementById('wsbody_'+id); if(el){ _collapseSpacedNames(el); markInternalRefs(el);
+      if(pane.filter && pane.filter.trim()) _wsHighlight(el, pane.filter.trim()); } }catch(e){} });   // 참조 링크 후 검색어 하이라이트
   }
 }
 // 로드 실패한 창을 다시 시도(같은 자리에서 재요청)
@@ -10180,6 +10289,7 @@ function wsPaneHtml(p, cls, pos){
       <input class="ws-pane-filter" placeholder="조문·키워드" value="${escAttr(p.filter||'')}"
              oninput="wsFilter(${p.id},this.value)" aria-label="이 문서 안에서 찾기">
       ${moveBtns}${maxBtn}
+      ${isInt?`<button class="ws-icon" title="조문 목차" onclick="_wsToc(${p.id})">📑</button>`:''}
       ${isInt?`<button class="ws-icon" title="내규 오류 점검(조문번호·상호참조·괄호 등, AI 미사용)" onclick="wsRuleCheck(${p.id})">🔎</button>`:''}
       <button class="ws-icon" title="최소화 — 하단 책갈피로 내리기(내용 유지)" onclick="wsMinimize(${p.id})">⌄</button>
       <button class="ws-icon" title="전체화면·상세 기능(AI·메모·비교)" onclick="wsExpand(${p.id})">⤢</button>
@@ -10606,6 +10716,31 @@ function wsJumpArt(paneEl, artNo){
     if(n===artNo){ el.scrollIntoView({behavior:'smooth',block:'start'}); _wsFlash(el); return; }
   }
 }
+// ── 내규 조문 목차(클릭 이동) ──────────────────────────────────────────────
+function _wsToc(id){
+  const pane=document.getElementById('wspane_'+id); if(!pane) return;
+  const exist=pane.querySelector('.ws-toc'); if(exist){ exist.remove(); return; }   // 토글 닫기
+  const body=document.getElementById('wsbody_'+id); if(!body) return;
+  const heads=body.querySelectorAll('.rf-h1,.rf-art'); const items=[];
+  heads.forEach((h,i)=>{
+    let label='', cls='';
+    if(h.classList.contains('rf-h1')){ label=(h.textContent||'').trim(); cls='toc-h1'; }
+    else { const noEl=h.querySelector('.rf-art-no'); const no=(noEl?noEl.textContent:'').trim();
+      const mm=no.match(/^제\s*\d+\s*조(?:\s*의\s*\d+)?/); if(!mm) return; label=mm[0].replace(/\s+/g,''); cls='toc-art'; }
+    if(!label) return; h.setAttribute('data-toc-i', i); items.push({i,label,cls});
+  });
+  if(!items.length){ if(typeof _toast==='function') _toast('목차로 만들 조문이 없습니다.',1800); return; }
+  const toc=document.createElement('div'); toc.className='ws-toc';
+  toc.innerHTML=`<div class="ws-toc-h"><span>조문 목차 <span class="ws-toc-n">${items.length}</span></span><button type="button" class="ws-toc-x" title="닫기">✕</button></div>`+
+    `<div class="ws-toc-list">`+items.map(it=>`<button type="button" class="ws-toc-i ${it.cls}" data-i="${it.i}">${escHtml(it.label)}</button>`).join('')+`</div>`;
+  toc.querySelector('.ws-toc-x').addEventListener('click',()=>toc.remove());
+  toc.querySelectorAll('.ws-toc-i').forEach(b=>b.addEventListener('click',()=>{
+    const el=body.querySelector('[data-toc-i="'+b.dataset.i+'"]');
+    if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); el.classList.add('ws-artflash'); setTimeout(()=>el.classList.remove('ws-artflash'),1200); }
+    toc.remove();
+  }));
+  pane.appendChild(toc);
+}
 // ── 조문 단위 즐겨찾기 ─────────────────────────────────────────────────────
 // 전문(작업공간)의 각 조문 머리말에 ☆ 별표를 붙인다. 클릭 시 그 조문만 즐겨찾기.
 function _wsInjectArtFav(root, pane){
@@ -10634,7 +10769,36 @@ function _wsInjectArtFav(root, pane){
     btn.title='이 조문 즐겨찾기'; btn.setAttribute('aria-pressed', on); btn.textContent=on?'★':'☆';
     btn.addEventListener('click', ev=>{ ev.stopPropagation();
       const added=toggleFavItem(item); btn.classList.toggle('on',added); btn.textContent=added?'★':'☆'; btn.setAttribute('aria-pressed',added); });
-    h.insertBefore(btn, h.firstChild);
+    if(docType!=='internal'){ h.insertBefore(btn, h.firstChild); return; }
+    // 내규: ☆ 즐겨찾기 + 🔖 북마크 + 📝 메모 (북마크·메모 허브 연동)
+    const ak=_artKeyNo(art); if(!ak){ h.insertBefore(btn, h.firstChild); return; }
+    const bmKey='bm__'+encodeURIComponent(name)+'__'+ak.enc;
+    const memoKey='memo__'+ak.enc+'__'+encodeURIComponent(name);
+    const bmBtn=document.createElement('button'); bmBtn.type='button';
+    bmBtn.className='art-bm'+(localStorage.getItem(bmKey)?' on':''); bmBtn.title='이 조문 북마크'; bmBtn.textContent='🔖';
+    bmBtn.addEventListener('click', ev=>{ ev.stopPropagation();
+      if(localStorage.getItem(bmKey)){ try{localStorage.removeItem(bmKey);}catch(e){} bmBtn.classList.remove('on'); }
+      else { try{ localStorage.setItem(bmKey, JSON.stringify({law:name,docType:'internal',no:ak.no,title:artTitle,savedAt:new Date().toISOString()})); }catch(e){} bmBtn.classList.add('on');
+        if(typeof _toast==='function') _toast('조문을 북마크했습니다.',1600); } });
+    const moBtn=document.createElement('button'); moBtn.type='button';
+    moBtn.className='art-memo'+((localStorage.getItem(memoKey)||'').trim()?' on':''); moBtn.title='이 조문 메모'; moBtn.textContent='📝';
+    moBtn.addEventListener('click', ev=>{ ev.stopPropagation();
+      const nx=h.nextSibling;
+      if(nx && nx.classList && nx.classList.contains('rf-memo-ed')){ nx.remove(); return; }
+      const ed=document.createElement('div'); ed.className='rf-memo-ed';
+      const ta=document.createElement('textarea'); ta.className='rf-memo-ta'; ta.value=localStorage.getItem(memoKey)||''; ta.placeholder='이 조문에 대한 메모...';
+      const acts=document.createElement('div'); acts.className='rf-memo-acts';
+      const save=document.createElement('button'); save.type='button'; save.className='rf-memo-save'; save.textContent='저장';
+      const del=document.createElement('button'); del.type='button'; del.className='rf-memo-del'; del.textContent='삭제';
+      save.addEventListener('click', e2=>{ e2.stopPropagation(); const t=ta.value.trim();
+        try{ if(t) localStorage.setItem(memoKey,t); else localStorage.removeItem(memoKey); }catch(e){}
+        moBtn.classList.toggle('on', !!t); ed.remove(); if(typeof _toast==='function') _toast(t?'메모를 저장했습니다.':'메모를 삭제했습니다.',1800); });
+      del.addEventListener('click', e2=>{ e2.stopPropagation(); try{localStorage.removeItem(memoKey);}catch(e){} ta.value=''; moBtn.classList.remove('on'); ed.remove(); });
+      acts.appendChild(save); acts.appendChild(del); ed.appendChild(ta); ed.appendChild(acts);
+      if(h.parentNode) h.parentNode.insertBefore(ed, h.nextSibling); ta.focus(); });
+    const grp=document.createElement('span'); grp.className='rf-art-tools';
+    grp.appendChild(btn); grp.appendChild(bmBtn); grp.appendChild(moBtn);
+    h.insertBefore(grp, h.firstChild);
   });
 }
 // 조문 라벨("제3조" 등)로 해당 조문에 스크롤 — 법령(.ws-art)·내규(.rf-art) 모두 지원
@@ -10718,11 +10882,11 @@ function _wsScrollAfterOpen(name, docType, artFull){
 
 function openDocSplit(name, docType, url, org, type){
   // 작업공간이 그리드로 자연스럽게 분할되므로, 나란히 보기는 창을 추가하는 것으로 통일
-  return wsOpen(name, docType, url, org, type);
+  return wsOpen(name, docType, url, org, type, docType==='internal'?_lastInternalQ:'');
 }
 function openPrimaryDoc(name, docType, url, org, type){
-  // 카드·대시보드·검색결과의 "전문 보기"는 작업공간(그리드)에 창으로 연다
-  return wsOpen(name, docType, url, org, type);
+  // 카드·대시보드·검색결과의 "전문 보기"는 작업공간(그리드)에 창으로 연다 — 내규는 검색어 하이라이트
+  return wsOpen(name, docType, url, org, type, docType==='internal'?_lastInternalQ:'');
 }
 // 전체화면 패널로 직접 여는 경로(작업공간 창의 ⤢, 좌우 스왑 등 내부용)
 function openPrimaryDocPanel(name, docType, url, org, type){
