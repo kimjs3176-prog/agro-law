@@ -1333,7 +1333,31 @@ body.ws-dragging .ws-pane-body{pointer-events:none;}
 .art-fav{flex-shrink:0;border:none;background:transparent;color:var(--ht);font-size:14px;line-height:1;cursor:pointer;padding:0 2px;border-radius:5px;vertical-align:middle;}
 .art-fav:hover{color:#f5b301;background:var(--gl);}
 .art-fav.on{color:#f5b301;}
-.rf-art .art-fav{margin-right:5px;}
+.rf-art .art-fav{margin-right:2px;}
+/* 내규 조문 도구(☆북마크📝) + 인라인 메모 편집기 */
+.rf-art-tools{display:inline-flex;align-items:center;gap:1px;margin-right:5px;vertical-align:middle;}
+.art-bm,.art-memo{flex-shrink:0;border:none;background:transparent;font-size:12px;line-height:1;cursor:pointer;padding:1px 3px;border-radius:5px;filter:grayscale(1) opacity(.5);transition:filter .12s,background .12s;}
+.art-bm:hover,.art-memo:hover{background:var(--gl);filter:grayscale(0) opacity(1);}
+.art-bm.on,.art-memo.on{filter:grayscale(0) opacity(1);}
+.rf-memo-ed{margin:2px 0 8px;padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--sf);}
+.rf-memo-ta{width:100%;box-sizing:border-box;min-height:56px;font-size:12.5px;font-family:var(--font);border:1px solid var(--bd);border-radius:6px;padding:7px 8px;resize:vertical;background:var(--bg);color:var(--tx);}
+.rf-memo-acts{display:flex;gap:6px;margin-top:6px;}
+.rf-memo-save,.rf-memo-del{font-size:12px;font-weight:700;border-radius:6px;padding:5px 12px;cursor:pointer;border:1px solid var(--bd);font-family:var(--font);}
+.rf-memo-save{background:var(--g);color:#fff;border-color:var(--g);}
+.rf-memo-del{background:transparent;color:var(--mu);}
+.rf-memo-del:hover{border-color:#f04452;color:#f04452;}
+/* 내규 조문 목차 팝오버 */
+.ws-toc{position:absolute;top:44px;right:8px;width:min(260px,72%);max-height:60%;display:flex;flex-direction:column;
+  background:var(--sf);border:1px solid var(--bd);border-radius:10px;box-shadow:0 8px 28px rgba(17,18,23,.18);z-index:30;overflow:hidden;}
+.ws-toc-h{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;font-size:12px;font-weight:800;color:var(--mu);background:var(--gl);}
+.ws-toc-n{font-weight:700;color:var(--gd);}
+.ws-toc-x{border:none;background:transparent;color:var(--mu);cursor:pointer;font-size:13px;line-height:1;padding:2px 4px;}
+.ws-toc-list{overflow:auto;padding:4px;}
+.ws-toc-i{display:block;width:100%;text-align:left;border:none;background:transparent;cursor:pointer;font-family:var(--font);
+  font-size:12.5px;color:var(--tx);padding:6px 9px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ws-toc-i:hover{background:var(--gl);}
+.ws-toc-i.toc-h1{font-weight:800;color:var(--gd);margin-top:2px;}
+.ws-toc-i.toc-art{padding-left:16px;color:var(--tx);}
 .ws-art-h2{font-size:12px;font-weight:800;color:var(--mu);letter-spacing:.02em;
   margin:14px 0 6px;padding-bottom:4px;border-bottom:2px solid rgba(0,0,0,.08);}
 .ws-flash{animation:wsFlash .9s ease;}
@@ -5833,11 +5857,13 @@ function previewArticle(el, artNo){
   el.classList.add('on');
   const no=parseInt(artNo,10);
   if(kind==='internal'){
-    wsOpen(name,'internal');
-  }else{
-    wsOpen(name,'law',card.dataset.docUrl||'',card.dataset.docOrg||'',card.dataset.docType||'');
+    wsOpen(name,'internal',undefined,undefined,undefined,_lastInternalQ);   // 하이라이트
+    const full=String(artNo).replace(/[^0-9의]/g,'')||String(no||'');
+    if(full) _wsScrollAfterOpen(name,'internal', full);                     // 해당 조문으로 이동
+    return;
   }
-  if(!no || kind==='internal') return;
+  wsOpen(name,'law',card.dataset.docUrl||'',card.dataset.docOrg||'',card.dataset.docType||'');
+  if(!no) return;
   // 창(법령)이 로드된 뒤 해당 조문으로 스크롤(로딩 시간 고려해 몇 차례 시도)
   let tries=0;
   const tick=setInterval(()=>{
@@ -7391,8 +7417,10 @@ function parseInternalGrouped(text, kw){
   }));
 }
 
+let _lastInternalQ='';   // 최근 내규 검색어 — 전문 열 때 하이라이트에 사용
 async function doSearchInternal(q, _mySeq){
   if(_mySeq==null) _mySeq = _searchSeq;   // 직접 호출 대비
+  _lastInternalQ=(q||'').trim();
   setStatus(`"${q}" 내규 검색 중...`,true);
   addRecent(q);
   // 클라이언트 캐시(5분) — 동일 검색 즉시 응답
@@ -7596,9 +7624,10 @@ function _internalArticleJump(items, q){
     let hit=null; try{ hit=matchInternalRule(rest); }catch(e){}
     if(hit){ const hk=_rnorm(hit); const m2=items.filter(it=>_rnorm(it.name||'')===hk); if(m2.length===1) named=m2; }
   }
+  const artFull=artNo+(m[2]?'의'+m[2]:'');
   const singleTarget = named.length===1 ? named[0] : null;
   if(singleTarget){
-    jumpInternalArticle(singleTarget.name, artNo);   // 단일 명확 대상 → 자동 이동
+    jumpInternalArticle(singleTarget.name, artFull);   // 단일 명확 대상 → 자동 이동
     return;
   }
   // 애매하면 강제 이동 대신 최상단 카드에 '제N조로 이동' 버튼만 제공
@@ -7610,19 +7639,14 @@ function _internalArticleJump(items, q){
   b.className='abtn primary reg-artjump-btn';
   b.textContent=`${artLabel}로 이동`;
   b.title=`「${nm}」 전문에서 ${artLabel}로 이동`;
-  b.onclick=()=>jumpInternalArticle(nm, artNo);
+  b.onclick=()=>jumpInternalArticle(nm, artFull);
   acts.insertBefore(b, acts.firstChild);
 }
-// 내규 전문을 열고 특정 조문으로 스크롤(전문 로드 후 재시도)
+// 내규 전문을 작업공간 창으로 열고 특정 조문으로 스크롤(로드 후 재시도) — 검색어 하이라이트 포함
 function jumpInternalArticle(name, artNo){
-  openInternalPanel(name);
-  const no=parseInt(artNo,10); if(!no) return;
-  let tries=0;
-  const tick=setInterval(()=>{
-    tries++;
-    try{ if(typeof jumpToArt==='function' && document.querySelector('#fpBody .fp-art')){ jumpToArt(no); clearInterval(tick); return; } }catch(e){}
-    if(tries>24) clearInterval(tick);
-  },220);
+  const full=String(artNo).replace(/[^0-9의]/g,'') || String(parseInt(artNo,10)||'');
+  wsOpen(name,'internal',undefined,undefined,undefined,_lastInternalQ);
+  if(full) _wsScrollAfterOpen(name,'internal', full);
 }
 
 // 교차 패널: 내규 모드 → 관련 법령 칩
@@ -8752,6 +8776,11 @@ function _isInternalName(name){
   } }catch(e){}
   return false;
 }
+// 내규 조문 라벨 ↔ 정수 인코딩(허브 idx용). 제7조→700, 제7조의2→702
+function _artKeyNo(label){ const mm=String(label||'').match(/제\s*(\d+)\s*조(?:\s*의\s*(\d+))?/);
+  if(!mm) return null; const a=parseInt(mm[1],10), s=mm[2]?parseInt(mm[2],10):0;
+  return {enc:a*100+s, full:a+(s?'의'+s:''), no:'제'+a+'조'+(s?'의'+s:'')}; }
+function _artFullFromEnc(enc){ const n=parseInt(enc,10)||0; const a=Math.floor(n/100), s=n%100; return a+(s?'의'+s:''); }
 function _hubScan(){
   const map={};   // (docType|law|idx) → 항목 병합(북마크+메모)
   const put=(o)=>{ const gk=(o.docType||'law')+'|'+o.law+'|'+o.idx; const cur=map[gk]||{law:o.law,idx:o.idx,docType:o.docType||'law',no:'',title:'',bm:false,memo:'',savedAt:''};
@@ -8781,7 +8810,9 @@ function _hubScan(){
   arr.sort((a,b)=>(b.savedAt||'').localeCompare(a.savedAt||'')||String(a.law).localeCompare(String(b.law))||(a.idx-b.idx));
   return arr;
 }
-function openBmHub(){ const bg=document.getElementById('bmHubBg'); if(!bg) return; _bmHubRender(); bg.classList.add('show'); _modalFocusIn('bmHubBg'); }
+function openBmHub(){ const bg=document.getElementById('bmHubBg'); if(!bg) return; _bmHubRender(); bg.classList.add('show'); _modalFocusIn('bmHubBg');
+  try{ loadRegNames().then(()=>_bmHubRender()); }catch(e){}   // 내규명 로드 후 재분류(메모 docType 판별)
+}
 function closeBmHub(){ const bg=document.getElementById('bmHubBg'); if(bg) bg.classList.remove('show'); _modalFocusOut(); }
 function _bmHubRender(){
   const body=document.getElementById('bmHubBody'); if(!body) return;
@@ -8810,8 +8841,13 @@ function _hubOpen(i){
   closeBmHub();
   if(_assistMode && typeof closeAssist==='function') closeAssist();
   const dt=it.docType||'law';
-  if(dt==='internal') openInternalPanel(it.law);
-  else openFullPanel(it.law, `https://www.law.go.kr/법령/${encodeURIComponent(it.law)}`, '', '법률');
+  if(dt==='internal'){
+    const full=_artFullFromEnc(it.idx);   // 내규는 작업공간 창으로 열고 조문번호로 스크롤
+    wsOpen(it.law,'internal');
+    if(full) _wsScrollAfterOpen(it.law,'internal', full);
+    return;
+  }
+  openFullPanel(it.law, `https://www.law.go.kr/법령/${encodeURIComponent(it.law)}`, '', '법률');
   _hubScrollTo(it.idx);
 }
 function _hubScrollTo(idx){
@@ -10154,7 +10190,7 @@ function wsReopen(){
   if(!_wsPanes.length) return;
   wsShow(); wsRenderShell();
 }
-async function wsOpen(name, docType, url, org, type){
+async function wsOpen(name, docType, url, org, type, q){
   name=(name||'').trim(); if(!name) return;
   docType = docType||'internal';
   wsShow();
@@ -10168,7 +10204,8 @@ async function wsOpen(name, docType, url, org, type){
   }
   const id=++_wsId;
   const pane={id,name,docType,url:url||'',org:org||'',type:type||'',loading:true,minimized:false,flex:1,
-              error:'',arts:null,text:null,structured:null,abbrevMap:{},filter:''};
+              error:'',arts:null,text:null,structured:null,abbrevMap:{},
+              filter:(docType==='internal'&&q)?String(q).trim():''};   // 내규: 검색어를 필터에 넣어 자동 하이라이트
   _wsPanes.push(pane);
   _wsEnterId=id;               // 오른쪽에서 미끄러져 들어오는 진입 애니메이션
   wsRenderShell();
@@ -10200,7 +10237,8 @@ async function _wsLoadPane(pane){
   wsRenderPaneBody(pane);
   wsUpdateCnt();
   if(docType==='internal' && !pane.error){
-    loadRegNames().then(()=>{ try{ const el=document.getElementById('wsbody_'+id); if(el){ _collapseSpacedNames(el); markInternalRefs(el); } }catch(e){} });
+    loadRegNames().then(()=>{ try{ const el=document.getElementById('wsbody_'+id); if(el){ _collapseSpacedNames(el); markInternalRefs(el);
+      if(pane.filter && pane.filter.trim()) _wsHighlight(el, pane.filter.trim()); } }catch(e){} });   // 참조 링크 후 검색어 하이라이트
   }
 }
 // 로드 실패한 창을 다시 시도(같은 자리에서 재요청)
@@ -10251,6 +10289,7 @@ function wsPaneHtml(p, cls, pos){
       <input class="ws-pane-filter" placeholder="조문·키워드" value="${escAttr(p.filter||'')}"
              oninput="wsFilter(${p.id},this.value)" aria-label="이 문서 안에서 찾기">
       ${moveBtns}${maxBtn}
+      ${isInt?`<button class="ws-icon" title="조문 목차" onclick="_wsToc(${p.id})">📑</button>`:''}
       ${isInt?`<button class="ws-icon" title="내규 오류 점검(조문번호·상호참조·괄호 등, AI 미사용)" onclick="wsRuleCheck(${p.id})">🔎</button>`:''}
       <button class="ws-icon" title="최소화 — 하단 책갈피로 내리기(내용 유지)" onclick="wsMinimize(${p.id})">⌄</button>
       <button class="ws-icon" title="전체화면·상세 기능(AI·메모·비교)" onclick="wsExpand(${p.id})">⤢</button>
@@ -10677,6 +10716,31 @@ function wsJumpArt(paneEl, artNo){
     if(n===artNo){ el.scrollIntoView({behavior:'smooth',block:'start'}); _wsFlash(el); return; }
   }
 }
+// ── 내규 조문 목차(클릭 이동) ──────────────────────────────────────────────
+function _wsToc(id){
+  const pane=document.getElementById('wspane_'+id); if(!pane) return;
+  const exist=pane.querySelector('.ws-toc'); if(exist){ exist.remove(); return; }   // 토글 닫기
+  const body=document.getElementById('wsbody_'+id); if(!body) return;
+  const heads=body.querySelectorAll('.rf-h1,.rf-art'); const items=[];
+  heads.forEach((h,i)=>{
+    let label='', cls='';
+    if(h.classList.contains('rf-h1')){ label=(h.textContent||'').trim(); cls='toc-h1'; }
+    else { const noEl=h.querySelector('.rf-art-no'); const no=(noEl?noEl.textContent:'').trim();
+      const mm=no.match(/^제\s*\d+\s*조(?:\s*의\s*\d+)?/); if(!mm) return; label=mm[0].replace(/\s+/g,''); cls='toc-art'; }
+    if(!label) return; h.setAttribute('data-toc-i', i); items.push({i,label,cls});
+  });
+  if(!items.length){ if(typeof _toast==='function') _toast('목차로 만들 조문이 없습니다.',1800); return; }
+  const toc=document.createElement('div'); toc.className='ws-toc';
+  toc.innerHTML=`<div class="ws-toc-h"><span>조문 목차 <span class="ws-toc-n">${items.length}</span></span><button type="button" class="ws-toc-x" title="닫기">✕</button></div>`+
+    `<div class="ws-toc-list">`+items.map(it=>`<button type="button" class="ws-toc-i ${it.cls}" data-i="${it.i}">${escHtml(it.label)}</button>`).join('')+`</div>`;
+  toc.querySelector('.ws-toc-x').addEventListener('click',()=>toc.remove());
+  toc.querySelectorAll('.ws-toc-i').forEach(b=>b.addEventListener('click',()=>{
+    const el=body.querySelector('[data-toc-i="'+b.dataset.i+'"]');
+    if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); el.classList.add('ws-artflash'); setTimeout(()=>el.classList.remove('ws-artflash'),1200); }
+    toc.remove();
+  }));
+  pane.appendChild(toc);
+}
 // ── 조문 단위 즐겨찾기 ─────────────────────────────────────────────────────
 // 전문(작업공간)의 각 조문 머리말에 ☆ 별표를 붙인다. 클릭 시 그 조문만 즐겨찾기.
 function _wsInjectArtFav(root, pane){
@@ -10705,7 +10769,36 @@ function _wsInjectArtFav(root, pane){
     btn.title='이 조문 즐겨찾기'; btn.setAttribute('aria-pressed', on); btn.textContent=on?'★':'☆';
     btn.addEventListener('click', ev=>{ ev.stopPropagation();
       const added=toggleFavItem(item); btn.classList.toggle('on',added); btn.textContent=added?'★':'☆'; btn.setAttribute('aria-pressed',added); });
-    h.insertBefore(btn, h.firstChild);
+    if(docType!=='internal'){ h.insertBefore(btn, h.firstChild); return; }
+    // 내규: ☆ 즐겨찾기 + 🔖 북마크 + 📝 메모 (북마크·메모 허브 연동)
+    const ak=_artKeyNo(art); if(!ak){ h.insertBefore(btn, h.firstChild); return; }
+    const bmKey='bm__'+encodeURIComponent(name)+'__'+ak.enc;
+    const memoKey='memo__'+ak.enc+'__'+encodeURIComponent(name);
+    const bmBtn=document.createElement('button'); bmBtn.type='button';
+    bmBtn.className='art-bm'+(localStorage.getItem(bmKey)?' on':''); bmBtn.title='이 조문 북마크'; bmBtn.textContent='🔖';
+    bmBtn.addEventListener('click', ev=>{ ev.stopPropagation();
+      if(localStorage.getItem(bmKey)){ try{localStorage.removeItem(bmKey);}catch(e){} bmBtn.classList.remove('on'); }
+      else { try{ localStorage.setItem(bmKey, JSON.stringify({law:name,docType:'internal',no:ak.no,title:artTitle,savedAt:new Date().toISOString()})); }catch(e){} bmBtn.classList.add('on');
+        if(typeof _toast==='function') _toast('조문을 북마크했습니다.',1600); } });
+    const moBtn=document.createElement('button'); moBtn.type='button';
+    moBtn.className='art-memo'+((localStorage.getItem(memoKey)||'').trim()?' on':''); moBtn.title='이 조문 메모'; moBtn.textContent='📝';
+    moBtn.addEventListener('click', ev=>{ ev.stopPropagation();
+      const nx=h.nextSibling;
+      if(nx && nx.classList && nx.classList.contains('rf-memo-ed')){ nx.remove(); return; }
+      const ed=document.createElement('div'); ed.className='rf-memo-ed';
+      const ta=document.createElement('textarea'); ta.className='rf-memo-ta'; ta.value=localStorage.getItem(memoKey)||''; ta.placeholder='이 조문에 대한 메모...';
+      const acts=document.createElement('div'); acts.className='rf-memo-acts';
+      const save=document.createElement('button'); save.type='button'; save.className='rf-memo-save'; save.textContent='저장';
+      const del=document.createElement('button'); del.type='button'; del.className='rf-memo-del'; del.textContent='삭제';
+      save.addEventListener('click', e2=>{ e2.stopPropagation(); const t=ta.value.trim();
+        try{ if(t) localStorage.setItem(memoKey,t); else localStorage.removeItem(memoKey); }catch(e){}
+        moBtn.classList.toggle('on', !!t); ed.remove(); if(typeof _toast==='function') _toast(t?'메모를 저장했습니다.':'메모를 삭제했습니다.',1800); });
+      del.addEventListener('click', e2=>{ e2.stopPropagation(); try{localStorage.removeItem(memoKey);}catch(e){} ta.value=''; moBtn.classList.remove('on'); ed.remove(); });
+      acts.appendChild(save); acts.appendChild(del); ed.appendChild(ta); ed.appendChild(acts);
+      if(h.parentNode) h.parentNode.insertBefore(ed, h.nextSibling); ta.focus(); });
+    const grp=document.createElement('span'); grp.className='rf-art-tools';
+    grp.appendChild(btn); grp.appendChild(bmBtn); grp.appendChild(moBtn);
+    h.insertBefore(grp, h.firstChild);
   });
 }
 // 조문 라벨("제3조" 등)로 해당 조문에 스크롤 — 법령(.ws-art)·내규(.rf-art) 모두 지원
@@ -10789,11 +10882,11 @@ function _wsScrollAfterOpen(name, docType, artFull){
 
 function openDocSplit(name, docType, url, org, type){
   // 작업공간이 그리드로 자연스럽게 분할되므로, 나란히 보기는 창을 추가하는 것으로 통일
-  return wsOpen(name, docType, url, org, type);
+  return wsOpen(name, docType, url, org, type, docType==='internal'?_lastInternalQ:'');
 }
 function openPrimaryDoc(name, docType, url, org, type){
-  // 카드·대시보드·검색결과의 "전문 보기"는 작업공간(그리드)에 창으로 연다
-  return wsOpen(name, docType, url, org, type);
+  // 카드·대시보드·검색결과의 "전문 보기"는 작업공간(그리드)에 창으로 연다 — 내규는 검색어 하이라이트
+  return wsOpen(name, docType, url, org, type, docType==='internal'?_lastInternalQ:'');
 }
 // 전체화면 패널로 직접 여는 경로(작업공간 창의 ⤢, 좌우 스왑 등 내부용)
 function openPrimaryDocPanel(name, docType, url, org, type){
