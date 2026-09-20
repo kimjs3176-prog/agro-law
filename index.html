@@ -76,6 +76,64 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);-webkit-font-s
 .sm-item:hover{background:var(--bg);color:var(--tx);}
 .sm-item.active{background:var(--gl);color:var(--gp);font-weight:700;}
 .sm-ic{font-size:14px;flex-shrink:0;}
+.sm-badge{min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#f04452;color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-left:2px;}
+/* 워크플레이스 추가 기능 공용 모달 */
+.wp-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:640;display:none;align-items:center;justify-content:center;padding:16px;}
+.wp-modal-bg.show{display:flex;}
+.wp-modal{background:var(--sf);border:1px solid var(--bd);border-radius:14px;width:560px;max-width:100%;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(17,18,23,.3);overflow:hidden;}
+.wp-modal.wp-wide{width:720px;}
+.wp-modal-h{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--bd);}
+.wp-modal-t{font-size:15px;font-weight:800;color:var(--tx);}
+.wp-modal-x{border:none;background:transparent;color:var(--mu);font-size:16px;cursor:pointer;padding:4px 6px;border-radius:6px;}
+.wp-modal-x:hover{background:var(--bg);}
+.wp-modal-b{padding:16px 18px;overflow:auto;}
+.wp-note{font-size:12px;color:var(--mu);margin-bottom:12px;line-height:1.6;}
+.wp-note.chg{color:#d32f2f;font-weight:600;}
+.wp-btn{border:1px solid var(--bd);background:var(--sf);color:var(--tx);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);text-decoration:none;display:inline-flex;align-items:center;transition:.12s;}
+.wp-btn:hover{border-color:var(--g);background:var(--gl);}
+.wp-btn.primary{background:var(--g);color:#fff;border-color:var(--g);}
+.wp-btn.ghost{color:var(--mu);}
+.wp-btn.sm{padding:4px 9px;font-size:11px;}
+/* 개정 모니터링 */
+.rw-item{border:1px solid var(--bd);border-radius:10px;padding:11px 13px;margin-bottom:9px;}
+.rw-item.chg{border-color:#f0a0a0;background:#fef6f6;}
+body.dark .rw-item.chg{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.4);}
+.rw-top{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.rw-name{font-size:13.5px;font-weight:700;color:var(--tx);}
+.rw-badge{font-size:10px;font-weight:800;color:#d32f2f;background:#fdecec;border-radius:999px;padding:1px 8px;}
+.rw-meta{font-size:11.5px;color:var(--mu);margin-bottom:8px;}
+.rw-acts{display:flex;gap:6px;flex-wrap:wrap;}
+.favm-ltype{font-size:10px;font-weight:800;color:var(--mu);background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:1px 7px;}
+.favm-ltype.int{color:var(--gd);background:var(--gl);border-color:transparent;}
+/* 업무 가이드 */
+.guide-list{display:flex;flex-direction:column;gap:8px;}
+.guide-card{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--bd);border-radius:10px;padding:12px 14px;background:var(--sf);cursor:pointer;font-family:var(--font);transition:.12s;}
+.guide-card:hover{border-color:var(--g);background:var(--gl);}
+.guide-ic{font-size:20px;flex-shrink:0;}
+.guide-tt{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
+.guide-name{font-size:13.5px;font-weight:700;color:var(--tx);}
+.guide-sub{font-size:11.5px;color:var(--mu);}
+.guide-go{color:var(--ht);font-size:18px;}
+.guide-detail-h{font-size:15px;font-weight:800;color:var(--tx);margin:10px 0 12px;}
+.guide-steps{display:flex;flex-direction:column;gap:8px;}
+.guide-step{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--bd);border-radius:9px;}
+.guide-step.done{background:var(--gl);border-color:transparent;}
+.guide-chk{flex-shrink:0;width:24px;height:24px;border:2px solid var(--bd);border-radius:6px;background:var(--sf);color:var(--g);font-weight:900;cursor:pointer;font-size:13px;line-height:1;}
+.guide-step.done .guide-chk{background:var(--g);color:#fff;border-color:var(--g);}
+.guide-step-t{flex:1;font-size:13px;color:var(--tx);line-height:1.5;}
+.guide-step.done .guide-step-t{color:var(--mu);text-decoration:line-through;}
+.guide-foot{margin-top:12px;display:flex;justify-content:flex-end;}
+/* 서식 라이브러리 */
+.forms-search{margin-bottom:10px;}
+.forms-q{width:100%;box-sizing:border-box;border:1px solid var(--bd);border-radius:9px;padding:9px 12px;font-size:13px;font-family:var(--font);background:var(--bg);color:var(--tx);}
+.forms-list{display:flex;flex-direction:column;gap:6px;}
+.form-item{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--bd);border-radius:9px;padding:9px 12px;}
+.form-main{min-width:0;flex:1;}
+.form-title{display:block;font-size:13px;font-weight:700;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.form-sub{display:block;font-size:11px;color:var(--mu);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.form-label{font-weight:700;color:var(--gd);}
+.form-acts{display:flex;gap:5px;flex-shrink:0;}
+.ws-icon.wswatch.on{color:#e0a400;}
 body.dark .side-menu{border-color:rgba(255,255,255,.08);}
 body.dark .sm-sec.sm-tools::before{background:rgba(255,255,255,.14);}
 @media(max-width:900px){
@@ -2711,6 +2769,9 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
         <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 본문 작성"><span class="sm-ic" data-icon="expense"></span><span>지출결의서</span></button>
         <button class="sm-item" id="smMemo" onclick="openMemo()" title="업무 메모 — 할 일·일정·연락처·메모(내 PC에만 저장)"><span class="sm-ic" data-icon="memo"></span><span>업무메모</span></button>
         <button class="sm-item" id="smService" onclick="openService()" title="용역도우미 — 용역 여부·심의 판단, 금액별 필요서류 체크리스트·절차"><span class="sm-ic" aria-hidden="true">🧰</span><span>용역도우미</span></button>
+        <button class="sm-item" id="smGuides" onclick="openGuides()" title="업무 절차 가이드 — 출장정산·물품구매·업무추진비·용역 단계별 체크리스트"><span class="sm-ic" aria-hidden="true">🧭</span><span>업무가이드</span></button>
+        <button class="sm-item" id="smForms" onclick="openForms()" title="서식 라이브러리 — 규정 별표·별지 서식 검색·열람"><span class="sm-ic" aria-hidden="true">📎</span><span>서식</span></button>
+        <button class="sm-item" id="smRevWatch" onclick="openRevWatch()" title="개정 모니터링 — 관심 규정·법령의 개정 변동 확인"><span class="sm-ic" aria-hidden="true">🔔</span><span>개정알림</span><span class="sm-badge" id="revWatchBadge" style="display:none"></span></button>
       </div>
     </div>
   </aside>
@@ -8939,6 +9000,151 @@ function _hubScrollTo(idx){
 }
 function toggleCard2(id){document.getElementById(id).classList.toggle('open');}
 
+// ═══════ 워크플레이스 추가 기능: 개정 모니터링 · 업무 가이드 · 서식 라이브러리 ═══════
+// 공용 모달(정적 스캐폴딩 없이 동적 생성)
+function _wpModal(id, title, bodyHtml, wide){
+  let bg=document.getElementById(id);
+  if(!bg){ bg=document.createElement('div'); bg.id=id; bg.className='wp-modal-bg';
+    bg.addEventListener('click',e=>{ if(e.target===bg) _wpClose(id); }); document.body.appendChild(bg); }
+  bg.innerHTML=`<div class="wp-modal${wide?' wp-wide':''}"><div class="wp-modal-h"><span class="wp-modal-t">${title}</span>`+
+    `<button class="wp-modal-x" onclick="_wpClose('${id}')" title="닫기" aria-label="닫기">✕</button></div>`+
+    `<div class="wp-modal-b" id="${id}_b">${bodyHtml}</div></div>`;
+  bg.classList.add('show'); return document.getElementById(id+'_b');
+}
+function _wpClose(id){ const bg=document.getElementById(id); if(bg) bg.classList.remove('show'); }
+
+// ── ① 관심 규정·법령 개정 모니터링 ──────────────────────────────────
+const _REV_WATCH_KEY='koat_reg_watch';
+function _revWatchGet(){ try{ return JSON.parse(localStorage.getItem(_REV_WATCH_KEY)||'{}')||{}; }catch(e){ return {}; } }
+function _revWatchSet(o){ try{ localStorage.setItem(_REV_WATCH_KEY, JSON.stringify(o)); }catch(e){} }
+function _revKey(type,name){ return type+'|'+_rnorm(name); }
+function _revCurrentInternal(name){ try{ const m=_regMeta&&_regMeta.get(_rnorm(name)); return (m&&(m.revision||m.effective_date))||''; }catch(e){ return ''; } }
+function _revIsWatched(type,name){ return !!_revWatchGet()[_revKey(type,name)]; }
+async function _revFetchCurrent(it){
+  if(it.type==='internal'){ await loadRegNames().catch(()=>{}); return _revCurrentInternal(it.name); }
+  try{ const r=await fetch('/api/law/history?name='+encodeURIComponent(it.name)); const d=await r.json();
+    const h=(d.history||[])[0]; return h?((h.date||'')+' '+(h.desc||'')).trim():''; }catch(e){ return ''; }
+}
+function _revWatchRefreshBadge(){
+  loadRegNames().catch(()=>{}).then(()=>{ const o=_revWatchGet(); let n=0;
+    for(const k in o){ const it=o[k]; if(it.type!=='internal') continue;   // 배지=내규(매니페스트) 즉시 집계
+      const cur=_revCurrentInternal(it.name); if(cur&&it.seenRev&&cur!==it.seenRev) n++; }
+    const b=document.getElementById('revWatchBadge'); if(b){ b.textContent=n||''; b.style.display=n?'':'none'; } });
+}
+async function _wsWatchToggle(id){
+  const p=_wsPanes.find(x=>x.id===id); if(!p) return;
+  const type=(p.docType==='law')?'law':'internal'; const o=_revWatchGet(), k=_revKey(type,p.name);
+  if(o[k]){ delete o[k]; _revWatchSet(o); if(typeof _toast==='function')_toast('개정 모니터링에서 제외했습니다.',1600); }
+  else { const cur=await _revFetchCurrent({type,name:p.name}); o[k]={type,name:p.name,seenRev:cur}; _revWatchSet(o); if(typeof _toast==='function')_toast('개정 모니터링에 추가했습니다.',1800); }
+  _revWatchRefreshBadge();
+  const btn=document.getElementById('wswatch_'+id); if(btn){ const on=_revIsWatched(type,p.name); btn.classList.toggle('on',on); btn.setAttribute('aria-pressed',on); }
+}
+async function openRevWatch(){
+  const body=_wpModal('revWatchModal','🔔 개정 모니터링', `<div class="assist-loading"><div class="spinner"></div><span>불러오는 중...</span></div>`, true);
+  await loadRegNames().catch(()=>{});
+  const o=_revWatchGet(); const keys=Object.keys(o);
+  if(!keys.length){ if(body) body.innerHTML=`<div class="fav-empty">🔔 모니터링 중인 규정·법령이 없습니다.<br>규정·법령 전문 창의 <b>🔔</b> 버튼으로 담아두면 개정 변동을 여기서 확인할 수 있어요.</div>`; return; }
+  const rows=await Promise.all(keys.map(async k=>{ const it=o[k]; const cur=await _revFetchCurrent(it);
+    return {k,it,cur,changed: !!(cur&&it.seenRev&&cur!==it.seenRev)}; }));
+  rows.sort((a,b)=>(b.changed-a.changed)|| String(a.it.name).localeCompare(String(b.it.name)));
+  const chN=rows.filter(r=>r.changed).length;
+  if(body) body.innerHTML=(chN?`<div class="wp-note chg">🔴 개정 변동 <b>${chN}건</b> — 확인 후 [확인함]을 누르면 배지가 사라집니다.</div>`:`<div class="wp-note">최근 확인 이후 개정 변동이 없습니다.</div>`)+
+    rows.map(r=>`<div class="rw-item${r.changed?' chg':''}">`+
+      `<div class="rw-top"><span class="favm-ltype${r.it.type==='internal'?' int':''}">${r.it.type==='internal'?'내규':'법령'}</span>`+
+      `<span class="rw-name">${escHtml(r.it.name)}</span>${r.changed?'<span class="rw-badge">개정됨</span>':''}</div>`+
+      `<div class="rw-meta">확인한 개정: <b>${escHtml(r.it.seenRev||'(없음)')}</b> · 현재: <b>${escHtml(r.cur||'(확인 불가)')}</b></div>`+
+      `<div class="rw-acts"><button class="wp-btn" onclick="_revOpen('${argAttr(r.it.type)}','${argAttr(r.it.name)}')">전문 열기</button>`+
+      `${r.changed?`<button class="wp-btn primary" onclick="_revAck('${argAttr(r.k)}','${argAttr(r.cur)}')">확인함</button>`:''}`+
+      `<button class="wp-btn ghost" onclick="_revRemove('${argAttr(r.k)}')">해제</button></div></div>`).join('');
+}
+function _revOpen(type,name){ _wpClose('revWatchModal'); if(_assistMode&&typeof closeAssist==='function')closeAssist();
+  wsOpen(name, type==='law'?'law':'internal', type==='law'?('https://www.law.go.kr/법령/'+encodeURIComponent(name)):undefined); }
+function _revAck(k,cur){ const o=_revWatchGet(); if(o[k]){ o[k].seenRev=cur; _revWatchSet(o); } _revWatchRefreshBadge(); openRevWatch(); }
+function _revRemove(k){ const o=_revWatchGet(); delete o[k]; _revWatchSet(o); _revWatchRefreshBadge(); openRevWatch(); }
+
+// ── ⑤ 업무 절차 가이드 ──────────────────────────────────────────────
+const WP_GUIDES=[
+  {id:'general', icon:'💳', title:'일반 지출(물품·용역 대금)', steps:[
+    {t:'거래처 확인 및 사업자 상태 조회(계속/휴업/폐업)', act:{l:'기업조회',f:"openAssist('company')"}},
+    {t:'지출 근거·예산과목 확인(계약·품의)', act:{l:'내규 검색',f:"setMode('internal')"}},
+    {t:'지출결의서 작성(거래처·금액·과목·지급방식)', act:{l:'지출결의서',f:'openExpense()'}},
+    {t:'증빙 첨부(세금계산서·거래명세서·견적서)'},
+    {t:'결재 상신 및 지급 요청'} ]},
+  {id:'travel', icon:'🧳', title:'출장·여비 정산', steps:[
+    {t:'출장 명령/승인 확인'},
+    {t:'여비 지급 기준(등급·지역·일수) 확인', act:{l:'여비 규정',f:"wsOpen('여비업무 처리지침','internal')"}},
+    {t:'여비 자동 계산 + 증빙 사진으로 엑셀 작성', act:{l:'지출결의서(여비)',f:'openExpense()'}},
+    {t:'교통비·숙박비 증빙 첨부'},
+    {t:'정산서 상신'} ]},
+  {id:'promo', icon:'🍽️', title:'업무추진비 집행', steps:[
+    {t:'집행 목적·대상(외부/내부) 정리'},
+    {t:'집행 한도·기준 확인', act:{l:'내규 검색',f:"setMode('internal')"}},
+    {t:'지출결의서(업무추진비) 작성 — 집행대상 구분·1인당 계산', act:{l:'지출결의서',f:'openExpense()'}},
+    {t:'영수증·참석자 명단 등 증빙 첨부'},
+    {t:'결재 상신'} ]},
+  {id:'service', icon:'🧰', title:'용역 계약(용역 여부 판단)', steps:[
+    {t:'용역 여부·심의 대상 판단', act:{l:'용역도우미',f:'openService()'}},
+    {t:'금액 구간별 필요 서류·절차 확인', act:{l:'용역도우미',f:'openService()'}},
+    {t:'계약 근거 규정 확인', act:{l:'내규 검색',f:"setMode('internal')"}},
+    {t:'계약·검수 후 대금 지출결의서 작성', act:{l:'지출결의서',f:'openExpense()'}},
+    {t:'결재 상신'} ]},
+];
+const _GUIDE_KEY='koat_guide_prog';
+function _guideProg(){ try{ return JSON.parse(localStorage.getItem(_GUIDE_KEY)||'{}')||{}; }catch(e){ return {}; } }
+function _guideProgSet(o){ try{ localStorage.setItem(_GUIDE_KEY, JSON.stringify(o)); }catch(e){} }
+function openGuides(){
+  const body=_wpModal('guidesModal','🧭 업무 절차 가이드', '', true);
+  if(body) body.innerHTML=`<div class="wp-note">자주 하는 업무의 단계별 절차입니다. 각 단계를 체크하면 진행 상황이 저장됩니다.</div>`+
+    `<div class="guide-list">`+WP_GUIDES.map(g=>{
+      const pr=_guideProg()[g.id]||[]; const done=g.steps.filter((_,i)=>pr[i]).length;
+      return `<button class="guide-card" onclick="_guideOpen('${g.id}')"><span class="guide-ic">${g.icon}</span>`+
+        `<span class="guide-tt"><span class="guide-name">${escHtml(g.title)}</span>`+
+        `<span class="guide-sub">${g.steps.length}단계 · ${done}/${g.steps.length} 완료</span></span><span class="guide-go">›</span></button>`;
+    }).join('')+`</div>`;
+}
+function _guideOpen(gid){
+  const g=WP_GUIDES.find(x=>x.id===gid); if(!g) return;
+  const body=document.getElementById('guidesModal_b'); if(!body) return;
+  const pr=_guideProg()[gid]||[];
+  body.innerHTML=`<button class="wp-btn ghost" onclick="openGuides()">← 목록</button>`+
+    `<div class="guide-detail-h">${g.icon} ${escHtml(g.title)}</div>`+
+    `<div class="guide-steps">`+g.steps.map((s,i)=>`<div class="guide-step${pr[i]?' done':''}">`+
+      `<button class="guide-chk" onclick="_guideToggle('${gid}',${i})" aria-pressed="${!!pr[i]}">${pr[i]?'✓':''}</button>`+
+      `<span class="guide-step-t">${escHtml(s.t)}</span>`+
+      `${s.act?`<button class="wp-btn sm" onclick="_wpClose('guidesModal');${s.act.f}">${escHtml(s.act.l)}</button>`:''}</div>`).join('')+`</div>`+
+    `<div class="guide-foot"><button class="wp-btn ghost" onclick="_guideReset('${gid}')">진행 초기화</button></div>`;
+}
+function _guideToggle(gid,i){ const o=_guideProg(); const a=o[gid]||[]; a[i]=!a[i]; o[gid]=a; _guideProgSet(o); _guideOpen(gid); }
+function _guideReset(gid){ const o=_guideProg(); delete o[gid]; _guideProgSet(o); _guideOpen(gid); }
+
+// ── ⑥ 서식(별표·별지) 라이브러리 ────────────────────────────────────
+let _formsCache=null;
+async function openForms(){
+  const body=_wpModal('formsModal','📎 서식 라이브러리 (별표·별지)', `<div class="assist-loading"><div class="spinner"></div><span>서식 목록 불러오는 중...</span></div>`, true);
+  if(!_formsCache){ try{ const r=await fetch('/api/internal/forms'); const d=await r.json(); _formsCache=(d&&d.forms)||[]; }catch(e){ _formsCache=[]; } }
+  if(!document.getElementById('formsModal')) return;
+  const b=document.getElementById('formsModal_b'); if(!b) return;
+  b.innerHTML=`<div class="forms-search"><input id="formsQ" class="forms-q" placeholder="서식명·규정명 검색 (예: 출장, 신청서, 여비)" oninput="_formsRender(this.value)"></div>`+
+    `<div class="wp-note" id="formsCount"></div><div id="formsList" class="forms-list"></div>`;
+  _formsRender('');
+  const inp=document.getElementById('formsQ'); if(inp) inp.focus();
+}
+function _formsRender(q){
+  const list=document.getElementById('formsList'), cnt=document.getElementById('formsCount'); if(!list) return;
+  const ql=(q||'').replace(/\s+/g,'').toLowerCase();
+  const all=_formsCache||[];
+  const items=ql?all.filter(f=>(f.reg+f.label+f.title).replace(/\s+/g,'').toLowerCase().includes(ql)):all;
+  if(cnt) cnt.textContent=`${items.length}건${ql?` (전체 ${all.length}건 중)`:''}`;
+  if(!items.length){ list.innerHTML=`<div class="fav-empty">검색 결과가 없습니다.</div>`; return; }
+  list.innerHTML=items.slice(0,300).map(f=>`<div class="form-item">`+
+    `<div class="form-main"><span class="form-title">${escHtml(f.title)}</span>`+
+    `<span class="form-sub"><span class="form-label">${escHtml(f.label)}</span> · ${escHtml(f.reg)}</span></div>`+
+    `<div class="form-acts"><button class="wp-btn sm" onclick="_formOpenReg('${argAttr(f.reg)}')">규정 전문</button>`+
+    `${f.html?`<a class="wp-btn sm ghost" href="${escHtml(f.html)}" target="_blank" rel="noopener">원본↗</a>`:''}</div></div>`).join('')+
+    (items.length>300?`<div class="wp-note">상위 300건만 표시 — 검색어로 좁혀 주세요.</div>`:'');
+}
+function _formOpenReg(reg){ _wpClose('formsModal'); if(_assistMode&&typeof closeAssist==='function')closeAssist(); wsOpen(reg,'internal'); }
+
 function removeFavAt(i){
   const arr = getFavs();
   if(i>=0 && i<arr.length){ arr.splice(i,1); _saveFavs(arr); loadFavs(); renderFavList(); }
@@ -9638,6 +9844,7 @@ function _hydrateIcons(root){
 document.addEventListener('DOMContentLoaded',()=>{
   _hydrateIcons();
   try{ _migrateCollections(); }catch(_){}
+  try{ _revWatchRefreshBadge(); }catch(_){}   // 개정 모니터링 배지(관심 규정 변동 건수)
   // ── 이벤트 위임: 클릭 ──────────────────────────────────────────────────
   document.addEventListener('click', e=>{
     // 작업공간(그리드) 창 내부의 참조 클릭 → 새 창(패널)으로 추가 열기
@@ -10360,6 +10567,7 @@ function wsPaneHtml(p, cls, pos){
       <input class="ws-pane-filter" placeholder="조문·키워드" value="${escAttr(p.filter||'')}"
              oninput="wsFilter(${p.id},this.value)" aria-label="이 문서 안에서 찾기">
       ${moveBtns}${maxBtn}
+      <button class="ws-icon wswatch${_revIsWatched(isInt?'internal':'law',p.name)?' on':''}" id="wswatch_${p.id}" title="개정 모니터링에 추가/해제" aria-pressed="${_revIsWatched(isInt?'internal':'law',p.name)}" onclick="_wsWatchToggle(${p.id})">🔔</button>
       ${isInt?`<button class="ws-icon" title="조문 목차" onclick="_wsToc(${p.id})">📑</button>`:''}
       ${isInt?`<button class="ws-icon" title="내규 오류 점검(조문번호·상호참조·괄호 등, AI 미사용)" onclick="wsRuleCheck(${p.id})">🔎</button>`:''}
       <button class="ws-icon" title="최소화 — 하단 책갈피로 내리기(내용 유지)" onclick="wsMinimize(${p.id})">⌄</button>

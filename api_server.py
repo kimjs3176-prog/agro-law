@@ -2458,6 +2458,88 @@ def _load_reg_manifest() -> list:
         _REG_MANIFEST = []
     return _REG_MANIFEST
 
+# ── 서식(별표·별지) 라이브러리 — 번들 규정 HTML에서 서식 '정의'만 집계(캐시) ──────
+_REG_FORMS_CACHE = None
+_FORM_BRACKET_RE = re.compile(r'[\[［]\s*(별[표지][^\]］]{0,22})[\]］]')
+# 참조(‘…에 의한다/과 같다/에 따라’)와 정의(뒤에 서식명이 오는 경우)를 구분하는 조사·서술어
+_FORM_REF_HEAD = re.compile(
+    r'^(에|의|와|과|및|을|를|은|는|이|가|로|으로|에서|에는|에게|부터|까지|따라|같|의한|의하여|규정|호)(?:\s|다|$)')
+
+def _reg_forms_index():
+    """번들 규정 HTML을 훑어 별표·별지 서식 목록을 만든다(모듈 캐시).
+
+    각 항목: {reg, slug, category, label, title, html, pdf}. 본문 인용(‘별지 제N호
+    서식에 의한다’)은 제외하고, 라벨 뒤에 서식명이 오는 '정의'만 담는다.
+    """
+    global _REG_FORMS_CACHE
+    if _REG_FORMS_CACHE is not None:
+        return _REG_FORMS_CACHE
+    out = []
+    try:
+        import reg_chunks
+    except Exception:
+        reg_chunks = None
+    for rec in _load_reg_manifest():
+        slug = (rec.get("slug") or "").strip()
+        if not slug:
+            continue
+        path = os.path.join(REG_DIR, slug, "index.html")
+        try:
+            with open(path, encoding="utf-8") as f:
+                raw = f.read()
+        except Exception:
+            continue
+        text = reg_chunks.html_to_text(raw) if reg_chunks else re.sub(r"<[^>]+>", " ", raw)
+        seen = set()
+        entries = []
+        for m in _FORM_BRACKET_RE.finditer(text):
+            label = re.sub(r"\s+", " ", m.group(1)).strip()
+            if len(label) < 2:
+                continue
+            after = text[m.end():m.end() + 120]
+            for _ in range(3):                             # <제N조 관련>·<개정 …> 등 주석 반복 제거
+                new = re.sub(r"^\s*[<＜][^>＞]*[>＞]", "", after)
+                if new == after:
+                    break
+                after = new
+            after = after.lstrip(" \t\r\n·:：")
+            if not after or after[0] in "<（(" or _FORM_REF_HEAD.match(after):
+                continue                                   # 본문 인용·주석 → 제외
+            title = re.split(r"[\r\n.·。:：]", after)[0].strip()
+            title = re.sub(r"\s+", " ", title)[:40].strip()
+            # 서식명은 한글 2자 이상 포함해야 인정(숫자·기호·표셀 노이즈 제거)
+            if len(re.findall(r"[가-힣]", title)) < 2:
+                continue
+            key = re.sub(r"\s+", "", label)
+            if key in seen:
+                continue
+            seen.add(key)
+            entries.append({"label": label, "title": title})
+        if not entries:
+            continue
+        reg = (rec.get("title") or "").strip()
+        for e in entries:
+            out.append({"reg": reg, "slug": slug, "category": rec.get("category", ""),
+                        "label": e["label"], "title": e["title"],
+                        "html": rec.get("html", ""), "pdf": rec.get("pdf", "")})
+    out.sort(key=lambda x: (x["reg"], x["label"]))
+    _REG_FORMS_CACHE = out
+    return out
+
+@app.route("/api/internal/forms")
+def internal_forms():
+    """서식(별표·별지) 라이브러리 — 번들 규정에서 추출한 서식 목록. 프런트에서 검색·필터."""
+    try:
+        forms = _reg_forms_index()
+        q = (request.args.get("q") or "").strip()
+        if q:
+            ql = q.replace(" ", "").lower()
+            forms = [f for f in forms
+                     if ql in (f["reg"] + f["label"] + f["title"]).replace(" ", "").lower()]
+        return jsonify({"success": True, "count": len(forms), "forms": forms})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"서식 목록 조회 실패: {e}"})
+
 
 def _norm_key(s: str) -> str:
     return re.sub(r"\s+", "", (s or "")).lower()
