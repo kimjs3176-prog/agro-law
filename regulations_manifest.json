@@ -212,12 +212,34 @@
  },
  {
   "title": "계약직원 운영규칙",
-  "revision": "2025년도 6월 일부개정",
+  "revision": "2026년도 8월 28일 개정",
   "category": "규칙",
   "slug": "계약직원_운영규칙",
-  "src": "계약직원 운영규칙(2025년도 6월 일부개정).hwp",
+  "src": "계약직원 운영규칙(2026년도 8월 28일 개정).hwpx",
   "html": "/regulations/계약직원_운영규칙/index.html",
-  "pdf": "pdf/계약직원_운영규칙.pdf"
+  "pdf": "pdf/계약직원_운영규칙.pdf",
+  "effective_date": "",
+  "department": "",
+  "note": "",
+  "uploader": "김진선",
+  "uploaded_at": "2026-09-21 17:46",
+  "original": "/regulations/계약직원_운영규칙/original.hwpx",
+  "searchable": true,
+  "history": [
+   {
+    "revision": "2025년도 6월 일부개정",
+    "replaced_at": "2026-09-21 17:46",
+    "entry": {
+     "title": "계약직원 운영규칙",
+     "revision": "2025년도 6월 일부개정",
+     "category": "규칙",
+     "slug": "계약직원_운영규칙",
+     "src": "계약직원 운영규칙(2025년도 6월 일부개정).hwp",
+     "html": "/regulations/계약직원_운영규칙/index.html",
+     "pdf": "pdf/계약직원_운영규칙.pdf"
+    }
+   }
+  ]
  },
  {
   "title": "고위정책연수과정 교육훈련 운영규칙",
