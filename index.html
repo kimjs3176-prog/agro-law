@@ -1866,6 +1866,20 @@ body.dark .int-law-chip{background:#161920;color:#aecbfd;}
 .empty p{font-size:14px;line-height:1.9;color:var(--mu);}
 /* 내규 전체 목록 대시보드 */
 .int-dash{padding:2px 0 8px;}
+/* 최근 개정된 내규 알림 박스 */
+.rrev-box{border:1px solid var(--g);background:var(--gl);border-radius:12px;padding:11px 14px;margin-bottom:14px;}
+.rrev-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px;}
+.rrev-t{font-size:13px;font-weight:800;color:var(--gd);}
+.rrev-t b{color:var(--g);}
+.rrev-sub{font-size:11px;font-weight:600;color:var(--mu);}
+.rrev-x{border:none;background:transparent;color:var(--mu);font-size:13px;cursor:pointer;padding:2px 5px;border-radius:6px;line-height:1;}
+.rrev-x:hover{background:var(--sf);color:var(--tx);}
+.rrev-list{display:flex;flex-wrap:wrap;gap:7px;align-items:center;}
+.rrev-item{display:inline-flex;flex-direction:column;gap:1px;text-align:left;border:1px solid var(--bd);background:var(--sf);border-radius:9px;padding:6px 11px;cursor:pointer;font-family:var(--font);transition:.12s;max-width:100%;}
+.rrev-item:hover{border-color:var(--g);box-shadow:0 1px 5px rgba(17,18,23,.08);}
+.rrev-nm{font-size:12.5px;font-weight:700;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px;}
+.rrev-rv{font-size:10.5px;color:var(--gd);font-weight:600;}
+.rrev-more{font-size:11.5px;color:var(--mu);font-weight:600;}
 .idb-head{margin-bottom:14px;}
 .idb-title{font-size:16px;font-weight:800;color:var(--tx);display:flex;align-items:center;gap:8px;}
 .idb-total{font-size:12px;font-weight:700;color:var(--gd);background:var(--gl);border-radius:999px;padding:2px 10px;}
@@ -5666,6 +5680,34 @@ function renderWelcome(){
     </div>`;
 }
 
+// ── 최근 개정된 내규 알림 박스(검색창 인근, 내규 랜딩 상단) ──────────────────
+// revision 문자열("2026년도 6월 2일 개정")에서 연·월을 파싱해 최근 N개월 개정을 알린다.
+const _RECENT_REV_MONTHS=6;
+const _RECENT_REV_KEY='koat_recentrev_seen';
+function _revParseYm(rev){
+  const m=String(rev||'').match(/(20\d{2})\s*년도?\s*(\d{1,2})?\s*월?/);
+  if(!m) return 0; const y=+m[1], mo=m[2]?Math.min(12,Math.max(1,+m[2])):1; return y*12+(mo-1);
+}
+function _recentRevItems(items){
+  const now=new Date(); const nowYm=now.getFullYear()*12+now.getMonth(); const th=nowYm-_RECENT_REV_MONTHS;
+  return (items||[]).map(it=>({it, ym:_revParseYm(it.revision)}))
+    .filter(x=>x.ym>=th && x.ym<=nowYm+1).sort((a,b)=>b.ym-a.ym);
+}
+function _recentRevBoxHtml(items){
+  const rec=_recentRevItems(items); if(!rec.length) return '';
+  let seen=0; try{ seen=parseInt(localStorage.getItem(_RECENT_REV_KEY)||'0',10)||0; }catch(e){}
+  const maxYm=rec[0].ym; if(maxYm<=seen) return '';        // 이미 닫아 확인한 최신 개정이면 숨김
+  const show=rec.slice(0,6);
+  const chips=show.map(x=>`<button class="rrev-item" onclick="_recentRevOpen('${argAttr(x.it.title)}')" title="${escAttr(x.it.title+' · '+(x.it.revision||''))} — 전문 열기">`+
+    `<span class="rrev-nm">${escHtml(x.it.title)}</span><span class="rrev-rv">${escHtml(x.it.revision||'')}</span></button>`).join('');
+  const more=rec.length>show.length?`<span class="rrev-more">외 ${rec.length-show.length}건</span>`:'';
+  return `<div class="rrev-box" id="recentRevBox"><div class="rrev-h">`+
+    `<span class="rrev-t">🆕 최근 개정된 내규 <b>${rec.length}건</b> <span class="rrev-sub">· 최근 ${_RECENT_REV_MONTHS}개월</span></span>`+
+    `<button class="rrev-x" onclick="_recentRevDismiss(${maxYm})" title="닫기 — 새 개정이 생기면 다시 표시">✕</button></div>`+
+    `<div class="rrev-list">${chips}${more}</div></div>`;
+}
+function _recentRevOpen(name){ if(_assistMode&&typeof closeAssist==='function')closeAssist(); wsOpen(name,'internal'); }
+function _recentRevDismiss(maxYm){ try{ localStorage.setItem(_RECENT_REV_KEY,String(maxYm)); }catch(e){} const b=document.getElementById('recentRevBox'); if(b) b.remove(); }
 // ── 내규 전체 목록 대시보드(검색 전 랜딩) ──────────────────────────────────
 let _intDashItems=null;
 async function renderInternalDashboard(){
@@ -5693,6 +5735,7 @@ async function renderInternalDashboard(){
     `<button class="idb-pill" data-cat="${argAttr(g.key)}" onclick="_dashCatFilter('${argAttr(g.key)}')" `+
     `title="${escHtml(g.key)}만 보기">${g.ic} ${escHtml(g.key)} <b>${groups0[g.key].length}</b></button>`).join('');
   res.innerHTML=`<div class="int-dash">
+    ${_recentRevBoxHtml(items)}
     <div class="idb-head">
       <div class="idb-title">📚 내규 전체 목록 <span class="idb-total">${total}건</span></div>
       <div class="idb-toolbar">
