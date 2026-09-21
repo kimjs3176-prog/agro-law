@@ -743,17 +743,23 @@ body.dark .memo-st.st-done{background:rgba(34,197,94,.16);color:#6ee7a0;}
 .memo-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
 .memo-cal-wd{text-align:center;font-size:11px;font-weight:700;color:var(--mu);padding:2px 0;}
 .memo-cal-wd.sun{color:#dc2626;} .memo-cal-wd.sat{color:#2563eb;}
-.memo-cal-cell{position:relative;aspect-ratio:1/1;border:1px solid transparent;border-radius:8px;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:4px 0 0;font-family:var(--font);}
+.memo-cal-cell{position:relative;min-height:74px;border:1px solid transparent;border-radius:8px;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;padding:5px 5px 4px;font-family:var(--font);overflow:hidden;text-align:left;}
 .memo-cal-cell.empty{cursor:default;}
 .memo-cal-cell:not(.empty):hover{background:var(--bg);}
-.memo-cal-cell .cd-n{font-size:12.5px;font-weight:600;color:var(--tx);}
+.memo-cal-cell .cd-n{font-size:12.5px;font-weight:600;color:var(--tx);flex-shrink:0;}
 .memo-cal-cell.today .cd-n{color:var(--g);font-weight:800;}
 .memo-cal-cell.today{border-color:var(--g);}
 .memo-cal-cell.sel{background:var(--gl);border-color:var(--g);}
-.memo-cal-cell .cd-dots{display:flex;gap:2px;margin-top:2px;height:6px;}
+.memo-cal-cell .cd-evs{display:flex;flex-direction:column;gap:2px;margin-top:3px;min-width:0;}
+.cd-ev{font-size:10.5px;line-height:1.35;border-radius:4px;padding:1px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.cd-ev.ev{background:var(--g);color:#fff;} .cd-ev.ev b{font-weight:800;}
+.cd-ev.due{background:#fff4e5;color:#b8730a;font-weight:700;}
+body.dark .cd-ev.due{background:rgba(245,158,11,.18);color:#fbbf24;}
+.cd-more{font-size:10px;font-weight:700;color:var(--mu);padding:0 4px;}
 .cd{width:5px;height:5px;border-radius:999px;display:inline-block;}
 .cd.ev{background:var(--g);} .cd.due{background:#f59e0b;}
 i.cd{vertical-align:middle;}
+@media (max-width:640px){ .memo-cal-cell{min-height:58px;} .cd-ev{font-size:9.5px;padding:1px 3px;} }
 .exp-print{flex:1;font-size:13.5px;font-weight:800;padding:11px;border:none;border-radius:10px;background:var(--g);color:#fff;cursor:pointer;white-space:nowrap;}
 .exp-print:hover{background:var(--gd);}
 .exp-mini2{font-size:13px;font-weight:700;padding:11px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);cursor:pointer;white-space:nowrap;}
@@ -4394,15 +4400,21 @@ function _memoCalHtml(m){
   if(!_memoCalSel) _memoCalSel=_memoToday();
   const {y,m0}=_memoCal, mp=String(m0+1).padStart(2,'0'), pfx=y+'-'+mp;
   const startDow=new Date(y,m0,1).getDay(), days=new Date(y,m0+1,0).getDate(), todayStr=_memoToday();
+  // 날짜별 일정·마감을 '제목'까지 모아 셀에 직접 표시(구글 캘린더식 칩)
   const evByDay={}, dueByDay={};
-  m.events.forEach(e=>{ const s=String(e.date||'').slice(0,10); if(s.startsWith(pfx)){ const d=+s.slice(8,10); evByDay[d]=(evByDay[d]||0)+1; } });
-  m.todos.forEach(t=>{ if(t.status==='done'||!t.due) return; const s=String(t.due).slice(0,10); if(s.startsWith(pfx)){ const d=+s.slice(8,10); dueByDay[d]=(dueByDay[d]||0)+1; } });
+  m.events.forEach(e=>{ const s=String(e.date||'').slice(0,10); if(s.startsWith(pfx)){ const d=+s.slice(8,10); (evByDay[d]=evByDay[d]||[]).push(e); } });
+  m.todos.forEach(t=>{ if(t.status==='done'||!t.due) return; const s=String(t.due).slice(0,10); if(s.startsWith(pfx)){ const d=+s.slice(8,10); (dueByDay[d]=dueByDay[d]||[]).push(t); } });
+  const MAXC=2;   // 셀에 노출할 최대 칩 수(초과분은 +N)
   let cells='';
   for(let i=0;i<startDow;i++) cells+='<div class="memo-cal-cell empty"></div>';
   for(let d=1; d<=days; d++){ const ds=pfx+'-'+String(d).padStart(2,'0');
     const cls=[ds===todayStr?'today':'', ds===_memoCalSel?'sel':''].filter(Boolean).join(' ');
-    const dots=(evByDay[d]?'<i class="cd ev"></i>':'')+(dueByDay[d]?'<i class="cd due"></i>':'');
-    cells+=`<button class="memo-cal-cell ${cls}" onclick="_memoCalPick('${ds}')"><span class="cd-n">${d}</span><span class="cd-dots">${dots}</span></button>`;
+    const evs=evByDay[d]||[], dues=dueByDay[d]||[]; const chips=[];
+    evs.forEach(e=>chips.push(`<span class="cd-ev ev" title="${escAttr((e.time?e.time+' ':'')+(e.title||''))}">${e.time?`<b>${escHtml(e.time)}</b> `:''}${escHtml(e.title||'(제목 없음)')}</span>`));
+    dues.forEach(t=>chips.push(`<span class="cd-ev due" title="${escAttr('할 일 마감: '+(t.text||''))}">⏰ ${escHtml(t.text||'')}</span>`));
+    const extra=chips.length-MAXC;
+    const chipsHtml=chips.slice(0,MAXC).join('')+(extra>0?`<span class="cd-more">+${extra}</span>`:'');
+    cells+=`<button class="memo-cal-cell ${cls}" onclick="_memoCalPick('${ds}')"><span class="cd-n">${d}</span><span class="cd-evs">${chipsHtml}</span></button>`;
   }
   const wd=_MEMO_WD.map((w,i)=>`<div class="memo-cal-wd${i===0?' sun':(i===6?' sat':'')}">${w}</div>`).join('');
   return `<div class="memo-cal"><div class="memo-cal-head">`+
