@@ -701,6 +701,29 @@ body.dark .dday.soon{background:rgba(245,158,11,.18);color:#fbbf24;}
 .memo-ct-row a{color:var(--g);text-decoration:none;}
 /* 메모(노트) */
 .memo-notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+/* 포스트잇 보드(자유 배치) */
+.pnote-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.pnote-toggle{display:inline-flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden;}
+.pnote-toggle button{border:none;background:transparent;padding:6px 12px;font-size:12px;font-weight:700;color:var(--mu);cursor:pointer;font-family:var(--font);}
+.pnote-toggle button.on{background:var(--gl);color:var(--gp);}
+.pnote-q{flex:1;min-width:140px;}
+.memo-board{position:relative;border:1px dashed var(--bd);border-radius:12px;background:var(--bg);overflow:auto;padding:4px;max-height:70vh;}
+.pnote{position:absolute;width:192px;min-height:150px;border-radius:9px;box-shadow:0 3px 10px rgba(0,0,0,.15);display:flex;flex-direction:column;padding:0 0 7px;color:#2a2a2a;touch-action:none;}
+.pnote.dragging{box-shadow:0 10px 26px rgba(0,0,0,.3);opacity:.97;}
+.pnote.hide{display:none;}
+.pnote-bar{display:flex;align-items:center;gap:5px;padding:5px 7px 2px;cursor:grab;}
+.pnote-bar:active{cursor:grabbing;}
+.pnote-grip{color:rgba(0,0,0,.32);font-size:12px;line-height:1;}
+.pnote-colors{display:flex;gap:3px;flex:1;}
+.pnote-color{width:12px;height:12px;border-radius:999px;border:1px solid rgba(0,0,0,.15);cursor:pointer;padding:0;}
+.pnote-color.on{outline:2px solid rgba(0,0,0,.42);outline-offset:1px;}
+.pnote-del{border:none;background:transparent;cursor:pointer;font-size:12px;opacity:.55;line-height:1;}
+.pnote-del:hover{opacity:1;}
+.pnote-title{border:none;background:transparent;font-weight:800;font-size:13px;padding:2px 10px;color:#2a2a2a;font-family:var(--font);}
+.pnote-title:focus,.pnote-body:focus{outline:none;}
+.pnote-body{border:none;background:transparent;flex:1;resize:none;font-size:12px;line-height:1.55;padding:1px 10px 4px;color:#3a3a3a;font-family:var(--font);min-height:78px;}
+.pnote-title::placeholder,.pnote-body::placeholder{color:rgba(0,0,0,.32);}
+.pnote-link{align-self:flex-start;margin:0 10px;font-size:11.5px;text-decoration:none;color:#1d4ed8;}
 .memo-note{border:1px solid var(--bd);border-left:4px solid var(--g);border-radius:10px;padding:11px 13px;background:var(--card);display:flex;flex-direction:column;gap:5px;min-height:90px;}
 .memo-note .memo-t{font-weight:700;}
 .memo-note-body{font-size:12.5px;color:var(--mu);line-height:1.6;white-space:pre-wrap;word-break:break-word;flex:1;}
@@ -743,17 +766,23 @@ body.dark .memo-st.st-done{background:rgba(34,197,94,.16);color:#6ee7a0;}
 .memo-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
 .memo-cal-wd{text-align:center;font-size:11px;font-weight:700;color:var(--mu);padding:2px 0;}
 .memo-cal-wd.sun{color:#dc2626;} .memo-cal-wd.sat{color:#2563eb;}
-.memo-cal-cell{position:relative;aspect-ratio:1/1;border:1px solid transparent;border-radius:8px;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:4px 0 0;font-family:var(--font);}
+.memo-cal-cell{position:relative;min-height:74px;border:1px solid transparent;border-radius:8px;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;padding:5px 5px 4px;font-family:var(--font);overflow:hidden;text-align:left;}
 .memo-cal-cell.empty{cursor:default;}
 .memo-cal-cell:not(.empty):hover{background:var(--bg);}
-.memo-cal-cell .cd-n{font-size:12.5px;font-weight:600;color:var(--tx);}
+.memo-cal-cell .cd-n{font-size:12.5px;font-weight:600;color:var(--tx);flex-shrink:0;}
 .memo-cal-cell.today .cd-n{color:var(--g);font-weight:800;}
 .memo-cal-cell.today{border-color:var(--g);}
 .memo-cal-cell.sel{background:var(--gl);border-color:var(--g);}
-.memo-cal-cell .cd-dots{display:flex;gap:2px;margin-top:2px;height:6px;}
+.memo-cal-cell .cd-evs{display:flex;flex-direction:column;gap:2px;margin-top:3px;min-width:0;}
+.cd-ev{font-size:10.5px;line-height:1.35;border-radius:4px;padding:1px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.cd-ev.ev{background:var(--g);color:#fff;} .cd-ev.ev b{font-weight:800;}
+.cd-ev.due{background:#fff4e5;color:#b8730a;font-weight:700;}
+body.dark .cd-ev.due{background:rgba(245,158,11,.18);color:#fbbf24;}
+.cd-more{font-size:10px;font-weight:700;color:var(--mu);padding:0 4px;}
 .cd{width:5px;height:5px;border-radius:999px;display:inline-block;}
 .cd.ev{background:var(--g);} .cd.due{background:#f59e0b;}
 i.cd{vertical-align:middle;}
+@media (max-width:640px){ .memo-cal-cell{min-height:58px;} .cd-ev{font-size:9.5px;padding:1px 3px;} }
 .exp-print{flex:1;font-size:13.5px;font-weight:800;padding:11px;border:none;border-radius:10px;background:var(--g);color:#fff;cursor:pointer;white-space:nowrap;}
 .exp-print:hover{background:var(--gd);}
 .exp-mini2{font-size:13px;font-weight:700;padding:11px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);cursor:pointer;white-space:nowrap;}
@@ -4248,6 +4277,8 @@ function _hubFromDash(i){ const it=_dashHubItems[i]; if(!it) return; _bmHubItems
 // ══════════════════════════════════════════════════════════════════════════
 const _MEMO_KEY='koat_memo';
 let _memoTab='todo', _memoQ='', _memoEventMode='cal';   // 일정: 'cal'(캘린더)|'list'(목록)
+let _memoNoteMode='board';   // 메모: 'board'(포스트잇 자유배치)|'list'(목록)
+const _PNOTE_COLORS=[{k:'y',c:'#fff9c4'},{k:'p',c:'#f8d7e8'},{k:'b',c:'#d7ecff'},{k:'g',c:'#d9f4dd'},{k:'o',c:'#ffe6cc'},{k:'v',c:'#e9ddff'}];
 let _memoCal=null, _memoCalSel='';   // 캘린더 표시 월 {y,m0}·선택일(YYYY-MM-DD)
 function _wmemoGet(){ try{ const m=JSON.parse(localStorage.getItem(_MEMO_KEY)||'{}');
   const r={todos:m.todos||[], events:m.events||[], contacts:m.contacts||[], notes:m.notes||[]};
@@ -4394,15 +4425,21 @@ function _memoCalHtml(m){
   if(!_memoCalSel) _memoCalSel=_memoToday();
   const {y,m0}=_memoCal, mp=String(m0+1).padStart(2,'0'), pfx=y+'-'+mp;
   const startDow=new Date(y,m0,1).getDay(), days=new Date(y,m0+1,0).getDate(), todayStr=_memoToday();
+  // 날짜별 일정·마감을 '제목'까지 모아 셀에 직접 표시(구글 캘린더식 칩)
   const evByDay={}, dueByDay={};
-  m.events.forEach(e=>{ const s=String(e.date||'').slice(0,10); if(s.startsWith(pfx)){ const d=+s.slice(8,10); evByDay[d]=(evByDay[d]||0)+1; } });
-  m.todos.forEach(t=>{ if(t.status==='done'||!t.due) return; const s=String(t.due).slice(0,10); if(s.startsWith(pfx)){ const d=+s.slice(8,10); dueByDay[d]=(dueByDay[d]||0)+1; } });
+  m.events.forEach(e=>{ const s=String(e.date||'').slice(0,10); if(s.startsWith(pfx)){ const d=+s.slice(8,10); (evByDay[d]=evByDay[d]||[]).push(e); } });
+  m.todos.forEach(t=>{ if(t.status==='done'||!t.due) return; const s=String(t.due).slice(0,10); if(s.startsWith(pfx)){ const d=+s.slice(8,10); (dueByDay[d]=dueByDay[d]||[]).push(t); } });
+  const MAXC=2;   // 셀에 노출할 최대 칩 수(초과분은 +N)
   let cells='';
   for(let i=0;i<startDow;i++) cells+='<div class="memo-cal-cell empty"></div>';
   for(let d=1; d<=days; d++){ const ds=pfx+'-'+String(d).padStart(2,'0');
     const cls=[ds===todayStr?'today':'', ds===_memoCalSel?'sel':''].filter(Boolean).join(' ');
-    const dots=(evByDay[d]?'<i class="cd ev"></i>':'')+(dueByDay[d]?'<i class="cd due"></i>':'');
-    cells+=`<button class="memo-cal-cell ${cls}" onclick="_memoCalPick('${ds}')"><span class="cd-n">${d}</span><span class="cd-dots">${dots}</span></button>`;
+    const evs=evByDay[d]||[], dues=dueByDay[d]||[]; const chips=[];
+    evs.forEach(e=>chips.push(`<span class="cd-ev ev" title="${escAttr((e.time?e.time+' ':'')+(e.title||''))}">${e.time?`<b>${escHtml(e.time)}</b> `:''}${escHtml(e.title||'(제목 없음)')}</span>`));
+    dues.forEach(t=>chips.push(`<span class="cd-ev due" title="${escAttr('할 일 마감: '+(t.text||''))}">⏰ ${escHtml(t.text||'')}</span>`));
+    const extra=chips.length-MAXC;
+    const chipsHtml=chips.slice(0,MAXC).join('')+(extra>0?`<span class="cd-more">+${extra}</span>`:'');
+    cells+=`<button class="memo-cal-cell ${cls}" onclick="_memoCalPick('${ds}')"><span class="cd-n">${d}</span><span class="cd-evs">${chipsHtml}</span></button>`;
   }
   const wd=_MEMO_WD.map((w,i)=>`<div class="memo-cal-wd${i===0?' sun':(i===6?' sat':'')}">${w}</div>`).join('');
   return `<div class="memo-cal"><div class="memo-cal-head">`+
@@ -4493,8 +4530,10 @@ function _memoAddContact(){ const g=id=>((document.getElementById(id)||{}).value
   _wmemoSave(m); _memoRender(); }
 // ── 메모(노트) ──
 function _memoNoteView(m){
+  if(_memoNoteMode==='board') return _memoBoardHtml(m);
   const ed=_memoEditItem('notes');
-  const add=`<div class="memo-toolbar${ed?' editing':''}">`+
+  const toggle=_memoNoteToggle();
+  const add=toggle+`<div class="memo-toolbar${ed?' editing':''}">`+
     `<input id="mnTitle" class="memo-input" placeholder="메모 제목" maxlength="80" value="${ed?escAttr(ed.title||''):''}">`+
     (ed?`<button class="memo-addbtn" onclick="_memoAddNote()">수정 저장</button><button class="memo-cancel" onclick="_memoCancelEdit()">취소</button>`
        :`<button class="memo-addbtn" onclick="_memoAddNote()">추가</button><button class="memo-cancel" onclick="openSnippets()" title="자주 쓰는 문구 삽입">🗂 문구</button>`)+`</div>`+
@@ -4503,6 +4542,65 @@ function _memoNoteView(m){
     (ed?'':`<input class="memo-search" placeholder="메모 검색" value="${escAttr(_memoQ)}" oninput="_memoFilter(this.value)">`);
   return add+`<div class="memo-notes" id="memoInner">${_memoRowsFor('note',m)}</div>`;
 }
+// ── 포스트잇 보드(자유 배치) ──────────────────────────────────────────────
+function _memoNoteToggle(){
+  return `<div class="pnote-toolbar"><span class="pnote-toggle">`+
+    `<button class="${_memoNoteMode==='board'?'on':''}" onclick="_memoNoteSetMode('board')">🧷 포스트잇</button>`+
+    `<button class="${_memoNoteMode==='list'?'on':''}" onclick="_memoNoteSetMode('list')">☰ 목록</button></span>`+
+    (_memoNoteMode==='board'?`<button class="memo-addbtn" onclick="_pnoteAdd()">＋ 새 포스트잇</button>`+
+      `<input class="memo-search pnote-q" placeholder="메모 검색" value="${escAttr(_memoQ)}" oninput="_memoBoardSearch(this.value)">`:'')+`</div>`;
+}
+function _memoNoteSetMode(mode){ _memoNoteMode=mode; _memoEdit=null; _memoRender(); }
+function _memoBoardHtml(m){
+  const W=192,H=176,GAP=12,cols=3; let changed=false;
+  (m.notes||[]).forEach((n,i)=>{ if(typeof n.x!=='number'||typeof n.y!=='number'){ n.x=(i%cols)*(W+GAP); n.y=Math.floor(i/cols)*(H+GAP); changed=true; }
+    if(!n.color){ n.color=_PNOTE_COLORS[i%_PNOTE_COLORS.length].k; changed=true; } });
+  if(changed) _wmemoSave(m);
+  const q=(_memoQ||'').toLowerCase();
+  const stickies=(m.notes||[]).map(n=>{
+    const c=_PNOTE_COLORS.find(x=>x.k===n.color)||_PNOTE_COLORS[0];
+    const hide=q && !((n.title||'')+' '+(n.body||'')).toLowerCase().includes(q);
+    const dots=_PNOTE_COLORS.map(x=>`<button class="pnote-color${x.k===n.color?' on':''}" style="background:${x.c}" title="색상 변경" onclick="_pnoteColor('${n.id}','${x.k}')"></button>`).join('');
+    return `<div class="pnote${hide?' hide':''}" data-id="${n.id}" style="left:${n.x||0}px;top:${n.y||0}px;background:${c.c};" onpointerdown="_pnoteDragStart(event,'${n.id}')">`+
+      `<div class="pnote-bar"><span class="pnote-grip">⠿</span><div class="pnote-colors">${dots}</div>`+
+      `<button class="pnote-del" title="삭제" onclick="_memoDel('notes','${n.id}')">🗑</button></div>`+
+      `<input class="pnote-title" value="${escAttr(n.title||'')}" placeholder="제목" maxlength="80" onchange="_pnoteEdit('${n.id}','title',this.value)">`+
+      `<textarea class="pnote-body" placeholder="메모를 입력하세요..." onchange="_pnoteEdit('${n.id}','body',this.value)">${escHtml(n.body||'')}</textarea>`+
+      `${n.link?`<a class="pnote-link" href="${escAttr(safeUrl(n.link))}" target="_blank" rel="noopener">🔗 링크</a>`:''}</div>`;
+  }).join('');
+  const maxY=(m.notes||[]).reduce((a,n)=>Math.max(a,(n.y||0)+H+GAP),300);
+  const board=`<div class="memo-board" id="memoBoard" style="min-height:${maxY}px">${stickies||'<div class="memo-empty" style="position:absolute;left:12px;top:12px;">포스트잇이 없습니다. ＋ 새 포스트잇으로 추가하세요.</div>'}</div>`;
+  return _memoNoteToggle()+board;
+}
+function _memoBoardSearch(v){ _memoQ=v; const q=(v||'').toLowerCase(); const m=_wmemoGet();
+  document.querySelectorAll('#memoBoard .pnote').forEach(el=>{ const n=(m.notes||[]).find(z=>z.id===el.dataset.id);
+    const hide=q && n && !((n.title||'')+' '+(n.body||'')).toLowerCase().includes(q); el.classList.toggle('hide',!!hide); }); }
+function _pnoteAdd(){ const m=_wmemoGet(); const cnt=(m.notes||[]).length; const off=20+(cnt%6)*22;
+  m.notes.unshift({id:_memoId(),title:'',body:'',link:'',x:off,y:off,color:_PNOTE_COLORS[cnt%_PNOTE_COLORS.length].k,updatedAt:_memoToday()});
+  _wmemoSave(m); _memoRender();
+  setTimeout(()=>{ const t=document.querySelector('#memoBoard .pnote .pnote-title'); if(t) t.focus(); },40); }
+function _pnoteEdit(id,field,val){ const m=_wmemoGet(); const n=(m.notes||[]).find(z=>z.id===id); if(n){ n[field]=val; n.updatedAt=_memoToday(); _wmemoSave(m); } }
+function _pnoteColor(id,k){ const m=_wmemoGet(); const n=(m.notes||[]).find(z=>z.id===id); if(n){ n.color=k; _wmemoSave(m); } _memoRender(); }
+let _pnoteDrag=null;
+function _pnoteDragStart(ev,id){
+  if(ev.target.closest('input,textarea,button,a,.pnote-color')) return;   // 편집 요소는 드래그 제외
+  const board=document.getElementById('memoBoard'), el=ev.currentTarget; if(!board||!el) return;
+  ev.preventDefault();
+  const br=board.getBoundingClientRect(), er=el.getBoundingClientRect();
+  _pnoteDrag={id, el, offX:ev.clientX-er.left, offY:ev.clientY-er.top, bx:br.left, bw:br.width};
+  el.classList.add('dragging'); el.style.zIndex=999;
+  document.addEventListener('pointermove',_pnoteDragMove);
+  document.addEventListener('pointerup',_pnoteDragEnd,{once:true});
+}
+function _pnoteDragMove(ev){ if(!_pnoteDrag) return; const {el,offX,offY,bx,bw}=_pnoteDrag; const board=document.getElementById('memoBoard');
+  const brTop=board?board.getBoundingClientRect().top:0;
+  let x=ev.clientX-bx-offX, y=ev.clientY-brTop-offY+(board?board.scrollTop:0);
+  x=Math.max(0,Math.min(x, Math.max(0,bw-el.offsetWidth))); y=Math.max(0,y);
+  el.style.left=x+'px'; el.style.top=y+'px'; }
+function _pnoteDragEnd(){ if(!_pnoteDrag) return; const {id,el}=_pnoteDrag; el.classList.remove('dragging'); el.style.zIndex='';
+  const x=parseInt(el.style.left,10)||0, y=parseInt(el.style.top,10)||0;
+  const m=_wmemoGet(); const n=(m.notes||[]).find(z=>z.id===id); if(n){ n.x=x; n.y=y; _wmemoSave(m); }
+  document.removeEventListener('pointermove',_pnoteDragMove); _pnoteDrag=null; }
 function _memoAddNote(){ const t=((document.getElementById('mnTitle')||{}).value||'').trim(); const b=((document.getElementById('mnBody')||{}).value||'').trim();
   if(!t&&!b){ alert('제목 또는 내용을 입력하세요.'); return; }
   const m=_wmemoGet(); const link=((document.getElementById('mnLink')||{}).value||'').trim();
