@@ -4680,7 +4680,7 @@ const TRAV_LODGE={seoul:'100000', metro:'80000', etc:'70000'};
 function _tcalcDefault(){ return {open:false, days:'1', nights:'0', region:'etc', ilbi:'25000', meal:'25000', lodge:'70000', km:'', kmRate:''}; }
 function _expDefault(){ return {type:'general',
   general:{vendor:'',bno:'',ceo:'',desc:'',budget:'',supply:'',vat:'',method:'계좌이체',bank:'',holder:'',account:'',
-           bnoStatus:'',bnoStatusCls:'',
+           related:'',attach:'',bnoStatus:'',bnoStatusCls:'',
            multi:false, vendors:[{vendor:'',bno:'',ceo:'',desc:'',amt:'',budget:'',method:'계좌이체',status:'',statusCls:''}]},
   travel:{name:'',dept:'',rows:[{date:_today(),place:'',content:'',amt:''}]},
   tcalc:_tcalcDefault(),
@@ -5014,10 +5014,11 @@ function _expRenderFields(){
         `<label>계좌번호<input id="gAccount" value="${_ev(g.account)}"></label></div></div>`;
     if(!g.multi){
       box.innerHTML=modeToggle+
+        `<div class="exp-fg"><div class="exp-fgt">관련 근거</div>`+
+          `<label class="exp-full">관련 문서<input id="gRelated" value="${_ev(g.related)}" placeholder="예: 기술거래이전팀-000(2026.9.22.)호"></label></div>`+
         `<div class="exp-fg"><div class="exp-fgt">거래처</div><div class="exp-frow">`+
           `<label>거래처(상호)<input id="gVendor" class="exp-vname" list="expVendorDL" value="${_ev(g.vendor)}" placeholder="예: (주)그린애그로텍"></label>`+
           `<label>사업자등록번호<span class="exp-bnowrap"><input id="gBno" class="exp-bno" value="${_ev(g.bno)}" placeholder="000-00-00000"><button type="button" class="exp-bizbtn" onclick="_expBizLookup('single',0)" title="상호로 사업자번호 조회">조회</button></span></label></div>`+
-          `<div class="exp-frow"><label>대표자<input id="gCeo" value="${_ev(g.ceo)}"></label></div>`+
           `<span id="gBnoStatus" class="exp-bnostat ${_ev(g.bnoStatusCls)}" style="${g.bnoStatus?'':'display:none'}">${_ev(g.bnoStatus)}</span>`+
           `<div id="gBizPop" class="exp-bizpop"></div>`+_expVendorDLHtml()+`</div>`+
         `<div class="exp-fg"><div class="exp-fgt">거래 내용</div>`+
@@ -5027,7 +5028,9 @@ function _expRenderFields(){
           `<label>공급가액(원)<input id="gSupply" class="exp-money" inputmode="numeric" value="${_ev(_commaFmt(g.supply))}"></label>`+
           `<label>부가세(원)<input id="gVat" class="exp-money" inputmode="numeric" value="${_ev(_commaFmt(g.vat))}"></label></div>`+
           `<div class="exp-vatrow"><button type="button" class="exp-mini" onclick="_expVatAuto()">부가세 10% 자동</button></div></div>`+
-        pay;
+        pay+
+        `<div class="exp-fg"><div class="exp-fgt">붙임</div>`+
+          `<label class="exp-full">붙임(첨부)<input id="gAttach" value="${_ev(g.attach)}" placeholder="예: 견적서 1부, 거래명세서 1부"></label></div>`;
     } else {
       _expNormVendors(g);
       const mOpts=v=>EXP_METHODS.map(m=>`<option${(v.method||'계좌이체')===m?' selected':''}>${m}</option>`).join('');
@@ -5111,7 +5114,8 @@ function _expSync(){
         amt:g('gvAmt'+i),budget:g('gvBudget'+i),method:g('gvMethod'+i)||'계좌이체'}); }
       if(vs.length) gg.vendors=vs;
     } else {
-      Object.assign(gg, {vendor:g('gVendor'),bno:g('gBno'),ceo:g('gCeo'),desc:g('gDesc'),budget:g('gBudget'),
+      Object.assign(gg, {vendor:g('gVendor'),bno:g('gBno'),desc:g('gDesc'),budget:g('gBudget'),
+        related:g('gRelated'),attach:g('gAttach'),
         supply:g('gSupply'),vat:g('gVat'),method:g('gMethod'),bank:g('gBank'),holder:g('gHolder'),account:g('gAccount')});
     }
   } else if(t==='travel'){
@@ -5450,10 +5454,10 @@ function _expBuild(){
         `· 거래처 내역 (거래처 | 거래내용 | 과목 | 금액)\n${tlines||'  (내역 없음)'}\n· 합계: 일금 ${_hanAmount(total)}원정 (${_won(total)})`;
     } else {
       const sup=_digits(g.supply), vat=_digits(g.vat), total=sup+vat;
-      const vendor=[g.vendor||'—', g.bno&&('사업자 '+g.bno), g.ceo&&('대표 '+g.ceo)].filter(Boolean).join(', ');
+      const vendor=[g.vendor||'—', g.bno&&('사업자 '+g.bno)].filter(Boolean).join(', ');
       const acct=[g.bank,g.account,g.holder&&('예금주 '+g.holder)].filter(Boolean).join(' ');
       const amt=`일금 ${_hanAmount(total)}원정 (${_won(total)})`+((sup&&vat)?`  [공급가액 ${_won(sup)} + 부가세 ${_won(vat)}]`:'');
-      const L=[['거래처',vendor],['거래내용',g.desc],['지출과목',g.budget],['금액',amt],['결제방식',[g.method,acct&&('('+acct+')')].filter(Boolean).join(' ')]].filter(x=>x[1]);
+      const L=[g.related&&['관련',g.related],['거래처',vendor],['거래내용',g.desc],['지출과목',g.budget],['금액',amt],['결제방식',[g.method,acct&&('('+acct+')')].filter(Boolean).join(' ')],g.attach&&['붙임',g.attach]].filter(Boolean).filter(x=>x[1]);
       html=`<div class="expd-tag">일반 지출</div>`+_expLines(L,true);
       text='[일반 지출]\n'+L.map((x,i)=>`${_GANADA[i]||'·'}. ${x[0]}: ${x[1]}`).join('\n');
     }
@@ -5619,14 +5623,14 @@ function _expHwpxPayload(){
         colWidths:[3600,12000,16000,8000,8028], empty: vs.length===0, rows};
     }
     const sup=_digits(g.supply),vat=_digits(g.vat),total=sup+vat;
-    const vendor=[g.vendor,g.bno&&('사업자 '+g.bno),g.ceo&&('대표 '+g.ceo)].filter(Boolean).join(', ');
+    const vendor=[g.vendor,g.bno&&('사업자 '+g.bno)].filter(Boolean).join(', ');
     const acct=[g.bank,g.account,g.holder&&('예금주 '+g.holder)].filter(Boolean).join(' ');
-    const rows=[['거래처',vendor],['거래내용',g.desc||''],['지출과목',g.budget||''],
+    const rows=[g.related&&['관련',g.related],['거래처',vendor],['거래내용',g.desc||''],['지출과목',g.budget||''],
       ['금액','일금 '+_hanAmount(total)+'원정 ('+_won(total)+')'],
-      ['결제방식',[g.method,acct&&('('+acct+')')].filter(Boolean).join(' ')]]
-      .map(r=>[{t:r[0],hd:1},{t:r[1]}]);
+      ['결제방식',[g.method,acct&&('('+acct+')')].filter(Boolean).join(' ')],g.attach&&['붙임',g.attach]]
+      .filter(Boolean).map(r=>[{t:r[0],hd:1},{t:r[1]}]);
     return {title:'지출결의서 (일반)', filename:'지출결의서_일반', colCnt:2, colWidths:[9000,38628],
-      empty: !(vendor||(g.desc||'').trim()||(g.budget||'').trim()||total), rows};
+      empty: !(vendor||(g.desc||'').trim()||(g.budget||'').trim()||total||(g.related||'').trim()||(g.attach||'').trim()), rows};
   }
   const tv=_expState.travel; const rws=(tv.rows||[]).filter(r=>r.content||r.amt||r.date||r.place);
   const total=rws.reduce((a,r)=>a+_digits(r.amt),0); const rows=[];
