@@ -180,7 +180,7 @@ body.dark .stgl.active{background:#20222a;}
   padding:6px 12px;white-space:nowrap;transition:.12s;}
 .assist-h-link:hover{background:var(--g);color:#fff;border-color:var(--g);}
 .assist-head .assist-api-badge + .assist-h-link{margin-left:8px;}
-/* 오늘의 업무(대시보드) */
+/* 일정관리 '오늘' 탭(대시보드) */
 .dash-date{font-size:12.5px;color:var(--mu);font-weight:600;margin:2px 0 12px;}
 .dash-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
 .dash-tile{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 10px;text-align:center;box-shadow:var(--shadow);}
@@ -843,6 +843,11 @@ body.dark .pmt th{background:rgba(255,255,255,.08);}
 .opp-saved{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 10px;}
 .opp-newbadge{display:inline-block;font-size:10px;font-weight:800;color:#fff;background:#f59e0b;border-radius:8px;padding:1px 6px;margin-left:3px;vertical-align:middle;}
 .opp-list{display:flex;flex-direction:column;gap:8px;}
+/* 지원사업 결과: 2열 카드(버튼은 카드 하단 정렬), 좁은 화면은 1열 */
+.opp-list.cols2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch;}
+.opp-list.cols2 .opp-card{display:flex;flex-direction:column;min-width:0;}
+.opp-list.cols2 .opp-btns{margin-top:auto;padding-top:8px;}
+@media (max-width:720px){.opp-list.cols2{grid-template-columns:1fr;}}
 .opp-card{position:relative;border:1px solid var(--bd);border-radius:10px;padding:11px 40px 11px 13px;background:var(--sf);transition:.12s;}
 .opp-card:hover{border-color:var(--g);box-shadow:0 1px 6px rgba(37,110,244,.08);}
 .opp-card.is-new{border-color:#f59e0b;box-shadow:0 0 0 1px #f59e0b33;}
@@ -2808,7 +2813,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
       <span class="sm-div" aria-hidden="true"></span>
       <div class="sm-group">
         <span class="sm-glabel">업무도구</span>
-        <button class="sm-item" id="smHome" onclick="openDashboard()" title="오늘의 업무 — 오늘 요약·할 일·일정·연락처·메모를 한곳에서(내 PC에만 저장)"><span class="sm-ic" aria-hidden="true">🏠</span><span>오늘의 업무</span></button>
+        <button class="sm-item" id="smHome" onclick="openDashboard()" title="일정관리 — 오늘 요약·할 일·일정·연락처·메모를 한곳에서(내 PC에만 저장)"><span class="sm-ic" aria-hidden="true">📅</span><span>일정관리</span></button>
         <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 본문 작성"><span class="sm-ic" data-icon="expense"></span><span>지출결의서</span></button>
         <button class="sm-item" id="smService" onclick="openService()" title="용역도우미 — 용역 여부·심의 판단, 금액별 필요서류 체크리스트·절차"><span class="sm-ic" aria-hidden="true">🧰</span><span>용역도우미</span></button>
         <button class="sm-item" id="smGuides" onclick="openGuides()" title="업무 절차 가이드 — 출장정산·물품구매·업무추진비·용역 단계별 체크리스트"><span class="sm-ic" aria-hidden="true">🧭</span><span>업무가이드</span></button>
@@ -3806,7 +3811,7 @@ function _renderOppty(kind){
   const newN=items.filter(it=>_oppNewIds.has(_oppId(kind,it))).length;
   const sortLabel=_oppSort==='deadline'?'마감임박순':(_oppSort==='relevance'?'적합도순':'최신순');
   const head=`<div class="opp-count">${items.length}건 · <b class="opp-active">진행 ${active}건</b>${newN?` · <b class="opp-new">🆕 새 ${newN}건</b>`:''} · ${escHtml(sortLabel)}</div>`;
-  return head+`<div class="opp-list">${cards}</div>`;
+  return head+`<div class="opp-list${kind==='support'?' cols2':''}">${cards}</div>`;
 }
 function _oppCard(kind, it, q){
   const id=_oppId(kind,it); _oppItemMap[id]=Object.assign({kind},it);
@@ -4161,7 +4166,7 @@ function closeAssist(){
   const sv=document.getElementById('smService'); if(sv) sv.classList.remove('active');
 }
 // ══════════════════════════════════════════════════════════════════════════
-// 오늘의 업무(개인 홈 대시보드) — 마감 임박·할 일·일정·최근 검색을 한 화면에.
+// 일정관리 '오늘' 탭(개인 홈 대시보드) — 마감 임박·할 일·일정·최근 검색을 한 화면에.
 // 모든 데이터는 기존 localStorage(즐겨찾기·업무메모·최근검색)를 재사용한다.
 // ══════════════════════════════════════════════════════════════════════════
 // 업무메모와 통합: '오늘' 탭으로 여는 진입점(기존 호출부 호환)
@@ -4296,8 +4301,8 @@ function openMemo(){
   const tab=document.getElementById('smHome'); if(tab) tab.classList.add('active');
   _assistMode='memo';
   const p=document.getElementById('assistantPanel');
-  p.innerHTML=`<div class="assist-head"><span class="assist-h-ic">🏠</span>`+
-    `<span class="assist-h-t">오늘의 업무</span>`+
+  p.innerHTML=`<div class="assist-head"><span class="assist-h-ic">📅</span>`+
+    `<span class="assist-h-t">일정관리</span>`+
     `<span class="assist-h-hint">오늘 요약·할 일·일정·연락처·메모를 한곳에서. 내 PC에만 저장됩니다.</span>`+_assistCloseBtn()+`</div>`+
     `<div class="memo-wrap" id="memoWrap"></div>`;
   _memoRender();
@@ -4497,7 +4502,7 @@ function _calAddDeadline(title, endRaw, kindLabel){
   }
   m.events.push({id:_memoId(), title:t, date, time:'', place:''});
   _wmemoSave(m);
-  if(typeof _toast==='function') _toast('📅 일정에 담았습니다 ('+date+'). 오늘의 업무 › 일정에서 .ics로 내보낼 수 있어요.', 3800);
+  if(typeof _toast==='function') _toast('📅 일정에 담았습니다 ('+date+'). 일정관리 › 일정에서 .ics로 내보낼 수 있어요.', 3800);
   if(_assistMode==='memo') _memoRender();   // 오늘 탭 '다가오는 일정'·일정 탭 갱신
 }
 // ── 연락처 ──
@@ -8122,7 +8127,7 @@ function _cmdkBuild(){
   act('내규똑똑 검색','모드',()=>{ if(_assistMode)closeAssist(); setMode('internal'); document.getElementById('q').focus(); });
   act('법령 조회','모드',()=>{ if(_assistMode)closeAssist(); setMode('law'); document.getElementById('q').focus(); });
   act('AI 시나리오 검색','모드',()=>{ if(_assistMode)closeAssist(); setMode('scenario'); });
-  act('오늘의 업무','도구',openDashboard);
+  act('일정관리','도구',openDashboard);
   act('업무 메모 — 할 일','도구',()=>_dashOpenMemo('todo'));
   act('업무 메모 — 포스트잇 메모','도구',()=>_dashOpenMemo('note'));
   act('지출결의서','도구',openExpense);
