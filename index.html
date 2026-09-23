@@ -922,6 +922,8 @@ body.dark .opp-gv.opp-due{color:#fca5a5;}
   border-radius:5px;padding:2px 7px;white-space:nowrap;}
 /* 2단 결과 레이아웃 (넓은 화면에서 주 결과 | 교차 결과) */
 .res-split{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start;}
+.res-split:not(.two) #internalResults{order:-1;}   /* 1열: 교차 안내(없음·로딩)를 결과 위 한 줄로 */
+.res-split:not(.two) #internalResults:empty{display:none;}
 @media(min-width:1180px){
   .res-split.two{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);}
   .res-split.two #internalResults{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto;}
@@ -935,7 +937,7 @@ body.dark .opp-gv.opp-due{color:#fca5a5;}
   padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;transition:.13s;}
 .reg-tb-csv:hover{border-color:var(--g);color:var(--gd);background:var(--gl);}
 .res-filter{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px;}
-.res-filter .rf-label{font-size:11.5px;color:var(--mu);font-weight:700;margin-right:2px;}
+.res-filter .rf-label{font-size:11.5px;color:var(--mu);font-weight:700;margin-right:2px;white-space:nowrap;flex-shrink:0;}
 .rf-chip{border:1px solid var(--bd);background:var(--cd);color:var(--tx);border-radius:999px;
   padding:3px 11px;font-size:12px;cursor:pointer;transition:.13s;}
 .rf-chip:hover{border-color:var(--g);color:var(--gd);}
@@ -6121,8 +6123,13 @@ function applyResultFilter(type){
 function updateSplitLayout(){
   const sp=document.getElementById('resSplit'), ir=document.getElementById('internalResults');
   if(!sp||!ir) return;
-  sp.classList.toggle('two', !!(ir.innerHTML||'').trim());
+  // 관련 결과 카드/칩이 있을 때만 2열. 로딩·없음·오류 안내만 있으면 1열로 두고 안내는 결과 위에 한 줄로.
+  sp.classList.toggle('two', !!ir.querySelector('.int-uni-card, .int-law-chip, .reg-card'));
 }
+// 교차 패널 내용이 바뀔 때마다(조기 return 경로 포함) 레이아웃 자동 갱신
+(function(){ const hook=()=>{ const ir=document.getElementById('internalResults');
+  if(ir && window.MutationObserver) new MutationObserver(()=>updateSplitLayout()).observe(ir,{childList:true}); };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',hook); else hook(); })();
 // 조문 즉시 미리보기: 카드의 문서를 열고 해당 조문으로 이동
 function previewArticle(el, artNo){
   const card=el.closest('.reg-card'); if(!card) return;
@@ -6239,10 +6246,10 @@ function buildRegCards(items, kw, kind){
       const artNo=(no.match(/\d+/)||[''])[0];
       return `<div class="reg-art art-click" role="button" tabindex="0"
               title="클릭하면 전문에서 이 조문을 바로 봅니다"
-              onclick="previewArticle(this,'${artNo}')"
+              onclick="if(event.target.closest('.art-xref,.law-ref'))return;previewArticle(this,'${artNo}')"
               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();previewArticle(this,'${artNo}');}">
         <div class="reg-art-h">${no?`<span class="art-no">${escHtml(no)}</span>`:''}<span class="reg-art-t">${highlightKwsSafe(escHtml(title||no||'조문'),kw?[kw]:[])}</span>${a._sem?'<span class="art-sem-badge" title="키워드가 달라도 의미가 비슷한 조문">의미</span>':''}<span class="art-go">전문에서 보기 →</span></div>
-        ${content?`<div class="reg-art-b">${artBodyFrom(a,content,{lawName:name,abbrevMap,kws:kw?[kw]:[]})}</div>`:''}
+        ${content?`<div class="reg-art-b">${artBodyFrom(a,content,{lawName:name,abbrevMap,kws:kw?[kw]:[],stripHead:!!(no||title)})}</div>`:''}
       </div>`;
     }).join('') : `<div class="reg-none">키워드 매칭 미리보기가 없습니다. 전문에서 확인하세요.</div>`;
     const moreNote = (cnt > arts.length)
@@ -8614,7 +8621,13 @@ function artBodyHtml(a, opts){
   if(!content && !(a && a['조문구조'])) return '';
   const items=(a && Array.isArray(a['조문구조']) && a['조문구조'].length)
     ? a['조문구조'] : parseArtLines(content);
-  let html = artLinesHtml(items, s=>s);
+  let its=items;
+  // stripHead: 카드 머리에 조문번호·제목이 이미 있으면 본문 첫 줄의 "제N조(제목)" 반복을 뺀다
+  if(o.stripHead && its.length && !its[0].no){
+    const t=String(its[0].text||'').replace(/^제\d+조(?:의\d+)?\s*(?:\([^)]*\))?\s*/,'');
+    its = t ? [{...its[0], text:t}, ...its.slice(1)] : its.slice(1);
+  }
+  let html = artLinesHtml(its, s=>s);
   if(o.lawName!==undefined) html = applyXref(html, o.lawName||'', o.abbrevMap||{});
   if(o.tooltip) html = applyTermTooltip(html);
   const kws=(o.kws||[]).filter(Boolean);
@@ -10017,6 +10030,23 @@ document.addEventListener('DOMContentLoaded',()=>{
         const nm=wlr.dataset.reflaw; const inter=matchInternalRule(nm);
         wsOpen(inter||nm, inter?'internal':'law'); return; }
     }
+    // 검색 결과 카드(주 결과·관련 내규) 안의 준용 링크 → 작업공간 창으로 열고 해당 조문으로 이동.
+    //   카드 조문 클릭(previewArticle)과 같은 열람 방식으로 통일(전체화면 패널을 겹쳐 띄우지 않음).
+    const cardRef = e.target.closest('#results .art-xref[data-artno], #internalResults .art-xref[data-artno], #results .law-ref[data-reflaw], #internalResults .law-ref[data-reflaw]');
+    if(cardRef){
+      e.stopPropagation(); try{hideArtPopover();}catch(_){} try{hideRefPopover();}catch(_){}
+      const card=cardRef.closest('.reg-card');
+      const reflaw=cardRef.dataset.reflaw||'';
+      let nm, dt;
+      if(reflaw){ const inter=cardRef.dataset.refinternal||matchInternalRule(reflaw); nm=inter||reflaw; dt=inter?'internal':'law'; }
+      else if(card){ nm=card.dataset.docName||''; dt=card.dataset.docKind==='internal'?'internal':'law'; }
+      if(nm){
+        if(dt==='law' && !reflaw && card) wsOpen(nm,'law',card.dataset.docUrl||'',card.dataset.docOrg||'',card.dataset.docType||'');
+        else wsOpen(nm, dt);
+        if(cardRef.classList.contains('art-xref')) _wsScrollAfterOpen(nm, dt, _artFullNo(cardRef));
+      }
+      return;
+    }
     const xref = e.target.closest('.art-xref[data-artno]');
     if(xref){
       e.stopPropagation();
@@ -10367,7 +10397,17 @@ function extractLawAbbrevs(arts, currentLawName){
   return map;
 }
 
+// 시행령·시행규칙 본문의 관용 약칭: "법 제N조"=모법, (시행규칙에서) "영 제N조"=같은 법 시행령.
+// 원문에 "(이하 …이라 한다)" 정의 없이 쓰이므로 법령명에서 유도한다.
+function _implicitLawAbbrevs(lawName){
+  const m=String(lawName||'').trim().match(/^(.+?)\s*(시행령|시행규칙)$/);
+  if(!m) return {};
+  const base=m[1].trim(); const r={'법':base};
+  if(m[2]==='시행규칙') r['영']=base+' 시행령';
+  return r;
+}
 function applyXref(html, lawName, abbrevMap={}, intAbbrev={}){
+  abbrevMap = Object.assign({}, _implicitLawAbbrevs(lawName), abbrevMap||{});
   // 1) 「법령명」 → 준용 법령 링크
   //    접미사: 법률·법·시행령·시행규칙·고시·예규·세칙·령·규칙·조례·훈령·규정·지침·기준
   //    괄호 변형 허용: 「」·｢｣ 뿐 아니라 『』·《》·〈〉 도 인식(원문마다 표기가 다르다).
@@ -10448,6 +10488,22 @@ function applyXref(html, lawName, abbrevMap={}, intAbbrev={}){
     }).join('');
   }
 
+  // 1b-f) "같은 법 제N조"·"같은 영 제N조" → 바로 앞에 인용된 법령(law-ref)을 가리킨다.
+  //   (예: 「산지관리법」 제14조 및 같은 법 제15조 → 둘 다 산지관리법)
+  {
+    let last='';
+    html=html.split(/(<[^>]+>)/g).map((seg,idx)=>{
+      if(idx%2===1){ const m=seg.match(/^<span[^>]*class="law-ref[^"]*"[^>]*data-reflaw="([^"]+)"/); if(m) last=m[1]; return seg; }
+      if(!last) return seg;
+      return seg.replace(/같은\s?(법률|법|영|규칙)( +)(?=제\d+조)/g,(mm,kind,sp)=>{
+        const base=last.replace(/\s*(시행령|시행규칙)$/,'');
+        const tgt=(kind==='영')?base+' 시행령':(kind==='규칙')?base+' 시행규칙':last;
+        if(tgt===lawName) return mm;
+        return `<span class="law-ref" data-reflaw="${tgt}" title="「${tgt}」 조문 보기">${mm.replace(/ +$/,'')}</span>${sp}`;
+      });
+    }).join('');
+  }
+
   // 1c) 약칭 → 법령 링크 (예: "영 제34조", "법 제35조의2")
   //     extractLawAbbrevs 가 반환한 맵 기반; 태그 내부 속성 건드리지 않도록 텍스트 파트만 처리
   if(abbrevMap && Object.keys(abbrevMap).length > 0){
@@ -10460,7 +10516,7 @@ function applyXref(html, lawName, abbrevMap={}, intAbbrev={}){
         const safe     = refLaw.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         const abbrevE  = abbrev.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         // 앞에 한글이 붙지 않은 약칭 + 공백 + 제N조
-        const re = new RegExp(`(?<![가-힣])(${abbrevE})( +)(?=제\\d+조)`, 'g');
+        const re = new RegExp(`(?<![가-힣])(?<!같은\\s?)(${abbrevE})( +)(?=제\\d+조)`, 'g');
         p = p.replace(re, (_m, ab, spaces) =>
           `<span class="law-ref" data-reflaw="${safe}" title="「${safe}」 조문 보기">${ab}</span>${spaces}`
         );
