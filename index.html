@@ -1425,6 +1425,20 @@ body.ws-dragging{user-select:none;}
 body.ws-dragging .ws-pane-body{pointer-events:none;}
 .ws-pane.ws-reorder{opacity:.9;outline:2px dashed var(--g);outline-offset:-2px;}
 .ws-pane-body{flex:1;overflow:auto;padding:14px 16px 28px;}
+/* 연계 법령 바(법률·시행령·시행규칙) */
+.law-fam{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;margin:0 0 10px;
+  background:var(--gl,#eef4ff);border:1px solid var(--bd);border-radius:10px;font-size:12px;}
+.law-fam-empty{display:none;}
+.law-fam-lab{font-weight:800;color:var(--mu);margin-right:2px;white-space:nowrap;}
+.law-fam-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--bd);background:var(--sf);color:var(--tx);
+  border-radius:999px;padding:3px 10px 3px 4px;font-size:12px;font-weight:600;cursor:pointer;max-width:100%;}
+.law-fam-chip:hover{border-color:var(--g);color:var(--g);}
+.law-fam-chip.on{background:var(--g);border-color:var(--g);color:#fff;cursor:default;}
+.law-fam-k{font-size:10.5px;font-weight:800;border-radius:999px;padding:1px 7px;background:var(--gl,#eef4ff);color:var(--g);white-space:nowrap;}
+.law-fam-chip.on .law-fam-k{background:rgba(255,255,255,.22);color:#fff;}
+.law-fam-ver{margin-left:auto;font-size:11px;font-weight:700;color:#166534;background:#dcfce7;border-radius:999px;padding:2px 9px;white-space:nowrap;}
+.law-fam-wait{color:var(--ht);font-size:11.5px;}
+#fpBody > .law-fam{margin:0 0 8px;}
 .ws-doc{font-size:14px;line-height:1.7;color:var(--tx);}
 .ws-art{padding:10px 0;border-bottom:1px solid rgba(0,0,0,.05);}
 .ws-art-t{font-weight:700;font-size:13.5px;color:var(--tx);margin-bottom:5px;
@@ -9861,6 +9875,12 @@ async function openFullPanel(lawName, lawUrl, org, type){
       }
       fpArts=d.articles||[];
       renderFpArts(fpArts);
+      try{
+        const fb=document.getElementById('fpBody'); const ver=d.version||null;
+        if(fb){ fb.insertAdjacentHTML('afterbegin', _lawFamBarHtml(lawName, undefined, ver, 'fp'));
+          _lawFamily(lawName).then(items=>{ const el=document.getElementById('fpFam');
+            if(el && currentPanelLaw && currentPanelLaw.name===lawName) el.outerHTML=_lawFamBarHtml(lawName, items, ver, 'fp'); }); }
+      }catch(e){}
       const amendBtn=document.getElementById('fpAmendBtn');
       if(amendBtn){ amendBtn.textContent='🔴 최근 개정'; amendBtn.style.color=''; amendBtn.style.borderColor=''; amendBtn.style.background=''; }
       setTimeout(()=>checkAmendBadgeAsync(lawName), 800);
@@ -10705,7 +10725,11 @@ async function _wsLoadPane(pane){
       const d=await r.json();
       pane.loading=false;
       if((!d.articles || !d.articles.length)){ pane.error=d.error||'조문을 가져오지 못했습니다.'; }
-      else { pane.arts=d.articles||[]; try{ pane.abbrevMap=extractLawAbbrevs(pane.arts,name)||{}; }catch(e){ pane.abbrevMap={}; } }
+      else { pane.arts=d.articles||[]; pane.version=d.version||null;
+             try{ pane.abbrevMap=extractLawAbbrevs(pane.arts,name)||{}; }catch(e){ pane.abbrevMap={}; }
+             // 연계 법령(법률·시행령·시행규칙) — 도착하면 창 상단 바만 갱신
+             _lawFamily(name).then(items=>{ pane.family=items;
+               const el=document.getElementById('wsfam_'+id); if(el) el.outerHTML=_lawFamBarHtml(pane.name, items, pane.version, 'ws', id); }); }
     }
   }catch(e){ pane.loading=false; pane.error='문서를 불러오지 못했습니다.'; }
   // 내규 사전(참조 링크용)을 렌더 전에 준비 — 알려진 내규명 링크가 첫 렌더부터 적용되도록
@@ -11100,7 +11124,40 @@ function wsLawHtml(p){
     });
     if(!shown) out=`<div class="fp-empty">"${escHtml(fRaw)}"에 해당하는 조문이 없습니다.</div>`;
   }
-  return `<div class="ws-doc">${out}</div>`;
+  return _lawFamBarHtml(p.name, p.family, p.version, 'ws', p.id)+`<div class="ws-doc">${out}</div>`;
+}
+// ── 연계 법령 바(법률 · 시행령 · 시행규칙) + 현행 시행일 ─────────────────────────
+const _lawFamCache={};
+function _lawFamily(name){
+  const base=String(name||'').trim().replace(/\s*(시행령|시행규칙)$/,'');
+  if(_lawFamCache[base]) return _lawFamCache[base];
+  const pr=fetch(`/api/law/family?name=${encodeURIComponent(name)}`).then(r=>r.json())
+    .then(d=>(d&&d.success&&Array.isArray(d.items))?d.items:[]).catch(()=>[]);
+  _lawFamCache[base]=pr;
+  pr.then(items=>{ if(!items.length) delete _lawFamCache[base]; });   // 실패·빈 결과는 다음에 재시도
+  return pr;
+}
+function _fmtYmd(v){ const d=String(v||'').replace(/\D/g,''); return d.length>=8?`${d.slice(0,4)}.${d.slice(4,6)}.${d.slice(6,8)}.`:''; }
+// where: 'ws'(작업공간 창) | 'fp'(전체화면 패널)
+function _lawFamBarHtml(name, items, version, where, id){
+  const domId = where==='ws' ? `wsfam_${id}` : 'fpFam';
+  const cur=_rnorm(name);
+  const ver = version && (version.status||version.ef)
+    ? `<span class="law-fam-ver" title="법제처 현행 법령 기준으로 불러왔습니다">${escHtml(version.status||'현행')}${version.ef?` · 시행 ${escHtml(_fmtYmd(version.ef))}`:''}</span>` : '';
+  let chips;
+  if(items===undefined) chips=`<span class="law-fam-wait">연계 법령 확인 중…</span>`;
+  else if(!items || items.length<2) chips='';
+  else chips=items.map(it=>{
+    const on=_rnorm(it.name)===cur;
+    const enc=encodeURIComponent(it.name);
+    const act = where==='ws'
+      ? `wsOpen(decodeURIComponent('${enc}'),'law')`
+      : `openFullPanel(decodeURIComponent('${enc}'),'https://www.law.go.kr/법령/${enc}','${argAttr(currentPanelLaw&&currentPanelLaw.org||'')}','${argAttr(it.type||'')}')`;
+    return `<button class="law-fam-chip${on?' on':''}" ${on?'disabled aria-current="true"':`onclick="${act}"`} title="${on?'지금 보고 있는 법령':`「${escAttr(it.name)}」 ${where==='ws'?'새 창으로 나란히 열기':'열기'}`}">`+
+      `<span class="law-fam-k">${escHtml(it.kind)}</span>${escHtml(it.name)}</button>`;
+  }).join('');
+  if(!chips && !ver) return `<div id="${domId}" class="law-fam law-fam-empty"></div>`;
+  return `<div id="${domId}" class="law-fam">${chips?`<span class="law-fam-lab">연계 법령</span>${chips}`:''}${ver}</div>`;
 }
 function wsRenderPaneBody(pane){
   const b=document.getElementById('wsbody_'+pane.id); if(!b) return;

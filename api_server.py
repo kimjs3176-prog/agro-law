@@ -300,49 +300,99 @@ def _mst_of(item: ET.Element) -> str:
     return ""
 
 
-def _get_mst(law_name: str, target: str = "law") -> str:
+def _lookup_law(law_name: str, target: str = "law") -> dict:
     """
-    법령명 → MST(일련번호). 법제처 검색은 질의어를 포함하는 다른 법령을 먼저 주는
-    경우가 있어(예: '특허법' → '특허료 등의 징수규칙') 이름이 정확히 일치하는
-    항목을 우선 선택한다.
+    법령명 → {"mst", "id", "name", "rank"}.
+    · 법제처 검색은 질의어를 포함하는 다른 법령을 먼저 주는 경우가 있어
+      (예: '특허법' → '특허료 등의 징수규칙') 이름이 정확히 일치하는 항목을 우선한다.
+    · 같은 이름이 여러 건(현행·시행예정·연혁)일 때는 '현행'을 우선하고, 그다음
+      시행일(오늘 이전) → 공포일이 최신인 항목을 고른다. 첫 항목을 무조건 쓰면
+      이전 시행본(MST)에 연결돼 최신 법령과 어긋나던 문제를 막는다.
+    · id(법령ID)는 버전과 무관한 법령 식별자라 lawService.do?ID= 로 조회하면
+      법제처가 항상 현행 본문을 준다(MST는 특정 시행본의 일련번호).
     """
+    out = {"mst": "", "id": "", "name": "", "rank": 99}
     try:
         root = _law_get_xml("lawSearch.do",
-                            {"target": target, "query": law_name, "display": "20"})
+                            {"target": target, "query": law_name, "display": "30"})
         items = [el for el in root if _mst_of(el)] or \
                 [el for el in root.iter() if el is not root and _mst_of(el)]
         want = _norm_key(law_name)
+        today = time.strftime("%Y%m%d")
 
-        best, best_rank = "", 99
+        def _txt(it, *tags):
+            for t in tags:
+                v = (it.findtext(t) or "").strip()
+                if v:
+                    return v
+            return ""
+
+        best_key = None
         for it in items:
-            nm = ""
-            for tag in _NAME_TAGS:
-                nm = (it.findtext(tag) or "").strip()
-                if nm:
-                    break
+            nm = _txt(it, *_NAME_TAGS)
             n = _norm_key(nm)
             rank = (0 if n == want else            # 완전 일치
                     1 if n.startswith(want) else   # '특허법 시행령' 류
                     2 if want in n else 3)         # 부분 포함 → 무관
-            if rank < best_rank:
-                best, best_rank, best_nm = _mst_of(it), rank, nm
-                if rank == 0:
-                    break
-        if best:
-            print(f"[MST] '{law_name}'({target}) → {best} "
-                  f"(선택:'{best_nm}' 일치도={best_rank})")
-            return best
+            status = _txt(it, "현행연혁코드", "현행연혁구분", "현행여부")
+            ef = re.sub(r"\D", "", _txt(it, "시행일자"))[:8]
+            anc = re.sub(r"\D", "", _txt(it, "공포일자", "발령일자"))[:8]
+            cur = 0 if (status == "현행" or (not status and (not ef or ef <= today))) else 1
+            # 작은 값이 우선: 일치도 → 현행 → (시행일이 오늘 이전인) 최신 시행일 → 최신 공포일
+            key = (rank, cur, 0 if (ef and ef <= today) else 1,
+                   -int(ef or 0) if ef and ef <= today else 0, -int(anc or 0))
+            if best_key is None or key < best_key:
+                best_key = key
+                out = {"mst": _mst_of(it),
+                       "id": _txt(it, "법령ID", "행정규칙ID"),
+                       "name": nm, "rank": rank, "status": status, "ef": ef}
+        if out["mst"]:
+            print(f"[MST] '{law_name}'({target}) → MST={out['mst']} ID={out['id']} "
+                  f"(선택:'{out['name']}' 일치도={out['rank']} 상태={out.get('status')} 시행={out.get('ef')})")
+            return out
 
         # 항목 단위 추출이 실패하면 문서 전체에서 첫 태그 사용(구버전 동작)
         for tag in _MST_TAGS:
             el = root.find(f".//{tag}")
             if el is not None and el.text and el.text.strip():
                 print(f"[MST] '{law_name}'({target}) fallback {tag}={el.text.strip()}")
-                return el.text.strip()
+                out["mst"] = el.text.strip()
+                return out
         print(f"[MST] '{law_name}'({target}) 실패 — 태그: {sorted({e.tag for e in root.iter()})}")
     except Exception as e:
         print(f"[MST] 오류: {e}")
-    return ""
+    return out
+
+
+def _get_mst(law_name: str, target: str = "law") -> str:
+    """법령명 → MST(일련번호). 선택 규칙은 _lookup_law 참고."""
+    return _lookup_law(law_name, target).get("mst", "")
+
+
+def _fetch_law_root(law_name: str, target: str = "law", timeout=None, info: dict = None):
+    """
+    법령명으로 본문 XML(root)을 가져온다. 국가법령은 법령ID(→ 현행 본문)를 먼저 쓰고,
+    실패하면 선택된 시행본의 MST로 조회한다. (MST 값을 ID 파라미터로 넣던 과거 폴백은
+    전혀 다른 법령을 가져올 수 있어 쓰지 않는다.)
+    """
+    ref = info if info is not None else _lookup_law(law_name, target)
+    endpoint = "admRulService.do" if target == "admrul" else "lawService.do"
+    tries = []
+    if target == "law" and ref.get("id"):
+        tries.append({"target": target, "ID": ref["id"]})
+    if ref.get("mst"):
+        tries.append({"target": target, "MST": ref["mst"]})
+        if target == "admrul":
+            tries.append({"target": target, "ID": ref["mst"]})   # 행정규칙은 ID=일련번호
+    for params in tries:
+        try:
+            r = _law_get_xml(endpoint, params, timeout=timeout)
+            if _is_valid_law_xml(r):
+                print(f"[law] '{law_name}' ← {endpoint} {params}")
+                return r
+        except Exception as e:
+            print(f"[law] '{law_name}' {params} 실패: {e}")
+    return None
 
 # 구조 헤더 태그 (장·절·관·편 - 조문이 아님)
 _STRUCT_TAGS = {"장", "절", "관", "편", "장번호", "절번호", "관번호", "편번호",
@@ -827,18 +877,7 @@ def _fetch_matching_articles(law_name: str, kw: str, doc_type: str = "law", alwa
     cache_key = f"{doc_type}:{law_name}"
     lname, articles = _cache_get(cache_key)
     if articles is None:
-        mst = _get_mst(law_name, target=doc_type)
-        if not mst:
-            return None
-        endpoint = "admRulService.do" if doc_type == "admrul" else "lawService.do"
-        root = None
-        for param in ("MST", "ID"):
-            try:
-                r = _law_get_xml(endpoint, {"target": doc_type, param: mst}, timeout=(5, 18))
-                if _is_valid_law_xml(r):
-                    root = r; break
-            except Exception:
-                continue
+        root = _fetch_law_root(law_name, doc_type, timeout=(5, 18))
         if root is None:
             return None
         lname, _, articles = _parse_articles(root)
@@ -1139,18 +1178,7 @@ def search_legal_basis():
             cache_key = f"{doc_type}:{law_name}"
             lname, articles = _cache_get(cache_key)
             if articles is None:
-                mst = _get_mst(law_name, target=doc_type)
-                if not mst: return None
-                endpoint = "admRulService.do" if doc_type == "admrul" else "lawService.do"
-                root = None
-                for param in ("MST", "ID"):
-                    try:
-                        r = _law_get_xml(endpoint,
-                                         {"target": doc_type, param: mst}, timeout=(5, 18))
-                        if _is_valid_law_xml(r):
-                            root = r; break
-                    except Exception:
-                        continue
+                root = _fetch_law_root(law_name, doc_type, timeout=(5, 18))
                 if root is None: return None
                 lname, _, articles = _parse_articles(root)
                 _cache_set(cache_key, lname or law_name, articles)
@@ -1483,6 +1511,54 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
     })
 
 
+# ── 연계 법령(법률 · 시행령 · 시행규칙) ────────────────────────────────────────
+_LAW_FAMILY_CACHE: dict = {}
+_FAMILY_TTL = 6 * 3600
+
+def _law_family_base(name: str) -> str:
+    return re.sub(r"\s*(시행령|시행규칙)$", "", (name or "").strip())
+
+@app.route("/api/law/family")
+def law_family():
+    """법령명 → 같은 계열의 법률·시행령·시행규칙 중 실제로 존재하는 것(현행)."""
+    name = request.args.get("name", "").strip()
+    if not name:
+        return jsonify({"error": "name 파라미터가 필요합니다"}), 400
+    base = _law_family_base(name)
+    hit = _LAW_FAMILY_CACHE.get(base)
+    if hit and time.time() - hit["ts"] < _FAMILY_TTL:
+        return jsonify({"success": True, "base": base, "items": hit["items"]})
+    want = {_norm_key(base): "법률", _norm_key(base + "시행령"): "시행령",
+            _norm_key(base + "시행규칙"): "시행규칙"}
+    found = {}
+    try:
+        root = _law_get_xml("lawSearch.do", {"target": "law", "query": base, "display": "50"})
+        items = [el for el in root if _mst_of(el)] or \
+                [el for el in root.iter() if el is not root and _mst_of(el)]
+        for it in items:
+            nm = ""
+            for tag in _NAME_TAGS:
+                nm = (it.findtext(tag) or "").strip()
+                if nm:
+                    break
+            kind = want.get(_norm_key(nm))
+            if not kind:
+                continue
+            status = (it.findtext("현행연혁코드") or "").strip()
+            ef = re.sub(r"\D", "", it.findtext("시행일자") or "")[:8]
+            prev = found.get(kind)
+            # 같은 이름이 여러 건이면 현행 우선
+            if prev is None or (prev["status"] != "현행" and status == "현행"):
+                found[kind] = {"name": nm, "kind": kind, "status": status, "ef": ef,
+                               "type": (it.findtext("법령구분명") or "").strip()}
+    except Exception as e:
+        return jsonify({"success": False, "error": f"조회 실패: {e}", "base": base, "items": []})
+    order = ["법률", "시행령", "시행규칙"]
+    out = [found[k] for k in order if k in found]
+    _LAW_FAMILY_CACHE[base] = {"items": out, "ts": time.time()}
+    return jsonify({"success": True, "base": base, "items": out})
+
+
 @app.route("/api/law/articles")
 def get_law_articles():
     """법령명으로 조문 전체 조회"""
@@ -1490,66 +1566,20 @@ def get_law_articles():
     if not law_name:
         return jsonify({"error": "name 파라미터가 필요합니다"}), 400
     try:
-        # Step 1: XML 검색으로 법령MST 추출
-        mst = _get_mst(law_name)
-
-        # Step 2: MST로 조문 전문 조회 시도
-        root = None
+        # Step 1~3: 법령ID(현행 본문) → 현행 시행본 MST 순으로 조회
         tried = []
-
-        if mst:
-            for param_name in ("MST", "ID"):
-                try:
-                    root = _law_get_xml("lawService.do",
-                                        {"target": "law", param_name: mst})
-                    # 오류 메시지 확인
-                    err_el = root.find(".//message") or root.find(".//Message")
-                    if err_el is not None and err_el.text and "없" in err_el.text:
-                        print(f"[articles] {param_name}={mst} → 오류: {err_el.text}")
-                        root = None; tried.append(f"{param_name}={mst}(실패)")
-                        continue
-                    # 태그가 단 하나(Law)이고 내용에 "없습니다" 포함 확인
-                    all_tags = {el.tag for el in root.iter()}
-                    if len(all_tags) <= 2:
-                        txt = "".join(el.text or "" for el in root.iter())
-                        if "없" in txt:
-                            root = None; tried.append(f"{param_name}={mst}(없음)")
-                            continue
-                    tried.append(f"{param_name}={mst}(성공)")
-                    break
-                except Exception as e:
-                    tried.append(f"{param_name}={mst}({e})")
-                    root = None
-
-        # Step 3: 법령일련번호로 재시도 (XML 검색 결과에서)
+        info = _lookup_law(law_name, "law")
+        root = None
+        if info.get("rank", 99) > 1:
+            # 국가법령 중 이름이 맞는 게 없으면(부분 일치뿐) 행정규칙에 정확히 같은 이름이
+            # 있는지 먼저 본다 — 엉뚱한 법령 본문을 여는 것 방지
+            adm = _lookup_law(law_name, "admrul")
+            if adm.get("rank") == 0:
+                root = _fetch_law_root(law_name, "admrul", timeout=(5, 20), info=adm)
+                tried.append("admrul(정확일치):" + ("성공" if root is not None else "실패"))
         if root is None:
-            try:
-                search_root = _law_get_xml("lawSearch.do",
-                                           {"target": "law", "query": law_name, "display": "1"})
-                all_tags_s = {el.tag for el in search_root.iter()}
-                print(f"[articles] XML 검색 태그: {sorted(all_tags_s)}")
-                # 모든 가능한 ID 필드 시도
-                for id_tag in ("법령MST", "법령Mst", "MST", "법령일련번호", "lsiSeq"):
-                    id_el = search_root.find(f".//{id_tag}")
-                    if id_el is not None and id_el.text and id_el.text.strip():
-                        id_val = id_el.text.strip()
-                        for param in ("MST", "ID"):
-                            try:
-                                r2 = _law_get_xml("lawService.do",
-                                                  {"target": "law", param: id_val})
-                                all_tags_r = {el.tag for el in r2.iter()}
-                                if len(all_tags_r) > 3:
-                                    root = r2
-                                    tried.append(f"{param}={id_val}[{id_tag}](성공)")
-                                    raise StopIteration
-                            except StopIteration:
-                                raise
-                            except Exception as e2:
-                                tried.append(f"{param}={id_val}({e2})")
-            except StopIteration:
-                pass
-            except Exception as e3:
-                print(f"[articles] Step3 오류: {e3}")
+            root = _fetch_law_root(law_name, "law", info=info)
+            tried.append("law:" + ("성공" if root is not None else "실패"))
 
         # Step 4: 행정규칙(admrul) fallback — lawService.do 모두 실패한 경우
         if root is None:
@@ -1583,6 +1613,9 @@ def get_law_articles():
         lname, law_date, articles = _parse_articles(root)
         return jsonify({"success": True, "law_name": lname or law_name,
                         "law_date": law_date,
+                        "version": ({"status": info.get("status", ""), "ef": info.get("ef", ""),
+                                     "mst": info.get("mst", ""), "id": info.get("id", "")}
+                                    if "law:성공" in tried else {}),
                         "count": len(articles), "articles": articles})
 
     except req_lib.exceptions.ConnectTimeout:
@@ -2061,16 +2094,7 @@ def get_law_amendments():
         from datetime import datetime, timedelta
 
         # ── Step 1: 현재 법령 XML 취득 ─────────────────────────────────────────
-        mst = _get_mst(law_name)
-        root = None
-        for param in ("MST", "ID"):
-            if not mst: break
-            try:
-                r = _law_get_xml("lawService.do", {"target": "law", param: mst})
-                if _is_valid_law_xml(r):
-                    root = r; break
-            except Exception:
-                continue
+        root = _fetch_law_root(law_name, "law")
 
         if root is None:
             return jsonify({"error": "법령 XML을 불러오지 못했습니다."}), 502
