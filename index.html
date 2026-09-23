@@ -2412,6 +2412,83 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 .page-btn{min-width:36px;height:36px;border-radius:10px;border:none;background:var(--sf);font-size:14px;cursor:pointer;font-weight:500;color:var(--mu);transition:.15s;box-shadow:0 1px 4px rgba(0,0,0,.06);}
 .page-btn:hover:not(.active){background:var(--gl);color:var(--g);}
 .page-btn.active{background:var(--g);color:#fff;font-weight:700;box-shadow:0 2px 8px rgba(37,110,244,.3);}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   디자인 리프레시(UX 패스) — 가독성·위계·주요 행동(검색) 강조
+   · 대비: 보조 텍스트(--mu)·힌트(--ht)가 WCAG AA에 못 미쳐 한 단계 진하게
+   · 위계: 검색창을 페이지의 주인공으로(크게·흰 바탕·아이콘·포커스 링)
+   · 내비: 비활성 메뉴도 읽히는 색, 활성 메뉴는 채운 알약으로 명확히
+   · 소음 제거: 중복 버튼(카드 안 ☆즐겨찾기 = 상단바와 동일)·장황한 안내 축소
+   ══════════════════════════════════════════════════════════════════════════ */
+:root{--mu:#646b76;--ht:#8b919b;--ink2:#3d434c;
+  --elev-1:0 1px 2px rgba(17,18,23,.04),0 1px 1px rgba(17,18,23,.03);
+  --elev-2:0 1px 2px rgba(17,18,23,.04),0 10px 30px -12px rgba(17,18,23,.14);}
+body.dark{--mu:#a0a6b0;--ht:#737985;--ink2:#cfd2d9;
+  --elev-1:0 1px 2px rgba(0,0,0,.3);--elev-2:0 12px 32px -12px rgba(0,0,0,.55);}
+body{background:radial-gradient(1100px 420px at 50% -160px,rgba(37,110,244,.08),transparent 70%) no-repeat,var(--bg);}
+body.dark{background:radial-gradient(1100px 420px at 50% -160px,rgba(37,110,244,.14),transparent 70%) no-repeat,var(--bg);}
+
+/* 상단바 */
+.topbar{height:62px;}
+.brand{font-size:18px;letter-spacing:-.6px;}
+.brand-sub{color:var(--mu);}
+
+/* 주 메뉴 */
+.side-menu{border-color:var(--bd);box-shadow:var(--elev-1);padding:9px 12px;border-radius:14px;}
+.sm-glabel{color:var(--mu);font-size:10.5px;letter-spacing:.02em;}
+.sm-item{color:var(--ink2);font-weight:600;}
+.sm-item:hover{background:var(--gl);color:var(--gp);}
+.sm-item.active{background:var(--g);color:#fff;font-weight:700;box-shadow:0 2px 8px -2px rgba(37,110,244,.55);}
+.sm-item.active:hover{background:var(--gd);color:#fff;}
+body.dark .sm-item.active{color:#fff;}
+.sm-item:focus-visible,.stgl:focus-visible,.sbtn:focus-visible,.chip:focus-visible{outline:none;box-shadow:var(--shadow-focus);}
+
+/* 검색 카드 — 페이지의 주인공 */
+.spanel{border:1px solid var(--bd);box-shadow:var(--elev-2);padding:26px 28px 22px;border-radius:20px;}
+.tabs:has(> .fav-tab-btn:only-child){display:none;}   /* 상단바 ☆즐겨찾기와 중복 */
+.search-toggle{margin-bottom:14px;}
+.stgl{font-weight:600;}
+#q.sinput{height:56px;padding:0 18px 0 50px!important;font-size:16px;border:1.5px solid var(--bd);background-color:var(--sf);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%238b919b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:18px 50%;box-shadow:inset 0 1px 2px rgba(17,18,23,.04);}
+#q.sinput:hover{border-color:rgba(37,110,244,.45);}
+#q.sinput:focus{border-color:var(--g);background-color:var(--sf);box-shadow:0 0 0 4px rgba(37,110,244,.16);}
+#q.sinput::placeholder{color:var(--ht);}
+body.dark #q.sinput{background-color:#12151b;border-color:rgba(255,255,255,.1);background-repeat:no-repeat;background-position:18px 50%;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%239aa0aa' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");}
+body.dark #q.sinput:focus{background-color:#161a22;}
+#sbtn.sbtn{height:56px;padding:0 30px;font-size:16px;border-radius:14px;}
+#sbtn.sbtn{min-width:96px;}
+
+/* 모든 검색 입력 공통 외형(크기는 각자 유지): 흰 바탕 + 테두리 + 포커스 링 */
+.sinput{border:1.5px solid var(--bd);background-color:var(--sf);}
+.sinput:hover{border-color:rgba(37,110,244,.45);}
+.sinput:focus{border-color:var(--g);background-color:var(--sf);box-shadow:0 0 0 4px rgba(37,110,244,.16);}
+.sinput::placeholder{color:var(--ht);}
+body.dark .sinput{background-color:#12151b;border-color:rgba(255,255,255,.1);}
+body.dark .sinput:focus{background-color:#161a22;border-color:var(--g);}
+
+/* 보조 라벨·힌트 */
+.qlabel{color:var(--mu);font-size:12px;letter-spacing:0;text-transform:none;font-weight:700;margin:16px 0 8px;}
+.rec-label{color:var(--mu);font-size:12px;font-weight:700;}
+.saved-empty{color:var(--ht);font-size:12px;}
+.footer{color:var(--mu);}
+
+/* 결과 카드 공통 */
+.card{border-color:var(--bd);}
+.reg-card{box-shadow:var(--elev-1);}
+.reg-card:hover{box-shadow:var(--elev-2);}
+
+@media(max-width:640px){
+  .spanel{padding:16px 14px 14px;border-radius:16px;}
+  #q.sinput,body.dark #q.sinput{height:50px;padding:0 12px 0 42px!important;background-position:14px 50%;font-size:16px;}
+  #sbtn.sbtn{height:50px;padding:0 16px;font-size:15px;min-width:64px;}
+  .saved-empty{display:none;}                 /* 모바일: 장황한 안내 숨김(버튼만) */
+  .sm-primary{-webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent);}
+  .footer{padding-bottom:84px;}               /* 하단 탭바에 가리지 않게 */
+  .int-fav-empty{white-space:normal;flex:1 1 100%;line-height:1.5;}   /* 가로 스크롤 칩 줄에서 안내문이 잘리던 문제 */
+  #internalChips:has(.int-fav-empty){flex-wrap:wrap;overflow:visible;}
+}
 </style>
 </head>
 <body>
@@ -2853,7 +2930,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
     </div>
     <!-- 검색창 -->
     <div class="srow">
-      <input id="q" class="sinput" style="padding-left:40px;" aria-label="검색어 입력" placeholder="🔍  내규 검색 (예: 직무발명, 여비)" onkeydown="if(event.key==='Enter')doSearch()">
+      <input id="q" class="sinput" style="padding-left:40px;" aria-label="검색어 입력" placeholder="내규 검색 (예: 직무발명, 여비)" onkeydown="if(event.key==='Enter')doSearch()">
       <button id="sbtn" class="sbtn" onclick="doSearch()">검색</button>
     </div>
     <!-- 내규 카테고리 바로가기 (내규·통합 모드일 때 표시) -->
