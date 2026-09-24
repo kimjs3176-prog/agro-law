@@ -1511,6 +1511,44 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
     })
 
 
+# ── 법령명 자동완성(검색창 입력 중 제안) ─────────────────────────────────────────
+_LAW_SUGGEST_CACHE: dict = {}
+_SUGGEST_TTL = 3600
+
+@app.route("/api/law/suggest")
+def law_suggest():
+    """입력 중인 검색어 → 법령명 후보(현행). 최근 검색 기록에 남기지 않는 가벼운 조회."""
+    q = request.args.get("q", "").strip()
+    if len(q) < 2:
+        return jsonify({"success": True, "items": []})
+    key = _norm_key(q)
+    hit = _LAW_SUGGEST_CACHE.get(key)
+    if hit and time.time() - hit["ts"] < _SUGGEST_TTL:
+        return jsonify({"success": True, "items": hit["items"]})
+    items, seen = [], set()
+    try:
+        root = _law_get_xml("lawSearch.do", {"target": "law", "query": q, "display": "20"},
+                            timeout=(4, 8))
+        for it in [el for el in root if _mst_of(el)]:
+            nm = ""
+            for tag in _NAME_TAGS:
+                nm = (it.findtext(tag) or "").strip()
+                if nm:
+                    break
+            k = _norm_key(nm)
+            if not nm or k in seen:
+                continue
+            seen.add(k)
+            items.append({"name": nm, "type": (it.findtext("법령구분명") or "").strip()})
+    except Exception as e:
+        return jsonify({"success": False, "items": [], "error": str(e)})
+    # 입력어로 시작하는 이름 → 짧은 이름 순(본법이 시행령·시행규칙보다 앞)
+    items.sort(key=lambda x: (0 if _norm_key(x["name"]).startswith(key) else 1, len(x["name"])))
+    items = items[:8]
+    _LAW_SUGGEST_CACHE[key] = {"items": items, "ts": time.time()}
+    return jsonify({"success": True, "items": items})
+
+
 # ── 연계 법령(법률 · 시행령 · 시행규칙) ────────────────────────────────────────
 _LAW_FAMILY_CACHE: dict = {}
 _FAMILY_TTL = 6 * 3600
