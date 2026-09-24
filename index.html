@@ -2468,6 +2468,25 @@ body.dark #q.sinput:focus{background-color:#161a22;}
 body.dark .sinput{background-color:#12151b;border-color:rgba(255,255,255,.1);}
 body.dark .sinput:focus{background-color:#161a22;border-color:var(--g);}
 
+/* 검색 범위 선택 + 자동완성 */
+.scope-toggle{align-items:center;}
+.scope-toggle .stgl{padding:8px 18px;}
+.scope-hint{font-size:12px;color:var(--mu);padding:0 10px 0 12px;white-space:nowrap;}
+.srow{position:relative;}
+.ac-box{position:absolute;left:0;right:calc(96px + 10px);top:calc(100% + 6px);z-index:60;background:var(--sf);
+  border:1px solid var(--bd);border-radius:14px;box-shadow:0 18px 40px -12px rgba(17,18,23,.28);padding:6px;max-height:min(60vh,420px);overflow:auto;}
+.ac-grp{font-size:11px;font-weight:800;color:var(--mu);padding:8px 10px 4px;}
+.ac-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;cursor:pointer;font-size:14px;color:var(--tx);}
+.ac-item.on{background:var(--gl);}
+.ac-main{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ac-main b{color:var(--g);font-weight:800;}
+.ac-art{font-weight:800;color:var(--g);}
+.ac-meta{font-size:11.5px;color:var(--mu);white-space:nowrap;flex-shrink:0;}
+.ac-item.on .ac-meta{color:var(--gp);}
+.ac-foot{font-size:11px;color:var(--ht);padding:8px 10px 4px;border-top:1px solid var(--bd);margin-top:4px;}
+.ac-foot kbd{font-family:var(--font);font-size:10.5px;border:1px solid var(--bd);border-bottom-width:2px;border-radius:5px;padding:0 5px;margin:0 1px;background:var(--bg);}
+body.dark .ac-box{box-shadow:0 18px 40px -12px rgba(0,0,0,.7);}
+
 /* 보조 라벨·힌트 */
 .qlabel{color:var(--mu);font-size:12px;letter-spacing:0;text-transform:none;font-weight:700;margin:16px 0 8px;}
 .rec-label{color:var(--mu);font-size:12px;font-weight:700;}
@@ -2483,6 +2502,9 @@ body.dark .sinput:focus{background-color:#161a22;border-color:var(--g);}
   .spanel{padding:16px 14px 14px;border-radius:16px;}
   #q.sinput,body.dark #q.sinput{height:50px;padding:0 12px 0 42px!important;background-position:14px 50%;font-size:16px;}
   #sbtn.sbtn{height:50px;padding:0 16px;font-size:15px;min-width:64px;}
+  .ac-box{right:0;}
+  .ac-foot,.scope-hint{display:none;}
+  .scope-toggle{display:flex;width:100%;} .scope-toggle .stgl{flex:1;justify-content:center;padding:8px 6px;}
   .saved-empty{display:none;}                 /* 모바일: 장황한 안내 숨김(버튼만) */
   .sm-primary{-webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent);}
   .footer{padding-bottom:84px;}               /* 하단 탭바에 가리지 않게 */
@@ -2924,14 +2946,19 @@ body.dark .sinput:focus{background-color:#161a22;border-color:var(--g);}
       <button class="fav-tab-btn" id="favTabBtn" onclick="toggleFavTab()">☆ 즐겨찾기 <span id="favCount"></span></button>
     </div>
     <!-- 검색 유형 토글: 키워드 검색 ↔ AI 시나리오 (내규·법령 페이지 내부) -->
-    <div class="search-toggle" id="searchToggle" role="tablist" aria-label="검색 유형">
-      <button class="stgl active" id="stglKw" role="tab" onclick="if(mode==='scenario')setMode(_scenReturn)"><span class="stgl-ic">🔍</span>키워드 검색</button>
-      <button class="stgl" id="stglScen" role="tab" onclick="setMode('scenario')" title="업무 상황을 문장으로 물어보면 근거 법령·조문을 제안합니다"><span class="stgl-ic">✦</span>AI 시나리오</button>
+    <div class="search-toggle scope-toggle" id="searchToggle" role="tablist" aria-label="검색 범위">
+      <button class="stgl active" id="stglInt" role="tab" aria-selected="true" onclick="_scopeSwitch('internal')" title="사내 규정(내규)에서 찾기 — 관련 법령도 함께 표시"><span class="stgl-ic">📋</span>내규</button>
+      <button class="stgl" id="stglLaw" role="tab" aria-selected="false" onclick="_scopeSwitch('law')" title="국가법령에서 찾기 — 관련 내규도 함께 표시"><span class="stgl-ic">🏛</span>법령</button>
+      <button class="stgl" id="stglScen" role="tab" aria-selected="false" onclick="_scopeSwitch('scenario')" title="업무 상황을 문장으로 물어보면 AI가 근거 법령·조문을 제안합니다"><span class="stgl-ic">✦</span>AI 질문</button>
+      <span class="scope-hint" id="scopeHint">규정명·키워드·"규정명 제N조"로 찾기</span>
     </div>
     <!-- 검색창 -->
     <div class="srow">
-      <input id="q" class="sinput" style="padding-left:40px;" aria-label="검색어 입력" placeholder="내규 검색 (예: 직무발명, 여비)" onkeydown="if(event.key==='Enter')doSearch()">
-      <button id="sbtn" class="sbtn" onclick="doSearch()">검색</button>
+      <input id="q" class="sinput" style="padding-left:40px;" aria-label="검색어 입력" placeholder="내규 검색 (예: 직무발명, 여비)"
+             autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="acBox" aria-expanded="false"
+             onkeydown="if(_acKey(event))return; if(event.key==='Enter'){_acHide();doSearch();}">
+      <button id="sbtn" class="sbtn" onclick="_acHide();doSearch()">검색</button>
+      <div class="ac-box" id="acBox" role="listbox" aria-label="검색 제안" hidden></div>
     </div>
     <!-- 내규 카테고리 바로가기 (내규·통합 모드일 때 표시) -->
     <div id="internalExamples" style="display:none;">
@@ -5803,10 +5830,15 @@ function setMode(m){
   const intExamples = document.getElementById('internalExamples');
   const qlabel      = document.getElementById('qlabelDefault');
   const chipsWrap   = document.getElementById('chips');
-  // 검색 유형 토글 활성 표시(키워드 ↔ AI 시나리오)
-  const stKw=document.getElementById('stglKw'), stScen=document.getElementById('stglScen');
-  if(stKw)   stKw.classList.toggle('active', m!=='scenario');
-  if(stScen) stScen.classList.toggle('active', m==='scenario');
+  // 검색 범위 선택(내규 · 법령 · AI 질문) 활성 표시
+  [['stglInt','internal'],['stglLaw','law'],['stglScen','scenario']].forEach(([id,k])=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.classList.toggle('active', m===k); el.setAttribute('aria-selected', m===k?'true':'false');
+  });
+  const sh=document.getElementById('scopeHint');
+  if(sh) sh.textContent = m==='scenario' ? '업무 상황을 문장으로 물어보세요'
+                        : m==='law' ? '법령명·키워드·"법령명 제N조"로 찾기' : '규정명·키워드·"규정명 제N조"로 찾기';
+  try{ _acHide(); }catch(e){}
   // 모드별 보조 UI: 내규→카테고리 칩, 법령→자주 찾는 법령, 시나리오→예시 질문
   examples.style.display = (m==='scenario') ? '' : 'none';
   if(intExamples){
@@ -8146,6 +8178,127 @@ function renderBasisResults(laws, basisType, keywords){
 // ── 최근 검색어 ──
 // ── 최근 검색: 클라이언트 localStorage 저장(서버 메모리 대신) ──
 const _RECENT_KEY = 'koat_recent';
+// ══ 검색 범위 전환 + 자동완성 ════════════════════════════════════════════════
+// 범위를 바꾸면 입력한 검색어로 바로 다시 찾는다(다시 입력·클릭할 필요 없음).
+function _scopeSwitch(m){
+  if(_assistMode) closeAssist();
+  if(mode===m) return;
+  setMode(m);
+  const q=(document.getElementById('q')||{}).value||'';
+  if(q.trim() && m!=='scenario') doSearch();
+  else { const el=document.getElementById('q'); if(el) el.focus(); }
+}
+let _acItems=[], _acSel=-1, _acTimer=null, _acSeq=0;
+const _acLawCache={};
+function _acHide(){
+  const b=document.getElementById('acBox'); if(b){ b.hidden=true; b.innerHTML=''; }
+  const q=document.getElementById('q'); if(q){ q.setAttribute('aria-expanded','false'); q.removeAttribute('aria-activedescendant'); }
+  _acItems=[]; _acSel=-1;
+}
+function _acMark(name, v){
+  const e=escHtml(name); if(!v) return e;
+  const i=name.toLowerCase().indexOf(v.toLowerCase());
+  return i<0 ? e : escHtml(name.slice(0,i))+'<b>'+escHtml(name.slice(i,i+v.length))+'</b>'+escHtml(name.slice(i+v.length));
+}
+// "여비규정 제5조", "농지법 제8조의2" → {name, art:'5'|'8의2'}
+function _acParseArt(v){
+  const m=String(v||'').match(/^(.+?)\s*제\s*(\d+)\s*조(?:\s*의\s*(\d+))?\s*$/);
+  return m ? {name:m[1].trim(), art:m[2]+(m[3]?'의'+m[3]:'')} : null;
+}
+function _acInternalHits(v, n){
+  const k=_rnorm(v); if(!k || !_regNameOrig.size) return [];
+  return [..._regNameOrig.values()].filter(x=>_rnorm(x).includes(k))
+    .sort((a,b)=>((_rnorm(a).startsWith(k)?0:1)-(_rnorm(b).startsWith(k)?0:1))||a.length-b.length).slice(0,n);
+}
+function _acUpdate(){
+  const qEl=document.getElementById('q'); if(!qEl) return;
+  const v=qEl.value.trim();
+  if(mode==='scenario' || _assistMode){ _acHide(); return; }
+  const items=[];
+  const art=_acParseArt(v);
+  if(art && art.name){
+    const inter=matchInternalRule(art.name);
+    const dt = inter ? 'internal' : (mode==='law' || /(법|법률|령|규칙)$/.test(art.name) ? 'law' : 'internal');
+    const nm = inter || (dt==='law' ? art.name : (_acInternalHits(art.name,1)[0]||''));
+    if(nm) items.push({kind:'art', dt, name:nm, art:art.art, group:'📍 조문 바로 보기'});
+  }
+  if(v){
+    if(mode==='internal'){
+      _acInternalHits(art?art.name:v, 6).forEach(n=>items.push({kind:'doc', dt:'internal', name:n, group:'📋 내규 바로 열기'}));
+    } else {
+      const key=_rnorm(art?art.name:v);
+      const cached=_acLawCache[key];
+      (cached||[]).slice(0,6).forEach(it=>items.push({kind:'doc', dt:'law', name:it.name, sub:it.type, group:'🏛 법령 바로 열기'}));
+      if(!cached && key.length>=2){
+        clearTimeout(_acTimer);
+        const seq=++_acSeq;
+        _acTimer=setTimeout(()=>{
+          fetch(`/api/law/suggest?q=${encodeURIComponent(art?art.name:v)}`).then(r=>r.json()).then(d=>{
+            _acLawCache[key]=(d&&d.items)||[];
+            if(seq===_acSeq && document.activeElement===qEl) _acUpdate();
+          }).catch(()=>{ _acLawCache[key]=[]; });
+        },200);
+      }
+    }
+  }
+  const rec=getRecent().filter(r=>r!==v && (!v || r.includes(v))).slice(0, v?3:6);
+  rec.forEach(r=>items.push({kind:'recent', text:r, group:'🕘 최근 검색'}));
+  _acRender(items, v);
+}
+function _acRender(items, v){
+  const box=document.getElementById('acBox'), qEl=document.getElementById('q'); if(!box||!qEl) return;
+  _acItems=items; _acSel=-1;
+  if(!items.length){ _acHide(); return; }
+  let html='', last='';
+  items.forEach((it,i)=>{
+    if(it.group!==last){ html+=`<div class="ac-grp">${escHtml(it.group)}</div>`; last=it.group; }
+    let main, meta;
+    if(it.kind==='recent'){ main=_acMark(it.text, v); meta='검색'; }
+    else if(it.kind==='art'){ main=`${escHtml(it.name)} <span class="ac-art">제${escHtml(it.art)}조</span>`; meta=it.dt==='internal'?'내규 조문':'법령 조문'; }
+    else { main=_acMark(it.name, v); meta=it.sub||(it.dt==='internal'?'내규':'법령'); }
+    html+=`<div class="ac-item" role="option" id="acOpt${i}" aria-selected="false" onmousedown="event.preventDefault();_acPick(${i})" onmousemove="_acHover(${i})">`+
+      `<span class="ac-main">${main}</span><span class="ac-meta">${escHtml(meta)}${it.kind==='recent'?'':' ↗'}</span></div>`;
+  });
+  html+=`<div class="ac-foot"><kbd>↑</kbd><kbd>↓</kbd> 이동 · <kbd>Enter</kbd> ${v?'선택 없으면 검색':'선택'} · <kbd>Esc</kbd> 닫기</div>`;
+  box.innerHTML=html; box.hidden=false;
+  qEl.setAttribute('aria-expanded','true');
+}
+function _acHover(i){ if(_acSel===i) return; _acSel=i; _acPaint(); }
+function _acPaint(){
+  const qEl=document.getElementById('q');
+  document.querySelectorAll('#acBox .ac-item').forEach((el,i)=>{ const on=i===_acSel; el.classList.toggle('on',on); el.setAttribute('aria-selected',on?'true':'false'); if(on) el.scrollIntoView({block:'nearest'}); });
+  if(qEl){ if(_acSel>=0) qEl.setAttribute('aria-activedescendant','acOpt'+_acSel); else qEl.removeAttribute('aria-activedescendant'); }
+}
+// 키 처리: 처리했으면 true(기본 Enter 검색을 막음)
+function _acKey(e){
+  const box=document.getElementById('acBox');
+  const open=box && !box.hidden && _acItems.length;
+  if(e.key==='Escape' && open){ e.preventDefault(); _acHide(); return true; }
+  if(!open){ if(e.key==='ArrowDown'){ _acUpdate(); return !!_acItems.length; } return false; }
+  if(e.key==='ArrowDown'){ e.preventDefault(); _acSel=(_acSel+1)%_acItems.length; _acPaint(); return true; }
+  if(e.key==='ArrowUp'){ e.preventDefault(); _acSel=_acSel<=0?_acItems.length-1:_acSel-1; _acPaint(); return true; }
+  if(e.key==='Enter' && _acSel>=0){ e.preventDefault(); _acPick(_acSel); return true; }
+  return false;
+}
+function _acPick(i){
+  const it=_acItems[i]; if(!it) return;
+  const qEl=document.getElementById('q');
+  _acHide();
+  if(it.kind==='recent'){ qEl.value=it.text; doSearch(); return; }
+  const url = it.dt==='law' ? 'https://www.law.go.kr/법령/'+encodeURIComponent(it.name) : undefined;
+  if(it.kind==='art') addRecent(`${it.name} 제${it.art}조`); else addRecent(it.name);
+  openPrimaryDoc(it.name, it.dt, url);
+  if(it.kind==='art') _wsScrollAfterOpen(it.name, it.dt, it.art);
+  if(qEl) qEl.blur();
+}
+(function(){ const hook=()=>{ const qEl=document.getElementById('q'); if(!qEl) return;
+  qEl.addEventListener('input', ()=>_acUpdate());
+  qEl.addEventListener('focus', ()=>{ try{ loadRegNames().then(()=>{ if(document.activeElement===qEl) _acUpdate(); }); }catch(e){} _acUpdate(); });
+  qEl.addEventListener('blur', ()=>setTimeout(()=>{ if(document.activeElement!==qEl) _acHide(); },120));
+  window.addEventListener('resize', ()=>_acHide());
+};
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',hook); else hook(); })();
+
 function getRecent(){
   try{ const a = JSON.parse(localStorage.getItem(_RECENT_KEY)||'[]'); return Array.isArray(a)?a:[]; }
   catch{ return []; }
