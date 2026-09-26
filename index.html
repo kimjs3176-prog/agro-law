@@ -7745,8 +7745,25 @@ function _dedupeArts(arts){
 }
 
 // 내규 본문을 조문 단위로 분해해 키워드 매칭 조문 추출
+// ── 부칙·개정 연혁 등 '검색 의도 밖' 영역 제거 ─────────────────────────────
+// 내규 본문 끝의 부칙(시행일·적용례·개정 연혁)은 '시행', '적용', '기준' 같은 흔한 말이
+// 반복돼 카드 미리보기를 차지하기 쉽다. 검색어에 '부칙'이 없으면 부칙 머리 줄부터 잘라낸다.
+const _ADDENDA_RE=/(?:^|\n)[ \t]*[\[【〔]?\s*부\s*칙\s*[\]】〕]?(?=\s|<|\(|$)/;
+function _wantsAddenda(kw){ return /부\s*칙/.test(String(kw||'')); }
+function _cutAddenda(text, kw){
+  if(!text || _wantsAddenda(kw)) return text||'';
+  const m=_ADDENDA_RE.exec(text);
+  return m ? text.slice(0, m.index) : text;
+}
+// 조문에 붙는 연혁 표기만 남은 조각("[본조신설 2015.01.30.]", "<개정 2020.9.23.>")
+function _isRevNoteOnly(t){
+  return /^(?:\s*[\[<〈（(]\s*(?:본조신설|신설|개정|전문개정|제목개정|본조개정|종전|삭제)[^\]>〉）)]*[\]>〉）)]\s*)+$/.test(String(t||''));
+}
 function extractRuleArticles(text, kw){
   if(!text) return [];
+  // 부칙을 뺀 본문에 검색어가 없으면(부칙에만 등장) 원문 기준으로 보여 준다
+  const _cutT=_cutAddenda(text, kw);
+  if(!kw || _cutT===text || _cutT.toLowerCase().includes(String(kw).toLowerCase())) text=_cutT;
   // 별표·별지·붙임(서식) 블록은 카드 미리보기에서 제외 — 서식 헤더 라인부터 끝까지
   // 잘라낸다. 단, 조문 본문 속 '[별표 1]과 같이' 같은 '참조 문장'(길다)은 자르지 않는다.
   {
@@ -7792,16 +7809,23 @@ function parseInternalGrouped(text, kw){
              matched_count:0}].map(it=>(it.matched_count=it.matched_articles.length,it));
   }
   const rules=new Map(); // 규정명 → {name, arts:[], seen:Map}
+  // 부칙 제거는 '본문 매칭이 하나라도 남을 때'만 적용(부칙에만 걸린 검색이면 원문 유지)
+  const _kwL=String(kw||'').toLowerCase();
+  const _raw=markers.map((mk,i)=>text.slice(mk.bodyStart, (i+1<markers.length)?markers[i+1].start:text.length)
+    .replace(/^[\s]*-{2,}[\s]*$/gm,'').trim());
+  const _cut=_raw.map(b=>_cutAddenda(b, kw).trim());
+  const _useCut=_cut.some(b=>b && (!_kwL || b.toLowerCase().includes(_kwL)));
   markers.forEach((mk,i)=>{
-    const bodyEnd = (i+1<markers.length) ? markers[i+1].start : text.length;
-    let body = text.slice(mk.bodyStart, bodyEnd).replace(/^[\s]*-{2,}[\s]*$/gm,'').trim();
-    if(!body) return;
+    let body = _useCut ? _cut[i] : _raw[i];
+    if(!body || _isRevNoteOnly(body)) return;
     if(!rules.has(mk.name)) rules.set(mk.name,{name:mk.name, arts:[], seen:new Map()});
     const R=rules.get(mk.name);
     // 블록 본문을 조문 단위로 분해 — 줄 시작의 "제N조"에서만 분리
     // (본문 중간의 법령 참조 "「○○법」 제N조"에서 잘리는 문제 방지)
-    let parts = body.split(/\n\s*(?=제\s*\d+\s*조)/).map(s=>s.trim()).filter(Boolean);
+    let parts = body.split(/\n\s*(?=제\s*\d+\s*조)/).map(s=>s.trim()).filter(Boolean).filter(p=>!_isRevNoteOnly(p));
     if(!parts.length) parts=[body];
+    // 같은 블록에 검색어를 포함한 조문이 있으면, 검색어가 없는 곁가지 조각(연혁·이어붙은 꼬리)은 뺀다
+    if(_kwL && parts.some(p=>p.toLowerCase().includes(_kwL))) parts=parts.filter(p=>p.toLowerCase().includes(_kwL));
     parts.forEach(p=>{
       const am=p.match(/^제\s*(\d+)\s*조(?:의\d+)?\s*(?:\(([^)]*)\))?/);
       const no=am?am[1]:'';
@@ -7889,7 +7913,9 @@ function renderInternalResults(d, q){
   }
   // 의미 검색(임베딩) 보완: 키워드로 못 찾은 규정을 뒤에 덧붙인다.
   // 어휘가 달라 놓친 조문을 살리되, 키워드 상위 결과의 순서는 건드리지 않는다.
-  const sem=(d.semantic||[]).filter(x=>x&&x.title);
+  // 의미 검색 조문 중 부칙(시행일·적용례)·연혁 조각은 제외(검색어에 '부칙'이 있으면 유지)
+  const sem=(d.semantic||[]).filter(x=>x&&x.title && (_wantsAddenda(q) ||
+    !(/부\s*칙/.test(String(x.art_title||'')) || _ADDENDA_RE.test('\n'+String(x.preview||'').slice(0,20)) || _isRevNoteOnly(x.preview))));
   if(sem.length){
     // 이미 표시된 규정은 인덱스를 잡아두고, 의미 검색 조문을 '조문번호 단위'로 병합한다.
     const idxByReg=new Map();
