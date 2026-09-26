@@ -6708,7 +6708,7 @@ const _rnorm=s=>(s||'').replace(/\s+/g,'').toLowerCase();
 function _stripApxForRel(t){
   if(!t) return t;
   const mApx=t.search(/(?:^|\n)[ \t]*[\[<（(〔【［]?\s*별\s*[표지]/);
-  const mAdd=t.search(/(?:^|\n)[ \t]*부\s*칙(?:\s|$)/);
+  const mAdd=(typeof _ADDENDA_RE!=='undefined')?t.search(_ADDENDA_RE):t.search(/(?:^|\n)[ \t]*부\s*칙(?:\s|$)/);
   let cut=t.length;
   if(mApx>=0) cut=Math.min(cut,mApx);
   if(mAdd>=0) cut=Math.min(cut,mAdd);
@@ -7748,7 +7748,8 @@ function _dedupeArts(arts){
 // ── 부칙·개정 연혁 등 '검색 의도 밖' 영역 제거 ─────────────────────────────
 // 내규 본문 끝의 부칙(시행일·적용례·개정 연혁)은 '시행', '적용', '기준' 같은 흔한 말이
 // 반복돼 카드 미리보기를 차지하기 쉽다. 검색어에 '부칙'이 없으면 부칙 머리 줄부터 잘라낸다.
-const _ADDENDA_RE=/(?:^|\n)[ \t]*[\[【〔]?\s*부\s*칙\s*[\]】〕]?(?=\s|<|\(|$)/;
+// 줄 머리(앞 공백은 NBSP·전각 공백 포함) 또는 줄바꿈 없이 이어진 "… 부 칙 <날짜>" 형태 모두 인식
+const _ADDENDA_RE=/(?:^|[\r\n])[\s 　﻿]*[\[【〔]?\s*부\s*칙\s*[\]】〕]?(?=[\s<〈(（]|$)|[\s 　\]\.>](?=부\s*칙\s*[<〈(（])/;
 function _wantsAddenda(kw){ return /부\s*칙/.test(String(kw||'')); }
 function _cutAddenda(text, kw){
   if(!text || _wantsAddenda(kw)) return text||'';
@@ -7932,7 +7933,7 @@ function renderInternalResults(d, q){
         });
         if(!dup){
           it.matched_articles=it.matched_articles||[];
-          it.matched_articles.push({'조문번호':h.no,'조문제목':h.art_title,'조문내용':h.preview,_sem:true});
+          it.matched_articles.push({'조문번호':h.no,'조문제목':h.art_title,'조문내용':_cutAddenda(String(h.preview||''),q).trim()||h.preview,_sem:true});
           it.matched_count=(it.matched_count||it.matched_articles.length-1)+1;
         }
         return;
@@ -7941,7 +7942,7 @@ function renderInternalResults(d, q){
                                    matched_articles:[],matched_count:0,_score:0};
       r._score=Math.max(r._score,h.score||0);
       if(r.matched_articles.length<4){
-        r.matched_articles.push({'조문번호':h.no,'조문제목':h.art_title,'조문내용':h.preview,_sem:true});
+        r.matched_articles.push({'조문번호':h.no,'조문제목':h.art_title,'조문내용':_cutAddenda(String(h.preview||''),q).trim()||h.preview,_sem:true});
         r.matched_count=r.matched_articles.length;
       }
       byReg.set(h.title,r);
