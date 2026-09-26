@@ -2511,6 +2511,58 @@ body.dark .ac-box{box-shadow:0 18px 40px -12px rgba(0,0,0,.7);}
   .int-fav-empty{white-space:normal;flex:1 1 100%;line-height:1.5;}   /* 가로 스크롤 칩 줄에서 안내문이 잘리던 문제 */
   #internalChips:has(.int-fav-empty){flex-wrap:wrap;overflow:visible;}
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   가독성 패스 2 — 결과 카드·조문 본문·작업공간(모바일)
+   · 조문 본문: 12.5px → 14.5px, 행간 1.8 — 법령·내규는 '읽는' 화면이므로 본문 크기 우선
+   · 카드 안 카드(테두리+배경 이중 박스) → 왼쪽 강조선 하나로 단순화
+   · 카드 머리: 이름이 먼저 줄어들고, 버튼은 같은 줄 오른쪽에 유지(불필요한 2줄 방지)
+   · 모바일 작업공간: 문서 제목이 사라지던 문제·데스크톱 전용 배치 버튼 정리
+   ══════════════════════════════════════════════════════════════════════════ */
+.reg-head{flex-wrap:wrap;row-gap:8px;padding:16px 20px 12px;}
+.reg-head .lname{flex:1 1 180px;min-width:0;font-size:16.5px;font-weight:800;letter-spacing:-.4px;}
+.reg-head-actions{gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+.reg-head .lorg{color:var(--mu);font-size:12px;}
+.reg-badge{font-size:11.5px;}
+.reg-head .abtn{font-size:12.5px;padding:7px 12px;border-radius:9px;}
+.reg-arts{padding:2px 20px 18px;gap:6px;}
+.reg-art{border:none;background:transparent;border-left:3px solid var(--gl);border-radius:0 10px 10px 0;padding:10px 14px 12px;}
+.reg-art.art-click:hover{background:var(--gl);border-left-color:var(--g);}
+.reg-art.art-click.on{background:var(--gl);border-left-color:var(--g);box-shadow:none;}
+.reg-art-h{margin-bottom:6px;gap:8px;}
+.reg-art-t{font-size:15px;font-weight:700;}
+.reg-art-b{font-size:14.5px;line-height:1.8;color:var(--tx);}
+.reg-art-b .art-l-d0{margin-bottom:4px;}
+.reg-art-b .art-l{margin-bottom:2px;}
+.art-go{font-size:11.5px;}
+.reg-more{font-size:12.5px;color:var(--mu);}
+.reg-artidx{padding:0 20px 6px;}
+/* 작업공간·전문 본문도 같은 읽기 크기 */
+.ws-doc{font-size:14.5px;line-height:1.85;}
+body.dark .reg-art{border-left-color:rgba(37,110,244,.35);}
+
+@media(max-width:720px){
+  /* 작업공간 바: 모바일에선 쓰지 않는 배치 버튼 숨김(세로 스택 고정) */
+  .ws-bar .ws-seg,#wsEqBtn,#wsArrBtn,.ws-hint{display:none!important;}
+  .ws-bar{gap:8px;padding:8px 10px;}
+  /* 창 머리: 1줄 = 배지+제목, 2줄 = 찾기+아이콘 */
+  .ws-pane-head{flex-wrap:wrap;row-gap:6px;}
+  .ws-pane-title{flex:1 1 calc(100% - 64px);font-size:15px;white-space:normal;overflow:visible;text-overflow:clip;}
+  .ws-pane-filter{flex:1 1 110px;order:2;min-width:0;}
+  .ws-pane-head .ws-icon{order:3;}
+}
+@media(max-width:640px){
+  .reg-head{padding:14px 14px 10px;}
+  .reg-head .ltype{order:0;}
+  .reg-head .lname{flex:1 1 0;font-size:16px;}
+  .reg-head-actions{width:100%;justify-content:flex-start;}
+  .reg-head-actions .lorg{display:none;}
+  .reg-head .abtn{padding:6px 10px;font-size:12.5px;}
+  .reg-arts{padding:2px 12px 14px;}
+  .reg-art{padding:9px 11px 11px;}
+  .reg-art-b{font-size:15px;line-height:1.75;}
+  .art-go{display:none;}
+}
 </style>
 </head>
 <body>
