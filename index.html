@@ -6896,6 +6896,28 @@ function openRefAuto(name, artNos, focus){
 }
 // ── 내규 원본 PDF(원본 서식 그대로) ──
 let _origInfo=null;
+// 문서별 원본 정보 캐시 — 작업공간 창마다 '그 문서의' 원본을 열기 위해 사용
+// (전역 _origInfo 는 전체화면 패널 전용: 다른 창에서 누르면 엉뚱한 규정이 열리던 문제)
+const _origCache={};
+async function _origFetch(name){
+  const k=_rnorm(name||''); if(!k) return null;
+  if(k in _origCache) return _origCache[k];
+  try{
+    const r=await fetch('/api/internal/original?name='+encodeURIComponent(name));
+    const d=await r.json();
+    _origCache[k]=(d&&d.found)?d:null;
+  }catch(e){ return null; }
+  return _origCache[k];
+}
+// 클릭한 버튼이 속한 문서명(작업공간 창 → 그 창의 내규, 전체화면 패널 → 패널의 내규)
+function _origCtxName(el){
+  if(!el || !el.closest) return '';
+  const pane=el.closest('.ws-pane');
+  if(pane){ const p=_paneFromEl(pane); return (p && p.docType==='internal') ? p.name : ''; }
+  if(el.closest('#fullpanel') && _leftDoc && _leftDoc.docType==='internal') return _leftDoc.name;
+  return '';
+}
+function _origToast(msg){ if(typeof _toast==='function') _toast(msg, 2600); }
 async function loadOriginalInfo(name){
   _origInfo=null;
   const btn=document.getElementById('fpOrigBtn'), dl=document.getElementById('fpOrigDl');
@@ -6905,7 +6927,7 @@ async function loadOriginalInfo(name){
     const r=await fetch('/api/internal/original?name='+encodeURIComponent(name));
     const d=await r.json();
     if(!d||!d.found) return;
-    _origInfo=d;
+    _origInfo=d; _origCache[_rnorm(name)]=d;
     // 원본 서식 HTML은 항상 제공(리포 동반 배포) — PDF는 스토리지 설정 시에만
     if(d.html_url||d.pdf_url){
       if(btn) btn.style.display='';
@@ -6915,21 +6937,25 @@ async function loadOriginalInfo(name){
 }
 // 원본 PDF를 전용 패널에 표시(브라우저 내장 PDF 뷰어 사용)
 // fpRight(동시보기 탭)와 충돌하지 않도록 별도 패널을 쓴다.
-function openOriginalPdf(){
-  if(!_origInfo) return;
+async function openOriginalPdf(name){
+  // 문서명이 없으면 클릭 위치로 판별(작업공간 창 안의 '원본에서 보기' 등)
+  if(!name){ const t=(window.event&&window.event.target)||null; name=_origCtxName(t); }
+  const info = name ? await _origFetch(name) : _origInfo;
+  if(!info){ _origToast(name?`「${name}」 원본 서식이 등록되어 있지 않습니다.`:'원본 서식을 찾지 못했습니다.'); return; }
   // 원본 서식 HTML 우선(항상 배포됨), 없으면 PDF
-  const url=_origInfo.html_url||_origInfo.pdf_url;
-  if(!url) return;
-  const isPdf=!_origInfo.html_url;
+  const url=info.html_url||info.pdf_url;
+  if(!url){ _origToast('원본 서식이 등록되어 있지 않습니다.'); return; }
+  const isPdf=!info.html_url;
+  const _o=info;
   const p=document.getElementById('origPdfPanel');
-  const rev=_origInfo.revision?` · ${escHtml(_origInfo.revision)}`:'';
+  const rev=_o.revision?` · ${escHtml(_o.revision)}`:'';
   document.getElementById('origPdfTitle').innerHTML=
-    `📄 ${escHtml(_origInfo.title||'원본')}<span style="font-weight:500;color:var(--mu);font-size:11.5px;">${rev}</span>`;
+    `📄 ${escHtml(_o.title||'원본')}<span style="font-weight:500;color:var(--mu);font-size:11.5px;">${rev}</span>`;
   document.getElementById('origPdfExt').href=url;
   // 저장 버튼은 PDF가 있을 때만 노출
   const dl=document.getElementById('origPdfDl');
   if(dl){
-    if(_origInfo.pdf_url){ dl.href=_origInfo.pdf_url; dl.style.display=''; }
+    if(_o.pdf_url){ dl.href=_o.pdf_url; dl.style.display=''; }
     else dl.style.display='none';
   }
   document.getElementById('origPdfFrame').src=isPdf?(url+'#view=FitH'):url;
@@ -6949,7 +6975,8 @@ function buildApxIndex(container){
   if(items.length<2) return;
   const chips=items.map(el=>{
     const lab=el.getAttribute('data-apx')||'서식';
-    const meta=(el.querySelector('.rf-apx-cap')||el.querySelector('.rf-apx-meta')||{}).textContent||'';
+    const meta=((el.querySelector('.rf-apx-cap')||el.querySelector('.rf-apx-meta')||{}).textContent||'')
+      .replace(/^[\s〔〕〈〉《》<>\[\]()（）]+/,'').replace(/[〔〕〈〉]/g,'').trim();   // 원문 괄호 조각 정리
     const t=meta?`${lab} · ${meta.slice(0,24)}`:lab;
     const L=argAttr(lab);
     return `<button class="apx-chip" onclick="openAnnexOriginal('${L}','${el.id}')" title="${escHtml(meta||lab)} — 원본 서식 보기">${escHtml(t)}</button>`;
@@ -6968,8 +6995,10 @@ function jumpApx(id){
 }
 // 별표·별지 원본 보기: 원본 HTML 패널을 열고 해당 별표 위치로 스크롤
 // (MCP 텍스트에서 복원한 표가 아니라 원본 서식 그대로 표시)
-function openAnnexOriginal(label, fallbackId){
-  if(!_origInfo||!_origInfo.html_url){
+async function openAnnexOriginal(label, fallbackId){
+  const name=_origCtxName((window.event&&window.event.target)||(fallbackId&&document.getElementById(fallbackId)));
+  const info = name ? await _origFetch(name) : _origInfo;
+  if(!info||!info.html_url){
     // 원본 HTML 이 없으면 복원 표 폴백을 펼쳐 보여준다(빈 화면 방지)
     if(fallbackId){
       const el=document.getElementById(fallbackId);
@@ -6979,7 +7008,7 @@ function openAnnexOriginal(label, fallbackId){
     }
     return;
   }
-  openOriginalPdf();                       // 원본 패널 열기(HTML 우선)
+  await openOriginalPdf(name||undefined);  // 원본 패널 열기(HTML 우선) — 클릭한 문서 기준
   const fr=document.getElementById('origPdfFrame');
   if(!fr) return;
   const go=()=>{ try{ scrollFrameToAnnex(fr, label); }catch(e){} };
@@ -6995,11 +7024,18 @@ function scrollFrameToAnnex(fr, label){
   const m=key.match(/^(별[표지])(?:제)?(\d+(?:의\d+)?)?/);
   if(!m) return;
   const kind=m[1], no=m[2]||'';
-  const re=new RegExp(kind[0]+'\\s*'+kind[1]+'\\s*(?:제)?\\s*'+(no?no:'\\d+')+'\\s*호?');
+  // 번호 경계: "별표1"이 "별표10"·"별표1의 제2호"(다른 표 안의 인용)에 걸리지 않도록
+  const re=new RegExp(kind[0]+'\\s*'+kind[1]+'\\s*(?:제)?\\s*'+(no?no:'\\d+')+'(?![\\d의])\\s*호?');
   const blocks=[...doc.body.querySelectorAll('p,div,td,th,h1,h2,h3,span')];
-  // 정의부 우선: 텍스트가 짧고(제목 형태) 해당 라벨로 시작하는 요소
+  // 1순위: 괄호로 둘러싼 서식 머리("〔별표 1〕", "[별지 제4호서식]")로 시작하는 짧은 요소 — 정의부
+  const reHead=new RegExp('^[\\[〔【［(（<〈]\\s*'+re.source);
   let target=null;
   for(const el of blocks){
+    const t=(el.textContent||'').trim().replace(/\s+/g,' ');
+    if(t.length<=80 && reHead.test(t)){ target=el; break; }
+  }
+  // 2순위: 텍스트가 짧고(제목 형태) 해당 라벨로 시작하는 요소(뒤쪽일수록 우선)
+  if(!target) for(const el of blocks){
     const t=(el.textContent||'').trim();
     if(t.length>60 || !re.test(t.replace(/\s+/g,' '))) continue;
     if(re.test(t.slice(0,20).replace(/\s+/g,' '))) target=el;   // 뒤쪽(정의부)일수록 우선
