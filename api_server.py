@@ -1057,6 +1057,121 @@ def _search_law_scoped(query: str):
     return None
 
 
+# ── 문장으로 법령 찾기: 조문 문장을 붙여 넣으면 그 문장이 들어 있는 법령·조문 ──
+_SENT_STRIP_RE = re.compile(r"[\s\u00a0\u3000·ㆍ‧∙・,.\(\)（）「」『』《》〈〉<>\[\]{}\"'“”‘’\-–—:;!?~ㆍ①-⑳]")
+_JOSA_RE = re.compile(r"(으로써|으로서|에게서|에서는|으로는|에서|에게|으로|부터|까지|하고|이나|이며|이고|라도|은|는|이|가|을|를|에|의|와|과|도|로|만)$")
+
+
+def _norm_sent(t: str) -> str:
+    return _SENT_STRIP_RE.sub("", t or "").lower()
+
+
+def _sent_tokens(q: str) -> list:
+    """비교용 어간 토큰: 2자 이상 단어에서 끝 조사 제거."""
+    out = []
+    for w in re.findall(r"[가-힣A-Za-z0-9]+", q or ""):
+        w2 = _JOSA_RE.sub("", w) if len(w) > 2 else w
+        if len(w2) >= 2:
+            out.append(w2.lower())
+    return out
+
+
+def _is_sentence_query(q: str) -> bool:
+    if _ART_REF_RE.match(q.strip()):
+        return False
+    return len(_norm_sent(q)) >= 14 and len(q.split()) >= 3
+
+
+def _sent_score(nq: str, toks: list, a: dict):
+    text = _norm_sent((a.get("조문제목", "") or "") + (a.get("조문내용", "") or ""))
+    if not text:
+        return 0.0
+    if nq in text:
+        return 1.0
+    if not toks:
+        return 0.0
+    hit = sum(1 for t in toks if t in text)
+    return hit / len(toks)
+
+
+def _search_by_sentence(query: str):
+    """문장 → 그 문장을 담은 법령·조문. 법제처 본문검색(search=2)으로 후보를 넓힌 뒤 조문 단위로 대조."""
+    nq = _norm_sent(query)
+    toks = _sent_tokens(query)
+    names = []
+
+    def _body_search(q):
+        try:
+            root = _law_get_xml("lawSearch.do", {"target": "law", "query": q, "search": "2",
+                                                 "display": "20"}, timeout=(4, 10))
+            for it in [el for el in root if _mst_of(el)]:
+                for tag in _NAME_TAGS:
+                    nm = (it.findtext(tag) or "").strip()
+                    if nm:
+                        names.append(nm)
+                        break
+        except Exception as e:
+            print(f"[sentence] 본문검색 오류({q[:20]}…): {e}")
+
+    _body_search(query[:120])
+    if not names and toks:                          # 문장 그대로 없으면 핵심 단어로 다시
+        _body_search(" ".join(sorted(set(toks), key=len, reverse=True)[:3]))
+    seen, targets = set(), []
+    for nm in names + list(CANDIDATE_LAWS):
+        k = _norm_key(nm)
+        if k and k not in seen:
+            seen.add(k)
+            targets.append(nm)
+    targets = targets[:30]
+
+    def _scan(nm):
+        lname, arts = _law_articles_cached(nm, "law")
+        if not arts:
+            return None
+        scored = []
+        for a in arts:
+            if a.get("type") != "article":
+                continue
+            sc = _sent_score(nq, toks, a)
+            if sc >= 0.75:
+                scored.append((sc, a))
+        if not scored:
+            return None
+        scored.sort(key=lambda x: -x[0])
+        return lname, scored
+
+    found = []
+    try:
+        with _cf.ThreadPoolExecutor(max_workers=12) as ex:
+            futs = [ex.submit(_scan, n) for n in targets]
+            for f in _cf.as_completed(futs, timeout=25):
+                try:
+                    r = f.result()
+                except Exception:
+                    r = None
+                if r:
+                    found.append(r)
+    except _cf.TimeoutError:
+        print("[sentence] 시간 초과 — 일부 법령만 대조")
+    laws = []
+    for lname, scored in found:
+        arts = []
+        for sc, a in scored[:5]:
+            b = _art_brief(a)
+            b["_match"] = "exact" if sc >= 1.0 else f"{int(round(sc * 100))}%"
+            arts.append(b)
+        e = _law_entry(lname, "law", _lookup_law(lname, "law"), arts, total=len(scored))
+        e["_best"] = scored[0][0]
+        laws.append(e)
+    laws.sort(key=lambda x: (-x["_best"], len(x["법령명한글"])))
+    for e in laws:
+        e.pop("_best", None)
+    return {"success": True, "mode": "sentence", "count": len(laws), "laws": laws[:10],
+            "sentence": {"exact": any(a.get("_match") == "exact" for e in laws for a in e["matched_articles"]),
+                         "scanned": len(targets)},
+            "truncated": False}
+
+
 @app.route("/api/search/article")
 def search_by_article_keyword():
     """
@@ -1078,6 +1193,13 @@ def search_by_article_keyword():
         scoped = _search_law_scoped(query)
         if scoped is not None and scoped.get("laws"):
             return jsonify(scoped)
+        if _is_sentence_query(query):
+            # 화면은 1차(priority)·전체 요청을 동시에 보낸다 → 문장 대조는 전체 요청에서만 한 번
+            if (request.args.get("scope") or "").strip() == "priority":
+                return jsonify({"success": True, "mode": "sentence", "count": 0, "laws": [], "pending": True})
+            sent = _search_by_sentence(query)
+            if sent.get("laws"):
+                return jsonify(sent)
     except Exception as e:
         print(f"[article-search] Stage0 오류: {e}")
 
