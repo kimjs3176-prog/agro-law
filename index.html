@@ -2468,6 +2468,9 @@ body.dark #q.sinput:focus{background-color:#161a22;}
 body.dark .sinput{background-color:#12151b;border-color:rgba(255,255,255,.1);}
 body.dark .sinput:focus{background-color:#161a22;border-color:var(--g);}
 
+/* 문장 검색 일치 배지 */
+.art-match-badge{background:#dcfce7;color:#166534;}
+body.dark .art-match-badge{background:rgba(34,197,94,.18);color:#6ee7a0;}
 /* 검색 범위 선택 + 자동완성 */
 .scope-toggle{align-items:center;}
 .scope-toggle .stgl{padding:8px 18px;}
@@ -5889,7 +5892,7 @@ function setMode(m){
   });
   const sh=document.getElementById('scopeHint');
   if(sh) sh.textContent = m==='scenario' ? '업무 상황을 문장으로 물어보세요'
-                        : m==='law' ? '법령명·키워드·"법령명 제N조"로 찾기' : '규정명·키워드·"규정명 제N조"로 찾기';
+                        : m==='law' ? '"법령명 제N조" · "법령명 키워드" · 조문 문장으로도 찾기' : '규정명·키워드·"규정명 제N조"로 찾기';
   try{ _acHide(); }catch(e){}
   // 모드별 보조 UI: 내규→카테고리 칩, 법령→자주 찾는 법령, 시나리오→예시 질문
   examples.style.display = (m==='scenario') ? '' : 'none';
@@ -5903,10 +5906,10 @@ function setMode(m){
   const _narrow = window.matchMedia('(max-width:640px)').matches;
   document.getElementById('q').placeholder = _narrow
     ? (m==='internal' ? '내규 검색 (예: 직무발명, 여비)'
-     : m==='law'      ? '법령 검색 (예: 농지법, 직무발명)'
+     : m==='law'      ? '법령·조문 검색 (예: 농지법 제34조)'
      :                  '실무 질문을 입력하세요')
     : (m==='internal' ? '내규 키워드 검색 (예: 직무발명, 기술이전, 여비) — 관련 법령도 함께 표시'
-     : m==='law'      ? '법령명 또는 키워드 검색 (예: 농지법, 직무발명, 전용허가) — 관련 내규도 함께 표시'
+     : m==='law'      ? '법령명·키워드·조문 검색 (예: 농지법 제34조, 농지법 전용허가, 직무발명) — 관련 내규도 함께 표시'
      :                  '실무 질문을 입력하세요 (예: 농약을 수입·판매하려면 어떤 절차가 필요한가요?)');
   renderAgencyInfo();
   loadSaved();
@@ -6140,9 +6143,15 @@ async function doSearch(){
 
 // ── 법령명 검색 (단독·통합 모드 공용) ──
 // ── 법령 모드: 키워드 → 규정(법령) 단위 카드 + 매칭 조문 + 관련 내규 교차 ──
+// 조문 문장을 붙여 넣은 검색인지(서버 _is_sentence_query 와 같은 기준)
+function _looksLikeSentence(q){
+  const t=String(q||'').trim();
+  return t.replace(/[\s·ㆍ.,()（）「」『』"'“”‘’<>〈〉\[\]\-:;!?]/g,'').length>=14
+      && t.split(/\s+/).length>=3 && !/제\s*\d+\s*조/.test(t);
+}
 async function doSearchLaw(q, _mySeq){
   if(_mySeq==null) _mySeq = _searchSeq;   // 직접 호출 대비
-  setStatus(`"${q}" 법령 검색 중...`, true);
+  setStatus(_looksLikeSentence(q) ? '📝 이 문장이 들어 있는 법령·조문을 찾는 중... (법령 본문 대조)' : `"${q}" 법령 검색 중...`, true);
   addRecent(q);
   // 교차: 관련 내규 병렬 조회
   const crossEl = document.getElementById('internalResults');
@@ -6171,14 +6180,21 @@ async function doSearchLaw(q, _mySeq){
       if(_mySeq !== _searchSeq) return;
       if(_shown || !p || !p.success || !p.laws?.length) return;
       _shown=true;
-      setStatus(`법령 ${p.laws.length}건 우선 표시 · 나머지 조회 중...`, true);
-      renderRegCards(p.laws, q, 'law');
+      setStatus(_lawSearchStatus(p, q) || `법령 ${p.laws.length}건 우선 표시 · 나머지 조회 중...`, !p.mode);
+      renderRegCards(p.laws, _lawSearchKw(p, q), 'law');
     }).catch(()=>{});
   try{
     const d = await fullPromise;
     if(_mySeq !== _searchSeq) return;
     if(!d){ throw new Error('network'); }
     if(d.error){ setStatus(`오류: ${escHtml(d.error)}`); renderEmpty(d.error); }
+    else if(d.mode==='article_ref' && !(d.laws||[]).length){
+      // 특정 조문 지정 검색인데 해당 조문이 없음 → 원인과 대안을 안내
+      const ar=d.article_ref||{};
+      setStatus(`「${escHtml(ar.law||'')}」 ${escHtml((ar.missing||[]).join(', ')||ar.label||'')} — 해당 조문 없음`);
+      renderEmpty(`「${escHtml(ar.law||'')}」에서 <b>${escHtml((ar.missing||[]).join(', '))}</b>을(를) 찾지 못했습니다.<br>`+
+        `<small>삭제된 조문이거나 번호가 다를 수 있습니다. <a href="#" onclick="event.preventDefault();openPrimaryDoc('${argAttr(ar.law||'')}','law')">전문에서 확인 →</a></small>`);
+    }
     else if(!d.success || !d.laws?.length){
       if(_shown){ setStatus(`법령 우선 결과만 표시 · "${escHtml(q)}"`); }
       else{
@@ -6189,8 +6205,8 @@ async function doSearchLaw(q, _mySeq){
       _shown=true;
       if(!d.truncated) _cacheSet(`article:${q}`, d.laws);  // 완전한 결과만 캐시
       const tnote = d.truncated ? ' · ⚠ 일부 법령만 탐색' : '';
-      setStatus(`법령 ${d.laws.length}건 · "${escHtml(q)}" 매칭 조문 표시${tnote}`);
-      renderRegCards(d.laws, q, 'law');
+      setStatus(_lawSearchStatus(d, q) || `법령 ${d.laws.length}건 · "${escHtml(q)}" 매칭 조문 표시${tnote}`);
+      renderRegCards(d.laws, _lawSearchKw(d, q), 'law');
     }
   }catch(e){ if(_mySeq!==_searchSeq) return; setStatus('서버 연결 실패'); renderEmpty('서버에 연결할 수 없습니다'); }
   // 관련 내규 교차 렌더
@@ -6199,6 +6215,35 @@ async function doSearchLaw(q, _mySeq){
   renderCrossPanel(_cx, q, 'law');
 }
 
+// 조문 검색 응답(mode)별 상태 문구·하이라이트 키워드
+//  · article_ref: "농지법 제8조"처럼 조문을 직접 지정 → 해당 조문 카드
+//  · law_scoped : "농지법 전용허가"처럼 법령명+키워드 → 그 법령·시행령·시행규칙 안에서만 검색
+function _lawSearchStatus(d, q){
+  if(!d || !d.mode) return '';
+  if(d.mode==='article_ref'){
+    const ar=d.article_ref||{};
+    const miss=(ar.missing||[]).length?` · ⚠ 없음: ${escHtml(ar.missing.join(', '))}`:'';
+    return `📍 「${escHtml(ar.law||'')}」 ${escHtml(ar.label||'')} 조문${miss}`;
+  }
+  if(d.mode==='sentence'){
+    const n=(d.laws||[]).length;
+    const top=(d.laws||[])[0], a=top&&(top.matched_articles||[])[0];
+    const where=a?` — 「${escHtml(top['법령명한글']||'')}」 ${escHtml(artNoLabel(a))}`:'';
+    return `📝 ${d.sentence&&d.sentence.exact?'문장이 그대로 들어 있는':'문장과 비슷한'} 조문 · 법령 ${n}건${where}`;
+  }
+  if(d.mode==='law_scoped'){
+    const sc=d.scoped||{};
+    const n=(d.laws||[]).reduce((s,l)=>s+(l.matched_count||0),0);
+    const fam=(sc.family||[]).slice(1).map(f=>/시행규칙$/.test(f)?'시행규칙':(/시행령$/.test(f)?'시행령':f)).map(x=>'·'+x).join('');
+    return `🔎 「${escHtml(sc.law||'')}」${escHtml(fam)}에서 "${escHtml(sc.keyword||'')}" 조문 ${n}건`;
+  }
+  return '';
+}
+function _lawSearchKw(d, q){
+  if(d && d.mode==='law_scoped' && d.scoped && d.scoped.keyword) return d.scoped.keyword;
+  if(d && (d.mode==='article_ref' || d.mode==='sentence')) return '';
+  return q;
+}
 // ── 규정(법령/내규) 단위 카드 렌더 (공용) ──
 // 현재 화면에 렌더된 결과 집합(정렬·CSV 내보내기·건수 표시에 사용)
 let _currentResults = null;   // {kind, kw, items, view}
@@ -6423,7 +6468,7 @@ function buildRegCards(items, kw, kind){
               title="클릭하면 전문에서 이 조문을 바로 봅니다"
               onclick="if(event.target.closest('.art-xref,.law-ref'))return;previewArticle(this,'${artNo}')"
               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();previewArticle(this,'${artNo}');}">
-        <div class="reg-art-h">${no?`<span class="art-no">${escHtml(no)}</span>`:''}<span class="reg-art-t">${highlightKwsSafe(escHtml(title||no||'조문'),kw?[kw]:[])}</span>${a._sem?'<span class="art-sem-badge" title="키워드가 달라도 의미가 비슷한 조문">의미</span>':''}<span class="art-go">전문에서 보기 →</span></div>
+        <div class="reg-art-h">${no?`<span class="art-no">${escHtml(no)}</span>`:''}<span class="reg-art-t">${highlightKwsSafe(escHtml(title||no||'조문'),kw?[kw]:[])}</span>${a._sem?'<span class="art-sem-badge" title="키워드가 달라도 의미가 비슷한 조문">의미</span>':''}${a._match?`<span class="art-sem-badge art-match-badge" title="검색한 문장과 이 조문의 일치도(띄어쓰기·문장부호 무시)">${a._match==='exact'?'문장 일치':'유사 '+escHtml(a._match)}</span>`:''}<span class="art-go">전문에서 보기 →</span></div>
         ${content?`<div class="reg-art-b">${artBodyFrom(a,content,{lawName:name,abbrevMap,kws:kw?[kw]:[],stripHead:!!(no||title)})}</div>`:''}
       </div>`;
     }).join('') : `<div class="reg-none">키워드 매칭 미리보기가 없습니다. 전문에서 확인하세요.</div>`;

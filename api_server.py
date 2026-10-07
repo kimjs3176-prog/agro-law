@@ -345,7 +345,10 @@ def _lookup_law(law_name: str, target: str = "law") -> dict:
                 best_key = key
                 out = {"mst": _mst_of(it),
                        "id": _txt(it, "법령ID", "행정규칙ID"),
-                       "name": nm, "rank": rank, "status": status, "ef": ef}
+                       "name": nm, "rank": rank, "status": status, "ef": ef,
+                       "type": _txt(it, "법령구분명", "행정규칙종류명"),
+                       "org": _txt(it, "소관부처명"),
+                       "anc": _txt(it, "공포일자", "발령일자")}
         if out["mst"]:
             print(f"[MST] '{law_name}'({target}) → MST={out['mst']} ID={out['id']} "
                   f"(선택:'{out['name']}' 일치도={out['rank']} 상태={out.get('status')} 시행={out.get('ef')})")
@@ -873,19 +876,41 @@ def _law_name_rel(name: str, query: str) -> int:
     return 3
 
 
-def _fetch_matching_articles(law_name: str, kw: str, doc_type: str = "law", always: bool = False):
+def _law_articles_cached(law_name: str, doc_type: str = "law", info: dict = None):
+    """법령 조문 목록(캐시). 실패 시 (None, None)."""
     cache_key = f"{doc_type}:{law_name}"
     lname, articles = _cache_get(cache_key)
     if articles is None:
-        root = _fetch_law_root(law_name, doc_type, timeout=(5, 18))
+        root = _fetch_law_root(law_name, doc_type, timeout=(5, 18), info=info)
         if root is None:
-            return None
+            return None, None
         lname, _, articles = _parse_articles(root)
         _cache_set(cache_key, lname or law_name, articles)
+    return lname or law_name, articles
+
+
+def _fetch_matching_articles(law_name: str, kw: str, doc_type: str = "law", always: bool = False,
+                             info: dict = None):
+    lname, articles = _law_articles_cached(law_name, doc_type, info=info)
+    if articles is None:
+        return None
     kwL = kw.lower()
     matched = [a for a in articles
                if a.get("type") == "article" and
                kwL in " ".join([a.get("조문내용",""), a.get("조문제목","")]).lower()]
+    # 여러 단어 검색어("농지 전용 허가"): 붙여 쓴 그대로 없으면 모든 단어를 포함한 조문
+    toks = [t for t in kwL.split() if t]
+    if not matched and len(toks) > 1:
+        matched = [a for a in articles
+                   if a.get("type") == "article" and
+                   all(t in " ".join([a.get("조문내용",""), a.get("조문제목","")]).lower() for t in toks)]
+        if matched:
+            def _rel_t(a):
+                title = (a.get("조문제목","") or "").lower()
+                content = (a.get("조문내용","") or "").lower()
+                return sum((500 if t in title else 0) + content.count(t) for t in toks)
+            matched.sort(key=lambda a: -_rel_t(a))
+            return {"law_name": lname, "keyword": kw, "articles": matched, "token_match": True}
     if matched:
         # 관련도 정렬: 제목 매칭 최우선 → 본문 내 키워드 빈도 → 조문번호
         def _rel(a):
@@ -909,6 +934,244 @@ def _fetch_matching_articles(law_name: str, kw: str, doc_type: str = "law", alwa
     return None
 
 
+# ── 조문 검색: "농지법 제8조", "농지법 8조의2", "농지법 제8조, 제34조", "농지법 전용허가" ──
+_LAWISH_RE = re.compile(r"(법|법률|령|규칙|규정|지침|기준|고시|훈령|예규|세칙)$")
+_ART_REF_RE = re.compile(r"^(?P<law>.+?)\s*(?P<arts>(?:제?\s*\d+\s*조(?:\s*의\s*\d+)?(?:\s*제?\s*\d+\s*항)?[\s,·및와과]*)+)$")
+_ART_ONE_RE = re.compile(r"제?\s*(\d+)\s*조(?:\s*의\s*(\d+))?(?:\s*제?\s*(\d+)\s*항)?")
+
+
+def _resolve_law_exact(text: str):
+    """정확히 같은 이름의 국가법령(→행정규칙) 찾기. (name, doc_type, info) 또는 None."""
+    t = (text or "").strip()
+    if len(re.sub(r"\s+", "", t)) < 2:
+        return None
+    info = _lookup_law(t, "law")
+    if info.get("rank") == 0 and info.get("mst"):
+        return info.get("name") or t, "law", info
+    adm = _lookup_law(t, "admrul")
+    if adm.get("rank") == 0 and adm.get("mst"):
+        return adm.get("name") or t, "admrul", adm
+    return None
+
+
+def _law_entry(name: str, doc_type: str, info: dict, arts: list, total: int = None):
+    return {
+        "법령명한글": name,
+        "법령구분명": (info or {}).get("type") or ("행정규칙" if doc_type == "admrul" else "법률"),
+        "소관부처명": (info or {}).get("org", ""),
+        "공포일자": (info or {}).get("anc", ""),
+        "법령일련번호": (info or {}).get("mst", ""),
+        "matched_count": total if total is not None else len(arts),
+        "matched_articles": arts,
+    }
+
+
+def _art_brief(a: dict, full: bool = False) -> dict:
+    c = a.get("조문내용", "") or ""
+    out = {"조문번호": a.get("조문번호", ""), "조문가지번호": a.get("조문가지번호", ""),
+           "조문제목": a.get("조문제목", ""),
+           "조문내용": c if full else (c[:600] + ("…" if len(c) > 600 else ""))}
+    if full and a.get("조문구조"):
+        out["조문구조"] = a.get("조문구조")
+    return out
+
+
+def _search_article_ref(query: str):
+    """'법령명 제N조[의M][제K항][, 제N조…]' → 해당 조문 바로 반환. 해당 없으면 None."""
+    m = _ART_REF_RE.match(query.strip())
+    if not m:
+        return None
+    law_txt = m.group("law").strip()
+    if not _LAWISH_RE.search(law_txt):
+        return None
+    hit = _resolve_law_exact(law_txt)
+    if not hit:
+        return None
+    name, doc_type, info = hit
+    lname, arts = _law_articles_cached(name, doc_type, info=info)
+    if arts is None:
+        return None
+    wants = [(n, b or "", h or "") for n, b, h in _ART_ONE_RE.findall(m.group("arts"))]
+    picked, missing = [], []
+    for no, br, hang in wants:
+        found = [a for a in arts if a.get("type") == "article" and str(a.get("조문번호", "")) == no
+                 and (str(a.get("조문가지번호") or "").strip() in ("", "0") if not br
+                      else str(a.get("조문가지번호") or "").strip() == br)]
+        if found:
+            for a in found[:1]:
+                b = _art_brief(a, full=True)
+                if hang:
+                    b["_hang"] = hang
+                picked.append(b)
+        else:
+            missing.append(f"제{no}조" + (f"의{br}" if br else ""))
+    label = ", ".join(f"제{n}조" + (f"의{b}" if b else "") + (f"제{h}항" if h else "") for n, b, h in wants)
+    return {
+        "success": True, "mode": "article_ref",
+        "article_ref": {"law": lname, "doc_type": doc_type, "label": label, "missing": missing},
+        "count": 1 if picked else 0,
+        "laws": [_law_entry(lname, doc_type, info, picked)] if picked else [],
+        "truncated": False,
+    }
+
+
+def _search_law_scoped(query: str):
+    """'법령명 키워드' → 그 법령(+시행령·시행규칙) 안에서만 키워드 조문 검색. 해당 없으면 None."""
+    toks = query.split()
+    if len(toks) < 2:
+        return None
+    for cut in range(len(toks) - 1, 0, -1):
+        law_txt = " ".join(toks[:cut])
+        kw = " ".join(toks[cut:]).strip()
+        if not kw or not _LAWISH_RE.search(law_txt):
+            continue
+        hit = _resolve_law_exact(law_txt)
+        if not hit:
+            continue
+        name, doc_type, info = hit
+        targets = [(name, doc_type, info)]
+        if doc_type == "law" and not re.search(r"(시행령|시행규칙)$", name):
+            for suf in (" 시행령", " 시행규칙"):
+                sub = _lookup_law(name + suf, "law")
+                if sub.get("rank") == 0 and sub.get("mst"):
+                    targets.append((sub.get("name") or name + suf, "law", sub))
+        laws = []
+        with _cf.ThreadPoolExecutor(max_workers=3) as ex:
+            futs = {ex.submit(_fetch_matching_articles, n, kw, dt, False, inf): (n, dt, inf)
+                    for n, dt, inf in targets}
+            for f in _cf.as_completed(futs, timeout=25):
+                n, dt, inf = futs[f]
+                try:
+                    res = f.result()
+                except Exception:
+                    res = None
+                if res:
+                    laws.append(_law_entry(res["law_name"], dt, inf,
+                                           [_art_brief(a) for a in res["articles"][:15]],
+                                           total=len(res["articles"])))
+        order = {n: i for i, (n, _, _) in enumerate(targets)}
+        laws.sort(key=lambda x: order.get(x["법령명한글"], 9))
+        return {"success": True, "mode": "law_scoped",
+                "scoped": {"law": name, "keyword": kw, "family": [t[0] for t in targets]},
+                "count": len(laws), "laws": laws, "truncated": False}
+    return None
+
+
+# ── 문장으로 법령 찾기: 조문 문장을 붙여 넣으면 그 문장이 들어 있는 법령·조문 ──
+_SENT_STRIP_RE = re.compile(r"[\s\u00a0\u3000·ㆍ‧∙・,.\(\)（）「」『』《》〈〉<>\[\]{}\"'“”‘’\-–—:;!?~ㆍ①-⑳]")
+_JOSA_RE = re.compile(r"(으로써|으로서|에게서|에서는|으로는|에서|에게|으로|부터|까지|하고|이나|이며|이고|라도|은|는|이|가|을|를|에|의|와|과|도|로|만)$")
+
+
+def _norm_sent(t: str) -> str:
+    return _SENT_STRIP_RE.sub("", t or "").lower()
+
+
+def _sent_tokens(q: str) -> list:
+    """비교용 어간 토큰: 2자 이상 단어에서 끝 조사 제거."""
+    out = []
+    for w in re.findall(r"[가-힣A-Za-z0-9]+", q or ""):
+        w2 = _JOSA_RE.sub("", w) if len(w) > 2 else w
+        if len(w2) >= 2:
+            out.append(w2.lower())
+    return out
+
+
+def _is_sentence_query(q: str) -> bool:
+    if _ART_REF_RE.match(q.strip()):
+        return False
+    return len(_norm_sent(q)) >= 14 and len(q.split()) >= 3
+
+
+def _sent_score(nq: str, toks: list, a: dict):
+    text = _norm_sent((a.get("조문제목", "") or "") + (a.get("조문내용", "") or ""))
+    if not text:
+        return 0.0
+    if nq in text:
+        return 1.0
+    if not toks:
+        return 0.0
+    hit = sum(1 for t in toks if t in text)
+    return hit / len(toks)
+
+
+def _search_by_sentence(query: str):
+    """문장 → 그 문장을 담은 법령·조문. 법제처 본문검색(search=2)으로 후보를 넓힌 뒤 조문 단위로 대조."""
+    nq = _norm_sent(query)
+    toks = _sent_tokens(query)
+    names = []
+
+    def _body_search(q):
+        try:
+            root = _law_get_xml("lawSearch.do", {"target": "law", "query": q, "search": "2",
+                                                 "display": "20"}, timeout=(4, 10))
+            for it in [el for el in root if _mst_of(el)]:
+                for tag in _NAME_TAGS:
+                    nm = (it.findtext(tag) or "").strip()
+                    if nm:
+                        names.append(nm)
+                        break
+        except Exception as e:
+            print(f"[sentence] 본문검색 오류({q[:20]}…): {e}")
+
+    _body_search(query[:120])
+    if not names and toks:                          # 문장 그대로 없으면 핵심 단어로 다시
+        _body_search(" ".join(sorted(set(toks), key=len, reverse=True)[:3]))
+    seen, targets = set(), []
+    for nm in names + list(CANDIDATE_LAWS):
+        k = _norm_key(nm)
+        if k and k not in seen:
+            seen.add(k)
+            targets.append(nm)
+    targets = targets[:30]
+
+    def _scan(nm):
+        lname, arts = _law_articles_cached(nm, "law")
+        if not arts:
+            return None
+        scored = []
+        for a in arts:
+            if a.get("type") != "article":
+                continue
+            sc = _sent_score(nq, toks, a)
+            if sc >= 0.75:
+                scored.append((sc, a))
+        if not scored:
+            return None
+        scored.sort(key=lambda x: -x[0])
+        return lname, scored
+
+    found = []
+    try:
+        with _cf.ThreadPoolExecutor(max_workers=12) as ex:
+            futs = [ex.submit(_scan, n) for n in targets]
+            for f in _cf.as_completed(futs, timeout=25):
+                try:
+                    r = f.result()
+                except Exception:
+                    r = None
+                if r:
+                    found.append(r)
+    except _cf.TimeoutError:
+        print("[sentence] 시간 초과 — 일부 법령만 대조")
+    laws = []
+    for lname, scored in found:
+        arts = []
+        for sc, a in scored[:5]:
+            b = _art_brief(a)
+            b["_match"] = "exact" if sc >= 1.0 else f"{int(round(sc * 100))}%"
+            arts.append(b)
+        e = _law_entry(lname, "law", _lookup_law(lname, "law"), arts, total=len(scored))
+        e["_best"] = scored[0][0]
+        laws.append(e)
+    laws.sort(key=lambda x: (-x["_best"], len(x["법령명한글"])))
+    for e in laws:
+        e.pop("_best", None)
+    return {"success": True, "mode": "sentence", "count": len(laws), "laws": laws[:10],
+            "sentence": {"exact": any(a.get("_match") == "exact" for e in laws for a in e["matched_articles"]),
+                         "scanned": len(targets)},
+            "truncated": False}
+
+
 @app.route("/api/search/article")
 def search_by_article_keyword():
     """
@@ -921,6 +1184,24 @@ def search_by_article_keyword():
         return jsonify({"error": "검색어를 입력하세요"}), 400
     if len(query) < 2:
         return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
+
+    # ── Stage 0: 조문 검색 — 특정 조문 지정 / 특정 법령 안 키워드 ───────────────
+    try:
+        ref = _search_article_ref(query)
+        if ref is not None:
+            return jsonify(ref)
+        scoped = _search_law_scoped(query)
+        if scoped is not None and scoped.get("laws"):
+            return jsonify(scoped)
+        if _is_sentence_query(query):
+            # 화면은 1차(priority)·전체 요청을 동시에 보낸다 → 문장 대조는 전체 요청에서만 한 번
+            if (request.args.get("scope") or "").strip() == "priority":
+                return jsonify({"success": True, "mode": "sentence", "count": 0, "laws": [], "pending": True})
+            sent = _search_by_sentence(query)
+            if sent.get("laws"):
+                return jsonify(sent)
+    except Exception as e:
+        print(f"[article-search] Stage0 오류: {e}")
 
     # ── Stage 1: law + admrul 병렬 검색 ────────────────────────────────────────
     # law_name → {"meta": dict, "doc_type": "law"|"admrul"}
