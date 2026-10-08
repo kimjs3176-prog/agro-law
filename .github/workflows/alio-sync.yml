@@ -1,0 +1,95 @@
+# ALIO 내규 자동 동기화
+# 매월 1일(KST 09:00) ALIO 공개 내부규정을 확인해 새로 생기거나 개정된 규정이 있으면
+# regulations/ 와 regulations_manifest.json 을 갱신하는 PR 을 연다. 병합해야 서비스에 반영된다.
+# 수동 실행: Actions → "ALIO 내규 동기화" → Run workflow
+name: ALIO 내규 동기화
+
+on:
+  schedule:
+    - cron: "0 0 1 * *"        # 매월 1일 00:00 UTC (= KST 09:00)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "변경점만 확인하고 PR은 만들지 않기"
+        type: boolean
+        default: false
+      max:
+        description: "한 번에 반영할 최대 규정 수"
+        default: "30"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: alio-sync
+  cancel-in-progress: false
+
+env:
+  ALIO_APBA_ID: C0422                                   # 한국농업기술진흥원
+  ALIO_MCP_REPO: https://github.com/chromehearts79/alio-mcp.git
+  ALIO_MCP_REF: 4400ab742fdb34a1e426c26b347225c8e6d6b51b # 검증한 커밋에 고정(공급망 보호)
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: alio-mcp 설치
+        run: |
+          git clone "$ALIO_MCP_REPO" "$RUNNER_TEMP/alio-mcp"
+          cd "$RUNNER_TEMP/alio-mcp"
+          git checkout --quiet "$ALIO_MCP_REF"
+          npm install --omit=optional --no-audit --no-fund
+
+      - name: 서버 의존성 설치(변환기 재사용)
+        run: pip install -r requirements.txt
+
+      - name: ALIO 변경 감지·현행본 수집
+        id: sync
+        env:
+          ALIO_CACHE_DIR: ${{ runner.temp }}/alio-cache
+          ALIO_BACKGROUND_REFRESH: "0"
+        run: |
+          node scripts/alio_sync.mjs --alio "$RUNNER_TEMP/alio-mcp" --apba "$ALIO_APBA_ID" \
+               --out "$RUNNER_TEMP/alio_incoming" --max "${{ inputs.max || '30' }}" | tee "$RUNNER_TEMP/sync.out"
+          cat "$RUNNER_TEMP/alio_incoming/report.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 변경 반영(regulations/·manifest)
+        if: ${{ !inputs.dry_run }}
+        run: python scripts/alio_apply.py "$RUNNER_TEMP/alio_incoming/changes.json"
+
+      - name: 변경 여부 확인
+        id: diff
+        run: |
+          if git status --porcelain -- regulations regulations_manifest.json | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "ALIO와 비교해 바뀐 내규가 없습니다." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "date=$(TZ=Asia/Seoul date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: PR 생성
+        if: ${{ steps.diff.outputs.changed == 'true' && !inputs.dry_run }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: alio-sync/auto
+          delete-branch: true
+          add-paths: |
+            regulations/**
+            regulations_manifest.json
+          commit-message: "ALIO 내규 자동 동기화 (${{ steps.diff.outputs.date }})"
+          title: "ALIO 내규 자동 동기화 (${{ steps.diff.outputs.date }})"
+          body-path: ${{ runner.temp }}/alio_incoming/report.md
+          labels: alio-sync

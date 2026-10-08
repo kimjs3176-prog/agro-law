@@ -175,6 +175,18 @@ python run_local.py          # http://localhost:5100 (PORT 환경변수로 변�
 2. 변환된 원문은 `regulations/<규정명>/`에 저장되고, 목록은 `regulations_manifest.json`에 반영됩니다.
 3. 의미 검색 색인을 다시 만들 때는 `scripts/build_embeddings.py`를 실행합니다(`GEMINI_API_KEY` 필요).
 
+### ALIO 내규 자동 동기화
+ALIO(공공기관 경영정보 공개시스템)에 공개된 우리 기관 내부규정과 저장소의 내규를 **매월 1일 자동 비교**합니다. 새로 생기거나 개정된 규정이 있으면 반영 PR을 엽니다. 수집에는 [alio-mcp](https://github.com/chromehearts79/alio-mcp)의 ALIO 클라이언트·본문 추출기(kordoc)를 씁니다.
+
+1. `.github/workflows/alio-sync.yml`이 매월 1일 09:00(KST)에 실행됩니다. 수동 실행은 Actions → **ALIO 내규 동기화** → Run workflow에서 할 수 있습니다(변경점만 보는 dry run 가능).
+2. `scripts/alio_sync.mjs`가 기관(`C0422`)의 ALIO 규정 목록을 받아 `regulations_manifest.json`과 비교하고, **신규·개정** 규정의 현행본 파일만 내려받아 본문을 추출합니다.
+   - 비교 기준은 ALIO 규정 고유번호와 시행일입니다. 첫 실행 때는 규정명과 개정 연월로 맞춘 뒤, 다음부터는 고유번호로 비교합니다.
+3. `scripts/alio_apply.py`가 업로드 화면과 같은 변환기로 `regulations/<규정>/`(본문·원본)과 manifest를 갱신합니다. 이전 개정본은 history에 남습니다.
+   - HWPX·DOCX는 그대로 변환하고, HWP·PDF·ZIP은 추출한 본문으로 변환합니다. 본문을 추출할 수 없는 스캔 PDF는 '원본 PDF 열기' 화면으로 등록합니다.
+4. 변경이 있으면 `alio-sync/auto` 브랜치로 **PR**이 열립니다. PR 본문에는 신규·개정 표가 들어갑니다. **병합해야 서비스에 반영됩니다.**
+
+> 처음 쓸 때 저장소 설정 → Actions → General에서 **"Allow GitHub Actions to create and approve pull requests"**를 켜야 PR이 만들어집니다. 의미 검색 색인(`regulations_vectors.*`)은 자동으로 갱신하지 않으니, 필요하면 `scripts/build_embeddings.py`를 실행하세요.
+
 ---
 
 ## 프로젝트 구조
@@ -190,7 +202,8 @@ agro-law/
 ├── regulations/               # 내규 원문(HTML) — 규정별 폴더
 ├── regulations_manifest.json  # 내규 목록·개정 정보
 ├── regulations_vectors.*      # 내규 의미 검색 색인
-├── scripts/                   # 색인 생성·평가 스크립트
+├── scripts/                   # 색인 생성·평가, ALIO 동기화(alio_sync.mjs·alio_apply.py)
+├── .github/workflows/         # ALIO 내규 자동 동기화(alio-sync.yml)
 ├── assets/                    # 정적 리소스
 ├── run_local.py               # 로컬 실행 스크립트
 ├── requirements.txt

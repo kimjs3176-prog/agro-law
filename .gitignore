@@ -5,3 +5,5 @@ regulations/.backup/
 .agents/
 .claude/
 skills-lock.json
+alio_incoming/
+alio-mcp/
