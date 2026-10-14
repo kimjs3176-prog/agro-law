@@ -32,6 +32,7 @@ def md_to_text(md: str) -> str:
             continue                                   # 표 구분선 |---|---|
         t = re.sub(r"^\s{0,3}#{1,6}\s*", "", t)        # 제목 표식
         t = re.sub(r"(\*\*|__)(.+?)\1", r"\2", t)     # 굵게
+        t = t.replace("**", "")                        # 줄을 넘긴 굵게 표식의 짝 잃은 쪽
         t = re.sub(r"(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])", r"\1", t)  # 기울임
         if t.strip().startswith("|") and t.strip().endswith("|"):
             t = " | ".join(c.strip() for c in t.strip().strip("|").split("|"))
@@ -40,12 +41,41 @@ def md_to_text(md: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", "\n".join(out)).strip() + "\n"
 
 
+ARTICLE_RE = re.compile(r"(?m)^\s*제\s*\d+\s*조(?:\s*의\s*\d+)?\s*[(（]")
+
+
+def count_articles(text: str) -> int:
+    """변환 본문의 조문 머리 수 — 0이면 조문 인식 실패(검토 필요)."""
+    return len(ARTICLE_RE.findall(text or ""))
+
+
 def revision_label(enf: str, kind: str) -> str:
     """'2026-08-05' → '2026년도 8월 개정'(기존 manifest 표기와 맞춤)."""
     m = re.match(r"(\d{4})-(\d{2})", enf or "")
     if not m:
         return "ALIO 반영"
     return f"{m.group(1)}년도 {int(m.group(2))}월 {'제정' if kind == 'new' else '개정'}"
+
+
+def append_report(path: str, summary: dict, dry: bool) -> None:
+    """sync 리포트(PR 본문)에 변환 결과를 덧붙인다 — 병합 전에 조문 인식 여부를 바로 확인."""
+    if not os.path.exists(path):
+        return
+    L = ["", f"### 변환 결과{' (dry-run: 저장하지 않음)' if dry else ''}", ""]
+    if summary["applied"]:
+        L += ["| 규정 | 반영 개정 | 조문 수 | 본문 검색 |", "|---|---|---|---|"]
+        for a in summary["applied"]:
+            arts = a["articles"]
+            note = f"{arts}" if arts else ("⚠ 0 — 원문 확인 필요" if a["searchable"] else "-")
+            L.append(f"| {a['title']} | {a['revision']} | {note} | {'가능' if a['searchable'] else '불가(원본 열기)'} |")
+    for f in summary["failed"]:
+        L.append(f"- ⚠ **{f['title']}** 변환 실패: {f['error']}")
+    if summary["tracking_updated"]:
+        L.append(f"\n- ALIO 추적값(규정 번호·시행일)만 갱신: {summary['tracking_updated']}건")
+    if not (summary["applied"] or summary["failed"] or summary["tracking_updated"]):
+        L.append("- 반영할 변경 없음")
+    with open(path, "a", encoding="utf-8") as f:
+        f.write("\n".join(L) + "\n")
 
 
 def main():
@@ -107,8 +137,13 @@ def main():
             "alio_mod": it.get("alio_mod", ""), "alio_title": it.get("alio_title", ""),
         })
         man, replaced = A._merge_manifest(man, entry)
-        applied.append({"title": title, "kind": it["kind"], "revision": revision,
-                        "searchable": bool(conv.get("text"))})
+        if replaced:                          # 이력 스키마를 업로드(_upsert_manifest)와 맞춤
+            h0 = man[next(i for i, m in enumerate(man) if m.get("slug") == slug)]["history"][0]
+            h0.setdefault("src", h0.get("entry", {}).get("src", ""))
+        arts = count_articles(conv.get("text", ""))
+        applied.append({"title": title, "kind": it["kind"], "revision": revision, "slug": slug,
+                        "searchable": bool(conv.get("text")), "articles": arts,
+                        "file_name": it.get("file_name", "")})
         print(f"{'✏️ 개정' if replaced else '🆕 신규'} {title} → {revision}"
               + ("" if conv.get("text") else " (본문 검색 불가)"))
         if dry:
@@ -144,6 +179,7 @@ def main():
     if not dry and (applied or tracked):
         A._save_reg_manifest(man)
     summary = {"applied": applied, "failed": failed, "tracking_updated": tracked}
+    append_report(os.path.join(base_dir, "report.md"), summary, dry)
     with open(os.path.join(base_dir, "apply_result.json"), "w", encoding="utf-8") as f:
         json.dump(summary, f, ensure_ascii=False, indent=2)
     print(f"반영 {len(applied)}건 · 실패 {len(failed)}건 · 추적값 갱신 {tracked}건" + (" (dry-run)" if dry else ""))

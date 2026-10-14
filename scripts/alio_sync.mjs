@@ -94,29 +94,88 @@ function entryMonth(e) {
   return "";
 }
 
+// 규정명 비교 키. ALIO 와 우리 목록은 같은 규정이라도 표기가 조금씩 다르다
+//  · 전각 문자: "R＆D" ↔ "R&D"                       → NFKC 정규화
+//  · 기관명 접두: "한국농업기술진흥원 감사규정"         → ORG_PREFIX 제거
+//  · 괄호 별칭: "지식재산권 … 규칙(구 직무발명 보상규칙)" → loose 키에서 괄호 전체 제거
+//  · 소소한 개칭: "농업기계 임대 규칙" ↔ "농업기계 임대 운영규칙" → 같은 종류(규칙·지침…)·같은 머리글자 안에서 유사도 비교
+const nfkc = (t) => String(t || "").normalize("NFKC");
+const stripOrg = (t) => nfkc(t).replace(ORG_PREFIX, "");
+const looseKey = (t) => stripOrg(t).replace(/[(\[][^)\]]*[)\]]/g, "").replace(/[\s·ㆍ.,_\-]/g, "").toLowerCase();
+const KIND_RE = /(규정|규칙|지침|요령|세칙|기준|정관|편람|매뉴얼|요강|방침|지시)$/;
+const kindOf = (t) => (looseKey(t).match(KIND_RE) || [])[1] || "";
+function dice(a, b) {                                   // 글자 2-gram Dice 계수(0~1)
+  if (a === b) return 1;
+  if (a.length < 2 || b.length < 2) return 0;
+  const grams = (s) => { const m = new Map(); for (let i = 0; i < s.length - 1; i++) { const g = s.slice(i, i + 2); m.set(g, (m.get(g) || 0) + 1); } return m; };
+  const A = grams(a), B = grams(b);
+  let hit = 0;
+  for (const [g, n] of A) hit += Math.min(n, B.get(g) || 0);
+  return (2 * hit) / (a.length - 1 + b.length - 1);
+}
+export const FUZZY_MIN = 0.85;                          // 이보다 낮으면 다른 규정으로 본다
+
+// ALIO 규정 ↔ manifest 항목 1:1 대응. 단계: ALIO 번호 → 정확한 이름 → 괄호 무시 이름 → 유사 이름
+export function matchRules(rules, manifest, baseTitle) {
+  const exactKey = (t) => baseTitle(stripOrg(t)).replace(/\s+/g, "").toLowerCase();
+  const used = new Set(), out = new Map();              // out: rule → { entry, how }
+  const take = (r, e, how) => { out.set(r, { entry: e, how }); used.add(e); };
+  const free = (pred) => manifest.filter((e) => !used.has(e) && pred(e));
+  const unique = (arr) => (arr.length === 1 ? arr[0] : null);
+
+  for (const r of rules) {
+    const e = unique(free((e) => e.alio_idx && String(e.alio_idx) === String(r.idx)));
+    if (e) take(r, e, "idx");
+  }
+  for (const [how, key] of [["title", exactKey], ["alias", looseKey]]) {
+    for (const r of rules) {
+      if (out.has(r)) continue;
+      const k = key(r.title);
+      const e = k && unique(free((e) => key(e.title) === k));
+      // 반대쪽에서도 유일해야 한다(ALIO 쪽 같은 이름 둘이 한 항목을 다투면 보류)
+      if (e && rules.filter((x) => !out.has(x) && key(x.title) === k).length === 1) take(r, e, how);
+    }
+  }
+  for (const r of rules) {
+    if (out.has(r)) continue;
+    const k = looseKey(r.title), kind = kindOf(r.title);
+    if (!kind) continue;
+    // 짧은 이름은 한두 글자 차이가 곧 다른 규정("감사규정 시행세칙"↔"인사규정 시행세칙")이므로
+    // 8자 이상이고 앞 3글자가 같은 경우에만 유사도를 본다
+    if (k.length < 8) continue;
+    const cands = free((e) => kindOf(e.title) === kind && looseKey(e.title).slice(0, 3) === k.slice(0, 3))
+      .map((e) => ({ e, s: dice(k, looseKey(e.title)) }))
+      .sort((a, b) => b.s - a.s);
+    if (cands[0] && cands[0].s >= FUZZY_MIN && (!cands[1] || cands[0].s - cands[1].s >= 0.05)) take(r, cands[0].e, "fuzzy");
+  }
+  return out;
+}
+
 async function main() {
   const manifest = JSON.parse(await fs.readFile(MANIFEST, "utf8"));
   const cli = await loadClient();
-  const norm = (t) => cli.baseTitle(String(t || "").replace(ORG_PREFIX, "")).toLowerCase();
-  const byTitle = new Map(manifest.map((e) => [norm(e.title), e]));
-  const byIdx = new Map(manifest.filter((e) => e.alio_idx).map((e) => [String(e.alio_idx), e]));
 
   const rules = await cli.listRules();
   console.error(`[alio-sync] ${cli.org.name}(${APBA}) ALIO 공개 규정 ${rules.length}건`);
+  const matched = matchRules(rules, manifest, cli.baseTitle);
 
-  const added = [], revised = [], same = [], tracking = {};
+  const added = [], revised = [], same = [], renamed = [], tracking = {};
   for (const r of rules) {
     const enf = ymd(r.enfDate);
-    const e = byIdx.get(String(r.idx)) || byTitle.get(norm(r.title));
-    const track = { alio_idx: String(r.idx), alio_enf: enf, alio_mod: ymd(r.modDate), alio_title: r.title };
-    if (!e) { added.push({ rule: r, enf }); continue; }
-    tracking[e.title] = track;
+    const hit = matched.get(r);
+    if (!hit) { added.push({ rule: r, enf }); continue; }
+    const e = hit.entry;
+    if (hit.how === "alias" || hit.how === "fuzzy") renamed.push({ alio_title: r.title, title: e.title, how: hit.how });
+    tracking[e.title] = { alio_idx: String(r.idx), alio_enf: enf, alio_mod: ymd(r.modDate), alio_title: r.title };
     const cur = entryMonth(e);
     // ALIO 시행월이 우리 현행본보다 늦으면 개정, 같은 idx·시행일이면 그대로
     if (e.alio_idx && String(e.alio_idx) === String(r.idx) && e.alio_enf === enf) { same.push(e.title); continue; }
     if (enf && cur && enf.slice(0, 7) > cur) revised.push({ rule: r, enf, entry: e, cur });
     else same.push(e.title);
   }
+  // ALIO 공개 목록에서 찾지 못한 우리 규정(폐지·비공개·명칭 변경 확인용 — 자동으로 지우지 않는다)
+  const matchedEntries = new Set([...matched.values()].map((v) => v.entry));
+  const missing = manifest.filter((e) => !matchedEntries.has(e)).map((e) => e.title);
 
   const todo = [...revised, ...added].slice(0, MAX);
   const skipped = revised.length + added.length - todo.length;
@@ -153,14 +212,15 @@ async function main() {
   const today = new Date().toISOString().slice(0, 10);
   const changes = {
     checked_at: today, org: cli.org.name, apba_id: APBA, alio_total: rules.length,
-    items, errors, skipped, unchanged: same.length, tracking,
+    items, errors, skipped, unchanged: same.length, tracking, renamed, missing,
   };
   await fs.mkdir(OUT, { recursive: true });
   await fs.writeFile(path.join(OUT, "changes.json"), JSON.stringify(changes, null, 2));
 
   const L = [];
   L.push(`## ALIO 내규 동기화 리포트 (${today})`, "");
-  L.push(`- 기관: **${cli.org.name}** (\`${APBA}\`) · ALIO 공개 규정 ${rules.length}건 · 변경 없음 ${same.length}건`);
+  L.push(`- 기관: **${cli.org.name}** (\`${APBA}\`) · ALIO 공개 규정 ${rules.length}건 · 변경 없음 ${same.length}건`
+    + (missing.length ? ` · ALIO에 없는 서비스 규정 ${missing.length}건` : ""));
   L.push(`- 🆕 신규 ${items.filter((i) => i.kind === "new").length}건 · ✏️ 개정 ${items.filter((i) => i.kind === "revised").length}건`
     + (errors.length ? ` · ⚠ 실패 ${errors.length}건` : "") + (skipped ? ` · 다음 실행으로 미룸 ${skipped}건` : ""), "");
   if (items.length) {
@@ -170,9 +230,23 @@ async function main() {
     L.push("");
   }
   if (errors.length) { L.push("**받지 못한 규정**", ""); errors.forEach((e) => L.push(`- ${e.title}: ${e.error}`)); L.push(""); }
+  if (renamed.length) {
+    L.push(`<details><summary>명칭이 조금 달라 같은 규정으로 대응한 ${renamed.length}건</summary>`, "");
+    L.push("| ALIO 규정명 | 서비스 규정명 | 대응 방식 |", "|---|---|---|");
+    renamed.forEach((x) => L.push(`| ${x.alio_title} | ${x.title} | ${x.how === "alias" ? "괄호·표기 차이" : "유사 명칭"} |`));
+    L.push("", "</details>", "");
+  }
+  if (missing.length) {
+    L.push(`<details><summary>ALIO 공개 목록에서 찾지 못한 서비스 규정 ${missing.length}건 (폐지·비공개·명칭 변경 여부 확인)</summary>`, "");
+    missing.forEach((t) => L.push(`- ${t}`));
+    L.push("", "자동으로 삭제하지 않습니다. 폐지된 규정이면 업로드 화면에서 정리하세요.", "</details>", "");
+  }
   L.push("> 출처: ALIO(alio.go.kr) 공공기관 내부규정 공개 — 수집 도구 alio-mcp. 병합 전에 각 규정의 본문 변환 결과를 확인하세요.");
   await fs.writeFile(path.join(OUT, "report.md"), L.join("\n") + "\n");
   console.log(`changes=${items.length}`);
 }
 
-main().catch((e) => { console.error(`[alio-sync] 실패: ${e.stack || e}`); process.exit(1); });
+// 테스트에서 matchRules 만 가져다 쓸 수 있도록 직접 실행할 때만 동작
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  main().catch((e) => { console.error(`[alio-sync] 실패: ${e.stack || e}`); process.exit(1); });
+}
