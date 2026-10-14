@@ -181,11 +181,17 @@ ALIO(공공기관 경영정보 공개시스템)에 공개된 우리 기관 내�
 1. `.github/workflows/alio-sync.yml`이 매월 1일 09:00(KST)에 실행됩니다. 수동 실행은 Actions → **ALIO 내규 동기화** → Run workflow에서 할 수 있습니다(변경점만 보는 dry run 가능).
 2. `scripts/alio_sync.mjs`가 기관(`C0422`)의 ALIO 규정 목록을 받아 `regulations_manifest.json`과 비교하고, **신규·개정** 규정의 현행본 파일만 내려받아 본문을 추출합니다.
    - 비교 기준은 ALIO 규정 고유번호와 시행일입니다. 첫 실행 때는 규정명과 개정 연월로 맞춘 뒤, 다음부터는 고유번호로 비교합니다.
+   - 규정명 표기가 조금 달라도 같은 규정으로 맞춥니다. 기관명 접두("한국농업기술진흥원 …"), 전각 문자("R＆D"), 괄호 별칭("…(구 직무발명 보상규칙)"), 소소한 개칭("임대 규칙"↔"임대 운영규칙")이 해당됩니다. 소소한 개칭은 규정 종류와 앞 글자가 같고 유사도가 높을 때만 인정합니다. 이렇게 맞춘 규정은 리포트의 '명칭이 조금 달라 같은 규정으로 대응한' 목록에 나옵니다.
+   - ALIO 공개 목록에서 찾지 못한 서비스 규정도 리포트에 나열합니다. 폐지·비공개 여부를 확인하는 용도이며, 자동으로 지우지 않습니다.
 3. `scripts/alio_apply.py`가 업로드 화면과 같은 변환기로 `regulations/<규정>/`(본문·원본)과 manifest를 갱신합니다. 이전 개정본은 history에 남습니다.
    - HWPX·DOCX는 그대로 변환하고, HWP·PDF·ZIP은 추출한 본문으로 변환합니다. 본문을 추출할 수 없는 스캔 PDF는 '원본 PDF 열기' 화면으로 등록합니다.
-4. 변경이 있으면 `alio-sync/auto` 브랜치로 **PR**이 열립니다. PR 본문에는 신규·개정 표가 들어갑니다. **병합해야 서비스에 반영됩니다.**
+   - 변환한 본문에서 인식한 조문 수를 리포트에 적습니다. 조문 수가 0이면 '⚠ 원문 확인 필요'로 표시합니다. dry run에서도 변환까지는 해 보고, 파일은 저장하지 않습니다.
+4. 변경이 있으면 `alio-sync/auto` 브랜치로 **PR**이 열립니다. PR 본문에는 신규·개정 표와 변환 결과가 들어갑니다. **병합해야 서비스에 반영됩니다.**
+5. 내려받은 원본·추출 본문·리포트는 실행 결과의 Artifacts(`alio-sync-<실행번호>`)에 14일간 보관됩니다. 정기 실행이 실패하면 **"ALIO 내규 동기화 실패"** 이슈가 열립니다(이미 열려 있으면 댓글이 달림).
 
-> 처음 쓸 때 저장소 설정 → Actions → General에서 **"Allow GitHub Actions to create and approve pull requests"**를 켜야 PR이 만들어집니다. 의미 검색 색인(`regulations_vectors.*`)은 자동으로 갱신하지 않으니, 필요하면 `scripts/build_embeddings.py`를 실행하세요.
+> 처음 쓸 때 저장소 설정 → Actions → General에서 **"Allow GitHub Actions to create and approve pull requests"**를 켜야 PR이 만들어집니다.
+> 저장소 Secret에 `GEMINI_API_KEY`를 등록해 두면 바뀐 규정의 의미 검색 색인(`regulations_vectors.*`)도 같은 PR에서 갱신합니다. 키가 없으면 색인은 그대로이며, 필요할 때 `scripts/build_embeddings.py`를 직접 실행하면 됩니다.
+> 스크립트를 고친 뒤에는 `python scripts/test_alio_sync.py`로 오프라인 시험을 돌리세요. 네트워크 없이 감지·반영·재실행을 확인합니다. PR에서는 **ALIO 동기화 시험** 워크플로가 자동으로 실행합니다.
 
 ---
 
@@ -202,8 +208,8 @@ agro-law/
 ├── regulations/               # 내규 원문(HTML) — 규정별 폴더
 ├── regulations_manifest.json  # 내규 목록·개정 정보
 ├── regulations_vectors.*      # 내규 의미 검색 색인
-├── scripts/                   # 색인 생성·평가, ALIO 동기화(alio_sync.mjs·alio_apply.py)
-├── .github/workflows/         # ALIO 내규 자동 동기화(alio-sync.yml)
+├── scripts/                   # 색인 생성·평가, ALIO 동기화(alio_sync.mjs·alio_apply.py·test_alio_sync.py)
+├── .github/workflows/         # ALIO 내규 자동 동기화(alio-sync.yml)·시험(alio-sync-test.yml)
 ├── assets/                    # 정적 리소스
 ├── run_local.py               # 로컬 실행 스크립트
 ├── requirements.txt

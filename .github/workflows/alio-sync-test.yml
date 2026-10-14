@@ -1,0 +1,29 @@
+# ALIO 동기화 스크립트 오프라인 시험 — 픽스처로 감지·반영·재실행을 확인(네트워크 불필요)
+name: ALIO 동기화 시험
+
+on:
+  pull_request:
+    paths:
+      - "scripts/alio_*"
+      - "scripts/test_alio_sync.py"
+      - ".github/workflows/alio-sync*.yml"
+      - "regulations_manifest.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: python scripts/test_alio_sync.py

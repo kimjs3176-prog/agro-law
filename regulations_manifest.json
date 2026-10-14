@@ -714,12 +714,36 @@
  },
  {
   "title": "직원창업규칙",
-  "revision": "2025년도 2월 전부개정",
+  "revision": "2026년도 8월 18일 개정",
   "category": "규칙",
   "slug": "직원창업규칙",
-  "src": "직원창업규칙(2025년도 2월 전부개정).hwp",
+  "src": "직원창업규칙(2026년도 8월 18일 개정).hwpx",
   "html": "/regulations/직원창업규칙/index.html",
-  "pdf": "pdf/직원창업규칙.pdf"
+  "pdf": "pdf/직원창업규칙.pdf",
+  "effective_date": "2026-08-18",
+  "department": "",
+  "note": "",
+  "uploader": "김진선",
+  "uploaded_at": "2026-09-08 16:52",
+  "original": "/regulations/직원창업규칙/original.hwpx",
+  "searchable": true,
+  "history": [
+   {
+    "revision": "2025년도 2월 전부개정",
+    "src": "직원창업규칙(2025년도 2월 전부개정).hwp",
+    "replaced_at": "2026-09-08 16:52",
+    "backup": "",
+    "entry": {
+     "title": "직원창업규칙",
+     "revision": "2025년도 2월 전부개정",
+     "category": "규칙",
+     "slug": "직원창업규칙",
+     "src": "직원창업규칙(2025년도 2월 전부개정).hwp",
+     "html": "/regulations/직원창업규칙/index.html",
+     "pdf": "pdf/직원창업규칙.pdf"
+    }
+   }
+  ]
  },
  {
   "title": "청렴시민감사관의 운영에 관한 규칙",
@@ -1464,22 +1488,6 @@
   "uploader": "김진선",
   "uploaded_at": "2026-08-20 09:34",
   "original": "/regulations/여비업무_처리지침/original.hwpx",
-  "searchable": true
- },
- {
-  "title": "직업창업규칙",
-  "revision": "2026년도 8월 18일 개정",
-  "category": "규칙",
-  "slug": "직업창업규칙",
-  "src": "직업창업규칙(2026년도 8월 18일 개정).hwpx",
-  "html": "/regulations/직업창업규칙/index.html",
-  "pdf": "pdf/직업창업규칙.pdf",
-  "effective_date": "",
-  "department": "",
-  "note": "",
-  "uploader": "김진선",
-  "uploaded_at": "2026-09-08 16:52",
-  "original": "/regulations/직업창업규칙/original.hwpx",
   "searchable": true
  },
  {

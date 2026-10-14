@@ -2,6 +2,7 @@
 # 매월 1일(KST 09:00) ALIO 공개 내부규정을 확인해 새로 생기거나 개정된 규정이 있으면
 # regulations/ 와 regulations_manifest.json 을 갱신하는 PR 을 연다. 병합해야 서비스에 반영된다.
 # 수동 실행: Actions → "ALIO 내규 동기화" → Run workflow
+# 선택: 저장소 Secret GEMINI_API_KEY 가 있으면 바뀐 규정의 의미 검색 색인도 함께 갱신한다.
 name: ALIO 내규 동기화
 
 on:
@@ -20,6 +21,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write                # 실패 알림 이슈
 
 concurrency:
   group: alio-sync
@@ -29,6 +31,7 @@ env:
   ALIO_APBA_ID: C0422                                   # 한국농업기술진흥원
   ALIO_MCP_REPO: https://github.com/chromehearts79/alio-mcp.git
   ALIO_MCP_REF: 4400ab742fdb34a1e426c26b347225c8e6d6b51b # 검증한 커밋에 고정(공급망 보호)
+  DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
 
 jobs:
   sync:
@@ -39,7 +42,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - uses: actions/setup-python@v5
         with:
@@ -56,18 +59,45 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: ALIO 변경 감지·현행본 수집
-        id: sync
         env:
           ALIO_CACHE_DIR: ${{ runner.temp }}/alio-cache
           ALIO_BACKGROUND_REFRESH: "0"
         run: |
           node scripts/alio_sync.mjs --alio "$RUNNER_TEMP/alio-mcp" --apba "$ALIO_APBA_ID" \
-               --out "$RUNNER_TEMP/alio_incoming" --max "${{ inputs.max || '30' }}" | tee "$RUNNER_TEMP/sync.out"
-          cat "$RUNNER_TEMP/alio_incoming/report.md" >> "$GITHUB_STEP_SUMMARY"
+               --out "$RUNNER_TEMP/alio_incoming" --max "${{ inputs.max || '30' }}"
 
+      # dry-run 에서도 변환까지 해 보고(저장은 안 함) 조문 인식 결과를 리포트에 남긴다
       - name: 변경 반영(regulations/·manifest)
-        if: ${{ !inputs.dry_run }}
-        run: python scripts/alio_apply.py "$RUNNER_TEMP/alio_incoming/changes.json"
+        run: python scripts/alio_apply.py "$RUNNER_TEMP/alio_incoming/changes.json" ${DRY_RUN:+--dry-run}
+
+      - name: 리포트
+        if: always()
+        run: |
+          f="$RUNNER_TEMP/alio_incoming/report.md"
+          [ -f "$f" ] && cat "$f" >> "$GITHUB_STEP_SUMMARY" || echo "리포트가 만들어지지 않았습니다(앞 단계 로그 확인)." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 수집 결과 보관(원본·추출 본문·리포트)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alio-sync-${{ github.run_id }}
+          path: ${{ runner.temp }}/alio_incoming
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: 의미 검색 키 확인
+        id: key
+        run: echo "has=${{ secrets.GEMINI_API_KEY != '' }}" >> "$GITHUB_OUTPUT"
+
+      - name: 의미 검색 색인 갱신(바뀐 규정만)
+        if: ${{ steps.key.outputs.has == 'true' && !inputs.dry_run }}
+        continue-on-error: true      # 쿼터 소진 등으로 실패해도 내규 반영 PR 은 연다
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          args=$(python -c "import json,sys; r=json.load(open(sys.argv[1])); print(' '.join('--slug '+a['slug'] for a in r['applied'] if a.get('searchable')))" \
+                 "$RUNNER_TEMP/alio_incoming/apply_result.json")
+          if [ -n "$args" ]; then python scripts/build_embeddings.py $args; else echo "갱신할 규정 없음"; fi
 
       - name: 변경 여부 확인
         id: diff
@@ -89,7 +119,21 @@ jobs:
           add-paths: |
             regulations/**
             regulations_manifest.json
+            regulations_vectors.json
+            regulations_vectors.bin
           commit-message: "ALIO 내규 자동 동기화 (${{ steps.diff.outputs.date }})"
           title: "ALIO 내규 자동 동기화 (${{ steps.diff.outputs.date }})"
           body-path: ${{ runner.temp }}/alio_incoming/report.md
           labels: alio-sync
+
+      # 정기 실행이 실패하면 아무도 모르고 지나가지 않도록 이슈로 알린다(열린 이슈가 있으면 댓글)
+      - name: 실패 알림
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="ALIO 내규 동기화 실패"
+          num=$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number' || true)
+          body="정기 ALIO 내규 동기화가 실패했습니다: $RUN_URL"
+          if [ -n "$num" ]; then gh issue comment "$num" --body "$body"; else gh issue create --title "$title" --body "$body"; fi
