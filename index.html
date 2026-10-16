@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<script>/* /policy: 규정조회 전용 화면 */ if(/^\/policy\/?$/.test(location.pathname)) document.documentElement.classList.add('policy-only');</script>
 <title>KOAT Work Place</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.min.css">
 <style>:root{
@@ -2159,12 +2160,6 @@ body.dark .art-match-badge{background:rgba(34,197,94,.18);color:#6ee7a0;}
 .scope-hint{font-size:12px;color:var(--mu);padding:0 10px 0 12px;white-space:nowrap;}
 .scope-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 14px;}
 .scope-row .search-toggle{margin:0;}
-.reg-agent-link{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);
-  color:var(--tx);font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;transition:border-color .15s,background .15s,color .15s;}
-.reg-agent-link:hover{border-color:var(--g);background:var(--gl);color:var(--gp);}
-.reg-agent-link:focus-visible{outline:2px solid var(--g);outline-offset:2px;}
-.reg-agent-link[hidden]{display:none;}
-.ral-ext{font-size:10px;opacity:.6;}
 .srow{position:relative;}
 .ac-box{position:absolute;left:0;right:calc(96px + 10px);top:calc(100% + 6px);z-index:60;background:var(--sf);
   border:1px solid var(--bd);border-radius:14px;box-shadow:0 18px 40px -12px rgba(17,18,23,.28);padding:6px;max-height:min(60vh,420px);overflow:auto;}
@@ -2195,7 +2190,6 @@ body.dark .ac-box{box-shadow:0 18px 40px -12px rgba(0,0,0,.7);}
   .ac-box{right:0;}
   .ac-foot,.scope-hint{display:none;}
   .scope-toggle{display:flex;width:100%;} .scope-toggle .stgl{flex:1;justify-content:center;padding:8px 6px;}
-  .reg-agent-link{width:100%;justify-content:center;}
   .saved-empty{display:none;}                 /* 모바일: 장황한 안내 숨김(버튼만) */
   .sm-primary{-webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent);}
   .footer{padding-bottom:84px;}               /* 하단 탭바에 가리지 않게 */
@@ -2294,7 +2288,8 @@ body.dark{--chart-bar:#5b8ff7;}
 .st-grid{stroke:var(--bd);stroke-width:1;}
 .st-base{stroke:var(--ht);stroke-width:1;}
 .st-ax{font-size:10.5px;fill:var(--mu);font-family:var(--font);}
-.st-bar{fill:var(--chart-bar);}
+.st-bar{fill:var(--chart-bar);pointer-events:none;}
+.st-ax{pointer-events:none;}
 .st-hit{fill:transparent;cursor:default;}
 .st-hit.on{fill:var(--gl);}
 .st-tip{position:absolute;pointer-events:none;background:var(--tx);color:var(--sf);font-size:11.5px;font-weight:600;padding:5px 9px;border-radius:7px;white-space:nowrap;box-shadow:var(--shadow);}
@@ -2305,6 +2300,10 @@ body.dark{--chart-bar:#5b8ff7;}
 .st-table th,.st-table td{text-align:right;padding:4px 8px;border-bottom:1px solid var(--bd);font-variant-numeric:tabular-nums;}
 .st-table th:first-child,.st-table td:first-child{text-align:left;}
 @media (max-width:640px){ .st-tiles{grid-template-columns:repeat(2,1fr);} .rk-bar{display:none;} }
+/* /policy 규정조회 전용 화면 */
+.policy-show{display:none!important;}
+.policy-only .policy-show{display:inline-flex!important;}
+.policy-only .sm-grp-pub,.policy-only .sm-grp-tools,.policy-only .sm-div-np,.policy-only .int-upload{display:none!important;}
 </style>
 </head>
 <body>
@@ -2712,16 +2711,17 @@ body.dark{--chart-bar:#5b8ff7;}
         <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="사내 규정(내규) 스마트 검색"><span class="sm-ic" data-icon="internal"></span><span>AI내규똑똑</span></button>
         <button class="sm-item" id="smLaw" onclick="setMode('law')" title="국가법령 조회"><span class="sm-ic" data-icon="law"></span><span>법령 조회</span></button>
         <button class="sm-item" id="smRank" onclick="openRegRanking()" title="내규 랭킹 — 많이 열람한 내규 순위(주간·월간·누적)"><span class="sm-ic" aria-hidden="true">🏆</span><span>내규 랭킹</span></button>
+        <button class="sm-item policy-show" id="smFormsP" onclick="openForms()" title="서식 — 규정 별표·별지 서식 검색·열람"><span class="sm-ic" aria-hidden="true">📎</span><span>서식</span></button>
       </div>
-      <span class="sm-div" aria-hidden="true"></span>
-      <div class="sm-group">
+      <span class="sm-div sm-div-np" aria-hidden="true"></span>
+      <div class="sm-group sm-grp-pub">
         <span class="sm-glabel">공공DB</span>
         <button class="sm-item" id="smCompany" onclick="openAssist('company')" title="기업 통합검색(회사명·사업자번호·대표자)"><span class="sm-ic" data-icon="company"></span><span>기업</span></button>
         <button class="sm-item" id="smPatent" onclick="openAssist('patent')" title="특허·실용신안 검색(KIPRIS)"><span class="sm-ic" data-icon="patent"></span><span>특허</span></button>
         <button class="sm-item" id="smSupport" onclick="openAssist('support')" title="정부 지원사업 공고(공공데이터포털)"><span class="sm-ic" data-icon="support"></span><span>지원사업</span></button>
       </div>
-      <span class="sm-div" aria-hidden="true"></span>
-      <div class="sm-group">
+      <span class="sm-div sm-div-np" aria-hidden="true"></span>
+      <div class="sm-group sm-grp-tools">
         <span class="sm-glabel">업무도구</span>
         <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 본문 작성"><span class="sm-ic" data-icon="expense"></span><span>지출결의서</span></button>
         <a class="sm-item sm-ext" id="smSecretary" href="https://koat-workplace-1.vercel.app/" target="_blank" rel="noopener" title="서무비서 — 출장·물품·행사·복무·결재 절차 안내, 기한·반려 점검, 문서 초안(새 탭에서 열림)"><span class="sm-ic" aria-hidden="true">🗂</span><span>서무비서</span><span class="sm-ext-ic" aria-hidden="true">↗</span></a>
@@ -2746,8 +2746,6 @@ body.dark{--chart-bar:#5b8ff7;}
       <button class="stgl" id="stglScen" role="tab" aria-selected="false" onclick="_scopeSwitch('scenario')" title="업무 상황을 문장으로 물어보면 AI가 근거 법령·조문을 제안합니다"><span class="stgl-ic">✦</span>AI 질문</button>
       <span class="scope-hint" id="scopeHint">규정명·키워드·"규정명 제N조"로 찾기</span>
     </div>
-      <a class="reg-agent-link" id="regAgentLink" href="https://law-agent-neon.vercel.app/" target="_blank" rel="noopener"
-         title="규정 제·개정 에이전트 — 조문 초안·신구조문대비표·제·개정 이유서·절차 안내(새 탭에서 열림)"><span aria-hidden="true">📝</span>규정 에이전트<span class="ral-ext" aria-hidden="true">↗</span></a>
     </div>
     <!-- 검색창 -->
     <div class="srow">
@@ -3093,6 +3091,7 @@ async function _loadAssistStatus(){
   catch(e){ return {}; }
 }
 async function openAssist(kind){
+  if(_policyBlocked()) return;
   const cfg=ASSIST_CFG[kind]; if(!cfg) return;
   _assistMode=kind;
   if(typeof wsBackToList==='function') wsBackToList();   // 작업공간 창이 열려있으면 목록으로
@@ -4163,6 +4162,7 @@ function _hanAmount(n){
 function _fmtKDate(iso){ const m=String(iso||'').match(/(\d{4})-(\d{2})-(\d{2})/); return m?`${m[1]}.${m[2]}.${m[3]}`:String(iso||''); }
 
 function openExpense(){
+  if(_policyBlocked()) return;
   if(typeof wsBackToList==='function') wsBackToList();
   document.querySelector('.main-content').classList.add('assist-on');
   document.querySelectorAll('.sm-item.active').forEach(el=>el.classList.remove('active'));
@@ -4926,7 +4926,6 @@ function setMode(m){
     const el=document.getElementById(id); if(!el) return;
     el.classList.toggle('active', m===k); el.setAttribute('aria-selected', m===k?'true':'false');
   });
-  const ral=document.getElementById('regAgentLink'); if(ral) ral.hidden = (m!=='internal');   // 규정 에이전트 링크는 내규똑똑에서만
   const sh=document.getElementById('scopeHint');
   if(sh) sh.textContent = m==='scenario' ? '업무 상황을 문장으로 물어보세요'
                         : m==='law' ? '"법령명 제N조" · "법령명 키워드" · 조문 문장으로도 찾기' : '규정명·키워드·"규정명 제N조"로 찾기';
@@ -7579,10 +7578,10 @@ function _cmdkBuild(){
   act('AI 시나리오 검색','모드',()=>{ if(_assistMode)closeAssist(); setMode('scenario'); });
   act('지출결의서','도구',openExpense);
   act('서무비서','도구',openSecretary);
-  act('규정 에이전트 (제·개정 지원)','도구',()=>window.open('https://law-agent-neon.vercel.app/','_blank','noopener'));
   act('자주 쓰는 문구','도구',openSnippets);
   act('내규 랭킹','통계',openRegRanking);
   act('이용 통계 (접속자 수)','통계',openUsageStats);
+  act('서식 (별표·별지)','도구',openForms);
   act('즐겨찾기','도구',openFavModal);
   act('북마크·메모한 조문','도구',openBmHub);
   act('기업 조회','공공조회',()=>openAssist('company'));
@@ -7600,6 +7599,10 @@ function _cmdkBuild(){
   try{ getSaved().forEach(s=>A.push({label:s.label||s.q,hint:'📌 저장된 검색',run:()=>{ if(_assistMode)closeAssist(); if(mode!=='internal'&&mode!=='law') setMode('internal'); quick(s.q); }})); }catch(e){}
   // 내 자료: 스니펫도 Ctrl+K로 바로 찾기
   try{ getSnippets().forEach(s=>{ const lb=s.title||s.text; if(lb) A.push({label:lb.slice(0,70),hint:'✂ 문구(삽입/복사)',run:()=>{ const tx=_snipExpand(s.text); _copyText(tx,()=>{}); if(typeof _toast==='function')_toast('문구를 복사했습니다.',2000); }}); }); }catch(e){}
+  if(_POLICY){   // 규정조회 전용: 공공조회·업무도구 항목 제외
+    const deny=/^(기업|특허|지원사업|조달공고|지출결의서|자주 쓰는 문구|서무비서|개정 모니터링|내규 업로드)/;
+    for(let i=A.length-1;i>=0;i--) if(A[i].hint==='공공조회' || deny.test(A[i].label) || A[i].hint==='✂ 문구(삽입/복사)') A.splice(i,1);
+  }
   _cmdkAll=A;
 }
 function _cmdkScore(q, s){
@@ -8607,6 +8610,14 @@ function _wpClose(id){ const bg=document.getElementById(id); if(bg) bg.classList
 // 이용 통계 — 접속자 수 · 내규 랭킹(열람수). 서버 /api/stats/* (저장소 미설정이면 화면에서 숨김)
 // 방문자 ID 는 브라우저가 만든 무작위 값(localStorage)이며 이름·계정·IP 와 연결하지 않는다.
 // ══════════════════════════════════════════════════════════════════════════
+const _POLICY=document.documentElement.classList.contains('policy-only');   // /policy 규정조회 전용 화면
+if(_POLICY){ document.title='AI내규똑똑 · 규정조회';
+  document.addEventListener('DOMContentLoaded',()=>{
+    const q=sel=>document.querySelector(sel);
+    const full=q('.brand-full'), short=q('.brand-short'), en=q('.brand-en'), sub=q('.brand-sub');
+    if(full) full.textContent='AI내규똑똑'; if(short) short.textContent='AI내규똑똑';
+    if(en) en.textContent='KOAT'; if(sub) sub.textContent='내규 · 국가법령 조회'; }); }
+function _policyBlocked(){ if(!_POLICY) return false; if(typeof _toast==='function') _toast('규정조회 전용 화면에서는 쓸 수 없는 기능입니다.', 2600); return true; }
 const _ST_VID_KEY='koat_vid', _RK_PERIOD_KEY='koat_rk_period';
 const _RK_PERIODS=[['week','주간'],['month','월간'],['all','누적']];
 let _stEnabled=null;                          // null: 확인 전 · true: 집계 중 · false: 저장소 미설정
@@ -8714,7 +8725,7 @@ function _stChart(days){
     if(i%7===(n-1)%7) ticks+=`<text x="${(L+i*slot+slot/2).toFixed(1)}" y="${H-8}" class="st-ax" text-anchor="middle">${md}</text>`;
   });
   return `<div class="st-chart-wrap"><svg class="st-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="최근 ${n}일 일별 방문자 수 막대 그래프">`+
-    `${g}<line x1="${L}" x2="${W-R}" y1="${T+ph}" y2="${T+ph}" class="st-base"/>${bars}${ticks}${hits}</svg><div class="st-tip" id="stTip" hidden></div></div>`;
+    `${g}${hits}<line x1="${L}" x2="${W-R}" y1="${T+ph}" y2="${T+ph}" class="st-base"/>${bars}${ticks}</svg><div class="st-tip" id="stTip" hidden></div></div>`;
 }
 function _stBindTips(root){
   const tip=root.querySelector('#stTip'), wrap=root.querySelector('.st-chart-wrap'); if(!tip||!wrap) return;
@@ -8738,7 +8749,7 @@ async function openUsageStats(){
       _stTile('오늘 방문자',`${_stNum(d.today.uv)}명`,`방문 ${_stNum(d.today.pv)}회`)+
       _stTile('어제 방문자',`${_stNum(d.yesterday?d.yesterday.uv:0)}명`,`방문 ${_stNum(d.yesterday?d.yesterday.pv:0)}회`)+
       _stTile('누적 방문자',`${_stNum(d.total.uv)}명`,`방문 ${_stNum(d.total.pv)}회`)+`</div>`+
-    `<div class="st-ch-h">최근 30일 일별 방문자 <span class="rk-sub">· 일평균 ${_stNum(Math.round(sum30/Math.max(1,days.length)))}명</span></div>`+
+    `<div class="st-ch-h">최근 30일 일별 방문자 <span class="rk-sub">· 일평균 ${(sum30/Math.max(1,days.length)).toLocaleString('ko-KR',{maximumFractionDigits:1})}명</span></div>`+
     _stChart(days)+
     `<details class="st-table"><summary>표로 보기</summary><table><thead><tr><th>날짜</th><th>방문자</th><th>방문</th></tr></thead><tbody>${rows}</tbody></table></details>`+
     `<div class="wp-note" style="margin-top:12px">방문자: 하루 동안 접속한 서로 다른 브라우저 수 · 방문: 새 탭(세션)으로 접속한 횟수 · 현재 접속: 최근 5분 안에 화면을 보고 있던 사람 수. `+

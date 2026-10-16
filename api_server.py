@@ -674,6 +674,8 @@ INDEX_HTML = None  # HTML은 index.html 파일로 분리됨
 # ── Flask 라우트 ──────────────────────────────────────────────────────────────
 
 @app.route("/")
+@app.route("/policy")          # 규정조회 전용 화면(같은 index.html, 화면에서 메뉴만 줄임)
+@app.route("/policy/")
 def index():
     # 로컬 실행 시 index.html 서빙
     # Vercel에서는 vercel.json이 index.html을 직접 서빙함
@@ -6545,8 +6547,23 @@ PORT = int(os.environ.get("PORT", 5100))
 #  · Vercel 에서 저장소가 없으면 기록하지 않는다(인스턴스마다 값이 달라 오해를 부르므로)
 #  · 개인정보: 브라우저가 만든 무작위 방문자 ID만 쓰며 IP·계정은 저장하지 않는다
 # ══════════════════════════════════════════════════════════════════════════
-_STATS_URL = (os.environ.get("KV_REST_API_URL") or os.environ.get("UPSTASH_REDIS_REST_URL") or "").rstrip("/")
-_STATS_TOKEN = os.environ.get("KV_REST_API_TOKEN") or os.environ.get("UPSTASH_REDIS_REST_TOKEN") or ""
+def _stats_env():
+    """Upstash 연결 정보. Vercel 연동 시 접두어를 바꿨어도(예: STATS_KV_REST_API_URL) 찾는다."""
+    for url_k, tok_k in (("KV_REST_API_URL", "KV_REST_API_TOKEN"),
+                         ("UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN")):
+        if os.environ.get(url_k) and os.environ.get(tok_k):
+            return os.environ[url_k], os.environ[tok_k]
+    for k, v in sorted(os.environ.items()):
+        for suf, tsuf in (("KV_REST_API_URL", "KV_REST_API_TOKEN"), ("REDIS_REST_URL", "REDIS_REST_TOKEN")):
+            if k.endswith(suf) and v.startswith("https://"):
+                tok = os.environ.get(k[:-len(suf)] + tsuf, "")
+                if tok:
+                    return v, tok
+    return "", ""
+
+
+_STATS_URL, _STATS_TOKEN = _stats_env()
+_STATS_URL = _STATS_URL.rstrip("/")
 _STATS_FILE = os.environ.get("STATS_FILE") or os.path.join(os.path.dirname(os.path.abspath(__file__)), ".stats.json")
 _STATS_ON_VERCEL = bool(os.environ.get("VERCEL"))
 _STATS_LOCK = threading.Lock()
