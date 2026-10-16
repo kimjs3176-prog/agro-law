@@ -6,6 +6,7 @@
   3. 잘못된 입력: 배열·숫자·문자열 JSON, limit=abc 등에 500 대신 400/정상 응답
   4. 사용자 간 공유되던 서버 메모리 API(즐겨찾기·최근 검색) 제거
   5. 요청 본문 크기 제한(413)
+  6. 인기 검색어: 개인정보 형태·사람 이름 미기록, 2명 이상만 노출, 방문자 ID 미저장
 
 사용: python scripts/test_api_safety.py   (실패 시 종료 코드 1)
 """
@@ -92,6 +93,25 @@ for u in ["/api/favorites", "/api/favorites/toggle?name=x", "/api/favorites/remo
     r = c.get(u)
     ok = r.status_code == 404 or "favorites" not in r.get_data(as_text=True) and "recent" not in r.get_data(as_text=True)
     check(ok, f"{u} 없음 ({r.status_code})")
+
+print("6) 인기 검색어 — 개인정보 보호")
+import tempfile
+A._STATS_FILE = os.path.join(tempfile.mkdtemp(), "st.json")
+for q in ["010-1234-5678", "900101-1234567", "abc@koat.or.kr", "김철수", "홍길동 징계", "최민수 퇴직",
+          "https://x.com", "12345678", "어제 팀장이 저한테 화를 내서 너무 힘들어요 어떻게 해요"]:
+    check(A._query_safe(q) == "", f"기록 안 함: {q}")
+for q in ["여비", "출장 여비", "농지법 전용허가", "감사규정 제15조", "육아휴직 기간"]:
+    check(A._query_safe(q) == q, f"기록함: {q}")
+c.post("/api/stats/query", json={"vid": "aaaaaaaaaaaa1", "q": "여비"})
+c.post("/api/stats/query", json={"vid": "aaaaaaaaaaaa1", "q": "연차휴가"})
+c.post("/api/stats/query", json={"vid": "aaaaaaaaaaaa1", "q": "연차휴가"})
+c.post("/api/stats/query", json={"vid": "bbbbbbbbbbbb2", "q": "여비"})
+A._stats_cache.clear()
+got = [x["q"] for x in c.get("/api/stats/queries").get_json()["items"]]
+check(got == ["여비"], f"서로 다른 2명 이상이 찾은 말만 노출 {got}")
+raw = open(A._STATS_FILE, encoding="utf-8").read()
+check("aaaaaaaaaaaa1" not in raw and "bbbbbbbbbbbb2" not in raw, "방문자 ID 원문을 검색어와 함께 저장하지 않음")
+check(c.post("/api/stats/query", data="[1]", content_type="application/json").status_code == 400, "잘못된 본문 400")
 
 print("5) 요청 크기 제한")
 r = c.post("/api/regs/upload", data={"file": (__import__("io").BytesIO(b"0" * (7 * 1024 * 1024)), "big.hwpx")},

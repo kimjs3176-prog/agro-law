@@ -6768,6 +6768,176 @@ def stats_status():
     return jsonify(out)
 
 
+# ── 인기 검색어(개인정보 보호형) ─────────────────────────────────────────────
+#  · 검색어만 집계하고 누가 검색했는지는 남기지 않는다(방문자 ID는 HyperLogLog 로만 넣어
+#    '서로 다른 사람 수'만 셀 뿐 되찾을 수 없다).
+#  · 개인정보 형태(전화·주민번호·이메일·긴 숫자·링크·긴 문장)는 기록하지 않는다.
+#  · 내규 본문·제목·법령명에 실제로 나오는 낱말로 된 검색어만 기록한다(사람 이름 등 차단).
+#  · 최근 7일 동안 서로 다른 방문자 QUERY_MIN_USERS(기본 2)명 이상이 찾은 검색어만 노출한다.
+_QUERY_MIN_USERS = max(1, int(os.environ.get("QUERY_MIN_USERS", "2") or 2))
+_PII_RE = re.compile(
+    r"\d{2,3}[-.\s]?\d{3,4}[-.\s]?\d{4}"        # 전화번호
+    r"|\d{6}\s*-?\s*[1-8]\d{6}"                 # 주민등록번호
+    r"|[\w.+-]+@[\w-]+\.[\w.]+"                 # 이메일
+    r"|https?://|www\."                         # 링크
+    r"|\d{6,}")                                 # 긴 숫자(계좌·사번 등)
+_QUERY_CORPUS: dict = {"tokens": None}
+# 법령 검색어의 흔한 끝말(허가·신고 등) — 사람 이름은 이렇게 끝나지 않는다
+_LEGAL_TAIL_RE = re.compile(r"(법|령|규칙|규정|지침|요령|세칙|허가|신고|등록|승인|신청|절차|기준|처분|위반|"
+                            r"과태료|벌칙|의무|조건|요건|대상|기간|방법|제도|계약|보상|지원)$")
+
+
+def _query_tokens() -> list:
+    """내규 제목·본문 + 법령명의 낱말 목록(정렬) — 검색어 낱말이 규정 낱말의 앞부분인지 확인용."""
+    if _QUERY_CORPUS["tokens"] is None:
+        parts = []
+        try:
+            man = _load_reg_manifest()
+            have = set()
+            for m in man:
+                parts.append(m.get("title", ""))
+                slug = m.get("slug", "")
+                tp = os.path.join(REG_DIR, slug, "text.txt")
+                if slug and os.path.exists(tp):
+                    have.add(slug)
+                    with open(tp, encoding="utf-8", errors="ignore") as f:
+                        parts.append(f.read())
+            import reg_chunks as _rc          # text.txt 가 없는 규정은 조문 청크로 보충
+            for ch in _rc.iter_chunks():
+                if ch.get("slug") not in have:
+                    parts.append(ch.get("text", ""))
+        except Exception as e:
+            print(f"[stats] 검색어 사전 구성 일부 실패: {e}")
+        parts.extend(globals().get("CANDIDATE_LAWS") or [])
+        toks = set(re.findall(r"[가-힣A-Za-z0-9]{2,}", " ".join(map(str, parts)).lower()))
+        _QUERY_CORPUS["tokens"] = sorted(toks)
+    return _QUERY_CORPUS["tokens"]
+
+
+def _word_in_regs(w: str) -> bool:
+    """w 로 시작하는 낱말이 규정에 있는가(조사가 붙은 '여비를'도 '여비'로 인정)."""
+    import bisect
+    toks = _query_tokens()
+    i = bisect.bisect_left(toks, w)
+    return i < len(toks) and toks[i].startswith(w)
+
+
+# 규정 서식의 예시 이름 — 규정에는 있지만 사람 이름이므로 검색어로 노출하지 않는다
+_SAMPLE_NAMES = {"홍길동", "김철수", "이영희", "김영희", "박철수", "임꺽정"}
+
+
+def _query_safe(q: str) -> str:
+    """노출해도 되는 검색어면 정규화해 돌려주고, 아니면 빈 문자열."""
+    q = re.sub(r"\s+", " ", str(q or "")).strip()
+    if not (2 <= len(q) <= 30) or _PII_RE.search(q):
+        return ""
+    words = q.split(" ")
+    if len(words) > 4:                          # 긴 문장(사연·상황 설명)은 제외
+        return ""
+    for w in words:
+        w2 = re.sub(r"[\"'“”‘’()\[\]·,.?!]", "", w).lower()
+        if not w2:
+            continue
+        if w2 in _SAMPLE_NAMES:
+            return ""
+        if re.fullmatch(r"제?\d+조(의\d+)?", w2):      # '제15조' 같은 조문 번호
+            continue
+        if _LEGAL_TAIL_RE.search(w2) or _word_in_regs(w2):
+            continue
+        return ""
+    return q
+
+
+def _stats_record_query(q: str, vid: str) -> None:
+    day = _stats_day()
+    be = _stats_backend()
+    if be == "redis":
+        _redis([["ZINCRBY", f"st:q:d:{day}", "1", q], ["EXPIRE", f"st:q:d:{day}", str(9 * 86400)],
+                ["PFADD", f"st:qv:d:{day}:{q}", vid], ["EXPIRE", f"st:qv:d:{day}:{q}", str(9 * 86400)]])
+    elif be == "file":
+        import hashlib
+        hv = hashlib.sha256(vid.encode()).hexdigest()[:10]   # 로컬 파일은 해시만(HLL 대체)
+        with _STATS_LOCK:
+            d = _stats_file_load()
+            z = d.setdefault("q", {}).setdefault(day, {})
+            ent = z.setdefault(q, {"n": 0, "v": []})
+            ent["n"] += 1
+            if hv not in ent["v"]:
+                ent["v"].append(hv)
+            for old in [k for k in d["q"] if k < _stats_day(9)]:
+                d["q"].pop(old, None)
+            _stats_file_save(d)
+
+
+def _stats_top_queries(limit: int) -> list:
+    days = [_stats_day(i) for i in range(7)]
+    be = _stats_backend()
+    agg: dict = {}
+    if be == "redis":
+        for flat in _redis([["ZRANGE", f"st:q:d:{d}", "0", "-1", "WITHSCORES"] for d in days]):
+            for m, sc in _zpairs(flat):
+                agg[m] = agg.get(m, 0) + sc
+        cand = sorted(agg.items(), key=lambda x: (-x[1], x[0]))[:40]
+        if not cand:
+            return []
+        users = _redis([["PFCOUNT", *[f"st:qv:d:{d}:{m}" for d in days]] for m, _ in cand])
+        rows = [(m, n, int(u or 0)) for (m, n), u in zip(cand, users)]
+    else:
+        qd = _stats_file_load().get("q", {})
+        vs: dict = {}
+        for d in days:
+            for m, ent in qd.get(d, {}).items():
+                agg[m] = agg.get(m, 0) + ent.get("n", 0)
+                vs.setdefault(m, set()).update(ent.get("v", []))
+        rows = [(m, n, len(vs.get(m, ()))) for m, n in agg.items()]
+    rows = [r for r in rows if r[2] >= _QUERY_MIN_USERS and _query_safe(r[0])]
+    rows.sort(key=lambda r: (-r[1], r[0]))
+    return [{"q": m, "count": n} for m, n, _ in rows[:limit]]
+
+
+@app.route("/api/stats/query", methods=["POST"])
+def stats_query():
+    """검색 1회 기록(인기 검색어). 개인정보 형태·규정에 없는 낱말·긴 문장은 기록하지 않는다."""
+    if not _stats_backend():
+        return jsonify({"ok": False, "enabled": False})
+    if _BOT_RE.search(request.headers.get("User-Agent", "")) or _stats_limited("query", 600):
+        return jsonify({"ok": False})
+    d = _json_body()
+    if d is None:
+        return _bad_body()
+    vid = str(d.get("vid", ""))
+    if not _VID_RE.match(vid):
+        return jsonify({"ok": False, "error": "bad vid"}), 400
+    q = _query_safe(d.get("q", "") if isinstance(d.get("q"), str) else "")
+    if not q:
+        return jsonify({"ok": True, "recorded": False})
+    try:
+        _stats_record_query(q, vid)
+        _stats_cache.pop("queries", None)
+        return jsonify({"ok": True, "recorded": True})
+    except Exception as e:
+        print(f"[stats] query 실패: {e}")
+        return jsonify({"ok": False})
+
+
+@app.route("/api/stats/queries")
+def stats_queries():
+    """인기 검색어(최근 7일, 서로 다른 방문자 QUERY_MIN_USERS명 이상)."""
+    if not _stats_backend():
+        return jsonify({"enabled": False, "items": []})
+    limit = _int_arg("limit", 8, 1, 20)
+    hit = _stats_cache.get("queries")
+    if hit and time.time() - hit[0] < 60 and hit[1].get("_limit") == limit:
+        return jsonify({k: v for k, v in hit[1].items() if k != "_limit"})
+    try:
+        out = {"enabled": True, "items": _stats_top_queries(limit), "min_users": _QUERY_MIN_USERS}
+    except Exception as e:
+        print(f"[stats] queries 실패: {e}")
+        return jsonify({"enabled": True, "error": "통계 저장소에 연결하지 못했습니다.", "items": []})
+    _stats_cache["queries"] = (time.time(), {**out, "_limit": limit})
+    return jsonify(out)
+
+
 @app.route("/api/stats/visit", methods=["POST"])
 def stats_visit():
     """방문 기록. new=true 는 세션당 한 번(방문수·방문자수), 이후는 접속 유지 신호(현재 접속자)."""
