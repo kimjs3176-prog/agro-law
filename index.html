@@ -2304,6 +2304,15 @@ body.dark{--chart-bar:#5b8ff7;}
 .policy-show{display:none!important;}
 .policy-only .policy-show{display:inline-flex!important;}
 .policy-only .sm-grp-pub,.policy-only .sm-grp-tools,.policy-only .sm-div-np,.policy-only .int-upload{display:none!important;}
+/* 검색 범위 줄 오른쪽 도구 버튼(내규 랭킹·서식) */
+.scope-tools{display:flex;gap:6px;flex-wrap:wrap;}
+.stool{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);
+  font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);white-space:nowrap;transition:border-color .15s,background .15s,color .15s;}
+.stool:hover{border-color:var(--g);background:var(--gl);color:var(--gp);}
+.stool:focus-visible{outline:2px solid var(--g);outline-offset:2px;}
+/* /policy: 메뉴가 검색 범위 토글·도구 버튼과 겹치므로 좌측 메뉴 전체를 숨긴다 */
+.policy-only #sideMenu{display:none!important;}
+@media (max-width:640px){ .scope-tools{width:100%;} .scope-tools .stool{flex:1;justify-content:center;} }
 </style>
 </head>
 <body>
@@ -2708,10 +2717,7 @@ body.dark{--chart-bar:#5b8ff7;}
     <div class="sm-sec sm-primary">
       <div class="sm-group">
         <span class="sm-glabel">규정조회</span>
-        <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="사내 규정(내규) 스마트 검색"><span class="sm-ic" data-icon="internal"></span><span>AI내규똑똑</span></button>
-        <button class="sm-item" id="smLaw" onclick="setMode('law')" title="국가법령 조회"><span class="sm-ic" data-icon="law"></span><span>법령 조회</span></button>
-        <button class="sm-item" id="smRank" onclick="openRegRanking()" title="내규 랭킹 — 많이 열람한 내규 순위(주간·월간·누적)"><span class="sm-ic" aria-hidden="true">🏆</span><span>내규 랭킹</span></button>
-        <button class="sm-item policy-show" id="smFormsP" onclick="openForms()" title="서식 — 규정 별표·별지 서식 검색·열람"><span class="sm-ic" aria-hidden="true">📎</span><span>서식</span></button>
+        <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="AI내규똑똑 — 내규·법령 검색 화면(검색 범위는 검색창 위에서 선택)"><span class="sm-ic" data-icon="internal"></span><span>AI내규똑똑</span></button>
       </div>
       <span class="sm-div sm-div-np" aria-hidden="true"></span>
       <div class="sm-group sm-grp-pub">
@@ -2746,6 +2752,10 @@ body.dark{--chart-bar:#5b8ff7;}
       <button class="stgl" id="stglScen" role="tab" aria-selected="false" onclick="_scopeSwitch('scenario')" title="업무 상황을 문장으로 물어보면 AI가 근거 법령·조문을 제안합니다"><span class="stgl-ic">✦</span>AI 질문</button>
       <span class="scope-hint" id="scopeHint">규정명·키워드·"규정명 제N조"로 찾기</span>
     </div>
+      <div class="scope-tools">
+        <button class="stool" id="stoolRank" onclick="openRegRanking()" title="내규 랭킹 — 많이 열람한 내규 순위(주간·월간·누적)"><span aria-hidden="true">🏆</span>내규 랭킹</button>
+        <button class="stool policy-show" id="stoolForms" onclick="openForms()" title="서식 — 규정 별표·별지 서식 검색·열람"><span aria-hidden="true">📎</span>서식</button>
+      </div>
     </div>
     <!-- 검색창 -->
     <div class="srow">
@@ -4914,8 +4924,8 @@ function setMode(m){
   if(m==='scenario' && (mode==='internal'||mode==='law')) _scenReturn=mode;
   mode=m;
   // 좌측 메뉴 패널의 활성 표시(시나리오는 메뉴에서 빠져 활성 항목 없음)
-  const _sm={internal:'smInternal',law:'smLaw'};
-  Object.entries(_sm).forEach(([k,id])=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active', m===k); });
+  // 검색 범위(내규·법령·AI 질문)는 검색창 위 토글이 맡고, 메뉴의 AI내규똑똑은 '검색 화면'을 뜻한다
+  { const el=document.getElementById('smInternal'); if(el) el.classList.toggle('active', m==='internal'||m==='law'||m==='scenario'); }
 
   const examples    = document.getElementById('scenarioExamples');
   const intExamples = document.getElementById('internalExamples');
