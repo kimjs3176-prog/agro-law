@@ -2328,6 +2328,14 @@ body.dark{--chart-bar:#5b8ff7;}
 .rk-side .rk-list{display:flex;flex-direction:column;gap:2px;}
 .rk-side .rk-empty{padding:14px 2px;line-height:1.6;}
 @media (max-width:1023px){ .search-row.has-rank{display:block;} .search-row.has-rank > .rk-side{margin-top:14px;} }
+/* 인기 검색어(랭킹 창 아래) */
+.pq{margin-top:12px;padding-top:10px;border-top:1px solid var(--bd);}
+.pq-h{font-size:13px;font-weight:800;color:var(--tx);margin-bottom:8px;}
+.pq-list{display:flex;flex-wrap:wrap;gap:6px;}
+.pq-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--bd);background:var(--sf);color:var(--tx);border-radius:999px;padding:4px 10px 4px 5px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);max-width:100%;}
+.pq-chip:hover{border-color:var(--g);background:var(--gl);color:var(--gp);}
+.pq-no{flex-shrink:0;min-width:18px;height:18px;border-radius:999px;background:var(--bg);color:var(--mu);font-size:10.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;}
+.pq-chip:nth-child(-n+3) .pq-no{background:var(--gl);color:var(--gp);}
 </style>
 </head>
 <body>
@@ -5178,6 +5186,8 @@ async function doSearch(){
   if(!q) return;
 
   const _mySeq = ++_searchSeq;   // 이 검색의 고유 시퀀스(경쟁 상태 방지)
+  if((mode==='internal'||mode==='law') && !_pqFromChip) _statsQuery(q);   // 인기 검색어(개인정보 형태는 서버가 거름)
+  _pqFromChip=false;
   const sbtn = document.getElementById('sbtn');
   sbtn.disabled = true;
   clearResults();
@@ -6627,7 +6637,7 @@ async function doSearchScenario(q, _mySeq){
        <p style="color:var(--mu);font-size:13px;">AI가 질문을 분석하고 관련 조문을 찾고 있습니다...</p>
      </div>`;
   addRecent(q);
-  // AI 설정(사용자 키)을 함께 전송 → 서버 환경변수 없이도 시나리오 검색 활성화
+  // AI 설정(사용자 키)을 함께 전송 — 서버 키는 쓰지 않으므로 사용자 키가 있어야 동작
   const s = getAiSettings();
   const prov = s.provider || '';
   const aiPayload = prov ? {
@@ -6636,8 +6646,10 @@ async function doSearchScenario(q, _mySeq){
     model:   s['model_'+prov] || ''
   } : {};
   try{
+    const _hd={'Content-Type':'application/json'};
+    const _gk=(s.key_gemini||'').trim(); if(_gk) _hd['X-Gemini-Key']=_gk;   // 내규 의미검색(임베딩)용
     const r = await fetch('/api/scenario', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:_hd,
       body: JSON.stringify({query: q, ...aiPayload})
     });
     const d = await r.json();
@@ -8717,6 +8729,7 @@ async function _rkFillBox(period){
     _rkSeg(period,'_rkFillBox')+`<button class="rk-more" onclick="openRegRanking()">전체 순위 ›</button></div>`+
     (items.length?`<ol class="rk-list">${_rkRows(items,7,false)}</ol>`
       :`<div class="rk-empty">${d.error?escHtml(d.error):'아직 집계된 열람 기록이 없습니다. 내규 전문을 열면 순위에 반영됩니다.'}</div>`);
+  box.insertAdjacentHTML('beforeend','<div class="pq" id="popQ"></div>'); _pqFill();
   box.hidden=false; if(row) row.classList.add('has-rank');
 }
 async function openRegRanking(period){
@@ -8731,6 +8744,31 @@ async function openRegRanking(period){
     (items.length?`<ol class="rk-list rk-full">${_rkRows(items,20,true)}</ol>`
       :`<div class="rk-empty">${d.error?escHtml(d.error):'아직 집계된 열람 기록이 없습니다.'}</div>`);
   if(body) _rkFillBox(period);
+}
+
+// ── 인기 검색어(최근 7일) — 검색어만 집계, 서로 다른 2명 이상이 찾은 말만 노출(서버에서 개인정보 형태 차단)
+let _pqFromChip=false; const _pqSent={};
+function _statsQuery(q){
+  if(_stEnabled===false) return;
+  const k=String(q||'').trim(); if(!k || k.length>30) return;
+  const now=Date.now(); if(_pqSent[k] && now-_pqSent[k]<600000) return;   // 같은 말은 10분에 1회
+  _pqSent[k]=now; _stPost('/api/stats/query',{vid:_stVid(), q:k});
+}
+function _pqRun(term){
+  _pqFromChip=true;                    // 칩 클릭은 다시 세지 않는다(쏠림 방지)
+  if(_assistMode && typeof closeAssist==='function') closeAssist();
+  if(mode!=='internal' && mode!=='law') setMode('internal');
+  quick(term);
+}
+async function _pqFill(){
+  const el=document.getElementById('popQ'); if(!el) return;
+  const d=await _stGet('/api/stats/queries?limit=10');
+  if(!document.getElementById('popQ')) return;
+  const items=(d&&d.enabled&&d.items)||[];
+  el.innerHTML=`<div class="pq-h">🔥 인기 검색어 <span class="rk-sub">· 최근 7일</span></div>`+
+    (items.length?`<div class="pq-list">`+items.map((x,i)=>`<button class="pq-chip" onclick="_pqRun('${argAttr(x.q)}')" title="${escAttr(x.q)} — ${_stNum(x.count)}회 검색">`+
+        `<span class="pq-no">${i+1}</span>${escHtml(x.q)}</button>`).join('')+`</div>`
+      :`<div class="rk-empty">아직 집계된 검색어가 없습니다. 여러 사람이 찾은 검색어가 모이면 표시됩니다.</div>`);
 }
 // ── 이용 통계(접속자 수) ──
 function _stOffHtml(){
