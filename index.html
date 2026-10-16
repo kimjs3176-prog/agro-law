@@ -2252,6 +2252,59 @@ body.dark .reg-art{border-left-color:rgba(37,110,244,.35);}
   .reg-art-b{font-size:15px;line-height:1.75;}
   .art-go{display:none;}
 }
+/* 이용 통계 · 내규 랭킹 */
+:root{--chart-bar:#256ef4;}
+body.dark{--chart-bar:#5b8ff7;}
+.st-foot{display:flex;justify-content:center;align-items:center;gap:14px;flex-wrap:wrap;margin:6px 0 8px;font-size:12px;color:var(--mu);}
+.st-foot[hidden]{display:none;}
+.st-foot b{color:var(--tx);font-weight:800;}
+.st-foot-btn{border:1px solid var(--bd);background:var(--sf);color:var(--tx);border-radius:999px;padding:3px 11px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:var(--font);}
+.st-foot-btn:hover{border-color:var(--g);color:var(--gp);}
+.rk-box{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:12px 14px;margin-bottom:14px;box-shadow:var(--shadow);}
+.rk-box[hidden]{display:none;}
+.rk-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+.rk-t{font-size:14px;font-weight:800;color:var(--tx);flex:1;min-width:150px;}
+.rk-sub{font-size:11.5px;font-weight:600;color:var(--mu);}
+.rk-seg{display:inline-flex;border:1px solid var(--bd);border-radius:9px;overflow:hidden;}
+.rk-seg button{border:none;background:transparent;color:var(--mu);font-size:12px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:var(--font);}
+.rk-seg button+button{border-left:1px solid var(--bd);}
+.rk-seg button.on{background:var(--g);color:#fff;}
+.rk-more{border:none;background:transparent;color:var(--gp);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);padding:4px 2px;}
+.rk-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:2px 16px;}
+.rk-list.rk-full{display:flex;flex-direction:column;gap:2px;margin-top:10px;}
+.rk-row{display:flex;align-items:center;gap:9px;padding:6px 4px;border-radius:8px;min-width:0;}
+.rk-row:hover{background:var(--bg);}
+.rk-no{flex-shrink:0;width:22px;height:22px;border-radius:7px;background:var(--bg);color:var(--mu);font-size:11.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;}
+.rk-no.top{background:var(--gl);color:var(--gp);}
+.rk-name{flex:1;min-width:0;text-align:left;border:none;background:transparent;color:var(--tx);font-size:13px;font-weight:600;cursor:pointer;padding:0;font-family:var(--font);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rk-name:hover{color:var(--gp);text-decoration:underline;}
+.rk-bar{flex:0 0 32%;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;}
+.rk-bar i{display:block;height:100%;background:var(--chart-bar);border-radius:0 4px 4px 0;}
+.rk-v{flex-shrink:0;font-size:12px;color:var(--mu);font-variant-numeric:tabular-nums;min-width:44px;text-align:right;}
+.rk-empty{font-size:12.5px;color:var(--ht);padding:10px 4px;}
+.rk-mhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.st-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+.st-tile{border:1px solid var(--bd);border-radius:12px;padding:10px 12px;background:var(--sf);}
+.st-tile-l{font-size:11.5px;color:var(--mu);font-weight:700;}
+.st-tile-v{font-size:21px;font-weight:800;color:var(--tx);margin-top:2px;font-variant-numeric:tabular-nums;}
+.st-tile-s{font-size:11px;color:var(--ht);margin-top:1px;}
+.st-ch-h{font-size:13px;font-weight:800;color:var(--tx);margin-bottom:6px;}
+.st-chart-wrap{position:relative;}
+.st-chart{width:100%;height:auto;display:block;}
+.st-grid{stroke:var(--bd);stroke-width:1;}
+.st-base{stroke:var(--ht);stroke-width:1;}
+.st-ax{font-size:10.5px;fill:var(--mu);font-family:var(--font);}
+.st-bar{fill:var(--chart-bar);}
+.st-hit{fill:transparent;cursor:default;}
+.st-hit.on{fill:var(--gl);}
+.st-tip{position:absolute;pointer-events:none;background:var(--tx);color:var(--sf);font-size:11.5px;font-weight:600;padding:5px 9px;border-radius:7px;white-space:nowrap;box-shadow:var(--shadow);}
+.st-tip[hidden]{display:none;}
+.st-table{margin-top:10px;font-size:12.5px;}
+.st-table summary{cursor:pointer;color:var(--gp);font-weight:700;}
+.st-table table{width:100%;border-collapse:collapse;margin-top:6px;}
+.st-table th,.st-table td{text-align:right;padding:4px 8px;border-bottom:1px solid var(--bd);font-variant-numeric:tabular-nums;}
+.st-table th:first-child,.st-table td:first-child{text-align:left;}
+@media (max-width:640px){ .st-tiles{grid-template-columns:repeat(2,1fr);} .rk-bar{display:none;} }
 </style>
 </head>
 <body>
@@ -2640,7 +2693,7 @@ body.dark .reg-art{border-left-color:rgba(37,110,244,.35);}
   <div>
     <span class="brand"><span class="brand-full">KOAT Work Place</span><span class="brand-short">KOAT</span></span>
     <span class="brand-en" style="font-size:10px;color:#9ca3af;margin-left:6px;font-weight:500;letter-spacing:.5px;">Work Assistant</span><br>
-    <span class="brand-sub">내규똑똑 · 법령 · 기업 · 특허 · 지원사업 · 조달 통합 지원</span>
+    <span class="brand-sub">AI내규똑똑 · 법령 · 기업 · 특허 · 지원사업 · 조달 통합 지원</span>
   </div>
   <div class="tb-tools">
     <button class="tb-tool" id="tbFav" onclick="toggleFavTab()" title="즐겨찾기"><span class="tb-ic" data-icon="fav"></span><span class="tb-tl">즐겨찾기</span><span id="tbFavCount" class="tb-cnt"></span></button>
@@ -2651,13 +2704,14 @@ body.dark .reg-art{border-left-color:rgba(37,110,244,.35);}
 </div>
 
 <div class="main">
-  <!-- 좌측 메뉴 패널: 내규똑똑(메인)·법령·시나리오 + 공공조회 + 도구 -->
+  <!-- 좌측 메뉴 패널: AI내규똑똑(메인)·법령·시나리오 + 공공조회 + 도구 -->
   <aside class="side-menu" id="sideMenu" aria-label="주요 메뉴">
     <div class="sm-sec sm-primary">
       <div class="sm-group">
         <span class="sm-glabel">규정조회</span>
-        <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="사내 규정(내규) 스마트 검색"><span class="sm-ic" data-icon="internal"></span><span>내규똑똑</span></button>
+        <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="사내 규정(내규) 스마트 검색"><span class="sm-ic" data-icon="internal"></span><span>AI내규똑똑</span></button>
         <button class="sm-item" id="smLaw" onclick="setMode('law')" title="국가법령 조회"><span class="sm-ic" data-icon="law"></span><span>법령 조회</span></button>
+        <button class="sm-item" id="smRank" onclick="openRegRanking()" title="내규 랭킹 — 많이 열람한 내규 순위(주간·월간·누적)"><span class="sm-ic" aria-hidden="true">🏆</span><span>내규 랭킹</span></button>
       </div>
       <span class="sm-div" aria-hidden="true"></span>
       <div class="sm-group">
@@ -4999,6 +5053,7 @@ async function renderInternalDashboard(){
     `title="${escHtml(g.key)}만 보기">${g.ic} ${escHtml(g.key)} <b>${groups0[g.key].length}</b></button>`).join('');
   res.innerHTML=`<div class="int-dash">
     ${_recentRevBoxHtml(items)}
+    <div class="rk-box" id="regRankBox" hidden></div>
     <div class="idb-head">
       <div class="idb-title">📚 내규 전체 목록 <span class="idb-total">${total}건</span></div>
       <div class="idb-toolbar">
@@ -5010,6 +5065,7 @@ async function renderInternalDashboard(){
     </div>
     <div class="idb-grid" id="idbGrid">${_dashGrid(items)}</div>
   </div>`;
+  _rkFillBox();
 }
 // 규정을 RULE_TREE_ORDER 버킷으로 분류(그리드·pill 필터가 동일 기준을 쓰도록)
 function _dashBucket(it){ return RULE_TREE_ORDER.some(g=>g.key===it.category) ? it.category : '기타'; }
@@ -7518,13 +7574,15 @@ let _cmdkAll=[], _cmdkView=[], _cmdkSel=0, _cmdkPrevFocus=null;
 function _cmdkBuild(){
   const A=[];
   const act=(label,hint,run)=>A.push({label,hint,run});
-  act('내규똑똑 검색','모드',()=>{ if(_assistMode)closeAssist(); setMode('internal'); document.getElementById('q').focus(); });
+  act('AI내규똑똑 검색','모드',()=>{ if(_assistMode)closeAssist(); setMode('internal'); document.getElementById('q').focus(); });
   act('법령 조회','모드',()=>{ if(_assistMode)closeAssist(); setMode('law'); document.getElementById('q').focus(); });
   act('AI 시나리오 검색','모드',()=>{ if(_assistMode)closeAssist(); setMode('scenario'); });
   act('지출결의서','도구',openExpense);
   act('서무비서','도구',openSecretary);
   act('규정 에이전트 (제·개정 지원)','도구',()=>window.open('https://law-agent-neon.vercel.app/','_blank','noopener'));
   act('자주 쓰는 문구','도구',openSnippets);
+  act('내규 랭킹','통계',openRegRanking);
+  act('이용 통계 (접속자 수)','통계',openUsageStats);
   act('즐겨찾기','도구',openFavModal);
   act('북마크·메모한 조문','도구',openBmHub);
   act('기업 조회','공공조회',()=>openAssist('company'));
@@ -8545,6 +8603,149 @@ const SECRETARY_URL='https://koat-workplace-1.vercel.app/';
 function openSecretary(){ window.open(SECRETARY_URL,'_blank','noopener'); }
 function _wpClose(id){ const bg=document.getElementById(id); if(bg) bg.classList.remove('show'); }
 
+// ══════════════════════════════════════════════════════════════════════════
+// 이용 통계 — 접속자 수 · 내규 랭킹(열람수). 서버 /api/stats/* (저장소 미설정이면 화면에서 숨김)
+// 방문자 ID 는 브라우저가 만든 무작위 값(localStorage)이며 이름·계정·IP 와 연결하지 않는다.
+// ══════════════════════════════════════════════════════════════════════════
+const _ST_VID_KEY='koat_vid', _RK_PERIOD_KEY='koat_rk_period';
+const _RK_PERIODS=[['week','주간'],['month','월간'],['all','누적']];
+let _stEnabled=null;                          // null: 확인 전 · true: 집계 중 · false: 저장소 미설정
+function _stVid(){
+  let v=''; try{ v=localStorage.getItem(_ST_VID_KEY)||''; }catch(e){}
+  if(!/^[a-z0-9]{12,40}$/.test(v)){
+    v=(Date.now().toString(36)+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)).replace(/[^a-z0-9]/g,'').slice(0,24);
+    try{ localStorage.setItem(_ST_VID_KEY,v); }catch(e){}
+  }
+  return v;
+}
+function _stPost(url, body){
+  return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),keepalive:true})
+    .then(r=>r.json()).catch(()=>null);
+}
+function _stGet(url){ return fetch(url).then(r=>r.json()).catch(()=>null); }
+function _statsStart(){
+  let first=true;                              // 방문수는 탭 세션당 1회
+  try{ first=!sessionStorage.getItem('koat_visit'); sessionStorage.setItem('koat_visit','1'); }catch(e){}
+  _stPost('/api/stats/visit',{vid:_stVid(), new:first}).then(d=>{
+    if(d&&d.enabled===false){ _stEnabled=false; return; }
+    _stEnabled=true; _stFootRefresh();
+    const box=document.getElementById('regRankBox'); if(box && box.hidden) _rkFillBox();
+  });
+  // 접속 유지 신호(현재 접속자) — 화면을 보고 있을 때만 2분마다
+  setInterval(()=>{ if(_stEnabled===false || document.visibilityState!=='visible') return;
+    _stPost('/api/stats/visit',{vid:_stVid()}); }, 120000);
+}
+const _stRegSeen={};
+function _statsRegView(name){               // 같은 내규를 10분 안에 다시 열면 한 번만 센다
+  if(_stEnabled===false) return;
+  const k=String(name||'').trim(); if(!k) return;
+  const now=Date.now(); if(_stRegSeen[k] && now-_stRegSeen[k]<600000) return;
+  _stRegSeen[k]=now; _stPost('/api/stats/reg',{name:k});
+}
+const _stNum=n=>(Number(n)||0).toLocaleString('ko-KR');
+async function _stFootRefresh(){
+  const el=document.getElementById('statsFoot'); if(!el) return;
+  const d=await _stGet('/api/stats/summary');
+  if(!d || !d.enabled || d.error){ el.hidden=true; return; }
+  el.innerHTML=`<span>👥 오늘 방문자 <b>${_stNum(d.today.uv)}</b>명</span><span>현재 접속 <b>${_stNum(d.online)}</b>명</span>`+
+    `<span>누적 방문자 <b>${_stNum(d.total.uv)}</b>명</span><button class="st-foot-btn" onclick="openUsageStats()">📊 이용 통계</button>`;
+  el.hidden=false;
+}
+// ── 내규 랭킹 ──
+function _rkPeriod(){ let p='week'; try{ p=localStorage.getItem(_RK_PERIOD_KEY)||'week'; }catch(e){} return _RK_PERIODS.some(x=>x[0]===p)?p:'week'; }
+function _rkSeg(cur, fn){
+  return `<div class="rk-seg" role="tablist" aria-label="집계 기간">`+_RK_PERIODS.map(([k,l])=>
+    `<button role="tab" aria-selected="${k===cur}" class="${k===cur?'on':''}" onclick="${fn}('${k}')">${l}</button>`).join('')+`</div>`;
+}
+function _rkRows(items, n, bars){
+  const max=Math.max(1,...items.map(x=>x.views));
+  return items.slice(0,n).map((x,i)=>`<li class="rk-row"><span class="rk-no${i<3?' top':''}">${i+1}</span>`+
+    `<button class="rk-name" onclick="_rkOpen('${argAttr(x.title)}')" title="${escAttr(x.title)} — 전문 보기">${escHtml(x.title)}</button>`+
+    (bars?`<span class="rk-bar" aria-hidden="true"><i style="width:${Math.max(3,Math.round(x.views/max*100))}%"></i></span>`:'')+
+    `<span class="rk-v">${_stNum(x.views)}회</span></li>`).join('');
+}
+function _rkOpen(name){ _wpClose('rankModal'); if(_assistMode&&typeof closeAssist==='function')closeAssist(); wsOpen(name,'internal'); }
+async function _rkFillBox(period){
+  const box=document.getElementById('regRankBox'); if(!box || _stEnabled===false) return;
+  period=period||_rkPeriod(); try{ localStorage.setItem(_RK_PERIOD_KEY,period); }catch(e){}
+  const d=await _stGet('/api/stats/ranking?period='+period+'&limit=5');
+  if(!document.getElementById('regRankBox')) return;
+  if(!d || !d.enabled){ box.hidden=true; return; }
+  const items=d.items||[];
+  box.innerHTML=`<div class="rk-h"><span class="rk-t">🏆 내규 랭킹 <span class="rk-sub">· 많이 열람한 내규</span></span>`+
+    _rkSeg(period,'_rkFillBox')+`<button class="rk-more" onclick="openRegRanking()">전체 순위 ›</button></div>`+
+    (items.length?`<ol class="rk-list">${_rkRows(items,5,false)}</ol>`
+      :`<div class="rk-empty">${d.error?escHtml(d.error):'아직 집계된 열람 기록이 없습니다. 내규 전문을 열면 순위에 반영됩니다.'}</div>`);
+  box.hidden=false;
+}
+async function openRegRanking(period){
+  period=period||_rkPeriod(); try{ localStorage.setItem(_RK_PERIOD_KEY,period); }catch(e){}
+  const body=_wpModal('rankModal','🏆 내규 랭킹','<div class="assist-loading"><div class="spinner"></div><span>순위를 불러오는 중…</span></div>',true);
+  const d=await _stGet('/api/stats/ranking?period='+period+'&limit=20');
+  const b=document.getElementById('rankModal_b'); if(!b) return;
+  if(!d || !d.enabled){ b.innerHTML=_stOffHtml(); return; }
+  const items=d.items||[];
+  const lab={week:'최근 7일',month:'이번 달',all:'집계 시작 이후'}[period];
+  b.innerHTML=`<div class="rk-mhead">${_rkSeg(period,'openRegRanking')}<span class="rk-sub">${lab} · 내규 전문 열람 기준(같은 사람이 10분 안에 다시 연 것은 1회)</span></div>`+
+    (items.length?`<ol class="rk-list rk-full">${_rkRows(items,20,true)}</ol>`
+      :`<div class="rk-empty">${d.error?escHtml(d.error):'아직 집계된 열람 기록이 없습니다.'}</div>`);
+  if(body) _rkFillBox(period);
+}
+// ── 이용 통계(접속자 수) ──
+function _stOffHtml(){
+  return `<div class="wp-note">이용 통계 저장소가 아직 설정되지 않았습니다.<br>관리자: Vercel 프로젝트 → <b>Storage</b> → <b>Upstash for Redis</b>를 연결한 뒤 다시 배포하면 집계가 시작됩니다.</div>`;
+}
+function _stTile(label, v, sub){ return `<div class="st-tile"><div class="st-tile-l">${label}</div><div class="st-tile-v">${v}</div>${sub?`<div class="st-tile-s">${sub}</div>`:''}</div>`; }
+function _stChart(days){
+  // 단일 계열 막대: 일별 방문자 수. 둘레 4px 둥근 윗단, 2px 이상 간격, 옅은 격자, 막대마다 툴팁
+  const W=640,H=210,L=34,R=8,T=12,B=26, pw=W-L-R, ph=H-T-B, n=days.length, slot=pw/n, bw=Math.max(4,slot-4);
+  const mx=Math.max(1,...days.map(x=>x.uv)); const step=Math.pow(10,Math.floor(Math.log10(mx)));
+  const top=Math.ceil(mx/step)*step || 1;
+  const y=v=>T+ph-(v/top)*ph;
+  let g='';
+  [0,0.5,1].forEach(f=>{ const v=Math.round(top*f), yy=y(v).toFixed(1);
+    g+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" class="st-grid"/><text x="${L-6}" y="${(+yy+4).toFixed(1)}" class="st-ax" text-anchor="end">${_stNum(v)}</text>`; });
+  let bars='', hits='', ticks='';
+  days.forEach((x,i)=>{
+    const x0=L+i*slot+(slot-bw)/2, h=Math.max(0,(x.uv/top)*ph), y0=T+ph-h, r=Math.min(4,bw/2,h);
+    if(h>0) bars+=`<path class="st-bar" d="M${x0.toFixed(1)},${(T+ph).toFixed(1)}V${(y0+r).toFixed(1)}Q${x0.toFixed(1)},${y0.toFixed(1)} ${(x0+r).toFixed(1)},${y0.toFixed(1)}H${(x0+bw-r).toFixed(1)}Q${(x0+bw).toFixed(1)},${y0.toFixed(1)} ${(x0+bw).toFixed(1)},${(y0+r).toFixed(1)}V${(T+ph).toFixed(1)}Z"/>`;
+    const md=x.d.slice(5).replace('-','/');
+    hits+=`<rect class="st-hit" x="${(L+i*slot).toFixed(1)}" y="${T}" width="${slot.toFixed(1)}" height="${ph}" data-tip="${escAttr(md+' · 방문자 '+_stNum(x.uv)+'명 · 방문 '+_stNum(x.pv)+'회')}"/>`;
+    if(i%7===(n-1)%7) ticks+=`<text x="${(L+i*slot+slot/2).toFixed(1)}" y="${H-8}" class="st-ax" text-anchor="middle">${md}</text>`;
+  });
+  return `<div class="st-chart-wrap"><svg class="st-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="최근 ${n}일 일별 방문자 수 막대 그래프">`+
+    `${g}<line x1="${L}" x2="${W-R}" y1="${T+ph}" y2="${T+ph}" class="st-base"/>${bars}${ticks}${hits}</svg><div class="st-tip" id="stTip" hidden></div></div>`;
+}
+function _stBindTips(root){
+  const tip=root.querySelector('#stTip'), wrap=root.querySelector('.st-chart-wrap'); if(!tip||!wrap) return;
+  wrap.querySelectorAll('.st-hit').forEach(h=>{
+    h.addEventListener('mousemove',e=>{ const r=wrap.getBoundingClientRect(); tip.textContent=h.dataset.tip; tip.hidden=false;
+      const x=Math.min(r.width-tip.offsetWidth-4, Math.max(4, e.clientX-r.left-tip.offsetWidth/2));
+      tip.style.left=x+'px'; tip.style.top=Math.max(0, e.clientY-r.top-38)+'px'; h.classList.add('on'); });
+    h.addEventListener('mouseleave',()=>{ tip.hidden=true; h.classList.remove('on'); });
+  });
+}
+async function openUsageStats(){
+  _wpModal('usageModal','📊 이용 통계','<div class="assist-loading"><div class="spinner"></div><span>통계를 불러오는 중…</span></div>',true);
+  const d=await _stGet('/api/stats/summary');
+  const b=document.getElementById('usageModal_b'); if(!b) return;
+  if(!d || !d.enabled){ b.innerHTML=_stOffHtml(); return; }
+  if(d.error){ b.innerHTML=`<div class="wp-note chg">${escHtml(d.error)}</div>`; return; }
+  const days=d.days||[], sum30=days.reduce((a,x)=>a+x.uv,0);
+  const rows=days.slice().reverse().map(x=>`<tr><td>${x.d}</td><td>${_stNum(x.uv)}</td><td>${_stNum(x.pv)}</td></tr>`).join('');
+  b.innerHTML=`<div class="st-tiles">`+
+      _stTile('현재 접속',`${_stNum(d.online)}명`,'최근 5분')+
+      _stTile('오늘 방문자',`${_stNum(d.today.uv)}명`,`방문 ${_stNum(d.today.pv)}회`)+
+      _stTile('어제 방문자',`${_stNum(d.yesterday?d.yesterday.uv:0)}명`,`방문 ${_stNum(d.yesterday?d.yesterday.pv:0)}회`)+
+      _stTile('누적 방문자',`${_stNum(d.total.uv)}명`,`방문 ${_stNum(d.total.pv)}회`)+`</div>`+
+    `<div class="st-ch-h">최근 30일 일별 방문자 <span class="rk-sub">· 일평균 ${_stNum(Math.round(sum30/Math.max(1,days.length)))}명</span></div>`+
+    _stChart(days)+
+    `<details class="st-table"><summary>표로 보기</summary><table><thead><tr><th>날짜</th><th>방문자</th><th>방문</th></tr></thead><tbody>${rows}</tbody></table></details>`+
+    `<div class="wp-note" style="margin-top:12px">방문자: 하루 동안 접속한 서로 다른 브라우저 수 · 방문: 새 탭(세션)으로 접속한 횟수 · 현재 접속: 최근 5분 안에 화면을 보고 있던 사람 수. `+
+    `이름·계정·IP는 저장하지 않습니다. <button class="wp-btn sm" onclick="_wpClose('usageModal');openRegRanking()">🏆 내규 랭킹</button></div>`;
+  _stBindTips(b);
+}
+
 // ── ① 관심 규정·법령 개정 모니터링 ──────────────────────────────────
 const _REV_WATCH_KEY='koat_reg_watch';
 function _revWatchGet(){ try{ return JSON.parse(localStorage.getItem(_REV_WATCH_KEY)||'{}')||{}; }catch(e){ return {}; } }
@@ -9327,6 +9528,7 @@ function _hydrateIcons(root){
 document.addEventListener('DOMContentLoaded',()=>{
   _hydrateIcons();
   try{ _migrateCollections(); }catch(_){}
+  try{ _statsStart(); }catch(_){}           // 이용 통계(접속자 수·내규 랭킹)
   try{ _revWatchRefreshBadge(); }catch(_){}   // 개정 모니터링 배지(관심 규정 변동 건수)
   // ── 이벤트 위임: 클릭 ──────────────────────────────────────────────────
   document.addEventListener('click', e=>{
@@ -10006,6 +10208,7 @@ async function wsOpen(name, docType, url, org, type, q){
     if(el){ el.scrollIntoView({behavior:'smooth',block:'nearest'}); _wsFlash(el); }
     return;
   }
+  if(docType==='internal') _statsRegView(name);   // 내규 랭킹(열람수)
   const id=++_wsId;
   const pane={id,name,docType,url:url||'',org:org||'',type:type||'',loading:true,minimized:false,flex:1,
               error:'',arts:null,text:null,structured:null,abbrevMap:{},
@@ -12584,8 +12787,9 @@ async function scoreAndReorderAsync(laws, keywords){
     <div style="margin-bottom:6px;">
       <span style="font-weight:700;color:var(--g);font-size:14px;">KOAT Work Place</span>
     </div>
+    <div class="st-foot" id="statsFoot" hidden></div>
     <div style="margin-bottom:6px;">
-      내규똑똑 · 국가법령 · 기업 · 특허 · 지원사업 · 조달 통합 업무 지원
+      AI내규똑똑 · 국가법령 · 기업 · 특허 · 지원사업 · 조달 통합 업무 지원
     </div>
     <div style="line-height:1.7;max-width:760px;margin:0 auto;">
       © 2026 <strong>kimjs</strong> · Powered by

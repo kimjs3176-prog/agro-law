@@ -6537,6 +6537,271 @@ def expense_hwpx():
 # ── 실행 ─────────────────────────────────────────────────────────────────────
 PORT = int(os.environ.get("PORT", 5100))
 
+# ══════════════════════════════════════════════════════════════════════════
+# 이용 통계 — 접속자 수 · 내규 랭킹(조회수)
+#  · 저장소: Upstash Redis REST(Vercel → Storage → Upstash for Redis 연결 시 자동 설정되는
+#    KV_REST_API_URL/KV_REST_API_TOKEN 또는 UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN)
+#  · 로컬 실행: 저장소가 없으면 STATS_FILE(기본 .stats.json)에 기록
+#  · Vercel 에서 저장소가 없으면 기록하지 않는다(인스턴스마다 값이 달라 오해를 부르므로)
+#  · 개인정보: 브라우저가 만든 무작위 방문자 ID만 쓰며 IP·계정은 저장하지 않는다
+# ══════════════════════════════════════════════════════════════════════════
+_STATS_URL = (os.environ.get("KV_REST_API_URL") or os.environ.get("UPSTASH_REDIS_REST_URL") or "").rstrip("/")
+_STATS_TOKEN = os.environ.get("KV_REST_API_TOKEN") or os.environ.get("UPSTASH_REDIS_REST_TOKEN") or ""
+_STATS_FILE = os.environ.get("STATS_FILE") or os.path.join(os.path.dirname(os.path.abspath(__file__)), ".stats.json")
+_STATS_ON_VERCEL = bool(os.environ.get("VERCEL"))
+_STATS_LOCK = threading.Lock()
+_STATS_ONLINE_SEC = 300                     # 최근 5분 안에 신호가 있으면 '현재 접속'
+_STATS_DAY_TTL = 400 * 86400                # 일별 키 보관 기간
+_VID_RE = re.compile(r"^[a-z0-9]{12,40}$")
+_BOT_RE = re.compile(r"bot|crawl|spider|slurp|facebookexternalhit|preview", re.I)
+_stats_rate: dict = {}
+_stats_cache: dict = {}
+
+
+def _stats_backend() -> str:
+    if _STATS_URL and _STATS_TOKEN:
+        return "redis"
+    return "" if _STATS_ON_VERCEL else "file"
+
+
+def _stats_day(offset: int = 0) -> str:
+    return (datetime.now(_KST) - timedelta(days=offset)).strftime("%Y-%m-%d")
+
+
+def _redis(cmds: list) -> list:
+    """Upstash REST pipeline. 실패하면 예외."""
+    r = req_lib.post(f"{_STATS_URL}/pipeline", json=cmds, timeout=4,
+                     headers={"Authorization": f"Bearer {_STATS_TOKEN}"})
+    r.raise_for_status()
+    out = []
+    for x in r.json():
+        if isinstance(x, dict) and x.get("error"):
+            raise RuntimeError(x["error"])
+        out.append(x.get("result") if isinstance(x, dict) else x)
+    return out
+
+
+def _stats_file_load() -> dict:
+    try:
+        with open(_STATS_FILE, encoding="utf-8") as f:
+            d = json.load(f)
+            return d if isinstance(d, dict) else {}
+    except Exception:
+        return {}
+
+
+def _stats_file_save(d: dict) -> None:
+    tmp = _STATS_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False)
+    os.replace(tmp, _STATS_FILE)
+
+
+def _stats_limited(kind: str, limit: int) -> bool:
+    """간단한 IP별 분당 호출 제한(인스턴스 메모리 — IP 는 저장하지 않고 이 판단에만 쓴다)."""
+    ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "").split(",")[0].strip()
+    now = int(time.time() // 60)
+    k = (kind, ip, now)
+    n = _stats_rate.get(k, 0) + 1
+    _stats_rate[k] = n
+    if len(_stats_rate) > 5000:
+        for kk in [x for x in _stats_rate if x[2] < now]:
+            _stats_rate.pop(kk, None)
+    return n > limit
+
+
+def _stats_reg_title(name: str) -> str:
+    """manifest 에 있는 내규만 집계(임의 문자열로 랭킹을 오염시키지 못하게)."""
+    key = re.sub(r"\s+", "", name or "").lower()
+    if not key:
+        return ""
+    for m in _load_reg_manifest():
+        t = m.get("title", "")
+        if re.sub(r"\s+", "", t).lower() == key:
+            return t
+    return ""
+
+
+def _stats_record_visit(vid: str, new_session: bool) -> None:
+    day, now = _stats_day(), int(time.time())
+    be = _stats_backend()
+    if be == "redis":
+        cmds = [["ZADD", "st:online", str(now), vid],
+                ["ZREMRANGEBYSCORE", "st:online", "0", str(now - _STATS_ONLINE_SEC)]]
+        if new_session:
+            cmds += [["INCR", f"st:pv:{day}"], ["EXPIRE", f"st:pv:{day}", str(_STATS_DAY_TTL)],
+                     ["INCR", "st:pv:total"],
+                     ["PFADD", f"st:uv:{day}", vid], ["EXPIRE", f"st:uv:{day}", str(_STATS_DAY_TTL)],
+                     ["PFADD", "st:uv:all", vid]]
+        _redis(cmds)
+    elif be == "file":
+        with _STATS_LOCK:
+            d = _stats_file_load()
+            on = d.setdefault("online", {})
+            on[vid] = now
+            for k in [k for k, t in on.items() if t < now - _STATS_ONLINE_SEC]:
+                on.pop(k, None)
+            if new_session:
+                dd = d.setdefault("days", {}).setdefault(day, {"pv": 0, "uv": []})
+                dd["pv"] += 1
+                if vid not in dd["uv"]:
+                    dd["uv"].append(vid)
+                d["pv_total"] = d.get("pv_total", 0) + 1
+                allv = d.setdefault("uv_all", [])
+                if vid not in allv:
+                    allv.append(vid)
+            _stats_file_save(d)
+
+
+def _stats_record_reg(title: str) -> None:
+    day = _stats_day()
+    month = day[:7]
+    be = _stats_backend()
+    if be == "redis":
+        _redis([["ZINCRBY", f"st:reg:d:{day}", "1", title], ["EXPIRE", f"st:reg:d:{day}", str(40 * 86400)],
+                ["ZINCRBY", f"st:reg:m:{month}", "1", title], ["EXPIRE", f"st:reg:m:{month}", str(_STATS_DAY_TTL)],
+                ["ZINCRBY", "st:reg:all", "1", title]])
+    elif be == "file":
+        with _STATS_LOCK:
+            d = _stats_file_load()
+            for k in (f"d:{day}", f"m:{month}", "all"):
+                z = d.setdefault("reg", {}).setdefault(k, {})
+                z[title] = z.get(title, 0) + 1
+            _stats_file_save(d)
+
+
+def _zpairs(flat) -> list:
+    """Redis WITHSCORES 응답 [m1, s1, m2, s2, …] → [(m, int)]"""
+    flat = flat or []
+    return [(flat[i], int(float(flat[i + 1]))) for i in range(0, len(flat) - 1, 2)]
+
+
+def _stats_rank(period: str, limit: int) -> list:
+    """period: week(최근 7일)·month(이번 달)·all(누적)"""
+    be = _stats_backend()
+    days = [_stats_day(i) for i in range(7)]
+    agg: dict = {}
+    if be == "redis":
+        if period == "week":
+            res = _redis([["ZRANGE", f"st:reg:d:{d}", "0", "-1", "WITHSCORES"] for d in days])
+            for flat in res:
+                for m, sc in _zpairs(flat):
+                    agg[m] = agg.get(m, 0) + sc
+        else:
+            key = "st:reg:all" if period == "all" else f"st:reg:m:{_stats_day()[:7]}"
+            agg = dict(_zpairs(_redis([["ZREVRANGE", key, "0", str(limit - 1), "WITHSCORES"]])[0]))
+    elif be == "file":
+        reg = _stats_file_load().get("reg", {})
+        if period == "week":
+            for d in days:
+                for m, sc in reg.get(f"d:{d}", {}).items():
+                    agg[m] = agg.get(m, 0) + sc
+        else:
+            agg = dict(reg.get("all" if period == "all" else f"m:{_stats_day()[:7]}", {}))
+    top = sorted(agg.items(), key=lambda x: (-x[1], x[0]))[:limit]
+    return [{"title": t, "views": n} for t, n in top]
+
+
+def _stats_summary(ndays: int = 30) -> dict:
+    be = _stats_backend()
+    days = [_stats_day(i) for i in range(ndays)][::-1]
+    now = int(time.time())
+    if be == "redis":
+        cmds = [["GET", f"st:pv:{d}"] for d in days] + [["PFCOUNT", f"st:uv:{d}"] for d in days]
+        cmds += [["GET", "st:pv:total"], ["PFCOUNT", "st:uv:all"],
+                 ["ZCOUNT", "st:online", str(now - _STATS_ONLINE_SEC), "+inf"]]
+        r = _redis(cmds)
+        pv, uv = r[:ndays], r[ndays:2 * ndays]
+        series = [{"d": d, "pv": int(pv[i] or 0), "uv": int(uv[i] or 0)} for i, d in enumerate(days)]
+        tot_pv, tot_uv, online = int(r[-3] or 0), int(r[-2] or 0), int(r[-1] or 0)
+    else:
+        d = _stats_file_load()
+        dd = d.get("days", {})
+        series = [{"d": x, "pv": dd.get(x, {}).get("pv", 0), "uv": len(dd.get(x, {}).get("uv", []))} for x in days]
+        tot_pv, tot_uv = d.get("pv_total", 0), len(d.get("uv_all", []))
+        online = sum(1 for t in d.get("online", {}).values() if t >= now - _STATS_ONLINE_SEC)
+    return {"today": series[-1], "yesterday": series[-2] if ndays > 1 else None,
+            "total": {"pv": tot_pv, "uv": tot_uv}, "online": online, "days": series}
+
+
+@app.route("/api/stats/visit", methods=["POST"])
+def stats_visit():
+    """방문 기록. new=true 는 세션당 한 번(방문수·방문자수), 이후는 접속 유지 신호(현재 접속자)."""
+    be = _stats_backend()
+    if not be:
+        return jsonify({"ok": False, "enabled": False})
+    if _BOT_RE.search(request.headers.get("User-Agent", "")) or _stats_limited("visit", 600):
+        return jsonify({"ok": False})
+    d = request.get_json(silent=True) or {}
+    vid = str(d.get("vid", ""))
+    if not _VID_RE.match(vid):
+        return jsonify({"ok": False, "error": "bad vid"}), 400
+    try:
+        _stats_record_visit(vid, bool(d.get("new")))
+        return jsonify({"ok": True})
+    except Exception as e:
+        print(f"[stats] visit 실패: {e}")
+        return jsonify({"ok": False})
+
+
+@app.route("/api/stats/reg", methods=["POST"])
+def stats_reg():
+    """내규 열람 1회 기록(내규 랭킹)."""
+    if not _stats_backend():
+        return jsonify({"ok": False, "enabled": False})
+    if _BOT_RE.search(request.headers.get("User-Agent", "")) or _stats_limited("reg", 600):
+        return jsonify({"ok": False})
+    title = _stats_reg_title(str((request.get_json(silent=True) or {}).get("name", ""))[:200])
+    if not title:
+        return jsonify({"ok": False, "error": "unknown regulation"}), 400
+    try:
+        _stats_record_reg(title)
+        _stats_cache.clear()
+        return jsonify({"ok": True})
+    except Exception as e:
+        print(f"[stats] reg 실패: {e}")
+        return jsonify({"ok": False})
+
+
+@app.route("/api/stats/ranking")
+def stats_ranking():
+    """내규 랭킹: ?period=week|month|all&limit=1~50"""
+    if not _stats_backend():
+        return jsonify({"enabled": False, "items": []})
+    period = request.args.get("period", "week")
+    if period not in ("week", "month", "all"):
+        period = "week"
+    limit = max(1, min(50, int(request.args.get("limit", "10") or 10)))
+    ck = ("rank", period, limit)
+    hit = _stats_cache.get(ck)
+    if hit and time.time() - hit[0] < 60:
+        return jsonify(hit[1])
+    try:
+        out = {"enabled": True, "period": period, "items": _stats_rank(period, limit)}
+    except Exception as e:
+        print(f"[stats] ranking 실패: {e}")
+        return jsonify({"enabled": True, "error": "통계 저장소에 연결하지 못했습니다.", "items": []})
+    _stats_cache[ck] = (time.time(), out)
+    return jsonify(out)
+
+
+@app.route("/api/stats/summary")
+def stats_summary():
+    """접속자 통계: 오늘·어제·누적 방문수/방문자수, 현재 접속자, 최근 30일 추이"""
+    if not _stats_backend():
+        return jsonify({"enabled": False})
+    hit = _stats_cache.get("summary")
+    if hit and time.time() - hit[0] < 30:
+        return jsonify(hit[1])
+    try:
+        out = {"enabled": True, **_stats_summary(30)}
+    except Exception as e:
+        print(f"[stats] summary 실패: {e}")
+        return jsonify({"enabled": True, "error": "통계 저장소에 연결하지 못했습니다."})
+    _stats_cache["summary"] = (time.time(), out)
+    return jsonify(out)
+
+
 if __name__ == "__main__":
     url = f"http://localhost:{PORT}"
     print("=" * 50)
