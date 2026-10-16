@@ -7,3 +7,5 @@ regulations/.backup/
 skills-lock.json
 alio_incoming/
 alio-mcp/
+.stats.json
+.stats.json.tmp
