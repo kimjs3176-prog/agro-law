@@ -2311,6 +2311,7 @@ body.dark{--chart-bar:#5b8ff7;}
 .stool:hover{border-color:var(--g);background:var(--gl);color:var(--gp);}
 .stool:focus-visible{outline:2px solid var(--g);outline-offset:2px;}
 /* /policy: 메뉴가 검색 범위 토글·도구 버튼과 겹치므로 좌측 메뉴 전체를 숨긴다 */
+.policy-only .foot-ext{display:none;}   /* 공공DB 출처는 전용 화면에서 숨김 */
 .policy-only #sideMenu{display:none!important;}
 @media (max-width:640px){ .scope-tools{width:100%;} .scope-tools .stool{flex:1;justify-content:center;} }
 </style>
@@ -8626,7 +8627,9 @@ if(_POLICY){ document.title='AI내규똑똑 · 규정조회';
     const q=sel=>document.querySelector(sel);
     const full=q('.brand-full'), short=q('.brand-short'), en=q('.brand-en'), sub=q('.brand-sub');
     if(full) full.textContent='AI내규똑똑'; if(short) short.textContent='AI내규똑똑';
-    if(en) en.textContent='KOAT'; if(sub) sub.textContent='내규 · 국가법령 조회'; }); }
+    if(en) en.textContent='KOAT'; if(sub) sub.textContent='내규 · 국가법령 조회';
+    const fb=q('#footBrand'), fs=q('#footSub'); if(fb) fb.textContent='AI내규똑똑';
+    if(fs) fs.textContent='한국농업기술진흥원 내규 · 국가법령 조회'; }); }
 function _policyBlocked(){ if(!_POLICY) return false; if(typeof _toast==='function') _toast('규정조회 전용 화면에서는 쓸 수 없는 기능입니다.', 2600); return true; }
 const _ST_VID_KEY='koat_vid', _RK_PERIOD_KEY='koat_rk_period';
 const _RK_PERIODS=[['week','주간'],['month','월간'],['all','누적']];
@@ -12806,18 +12809,18 @@ async function scoreAndReorderAsync(laws, keywords){
   <!-- Footer -->
   <footer style="text-align:center;padding:28px 0 20px;color:var(--ht);font-size:12px;border-top:1px solid var(--bd);margin-top:24px;background:var(--sf);">
     <div style="margin-bottom:6px;">
-      <span style="font-weight:700;color:var(--g);font-size:14px;">KOAT Work Place</span>
+      <span id="footBrand" style="font-weight:700;color:var(--g);font-size:14px;">KOAT Work Place</span>
     </div>
     <div class="st-foot" id="statsFoot" hidden></div>
-    <div style="margin-bottom:6px;">
+    <div id="footSub" style="margin-bottom:6px;">
       AI내규똑똑 · 국가법령 · 기업 · 특허 · 지원사업 · 조달 통합 업무 지원
     </div>
     <div style="line-height:1.7;max-width:760px;margin:0 auto;">
       © 2026 <strong>kimjs</strong> · Powered by
-      <a href="https://www.law.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">법제처 국가법령정보센터</a> ·
+      <a href="https://www.law.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">법제처 국가법령정보센터</a><span class="foot-ext"> ·
       <a href="https://plus.kipris.or.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">특허청 KIPRIS</a> ·
       <a href="https://opendart.fss.or.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">금융감독원 DART</a> ·
-      <a href="https://www.data.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">공공데이터포털</a>
+      <a href="https://www.data.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">공공데이터포털</a></span>
     </div>
   </footer>
 

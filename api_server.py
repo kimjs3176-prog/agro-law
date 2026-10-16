@@ -6559,6 +6559,18 @@ def _stats_env():
                 tok = os.environ.get(k[:-len(suf)] + tsuf, "")
                 if tok:
                     return v, tok
+    # redis(s)://default:<토큰>@<host>.upstash.io:6379 형태만 있을 때(KV_URL·REDIS_URL 등)
+    # Upstash 는 같은 호스트의 https 로 REST 를 받고, 비밀번호가 곧 REST 토큰이다.
+    from urllib.parse import urlparse, unquote as _uq
+    for k, v in sorted(os.environ.items()):
+        if not (k.endswith("KV_URL") or k.endswith("REDIS_URL")) or not v.startswith(("redis://", "rediss://")):
+            continue
+        try:
+            u = urlparse(v)
+        except Exception:
+            continue
+        if u.hostname and u.hostname.endswith(".upstash.io") and u.password:
+            return f"https://{u.hostname}", _uq(u.password)
     return "", ""
 
 
@@ -6739,6 +6751,27 @@ def _stats_summary(ndays: int = 30) -> dict:
         online = sum(1 for t in d.get("online", {}).values() if t >= now - _STATS_ONLINE_SEC)
     return {"today": series[-1], "yesterday": series[-2] if ndays > 1 else None,
             "total": {"pv": tot_pv, "uv": tot_uv}, "online": online, "days": series}
+
+
+@app.route("/api/stats/status")
+def stats_status():
+    """통계 저장소 진단(관리자용). 환경변수는 '이름'만 보여 주고 값은 절대 내보내지 않는다."""
+    be = _stats_backend()
+    names = sorted(k for k in os.environ if re.search(r"KV|REDIS|UPSTASH", k))
+    out = {"enabled": bool(be), "backend": be or "none", "on_vercel": _STATS_ON_VERCEL,
+           "env_names": names}
+    if be == "redis":
+        try:
+            out["ping"] = "ok" if _redis([["PING"]])[0] == "PONG" else "unexpected"
+        except req_lib.HTTPError as e:
+            out["ping"] = f"HTTP {getattr(e.response, 'status_code', '?')}"
+        except Exception as e:
+            out["ping"] = type(e).__name__
+    elif not be:
+        out["hint"] = ("Vercel 프로젝트 → Storage 에서 Upstash for Redis 를 이 프로젝트의 Production 환경에 연결한 뒤 "
+                       "다시 배포(Redeploy)하세요." if not names else
+                       "저장소 변수는 있으나 REST 주소·토큰을 찾지 못했습니다. env_names 를 알려 주세요.")
+    return jsonify(out)
 
 
 @app.route("/api/stats/visit", methods=["POST"])
