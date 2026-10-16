@@ -41,6 +41,33 @@ else:
     ]
 CORS(app, origins=_cors_origins)
 
+# 요청 본문 크기 제한 — 업로드 최대치(REG_UPLOAD_MAX_MB) + 여유. 넘으면 읽기 전에 413.
+app.config["MAX_CONTENT_LENGTH"] = (int(os.environ.get("REG_UPLOAD_MAX_MB", "40")) + 5) * 1024 * 1024
+
+
+@app.errorhandler(413)
+def _too_large(_e):
+    return jsonify({"error": "요청이 너무 큽니다. 파일 크기를 확인하세요."}), 413
+
+
+def _json_body():
+    """JSON 객체 본문만 받는다. 배열·숫자·문자열·깨진 JSON 이면 None(호출부에서 400)."""
+    d = request.get_json(silent=True)
+    return d if isinstance(d, dict) else None
+
+
+def _bad_body():
+    return jsonify({"error": "요청 형식이 올바르지 않습니다(JSON 객체가 필요합니다)."}), 400
+
+
+def _int_arg(name: str, default: int, lo: int, hi: int) -> int:
+    """정수 쿼리 파라미터 — 숫자가 아니면 기본값, 범위를 벗어나면 잘라 낸다."""
+    try:
+        v = int(str(request.args.get(name, default)).strip())
+    except (TypeError, ValueError):
+        v = default
+    return max(lo, min(hi, v))
+
 OC   = os.environ.get("LAW_OC", "tjsl0919")
 BASE = "https://www.law.go.kr/DRF"
 HEADERS = {
@@ -85,16 +112,8 @@ _SESSION = _make_session()
 # 민감한 토큰을 보내는 GitHub/Google 세션과 분리해 노출을 막는다.
 _LAW_SESSION = _make_session(verify=False)
 
-# ── 최근 검색어 (서버 메모리) ─────────────────────────────────────────────────
-recent_searches = []
-favorites = []
-
-def add_recent(q):
-    global recent_searches
-    q = q.strip()
-    if q and q not in recent_searches:
-        recent_searches.insert(0, q)
-        recent_searches = recent_searches[:10]
+# 최근 검색어·즐겨찾기는 각 사용자 브라우저(localStorage)에만 저장한다.
+# (예전 서버 메모리 목록은 모든 사용자가 공유돼 다른 사람의 검색어가 보였으므로 제거)
 
 # ── 공통 HTTP 헬퍼 ────────────────────────────────────────────────────────────
 # 타임아웃: (연결 대기, 읽기 대기)
@@ -720,8 +739,6 @@ def search_laws():
     if len(query) < 2:
         return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
     try:
-        add_recent(query)
-
         def _do_law():
             d = _law_get_json({"target": "law", "query": query, "display": display})
             err = d.get("LawSearch", {}).get("message", "")
@@ -1532,16 +1549,21 @@ def search_legal_basis():
 
 @app.route("/api/scenario", methods=["POST"])
 def scenario_search():
-    """실무 시나리오 검색: AI(사용자 제공 키 우선, 없으면 서버 환경변수) → 관련 법령·조문"""
-    body    = request.get_json(force=True) or {}
-    query   = body.get("query", "").strip()
+    """실무 시나리오 검색: 사용자가 AI 설정에 넣은 키로만 AI 호출(서버 키는 쓰지 않음) → 관련 법령·조문"""
+    body = _json_body()
+    if body is None:
+        return _bad_body()
+    query = body.get("query", "")
+    if not isinstance(query, str):
+        return jsonify({"error": "질문은 문장(문자열)으로 입력해 주세요."}), 400
+    query = query.strip()
     if not query or len(query) < 5:
         return jsonify({"error": "질문을 5자 이상 입력해 주세요."}), 400
 
     # ── AI 설정: 요청 본문(사용자 AI 설정) 우선 → 서버 환경변수 폴백 ──────────
-    provider = (body.get("provider") or os.environ.get("SCENARIO_AI_PROVIDER", "gemini")).lower()  # noqa: E501
-    api_key  = (body.get("api_key")  or os.environ.get(f"{provider.upper()}_API_KEY", "")).strip()
-    model    = (body.get("model")    or os.environ.get("SCENARIO_AI_MODEL", "")).strip()
+    provider = str(body.get("provider") or os.environ.get("SCENARIO_AI_PROVIDER", "gemini")).lower()  # noqa: E501
+    api_key  = str(body.get("api_key") or "").strip()          # 서버 환경변수 키로 대신 호출하지 않는다
+    model    = str(body.get("model") or os.environ.get("SCENARIO_AI_MODEL", "")).strip()
     # ollama는 로컬 URL을 키 대신 사용하므로 키 없이도 허용
     if not api_key and provider != "ollama":
         return jsonify({"error":
@@ -1725,8 +1747,8 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
     sem_hits = []
     emb_available = False   # 내규 의미검색(임베딩)이 실제로 수행됐는지
     try:
-        # 채팅 프로바이더와 무관하게 임베딩엔 Gemini 키를 쓴다(사용자 키→서버 키 폴백).
-        gkey = (api_key if provider == "gemini" else "") or os.environ.get("GEMINI_API_KEY", "")
+        # 임베딩엔 사용자 Gemini 키만 쓴다(채팅이 Gemini 이면 그 키, 아니면 X-Gemini-Key 헤더).
+        gkey = (api_key if provider == "gemini" else "") or (request.headers.get("X-Gemini-Key") or "")
         emb_available = bool(gkey.strip())
         if emb_available:
             sem_hits = [h for h in semantic_search(query, gkey.strip(), top_k=10)
@@ -1952,37 +1974,6 @@ def get_law_articles():
         return jsonify({"error": f"오류: {e}"}), 500
 
 
-@app.route("/api/favorites")
-def get_favorites():
-    return jsonify({"favorites": favorites})
-
-
-@app.route("/api/favorites/toggle")
-def toggle_favorite():
-    global favorites
-    name = request.args.get("name", "").strip()
-    org  = request.args.get("org",  "").strip()
-    typ  = request.args.get("type", "법률").strip()
-    url  = request.args.get("url",  "").strip()
-    if not name:
-        return jsonify({"error": "name 필요"}), 400
-    existing = next((f for f in favorites if f["name"] == name), None)
-    if existing:
-        favorites = [f for f in favorites if f["name"] != name]
-        return jsonify({"added": False})
-    else:
-        favorites.insert(0, {"name": name, "org": org, "type": typ, "url": url})
-        favorites = favorites[:30]
-        return jsonify({"added": True})
-
-
-@app.route("/api/favorites/remove")
-def remove_favorite():
-    global favorites
-    name = request.args.get("name", "").strip()
-    favorites = [f for f in favorites if f["name"] != name]
-    return jsonify({"ok": True})
-
 
 # ── AI 모델 자동 현행화 ─────────────────────────────────────────────────────
 # Gemini는 모델명이 자주 갱신되므로 하드코딩하지 않고 ListModels로 최신을 고른다.
@@ -2107,8 +2098,7 @@ def ai_models():
     이 엔드포인트는 명시 호출이므로 Gemini 는 실시간 ListModels 로 캐시를 채운다.
     """
     provider = (request.args.get("provider") or "gemini").lower()
-    key = (request.args.get("api_key") or
-           os.environ.get(f"{provider.upper()}_API_KEY", "")).strip()
+    key = (request.headers.get("X-AI-Key") or request.args.get("api_key") or "").strip()   # 서버 키 미사용
     if provider == "gemini":
         mdl = _gemini_latest_model(key)
     else:
@@ -2274,15 +2264,18 @@ def _ai_url_allowed(url: str) -> bool:
 
 @app.route("/api/ai/interpret", methods=["POST"])
 def ai_interpret():
-    """멀티 프로바이더 조문 해석 (Claude / GPT / Gemini / Ollama)"""
-    body = request.get_json(force=True) or {}
-    provider    = body.get("provider", "claude").lower()
-    api_key     = body.get("api_key", "").strip()
-    model       = body.get("model", "").strip()
-    law_name    = body.get("law_name", "")
-    art_no      = body.get("art_no", "")
-    art_title   = body.get("art_title", "")
-    art_content = body.get("art_content", "")
+    """멀티 프로바이더 조문 해석 (Claude / GPT / Gemini / Ollama) — 사용자 키만 사용"""
+    body = _json_body()
+    if body is None:
+        return _bad_body()
+    _s = lambda k, d="": str(body.get(k) if body.get(k) is not None else d)
+    provider    = _s("provider", "claude").lower()
+    api_key     = _s("api_key").strip()
+    model       = _s("model").strip()
+    law_name    = _s("law_name")
+    art_no      = _s("art_no")
+    art_title   = _s("art_title")
+    art_content = _s("art_content")
 
     if not art_content:
         return jsonify({"error": "조문 내용이 없습니다."}), 400
@@ -3650,9 +3643,15 @@ def _upload_authorized() -> tuple[bool, str]:
         if _gh_enabled():
             return (False, "이 서버는 업로드가 리포지토리에 자동 커밋되므로 "
                            "REG_UPLOAD_TOKEN 설정이 필요합니다. 관리자에게 문의하세요.")
-        return (True, "")
+        # 토큰이 없으면 내 PC에서 직접 실행한 개발 서버(로컬 접속)일 때만 허용 — 그 밖의 배포는 차단
+        local = (request.remote_addr or "") in ("127.0.0.1", "::1") and \
+            not request.headers.get("X-Forwarded-For") and not os.environ.get("VERCEL")
+        if local:
+            return (True, "")
+        return (False, "업로드 토큰(REG_UPLOAD_TOKEN)이 설정되지 않아 업로드·삭제를 막았습니다. 관리자에게 문의하세요.")
+    import hmac
     tok = (request.form.get("token") or request.headers.get("X-Upload-Token") or "").strip()
-    if tok == REG_UPLOAD_TOKEN:
+    if tok and hmac.compare_digest(tok.encode(), REG_UPLOAD_TOKEN.encode()):
         return (True, "")
     return (False, "업로드 토큰이 올바르지 않습니다.")
 
@@ -4200,7 +4199,13 @@ def reg_upload_delete():
     _ok, _why = _upload_authorized()
     if not _ok:
         return jsonify({"error": _why}), 401
-    slug = (request.form.get("slug") or (request.json or {}).get("slug") or "").strip()
+    _jb = request.get_json(silent=True) if request.is_json else None
+    if request.is_json and not isinstance(_jb, dict):
+        return _bad_body()
+    slug = request.form.get("slug") or (_jb or {}).get("slug") or ""
+    if not isinstance(slug, str):
+        return jsonify({"error": "slug 값이 올바르지 않습니다."}), 400
+    slug = slug.strip()
     if not slug or "/" in slug or "\\" in slug or slug.startswith("."):
         return jsonify({"error": "slug 값이 올바르지 않습니다."}), 400
 
@@ -4343,13 +4348,12 @@ def semantic_search(query: str, api_key: str, top_k: int = 20):
 
 
 def _user_gemini_key():
-    """사용자 Gemini 키 — 헤더(X-Gemini-Key) 우선, 없으면 서버 키.
+    """사용자 Gemini 키 — 헤더(X-Gemini-Key)로 받은 것만 쓴다(서버 키 미사용: 비용·남용 방지).
 
     F02: URL 쿼리로 키를 받지 않는다. 쿼리 파라미터는 접근 로그·관측 시스템에
     남을 수 있어, 사용자별 키는 요청 헤더로만 전달받는다.
     """
-    return (request.headers.get("X-Gemini-Key")
-            or os.environ.get("GEMINI_API_KEY", "")).strip()
+    return (request.headers.get("X-Gemini-Key") or "").strip()
 
 
 def _semantic_for_search(query: str, top_k: int = 18):
@@ -4392,8 +4396,8 @@ def internal_semantic():
                         "message": "의미 검색 인덱스가 없습니다(벡터 파일 미배포)."})
     if not key:
         return jsonify({"success": True, "available": False, "regs": [],
-                        "message": "Gemini 키가 필요합니다(AI 설정 또는 서버 환경변수)."})
-    hits = semantic_search(q, key, top_k=int(request.args.get("top", 24)))
+                        "message": "Gemini 키가 필요합니다(상단 ✦ AI 설정)."})
+    hits = semantic_search(q, key, top_k=_int_arg("top", 24, 1, 60))
     regs: dict = {}
     for h in hits:
         r = regs.setdefault(h["title"], {"name": h["title"], "org": "사내 규정",
@@ -5084,18 +5088,6 @@ def internal_list():
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify({"error": f"내규 목록 조회 오류: {e}"}), 500
-
-
-@app.route("/api/recent")
-def get_recent():
-    return jsonify({"recent": recent_searches})
-
-@app.route("/api/recent/add")
-def add_recent_api():
-    q = request.args.get("q", "").strip()
-    if q:
-        add_recent(q)
-    return jsonify({"ok": True})
 
 
 @app.route("/api/ping")
@@ -6504,8 +6496,10 @@ def _hwpx_build_section(base_sec, payload, bf):
 @app.route("/api/expense/hwpx", methods=["POST"])
 def expense_hwpx():
     """지출결의서 본문 표를 한글(.hwpx) 파일로 생성. 서식 베이스는 내규 hwpx 재사용."""
-    data = request.get_json(silent=True) or {}
-    if not (data.get("rows")):
+    data = _json_body()
+    if data is None:
+        return _bad_body()
+    if not isinstance(data.get("rows"), list) or not data.get("rows"):
         return jsonify({"success": False, "error": "표 데이터가 없습니다."}), 400
     base = _hwpx_base_bytes()
     if not base:
@@ -6782,7 +6776,9 @@ def stats_visit():
         return jsonify({"ok": False, "enabled": False})
     if _BOT_RE.search(request.headers.get("User-Agent", "")) or _stats_limited("visit", 600):
         return jsonify({"ok": False})
-    d = request.get_json(silent=True) or {}
+    d = _json_body()
+    if d is None:
+        return _bad_body()
     vid = str(d.get("vid", ""))
     if not _VID_RE.match(vid):
         return jsonify({"ok": False, "error": "bad vid"}), 400
@@ -6801,7 +6797,10 @@ def stats_reg():
         return jsonify({"ok": False, "enabled": False})
     if _BOT_RE.search(request.headers.get("User-Agent", "")) or _stats_limited("reg", 600):
         return jsonify({"ok": False})
-    title = _stats_reg_title(str((request.get_json(silent=True) or {}).get("name", ""))[:200])
+    d = _json_body()
+    if d is None:
+        return _bad_body()
+    title = _stats_reg_title(str(d.get("name", ""))[:200])
     if not title:
         return jsonify({"ok": False, "error": "unknown regulation"}), 400
     try:
@@ -6821,7 +6820,7 @@ def stats_ranking():
     period = request.args.get("period", "week")
     if period not in ("week", "month", "all"):
         period = "week"
-    limit = max(1, min(50, int(request.args.get("limit", "10") or 10)))
+    limit = _int_arg("limit", 10, 1, 50)
     ck = ("rank", period, limit)
     hit = _stats_cache.get(ck)
     if hit and time.time() - hit[0] < 60:

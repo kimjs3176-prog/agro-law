@@ -1,0 +1,26 @@
+# API 안전성 회귀 시험 — 서버 AI 키 미사용·업로드 인증·입력 검증·요청 크기 제한(네트워크 불필요)
+name: API 안전성 시험
+
+on:
+  pull_request:
+    paths:
+      - "api_server.py"
+      - "api/**"
+      - "scripts/test_api_safety.py"
+      - ".github/workflows/api-safety-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: python scripts/test_api_safety.py

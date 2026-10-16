@@ -171,11 +171,12 @@ python run_local.py          # http://localhost:5100 (PORT 환경변수로 변�
 | `BIZINFO_API_KEY` | 기업마당 지원사업 공고 | 선택 |
 | `SUPPORT_API_URL`, `PROCUREMENT_API_URL` | 지원사업·조달 API 주소 변경 | 선택 |
 | `SAGYU_MCP_URL` | 사규(내규) 검색 서버(MCP) 주소 | 선택(기본값 있음) |
-| `GEMINI_API_KEY`, `GEMINI_MODEL` | 내규 의미 검색(임베딩)·AI 기능 | 선택 |
+| `GEMINI_API_KEY` | 의미 검색 색인 생성(`scripts/build_embeddings.py`·ALIO 동기화)에만 사용. **서비스의 AI 질문·조문 해석·의미 검색은 서버 키를 쓰지 않고, 사용자가 ✦ AI 설정에 넣은 본인 키로만 동작**합니다 | 색인 생성 시 |
+| `GEMINI_MODEL` | Gemini 기본 모델명 | 선택 |
 | `SCENARIO_AI_PROVIDER`, `SCENARIO_AI_MODEL` | AI 질문(시나리오) 기본 공급자·모델 | 선택 |
 | `OLLAMA_BASE_URL`, `OLLAMA_ALLOWED_HOSTS` | 로컬 LLM(Ollama) 연동 | 선택 |
 | `SEMANTIC_MIN_SCORE` | 의미 검색 최소 유사도 | 선택 |
-| `REG_UPLOAD_TOKEN`, `REG_UPLOAD_MAX_MB` | 내규 업로드 페이지 인증 토큰·최대 크기 | 업로드 사용 시 |
+| `REG_UPLOAD_TOKEN`, `REG_UPLOAD_MAX_MB` | 내규 업로드·되돌리기 인증 토큰과 최대 크기(MB). 토큰이 없으면 내 PC에서 직접 실행한 개발 서버에서만 업로드되고, 배포된 서버에서는 업로드·삭제가 막힙니다. 요청 본문은 최대 크기+5MB를 넘으면 받기 전에 거부합니다 | 업로드 사용 시 |
 | `REG_PDF_BASE_URL` | 내규 원본 PDF 주소 접두어 | 선택 |
 | `ALLOWED_ORIGINS` | CORS 허용 도메인 | 선택 |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | 이용 통계·내규 랭킹 저장소(Upstash Redis). Vercel → Storage → **Upstash for Redis**를 연결하면 자동으로 설정됩니다(`UPSTASH_REDIS_REST_URL`/`_TOKEN` 또는 접두어가 붙은 이름도 인식). 없으면 Vercel에서는 통계가 꺼지고, 로컬에서는 `.stats.json`에 기록합니다 | 통계 사용 시 |
@@ -203,6 +204,11 @@ ALIO(공공기관 경영정보 공개시스템)에 공개된 우리 기관 내�
 > 처음 쓸 때 저장소 설정 → Actions → General에서 **"Allow GitHub Actions to create and approve pull requests"**를 켜야 PR이 만들어집니다.
 > 저장소 Secret에 `GEMINI_API_KEY`를 등록해 두면 바뀐 규정의 의미 검색 색인(`regulations_vectors.*`)도 같은 PR에서 갱신합니다. 키가 없으면 색인은 그대로이며, 필요할 때 `scripts/build_embeddings.py`를 직접 실행하면 됩니다.
 > 스크립트를 고친 뒤에는 `python scripts/test_alio_sync.py`로 오프라인 시험을 돌리세요. 네트워크 없이 감지·반영·재실행을 확인합니다. PR에서는 **ALIO 동기화 시험** 워크플로가 자동으로 실행합니다.
+
+---
+
+### 안전성 회귀 시험
+- `python scripts/test_api_safety.py`: 서버 AI 키 미사용, 업로드 인증, 잘못된 입력(500 오류 방지), 사용자 간 공유 API 제거, 요청 크기 제한을 네트워크 없이 확인합니다. `api_server.py`를 고친 PR에서는 **API 안전성 시험** 워크플로가 자동으로 실행합니다.
 
 ---
 

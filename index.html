@@ -6627,7 +6627,7 @@ async function doSearchScenario(q, _mySeq){
        <p style="color:var(--mu);font-size:13px;">AI가 질문을 분석하고 관련 조문을 찾고 있습니다...</p>
      </div>`;
   addRecent(q);
-  // AI 설정(사용자 키)을 함께 전송 → 서버 환경변수 없이도 시나리오 검색 활성화
+  // AI 설정(사용자 키)을 함께 전송 — 서버 키는 쓰지 않으므로 사용자 키가 있어야 동작
   const s = getAiSettings();
   const prov = s.provider || '';
   const aiPayload = prov ? {
@@ -6636,8 +6636,10 @@ async function doSearchScenario(q, _mySeq){
     model:   s['model_'+prov] || ''
   } : {};
   try{
+    const _hd={'Content-Type':'application/json'};
+    const _gk=(s.key_gemini||'').trim(); if(_gk) _hd['X-Gemini-Key']=_gk;   // 내규 의미검색(임베딩)용
     const r = await fetch('/api/scenario', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:_hd,
       body: JSON.stringify({query: q, ...aiPayload})
     });
     const d = await r.json();
