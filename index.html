@@ -2314,6 +2314,20 @@ body.dark{--chart-bar:#5b8ff7;}
 .policy-only .foot-ext{display:none;}   /* 공공DB 출처는 전용 화면에서 숨김 */
 .policy-only #sideMenu{display:none!important;}
 @media (max-width:640px){ .scope-tools{width:100%;} .scope-tools .stool{flex:1;justify-content:center;} }
+/* 검색(왼쪽) · 내규 랭킹(오른쪽) 2단 */
+.search-row{margin-bottom:20px;}
+.search-row > .spanel{margin-bottom:0;}
+.search-row.has-rank #stoolRank{display:none;}   /* 오른쪽 랭킹 창이 있으면 중복 버튼 숨김('전체 순위 ›'가 같은 역할) */
+.search-row.has-rank{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:stretch;}
+.rk-side{margin-bottom:0;display:flex;flex-direction:column;border-radius:20px;padding:18px 18px 14px;}
+.rk-side .rk-h{flex-direction:column;align-items:stretch;gap:8px;}
+.rk-side .rk-t{min-width:0;}
+.rk-side .rk-seg{align-self:flex-start;}
+.rk-side .rk-more{position:absolute;right:18px;top:16px;}
+.rk-side{position:relative;}
+.rk-side .rk-list{display:flex;flex-direction:column;gap:2px;}
+.rk-side .rk-empty{padding:14px 2px;line-height:1.6;}
+@media (max-width:1023px){ .search-row.has-rank{display:block;} .search-row.has-rank > .rk-side{margin-top:14px;} }
 </style>
 </head>
 <body>
@@ -2740,6 +2754,8 @@ body.dark{--chart-bar:#5b8ff7;}
   <div class="main-content">
   <!-- 업무 도우미 조회 패널(기본 숨김, 상단 바에서 열림) -->
   <section class="assist-panel" id="assistantPanel" aria-label="업무 도우미 조회"></section>
+  <!-- 검색(왼쪽) · 내규 랭킹(오른쪽) -->
+  <div class="search-row" id="searchRow">
   <div class="spanel">
     <!-- 기관 탭 (동적 렌더링) -->
     <div class="tabs" id="agencyTabs">
@@ -2807,6 +2823,8 @@ body.dark{--chart-bar:#5b8ff7;}
     <!-- 기관 특화 정보 카드 (특정 기관 탭 선택 시 표시) -->
     <div class="agency-info" id="agencyInfo" style="display:none;"></div>
   </div>
+  <aside class="rk-box rk-side" id="regRankBox" hidden aria-label="내규 랭킹"></aside>
+  </div><!-- /search-row -->
 
   <!-- 결과 헤더 -->
   <div id="resultHeader" style="display:none;margin-bottom:8px;">
@@ -5063,7 +5081,6 @@ async function renderInternalDashboard(){
     `title="${escHtml(g.key)}만 보기">${g.ic} ${escHtml(g.key)} <b>${groups0[g.key].length}</b></button>`).join('');
   res.innerHTML=`<div class="int-dash">
     ${_recentRevBoxHtml(items)}
-    <div class="rk-box" id="regRankBox" hidden></div>
     <div class="idb-head">
       <div class="idb-title">📚 내규 전체 목록 <span class="idb-total">${total}건</span></div>
       <div class="idb-toolbar">
@@ -8692,15 +8709,15 @@ function _rkOpen(name){ _wpClose('rankModal'); if(_assistMode&&typeof closeAssis
 async function _rkFillBox(period){
   const box=document.getElementById('regRankBox'); if(!box || _stEnabled===false) return;
   period=period||_rkPeriod(); try{ localStorage.setItem(_RK_PERIOD_KEY,period); }catch(e){}
-  const d=await _stGet('/api/stats/ranking?period='+period+'&limit=5');
-  if(!document.getElementById('regRankBox')) return;
-  if(!d || !d.enabled){ box.hidden=true; return; }
+  const d=await _stGet('/api/stats/ranking?period='+period+'&limit=7');
+  const row=document.getElementById('searchRow');
+  if(!d || !d.enabled){ box.hidden=true; if(row) row.classList.remove('has-rank'); return; }
   const items=d.items||[];
   box.innerHTML=`<div class="rk-h"><span class="rk-t">🏆 내규 랭킹 <span class="rk-sub">· 많이 열람한 내규</span></span>`+
     _rkSeg(period,'_rkFillBox')+`<button class="rk-more" onclick="openRegRanking()">전체 순위 ›</button></div>`+
-    (items.length?`<ol class="rk-list">${_rkRows(items,5,false)}</ol>`
+    (items.length?`<ol class="rk-list">${_rkRows(items,7,false)}</ol>`
       :`<div class="rk-empty">${d.error?escHtml(d.error):'아직 집계된 열람 기록이 없습니다. 내규 전문을 열면 순위에 반영됩니다.'}</div>`);
-  box.hidden=false;
+  box.hidden=false; if(row) row.classList.add('has-rank');
 }
 async function openRegRanking(period){
   period=period||_rkPeriod(); try{ localStorage.setItem(_RK_PERIOD_KEY,period); }catch(e){}
