@@ -2157,6 +2157,14 @@ body.dark .art-match-badge{background:rgba(34,197,94,.18);color:#6ee7a0;}
 .scope-toggle{align-items:center;}
 .scope-toggle .stgl{padding:8px 18px;}
 .scope-hint{font-size:12px;color:var(--mu);padding:0 10px 0 12px;white-space:nowrap;}
+.scope-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 14px;}
+.scope-row .search-toggle{margin:0;}
+.reg-agent-link{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);
+  color:var(--tx);font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;transition:border-color .15s,background .15s,color .15s;}
+.reg-agent-link:hover{border-color:var(--g);background:var(--gl);color:var(--gp);}
+.reg-agent-link:focus-visible{outline:2px solid var(--g);outline-offset:2px;}
+.reg-agent-link[hidden]{display:none;}
+.ral-ext{font-size:10px;opacity:.6;}
 .srow{position:relative;}
 .ac-box{position:absolute;left:0;right:calc(96px + 10px);top:calc(100% + 6px);z-index:60;background:var(--sf);
   border:1px solid var(--bd);border-radius:14px;box-shadow:0 18px 40px -12px rgba(17,18,23,.28);padding:6px;max-height:min(60vh,420px);overflow:auto;}
@@ -2187,6 +2195,7 @@ body.dark .ac-box{box-shadow:0 18px 40px -12px rgba(0,0,0,.7);}
   .ac-box{right:0;}
   .ac-foot,.scope-hint{display:none;}
   .scope-toggle{display:flex;width:100%;} .scope-toggle .stgl{flex:1;justify-content:center;padding:8px 6px;}
+  .reg-agent-link{width:100%;justify-content:center;}
   .saved-empty{display:none;}                 /* 모바일: 장황한 안내 숨김(버튼만) */
   .sm-primary{-webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent);}
   .footer{padding-bottom:84px;}               /* 하단 탭바에 가리지 않게 */
@@ -2676,11 +2685,15 @@ body.dark .reg-art{border-left-color:rgba(37,110,244,.35);}
       <button class="fav-tab-btn" id="favTabBtn" onclick="toggleFavTab()">☆ 즐겨찾기 <span id="favCount"></span></button>
     </div>
     <!-- 검색 유형 토글: 키워드 검색 ↔ AI 시나리오 (내규·법령 페이지 내부) -->
+    <div class="scope-row">
     <div class="search-toggle scope-toggle" id="searchToggle" role="tablist" aria-label="검색 범위">
       <button class="stgl active" id="stglInt" role="tab" aria-selected="true" onclick="_scopeSwitch('internal')" title="사내 규정(내규)에서 찾기 — 관련 법령도 함께 표시"><span class="stgl-ic">📋</span>내규</button>
       <button class="stgl" id="stglLaw" role="tab" aria-selected="false" onclick="_scopeSwitch('law')" title="국가법령에서 찾기 — 관련 내규도 함께 표시"><span class="stgl-ic">🏛</span>법령</button>
       <button class="stgl" id="stglScen" role="tab" aria-selected="false" onclick="_scopeSwitch('scenario')" title="업무 상황을 문장으로 물어보면 AI가 근거 법령·조문을 제안합니다"><span class="stgl-ic">✦</span>AI 질문</button>
       <span class="scope-hint" id="scopeHint">규정명·키워드·"규정명 제N조"로 찾기</span>
+    </div>
+      <a class="reg-agent-link" id="regAgentLink" href="https://law-agent-neon.vercel.app/" target="_blank" rel="noopener"
+         title="규정 제·개정 에이전트 — 조문 초안·신구조문대비표·제·개정 이유서·절차 안내(새 탭에서 열림)"><span aria-hidden="true">📝</span>규정 에이전트<span class="ral-ext" aria-hidden="true">↗</span></a>
     </div>
     <!-- 검색창 -->
     <div class="srow">
@@ -4859,6 +4872,7 @@ function setMode(m){
     const el=document.getElementById(id); if(!el) return;
     el.classList.toggle('active', m===k); el.setAttribute('aria-selected', m===k?'true':'false');
   });
+  const ral=document.getElementById('regAgentLink'); if(ral) ral.hidden = (m!=='internal');   // 규정 에이전트 링크는 내규똑똑에서만
   const sh=document.getElementById('scopeHint');
   if(sh) sh.textContent = m==='scenario' ? '업무 상황을 문장으로 물어보세요'
                         : m==='law' ? '"법령명 제N조" · "법령명 키워드" · 조문 문장으로도 찾기' : '규정명·키워드·"규정명 제N조"로 찾기';
@@ -7509,6 +7523,7 @@ function _cmdkBuild(){
   act('AI 시나리오 검색','모드',()=>{ if(_assistMode)closeAssist(); setMode('scenario'); });
   act('지출결의서','도구',openExpense);
   act('서무비서','도구',openSecretary);
+  act('규정 에이전트 (제·개정 지원)','도구',()=>window.open('https://law-agent-neon.vercel.app/','_blank','noopener'));
   act('자주 쓰는 문구','도구',openSnippets);
   act('즐겨찾기','도구',openFavModal);
   act('북마크·메모한 조문','도구',openBmHub);
