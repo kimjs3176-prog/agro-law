@@ -2336,6 +2336,13 @@ body.dark{--chart-bar:#5b8ff7;}
 .pq-chip:hover{border-color:var(--g);background:var(--gl);color:var(--gp);}
 .pq-no{flex-shrink:0;min-width:18px;height:18px;border-radius:999px;background:var(--bg);color:var(--mu);font-size:10.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;}
 .pq-chip:nth-child(-n+3) .pq-no{background:var(--gl);color:var(--gp);}
+/* 다크 모드 대비 보정 */
+.fp-close{color:var(--mu);}
+.fp-close:hover{color:var(--tx);}
+body.dark .mobile-nav{background:rgba(22,23,25,.92);border-top-color:rgba(255,255,255,.08);}
+body.dark .mnav-btn{color:#b4b9c2;}
+.ai-code{background:#efe6ff;padding:0 3px;border-radius:3px;font-size:12px;}
+body.dark .ai-code{background:rgba(167,139,250,.22);color:#e9ddff;}
 </style>
 </head>
 <body>
@@ -8640,14 +8647,19 @@ function _wpModal(id, title, bodyHtml, wide){
   let bg=document.getElementById(id);
   if(!bg){ bg=document.createElement('div'); bg.id=id; bg.className='wp-modal-bg';
     bg.addEventListener('click',e=>{ if(e.target===bg) _wpClose(id); }); document.body.appendChild(bg); }
+  const _wasOpen=bg.classList.contains('show');
+  bg.setAttribute('role','dialog'); bg.setAttribute('aria-modal','true');
+  bg.setAttribute('aria-label', String(title).replace(/<[^>]*>/g,'').trim());
   bg.innerHTML=`<div class="wp-modal${wide?' wp-wide':''}"><div class="wp-modal-h"><span class="wp-modal-t">${title}</span>`+
     `<button class="wp-modal-x" onclick="_wpClose('${id}')" title="닫기" aria-label="닫기">✕</button></div>`+
     `<div class="wp-modal-b" id="${id}_b">${bodyHtml}</div></div>`;
-  bg.classList.add('show'); return document.getElementById(id+'_b');
+  bg.classList.add('show');
+  if(!_wasOpen) _modalFocusIn(id);          // 키보드 포커스를 창 안으로(닫으면 원래 자리로)
+  return document.getElementById(id+'_b');
 }
 const SECRETARY_URL='https://koat-workplace-1.vercel.app/';
 function openSecretary(){ window.open(SECRETARY_URL,'_blank','noopener'); }
-function _wpClose(id){ const bg=document.getElementById(id); if(bg) bg.classList.remove('show'); }
+function _wpClose(id){ const bg=document.getElementById(id); if(bg && bg.classList.contains('show')){ bg.classList.remove('show'); _modalFocusOut(); } }
 
 // ══════════════════════════════════════════════════════════════════════════
 // 이용 통계 — 접속자 수 · 내규 랭킹(열람수). 서버 /api/stats/* (저장소 미설정이면 화면에서 숨김)
@@ -9219,7 +9231,7 @@ function renderAiMarkdown(text){
     s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
      .replace(/\*(.+?)\*/g,'<em>$1</em>')
-     .replace(/`(.+?)`/g,'<code style="background:#e9d5ff;padding:0 3px;border-radius:3px;font-size:12px;">$1</code>');
+     .replace(/`(.+?)`/g,'<code class="ai-code">$1</code>');
 
   for(let i=0;i<lines.length;i++){
     const raw = lines[i];
@@ -9771,6 +9783,8 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(document.getElementById('cmdkBg')?.classList.contains('show')){ closeCmdk(); return; }
       if(t && /^(INPUT|TEXTAREA)$/.test(t.tagName) && t.value){ return; }  // 입력 중엔 보존
       if(document.getElementById('origPdfPanel')?.classList.contains('open')){ closeOriginalPdf(); return; }
+      { const wp=[...document.querySelectorAll('.wp-modal-bg.show')].pop(); if(wp){ _wpClose(wp.id); return; } }
+      if(document.getElementById('bmHubBg')?.classList.contains('show')){ closeBmHub(); return; }
       if(document.getElementById('aiModalBg')?.classList.contains('show')){ closeAiModal(); return; }
       if(document.getElementById('diffPanel')?.classList.contains('show')){ closeDiff(); return; }
       if(document.getElementById('netPanel')?.classList.contains('show')){ closeNetPanel(); return; }
@@ -9948,7 +9962,7 @@ function toggleDark(){
   const dark=!document.body.classList.contains('dark');
   document.body.classList.toggle('dark', dark);
   document.getElementById('darkBtn').textContent=dark?'☀️':'🌙';
-  localStorage.setItem('darkMode', dark?'1':'0');
+  try{ localStorage.setItem('darkMode', dark?'1':'0'); }catch(e){}
 }
 function initDark(){
   if(localStorage.getItem('darkMode')==='1'){

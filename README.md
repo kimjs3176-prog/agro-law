@@ -183,6 +183,8 @@ python run_local.py          # http://localhost:5100 (PORT 환경변수로 변�
 | `REG_UPLOAD_TOKEN`, `REG_UPLOAD_MAX_MB` | 내규 업로드·되돌리기 인증 토큰과 최대 크기(MB). 토큰이 없으면 내 PC에서 직접 실행한 개발 서버에서만 업로드되고, 배포된 서버에서는 업로드·삭제가 막힙니다. 요청 본문은 최대 크기+5MB를 넘으면 받기 전에 거부합니다 | 업로드 사용 시 |
 | `REG_PDF_BASE_URL` | 내규 원본 PDF 주소 접두어 | 선택 |
 | `ALLOWED_ORIGINS` | CORS 허용 도메인 | 선택 |
+| `FANOUT_RATE_PER_MIN` | 외부 API를 많이 부르는 검색(조문·근거·AI 질문·연혁·지원사업·조달)의 IP별 분당 호출 한도(기본 120). 넘으면 429 | 선택 |
+| `KIPRIS_BASE_URL` | KIPRIS 특허 API 주소(기본 https) | 선택 |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | 이용 통계·내규 랭킹 저장소(Upstash Redis). Vercel → Storage → **Upstash for Redis**를 연결하면 자동으로 설정됩니다(`UPSTASH_REDIS_REST_URL`/`_TOKEN` 또는 접두어가 붙은 이름도 인식). 없으면 Vercel에서는 통계가 꺼지고, 로컬에서는 `.stats.json`에 기록합니다 | 통계 사용 시 |
 | `DEBUG_ENDPOINTS` | 디버그용 엔드포인트 활성화(운영 환경에서는 끔) | 선택 |
 
