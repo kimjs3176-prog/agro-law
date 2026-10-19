@@ -2229,6 +2229,155 @@ body.dark .mobile-nav{background:rgba(22,23,25,.92);border-top-color:rgba(255,25
 body.dark .mnav-btn{color:#b4b9c2;}
 .ai-code{background:#efe6ff;padding:0 3px;border-radius:3px;font-size:12px;}
 body.dark .ai-code{background:rgba(167,139,250,.22);color:#e9ddff;}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   디자인 v2(시안 반영) — 남색 주색 · 헤더 안 주요 메뉴 + 업무도구 보조 줄 · 랜딩 8:4 레일
+   ══════════════════════════════════════════════════════════════════════════ */
+:root{--g:#1e3a8a;--gd:#00236f;--gp:#00236f;--gl:#ebf2fe;--blue:#1e3a8a;--blue-l:#ebf2fe;
+  --bg:#f8fafc;--bd:#e2e8f0;--bd2:#cbd5e1;--tx:#0d1c2f;--sub:#f1f5f9;--chart-bar:#1e3a8a;
+  --shadow-focus:0 0 0 3px rgba(30,58,138,.22);}
+body.dark{--g:#7d9bff;--gd:#a9bcff;--gp:#c3d0ff;--gl:rgba(125,155,255,.16);--blue:#7d9bff;--bd2:rgba(255,255,255,.18);--sub:#1d1f24;--chart-bar:#7d9bff;}
+body,body.dark{background:var(--bg);}
+::selection{background:var(--gl);color:var(--gp);}
+/* 상단바 */
+.topbar{display:block;height:auto;padding:0;background:var(--sf);backdrop-filter:none;-webkit-backdrop-filter:none;border-bottom:1px solid var(--bd);box-shadow:0 1px 2px rgba(15,23,42,.05);}
+body.dark .topbar{background:var(--sf);border-bottom-color:var(--bd);}
+.tb-row{display:flex;align-items:center;gap:10px;height:64px;padding:0 28px;}
+.brand-wrap{display:flex;align-items:center;gap:10px;min-width:0;}
+.brand-mark{width:32px;height:32px;border-radius:8px;background:var(--g);color:#fff;font-weight:800;font-size:15px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 1px 2px rgba(15,23,42,.12);}
+body.dark .brand-mark{background:#1e3a8a;}
+.brand-txt{line-height:1.25;min-width:0;}
+.brand{font-size:17px;color:var(--tx);}
+.brand-en{font-size:11px;font-weight:600;color:var(--gp);background:var(--sub);border:1px solid var(--bd);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:2px;letter-spacing:0;}
+.brand-sub{font-size:11px;}
+.topbar .side-menu{background:transparent;border:none;box-shadow:none;padding:0;margin:0 0 0 18px;border-radius:0;height:64px;flex-wrap:nowrap;}
+.topbar .sm-primary{flex-wrap:nowrap;height:100%;}
+.topbar .sm-group{height:100%;}
+.topbar .sm-glabel{font-size:10.5px;color:var(--ht);}
+.topbar .sm-item{height:100%;border-radius:0;padding:0 10px;background:transparent;box-shadow:none;color:var(--mu);font-weight:600;font-size:14px;border-bottom:2px solid transparent;border-top:2px solid transparent;}
+.topbar .sm-item:hover{background:transparent;color:var(--tx);}
+.topbar .sm-item.active,.topbar .sm-item.active:hover{background:transparent;color:var(--gp);font-weight:700;box-shadow:none;border-bottom-color:var(--g);}
+.topbar .sm-div{height:16px;}
+.tb-tool.active{background:var(--gl);}
+.tb-tools .tb-tool:nth-child(2){background:var(--gl);color:var(--gp);}
+.tb-tools .tb-tool:nth-child(2):hover{background:var(--g);color:#fff;}
+.apibadge{border:1px solid var(--bd);}
+.dark-btn{border-color:var(--bd);border-radius:8px;}
+/* 업무도구 보조 줄 */
+.tb-sub{display:flex;align-items:center;gap:14px;padding:5px 28px;background:var(--sub);border-top:1px solid var(--bd);font-size:13px;overflow-x:auto;scrollbar-width:none;}
+.tb-sub::-webkit-scrollbar{display:none;}
+.tb-sub-l{font-size:11px;font-weight:700;color:var(--ht);white-space:nowrap;}
+.tb-sub .sm-group{gap:2px;}
+.tb-sub .sm-item{padding:4px 8px;border-radius:6px;font-size:13px;font-weight:500;color:var(--mu);gap:5px;background:transparent;box-shadow:none;}
+.tb-sub .sm-item:hover{background:var(--sf);color:var(--gp);}
+.tb-sub .sm-item.active{background:var(--sf);color:var(--gp);font-weight:700;box-shadow:none;}
+.tb-sub .sm-ic{font-size:15px;}
+.tb-sub #smRevWatch .sm-ic{color:#ef4444;}
+.tb-sub-k{margin-left:auto;display:inline-flex;align-items:center;gap:6px;border:none;background:transparent;color:var(--mu);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);white-space:nowrap;padding:3px 4px;}
+.tb-sub-k:hover{color:var(--gp);}
+.tb-sub-k kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;border:1px solid var(--bd);background:var(--sf);border-radius:4px;padding:1px 5px;color:var(--mu);}
+.policy-only .tb-sub{display:none;}
+@media (max-width:1180px){
+  .tb-row{flex-wrap:wrap;height:auto;padding:8px 20px 0;row-gap:0;}
+  .topbar .side-menu{order:10;flex-basis:100%;margin:4px 0 0;height:42px;overflow-x:auto;scrollbar-width:none;}
+  .topbar .side-menu::-webkit-scrollbar{display:none;}
+  .brand-sub{display:none;}
+}
+@media (max-width:640px){
+  .topbar{overflow:visible;}
+  .tb-row{padding:6px 12px 0;}
+  .tb-sub{padding:5px 12px;}
+  .tb-sub-l,.tb-sub-k{display:none;}
+}
+.main{padding-top:24px;}
+.search-row{margin-bottom:14px;}
+#status:empty{min-height:0!important;margin:0!important;}
+/* 검색 카드 */
+.spanel{border-radius:14px;border:1px solid var(--bd);box-shadow:0 1px 2px rgba(15,23,42,.05);}
+.scope-toggle{background:var(--sub);border-radius:10px;padding:4px;}
+.stgl{display:inline-flex;align-items:center;gap:6px;border-radius:7px;}
+.stgl.active{background:var(--sf);color:var(--gp);box-shadow:0 1px 2px rgba(15,23,42,.08);}
+body.dark .stgl.active{background:#262931;}
+.stgl-ic{display:inline-flex;font-size:16px;}
+.stgl-ic svg{display:block;}
+.stgl-cnt{font-size:10px;font-weight:800;background:var(--gl);color:var(--gp);border-radius:999px;padding:1px 6px;margin-left:2px;}
+.stgl-cnt:empty{display:none;}
+.stool-ic{display:inline-flex;font-size:15px;color:var(--g);}
+.sinput{border-radius:12px;border:1px solid var(--bd);background:var(--sub);}
+.sinput:hover,.sinput:focus{background:var(--sf);}
+.sinput:focus{border-color:var(--g);box-shadow:var(--shadow-focus);}
+.sbtn{background:var(--gd);border-radius:10px;}
+.sbtn:hover{background:var(--g);}
+body.dark .sbtn{background:#2f4fb5;}
+body.dark .sbtn:hover{background:#3b5fd0;}
+/* 랜딩: 최근 개정 → 전체 목록 (랭킹은 검색창 오른쪽) */
+.land-main{min-width:0;display:flex;flex-direction:column;gap:20px;}
+.search-row .rk-side{border-radius:14px;}
+.rk-t{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.rk-t-ic{display:inline-flex;font-size:18px;color:#f59e0b;}
+.rk-seg{background:var(--sub);border:none;border-radius:8px;padding:3px;align-self:stretch!important;display:flex;}
+.rk-seg button{flex:1;border-radius:6px;padding:4px 10px;}
+.rk-seg button+button{border-left:none;}
+.rk-seg button.on{background:var(--sf);color:var(--gp);box-shadow:0 1px 2px rgba(15,23,42,.08);}
+body.dark .rk-seg button.on{background:#262931;}
+.rk-no{border-radius:999px;width:24px;height:24px;}
+.rk-row{padding:7px 6px;}
+.pq-h{display:flex;align-items:center;gap:5px;}
+.pq-h-ic{display:inline-flex;font-size:16px;color:#ef4444;}
+.pq-chip{background:var(--sub);border-color:transparent;}
+body:has(#regRankBox:not([hidden])) #stoolRank{display:none;}
+/* 최근 개정 리본 */
+.rrev-box{margin:0;border:1px solid #bfdbfe;background:rgba(235,242,254,.7);border-radius:14px;padding:14px 16px;}
+body.dark .rrev-box{border-color:rgba(125,155,255,.3);background:rgba(125,155,255,.08);}
+.rrev-h{margin-bottom:12px;}
+.rrev-t{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px;color:var(--gp);}
+.rrev-t b{color:var(--gp);}
+.rrev-new{font-size:11px;font-weight:700;background:var(--gd);color:#fff;border-radius:4px;padding:1px 7px;letter-spacing:.02em;}
+body.dark .rrev-new{background:#2f4fb5;}
+.rrev-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+.rrev-item{max-width:none;padding:9px 11px;border-color:#dbeafe;border-radius:10px;}
+body.dark .rrev-item{border-color:var(--bd);}
+.rrev-nm{max-width:none;font-size:13px;}
+.rrev-rv{font-size:11px;color:#ef4444;}
+.rrev-item.rrev-extra{display:none;}
+.rrev-box.all .rrev-item.rrev-extra{display:inline-flex;}
+.rrev-more{border:1px dashed var(--bd2);background:var(--sub);border-radius:10px;color:var(--gp);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);padding:9px 11px;}
+.rrev-more:hover{background:var(--sf);border-color:var(--g);}
+@media (max-width:820px){ .rrev-list{grid-template-columns:repeat(2,minmax(0,1fr));} }
+@media (max-width:480px){ .rrev-list{grid-template-columns:minmax(0,1fr);} }
+/* 내규 전체 목록 */
+.idb-panel{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:20px;box-shadow:0 1px 2px rgba(15,23,42,.05);}
+.idb-head{margin-bottom:16px;}
+.idb-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:16px;margin-bottom:14px;border-bottom:1px solid var(--bd);}
+.idb-badge{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:9px;background:var(--gl);color:var(--g);font-size:21px;flex-shrink:0;}
+.idb-tt{flex:1;min-width:200px;}
+.idb-title{font-size:17px;}
+.idb-sub{font-size:11.5px;margin-top:2px;}
+.idb-fwrap{position:relative;flex:0 1 260px;min-width:200px;}
+.idb-fic{position:absolute;left:10px;top:50%;transform:translateY(-50%);display:inline-flex;color:var(--ht);font-size:16px;pointer-events:none;}
+.idb-filter{width:100%;padding:8px 12px 8px 32px;background:var(--sub);font-size:13px;border-radius:8px;}
+.idb-filter:focus{background:var(--sf);}
+.idb-pills{gap:8px;}
+.idb-pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--tx);background:var(--sub);border-radius:8px;padding:6px 12px;}
+.idb-pill b{background:var(--sf);border-radius:999px;padding:0 7px;font-size:11.5px;}
+.idb-pill.on b{background:rgba(255,255,255,.2);}
+.cat-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c,#94a3b8);flex-shrink:0;font-style:normal;}
+.cat-dot[data-c="정관"]{--c:#ef4444;} .cat-dot[data-c="규정"]{--c:#059669;} .cat-dot[data-c="규칙"]{--c:#2563eb;}
+.cat-dot[data-c="세칙"]{--c:#475569;} .cat-dot[data-c="예규"]{--c:#f59e0b;} .cat-dot[data-c="매뉴얼"]{--c:#8b5cf6;}
+body.dark .cat-dot[data-c="세칙"]{--c:#94a3b8;}
+.idb-card{background:var(--sub);border-radius:12px;box-shadow:none;padding:12px 12px 10px;}
+body.dark .idb-card{background:#1a1c21;}
+.idb-card-h{gap:8px;font-size:14.5px;}
+.idb-cnt{background:var(--sf);border:1px solid var(--bd);color:var(--tx);}
+.idb-list{gap:6px;}
+.idb-item{background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;transition:border-color .15s,box-shadow .15s;}
+.idb-item:hover{background:var(--sf);border-color:var(--g);box-shadow:0 1px 3px rgba(15,23,42,.08);}
+.idb-item-t{font-weight:600;}
+.idb-item:hover .idb-item-t{color:var(--gp);}
+.idb-rev{color:var(--mu);}
+/* 바닥글 */
+footer{background:var(--bg)!important;}
+#footBrand{color:var(--gp)!important;}
 </style>
 </head>
 <body>
@@ -2611,47 +2760,53 @@ body.dark .ai-code{background:rgba(167,139,250,.22);color:#e9ddff;}
   <div class="it-foot">규정 체계별 트리 · 클릭하면 전문이 열립니다</div>
 </aside>
 
-<!-- 상단바 -->
-<div class="topbar">
+<!-- 상단바: 브랜드 · 주요 메뉴 · 도구 / 아래 줄은 업무도구 바로가기 -->
+<header class="topbar">
+  <div class="tb-row">
   <button class="tree-toggle" onclick="openInternalTree()" title="내규 전체 목록" aria-label="내규 전체 목록 열기"><span data-icon="tree"></span></button>
-  <div>
+  <div class="brand-wrap">
+    <span class="brand-mark" aria-hidden="true">K</span>
+    <div class="brand-txt">
     <span class="brand"><span class="brand-full">KOAT Work Place</span><span class="brand-short">KOAT</span></span>
-    <span class="brand-en" style="font-size:10px;color:#9ca3af;margin-left:6px;font-weight:500;letter-spacing:.5px;">Work Assistant</span><br>
+    <span class="brand-en">Work Assistant</span><br>
     <span class="brand-sub">AI내규똑똑 · 법령 · 기업 · 특허 · 지원사업 · 조달 통합 지원</span>
+    </div>
   </div>
+    <nav class="side-menu" id="sideMenu" aria-label="주요 메뉴">
+      <div class="sm-sec sm-primary">
+        <div class="sm-group">
+          <span class="sm-glabel">규정조회</span>
+          <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="AI내규똑똑 — 내규·법령 검색 화면(검색 범위는 검색창 위에서 선택)"><span class="sm-ic" data-icon="internal"></span><span>AI내규똑똑</span></button>
+        </div>
+        <span class="sm-div sm-div-np" aria-hidden="true"></span>
+        <div class="sm-group sm-grp-pub">
+          <span class="sm-glabel">공공DB</span>
+          <button class="sm-item" id="smCompany" onclick="openAssist('company')" title="기업 통합검색(회사명·사업자번호·대표자)"><span class="sm-ic" data-icon="company"></span><span>기업</span></button>
+          <button class="sm-item" id="smPatent" onclick="openAssist('patent')" title="특허·실용신안 검색(KIPRIS)"><span class="sm-ic" data-icon="patent"></span><span>특허</span></button>
+          <button class="sm-item" id="smSupport" onclick="openAssist('support')" title="정부 지원사업 공고(공공데이터포털)"><span class="sm-ic" data-icon="support"></span><span>지원사업</span></button>
+        </div>
+      </div>
+    </nav>
   <div class="tb-tools">
     <button class="tb-tool" id="tbFav" onclick="toggleFavTab()" title="즐겨찾기"><span class="tb-ic" data-icon="fav"></span><span class="tb-tl">즐겨찾기</span><span id="tbFavCount" class="tb-cnt"></span></button>
     <button class="tb-tool" onclick="openAiModal()" title="AI 설정"><span class="tb-ic" data-icon="ai"></span><span class="tb-tl">AI 설정</span><span class="ai-active-badge" id="aiActiveBadge" style="display:none"></span></button>
   </div>
   <span class="apibadge" id="badge">● 확인 중</span>
   <button class="dark-btn" id="darkBtn" onclick="toggleDark()" title="다크모드" aria-label="다크 모드 전환">🌙</button>
-</div>
+  </div>
+  <div class="tb-sub" id="tbSub">
+    <span class="tb-sub-l">업무도구 바로가기</span>
+    <div class="sm-group sm-grp-tools" role="group" aria-label="업무도구">
+      <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 본문 작성"><span class="sm-ic" data-icon="expense"></span><span>지출결의서</span></button>
+      <a class="sm-item sm-ext" id="smSecretary" href="https://koat-workplace-1.vercel.app/" target="_blank" rel="noopener" title="서무비서 — 출장·물품·행사·복무·결재 절차 안내, 기한·반려 점검, 문서 초안(새 탭에서 열림)"><span class="sm-ic" data-icon="secretary"></span><span>서무비서</span><span class="sm-ext-ic" aria-hidden="true">↗</span></a>
+      <button class="sm-item" id="smForms" onclick="openForms()" title="서식 라이브러리 — 규정 별표·별지 서식 검색·열람"><span class="sm-ic" data-icon="forms"></span><span>서식</span></button>
+      <button class="sm-item" id="smRevWatch" onclick="openRevWatch()" title="개정 모니터링 — 관심 규정·법령의 개정 변동 확인"><span class="sm-ic" data-icon="bell"></span><span>개정알림</span><span class="sm-badge" id="revWatchBadge" style="display:none"></span></button>
+    </div>
+    <button class="tb-sub-k" onclick="openCmdk()" title="모드·도구·내규를 키보드로 빠르게 실행">빠른 실행 <kbd>Ctrl K</kbd></button>
+  </div>
+</header>
 
 <div class="main">
-  <!-- 좌측 메뉴 패널: AI내규똑똑(메인)·법령·시나리오 + 공공조회 + 도구 -->
-  <aside class="side-menu" id="sideMenu" aria-label="주요 메뉴">
-    <div class="sm-sec sm-primary">
-      <div class="sm-group">
-        <span class="sm-glabel">규정조회</span>
-        <button class="sm-item active" id="smInternal" onclick="setMode('internal')" title="AI내규똑똑 — 내규·법령 검색 화면(검색 범위는 검색창 위에서 선택)"><span class="sm-ic" data-icon="internal"></span><span>AI내규똑똑</span></button>
-      </div>
-      <span class="sm-div sm-div-np" aria-hidden="true"></span>
-      <div class="sm-group sm-grp-pub">
-        <span class="sm-glabel">공공DB</span>
-        <button class="sm-item" id="smCompany" onclick="openAssist('company')" title="기업 통합검색(회사명·사업자번호·대표자)"><span class="sm-ic" data-icon="company"></span><span>기업</span></button>
-        <button class="sm-item" id="smPatent" onclick="openAssist('patent')" title="특허·실용신안 검색(KIPRIS)"><span class="sm-ic" data-icon="patent"></span><span>특허</span></button>
-        <button class="sm-item" id="smSupport" onclick="openAssist('support')" title="정부 지원사업 공고(공공데이터포털)"><span class="sm-ic" data-icon="support"></span><span>지원사업</span></button>
-      </div>
-      <span class="sm-div sm-div-np" aria-hidden="true"></span>
-      <div class="sm-group sm-grp-tools">
-        <span class="sm-glabel">업무도구</span>
-        <button class="sm-item" id="smExpense" onclick="openExpense()" title="지출결의서 본문 작성"><span class="sm-ic" data-icon="expense"></span><span>지출결의서</span></button>
-        <a class="sm-item sm-ext" id="smSecretary" href="https://koat-workplace-1.vercel.app/" target="_blank" rel="noopener" title="서무비서 — 출장·물품·행사·복무·결재 절차 안내, 기한·반려 점검, 문서 초안(새 탭에서 열림)"><span class="sm-ic" aria-hidden="true">🗂</span><span>서무비서</span><span class="sm-ext-ic" aria-hidden="true">↗</span></a>
-        <button class="sm-item" id="smForms" onclick="openForms()" title="서식 라이브러리 — 규정 별표·별지 서식 검색·열람"><span class="sm-ic" aria-hidden="true">📎</span><span>서식</span></button>
-        <button class="sm-item" id="smRevWatch" onclick="openRevWatch()" title="개정 모니터링 — 관심 규정·법령의 개정 변동 확인"><span class="sm-ic" aria-hidden="true">🔔</span><span>개정알림</span><span class="sm-badge" id="revWatchBadge" style="display:none"></span></button>
-      </div>
-    </div>
-  </aside>
   <div class="main-content">
   <!-- 업무 도우미 조회 패널(기본 숨김, 상단 바에서 열림) -->
   <section class="assist-panel" id="assistantPanel" aria-label="업무 도우미 조회"></section>
@@ -2665,14 +2820,14 @@ body.dark .ai-code{background:rgba(167,139,250,.22);color:#e9ddff;}
     <!-- 검색 유형 토글: 키워드 검색 ↔ AI 시나리오 (내규·법령 페이지 내부) -->
     <div class="scope-row">
     <div class="search-toggle scope-toggle" id="searchToggle" role="tablist" aria-label="검색 범위">
-      <button class="stgl active" id="stglInt" role="tab" aria-selected="true" onclick="_scopeSwitch('internal')" title="사내 규정(내규)에서 찾기 — 관련 법령도 함께 표시"><span class="stgl-ic">📋</span>내규</button>
-      <button class="stgl" id="stglLaw" role="tab" aria-selected="false" onclick="_scopeSwitch('law')" title="국가법령에서 찾기 — 관련 내규도 함께 표시"><span class="stgl-ic">🏛</span>법령</button>
-      <button class="stgl" id="stglScen" role="tab" aria-selected="false" onclick="_scopeSwitch('scenario')" title="업무 상황을 문장으로 물어보면 AI가 근거 법령·조문을 제안합니다"><span class="stgl-ic">✦</span>AI 질문</button>
+      <button class="stgl active" id="stglInt" role="tab" aria-selected="true" onclick="_scopeSwitch('internal')" title="사내 규정(내규)에서 찾기 — 관련 법령도 함께 표시"><span class="stgl-ic" data-icon="internal"></span>내규<span class="stgl-cnt" id="stglIntCnt"></span></button>
+      <button class="stgl" id="stglLaw" role="tab" aria-selected="false" onclick="_scopeSwitch('law')" title="국가법령에서 찾기 — 관련 내규도 함께 표시"><span class="stgl-ic" data-icon="law"></span>법령</button>
+      <button class="stgl" id="stglScen" role="tab" aria-selected="false" onclick="_scopeSwitch('scenario')" title="업무 상황을 문장으로 물어보면 AI가 근거 법령·조문을 제안합니다"><span class="stgl-ic" data-icon="ai"></span>AI 질문</button>
       <span class="scope-hint" id="scopeHint">규정명·키워드·"규정명 제N조"로 찾기</span>
     </div>
       <div class="scope-tools">
-        <button class="stool" id="stoolRank" onclick="openRegRanking()" title="내규 랭킹 — 많이 열람한 내규 순위(주간·월간·누적)"><span aria-hidden="true">🏆</span>내규 랭킹</button>
-        <button class="stool policy-show" id="stoolForms" onclick="openForms()" title="서식 — 규정 별표·별지 서식 검색·열람"><span aria-hidden="true">📎</span>서식</button>
+        <button class="stool" id="stoolRank" onclick="openRegRanking()" title="내규 랭킹 — 많이 열람한 내규 순위(주간·월간·누적)"><span class="stool-ic" data-icon="rank"></span>내규 랭킹</button>
+        <button class="stool policy-show" id="stoolForms" onclick="openForms()" title="서식 — 규정 별표·별지 서식 검색·열람"><span class="stool-ic" data-icon="forms"></span>서식</button>
       </div>
     </div>
     <!-- 검색창 -->
@@ -4934,14 +5089,20 @@ function _recentRevBoxHtml(items){
   const rec=_recentRevItems(items); if(!rec.length) return '';
   let seen=0; try{ seen=parseInt(localStorage.getItem(_RECENT_REV_KEY)||'0',10)||0; }catch(e){}
   const maxYm=rec[0].ym; if(maxYm<=seen) return '';        // 이미 닫아 확인한 최신 개정이면 숨김
-  const show=rec.slice(0,6);
-  const chips=show.map(x=>`<button class="rrev-item" onclick="_recentRevOpen('${argAttr(x.it.title)}')" title="${escAttr(x.it.title+' · '+(x.it.revision||''))} — 전문 열기">`+
+  const SHOW=5;
+  const chips=rec.map((x,i)=>`<button class="rrev-item${i>=SHOW?' rrev-extra':''}" onclick="_recentRevOpen('${argAttr(x.it.title)}')" title="${escAttr(x.it.title+' · '+(x.it.revision||''))} — 전문 열기">`+
     `<span class="rrev-nm">${escHtml(x.it.title)}</span><span class="rrev-rv">${escHtml(x.it.revision||'')}</span></button>`).join('');
-  const more=rec.length>show.length?`<span class="rrev-more">외 ${rec.length-show.length}건</span>`:'';
+  const more=rec.length>SHOW?`<button class="rrev-more" onclick="_recentRevAll(this)" aria-expanded="false">외 ${rec.length-SHOW}건 전체보기 ›</button>`:'';
   return `<div class="rrev-box" id="recentRevBox"><div class="rrev-h">`+
-    `<span class="rrev-t">🆕 최근 개정된 내규 <b>${rec.length}건</b> <span class="rrev-sub">· 최근 ${_RECENT_REV_MONTHS}개월</span></span>`+
+    `<span class="rrev-t"><span class="rrev-new">NEW</span>최근 개정된 내규 <b>${rec.length}건</b> <span class="rrev-sub">· 최근 ${_RECENT_REV_MONTHS}개월 이내 개정 내역</span></span>`+
     `<button class="rrev-x" onclick="_recentRevDismiss(${maxYm})" title="닫기 — 새 개정이 생기면 다시 표시">✕</button></div>`+
     `<div class="rrev-list">${chips}${more}</div></div>`;
+}
+function _recentRevAll(btn){
+  const box=document.getElementById('recentRevBox'); if(!box) return;
+  const on=box.classList.toggle('all'); btn.setAttribute('aria-expanded', on?'true':'false');
+  if(!btn.dataset.lab) btn.dataset.lab=btn.textContent;
+  btn.textContent=on?'접기 ‹':btn.dataset.lab;
 }
 function _recentRevOpen(name){ if(_assistMode&&typeof closeAssist==='function')closeAssist(); wsOpen(name,'internal'); }
 function _recentRevDismiss(maxYm){ try{ localStorage.setItem(_RECENT_REV_KEY,String(maxYm)); }catch(e){} const b=document.getElementById('recentRevBox'); if(b) b.remove(); }
@@ -4970,20 +5131,30 @@ async function renderInternalDashboard(){
   items.forEach(it=>{ (groups0[_dashBucket(it)]).push(it); });
   const pills=RULE_TREE_ORDER.filter(g=>(groups0[g.key]||[]).length).map(g=>
     `<button class="idb-pill" data-cat="${argAttr(g.key)}" onclick="_dashCatFilter('${argAttr(g.key)}')" `+
-    `title="${escHtml(g.key)}만 보기">${g.ic} ${escHtml(g.key)} <b>${groups0[g.key].length}</b></button>`).join('');
+    `title="${escHtml(g.key)}만 보기"><i class="cat-dot" data-c="${argAttr(g.key)}"></i>${escHtml(g.key)} <b>${groups0[g.key].length}</b></button>`).join('');
   res.innerHTML=`<div class="int-dash">
+   <div class="land-main">
     ${_recentRevBoxHtml(items)}
+    <section class="idb-panel" aria-label="내규 전체 목록">
     <div class="idb-head">
-      <div class="idb-title">📚 내규 전체 목록 <span class="idb-total">${total}건</span></div>
-      <div class="idb-toolbar">
+      <div class="idb-top">
+        <span class="idb-badge" data-icon="library"></span>
+        <div class="idb-tt">
+          <div class="idb-title">내규 전체 목록 <span class="idb-total">${total}건</span></div>
+          <div class="idb-sub">규정을 클릭하면 전문을 봅니다 · 위 검색창에서 키워드로도 검색</div>
+        </div>
+        <div class="idb-fwrap"><span class="idb-fic" data-icon="filter"></span>
         <input id="idbFilter" class="idb-filter" type="search" placeholder="규정명으로 빠르게 찾기…" autocomplete="off"
-               oninput="_applyDashFilter()" aria-label="규정명 빠른 필터">
-        <span class="idb-sub">규정을 클릭하면 전문을 봅니다 · 위 검색창에서 키워드로도 검색</span>
+               oninput="_applyDashFilter()" aria-label="규정명 빠른 필터"></div>
       </div>
       <div class="idb-pills" id="idbPills">${pills}</div>
     </div>
     <div class="idb-grid" id="idbGrid">${_dashGrid(items)}</div>
+    </section>
+   </div>
   </div>`;
+  _hydrateIcons(res);
+  const cnt=document.getElementById('stglIntCnt'); if(cnt) cnt.textContent=total;
   _rkFillBox();
 }
 // 규정을 RULE_TREE_ORDER 버킷으로 분류(그리드·pill 필터가 동일 기준을 쓰도록)
@@ -5010,7 +5181,7 @@ function _dashGrid(items){
       return `<button class="idb-item" title="${escHtml(it.title)}${it.revision?' · '+escHtml(it.revision):''}" onclick="wsOpen('${e}','internal')">`+
              `<span class="idb-item-t">${escHtml(it.title)}</span>${rev}</button>`;
     }).join('');
-    const html=`<div class="idb-card"><div class="idb-card-h"><span class="idb-ic">${g.ic}</span>${escHtml(g.key)}<span class="idb-cnt">${list.length}</span></div>`+
+    const html=`<div class="idb-card"><div class="idb-card-h"><i class="cat-dot" data-c="${argAttr(g.key)}"></i>${escHtml(g.key)}<span class="idb-cnt">${list.length}</span></div>`+
                `<div class="idb-list">${chips}</div></div>`;
     // 예상 높이: 헤더+패딩 + 항목수×행높이 (리스트 max-height 340 상한 반영)
     const h=Math.min(340, list.length*27) + 70;
@@ -5027,8 +5198,8 @@ function _dashGrid(items){
 // 대시보드 열 수(반응형) — 그리드 실제 폭 우선, 없으면 화면 폭으로 추정
 function _dashCols(){
   let w=0; const g=document.getElementById('idbGrid'); if(g) w=g.clientWidth;
-  if(!w) w=Math.min(1680, Math.round(window.innerWidth*0.96))-60;
-  if(w<520) return 1; if(w<820) return 2; if(w<1140) return 3; if(w<1460) return 4; return 5;
+  if(!w) w=Math.min(1680, Math.round(window.innerWidth*0.96))-100;
+  if(w<540) return 1; if(w<900) return 2; if(w<1200) return 3; if(w<1460) return 4; return 5;
 }
 // 대시보드 실시간 필터 — 타이핑으로 즉시 좁히기(클릭 없이)
 function _applyDashFilter(){
@@ -8384,12 +8555,12 @@ async function _rkFillBox(period){
   const row=document.getElementById('searchRow');
   if(!d || !d.enabled){ box.hidden=true; if(row) row.classList.remove('has-rank'); return; }
   const items=d.items||[];
-  box.innerHTML=`<div class="rk-h"><span class="rk-t">🏆 내규 랭킹 <span class="rk-sub">· 많이 열람한 내규</span></span>`+
+  box.innerHTML=`<div class="rk-h"><span class="rk-t"><span class="rk-t-ic" data-icon="rank"></span>내규 랭킹 <span class="rk-sub">· 많이 열람한 내규</span></span>`+
     _rkSeg(period,'_rkFillBox')+`<button class="rk-more" onclick="openRegRanking()">전체 순위 ›</button></div>`+
     (items.length?`<ol class="rk-list">${_rkRows(items,7,false)}</ol>`
       :`<div class="rk-empty">${d.error?escHtml(d.error):'아직 집계된 열람 기록이 없습니다. 내규 전문을 열면 순위에 반영됩니다.'}</div>`);
   box.insertAdjacentHTML('beforeend','<div class="pq" id="popQ"></div>'); _pqFill();
-  box.hidden=false; if(row) row.classList.add('has-rank');
+  _hydrateIcons(box); box.hidden=false; if(row) row.classList.add('has-rank');
 }
 async function openRegRanking(period){
   period=period||_rkPeriod(); try{ localStorage.setItem(_RK_PERIOD_KEY,period); }catch(e){}
@@ -8424,10 +8595,11 @@ async function _pqFill(){
   const d=await _stGet('/api/stats/queries?limit=10');
   if(!document.getElementById('popQ')) return;
   const items=(d&&d.enabled&&d.items)||[];
-  el.innerHTML=`<div class="pq-h">🔥 인기 검색어 <span class="rk-sub">· 최근 7일</span></div>`+
+  el.innerHTML=`<div class="pq-h"><span class="pq-h-ic" data-icon="flame"></span>인기 검색어 <span class="rk-sub">· 최근 7일</span></div>`+
     (items.length?`<div class="pq-list">`+items.map((x,i)=>`<button class="pq-chip" onclick="_pqRun('${argAttr(x.q)}')" title="${escAttr(x.q)} — ${_stNum(x.count)}회 검색">`+
         `<span class="pq-no">${i+1}</span>${escHtml(x.q)}</button>`).join('')+`</div>`
       :`<div class="rk-empty">아직 집계된 검색어가 없습니다. 여러 사람이 찾은 검색어가 모이면 표시됩니다.</div>`);
+  _hydrateIcons(el);
 }
 // ── 이용 통계(접속자 수) ──
 function _stOffHtml(){
@@ -9250,7 +9422,19 @@ const _ICON_P={
   upload:'<path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
   ai:'<path d="M12 3l1.5 4.2L18 9l-4.5 1.8L12 15l-1.5-4.2L6 9l4.5-1.8z"/><path d="M18.5 14l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7z"/>',
   tree:'<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.1"/><circle cx="4" cy="12" r="1.1"/><circle cx="4" cy="18" r="1.1"/>',
-  memo:'<path d="M4 5a1 1 0 0 1 1-1h11l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M15 4v4h4"/><path d="M8 12h7M8 16h5"/>'
+  memo:'<path d="M4 5a1 1 0 0 1 1-1h11l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M15 4v4h4"/><path d="M8 12h7M8 16h5"/>',
+  rank:'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M9 21h6M10 17h4v4h-4z"/>',
+  forms:'<path d="M16.5 7.5l-7.4 7.4a2 2 0 0 0 2.8 2.8l7.8-7.8a4 4 0 0 0-5.7-5.7L6.2 12a6 6 0 0 0 8.5 8.5L20 15"/>',
+  bell:'<path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  secretary:'<path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19a3 3 0 0 1-3 2h-3"/>',
+  compare:'<path d="M7 4v16M17 4v16"/><path d="M3 8h8M13 16h8"/><path d="M8 5l-1-1-1 1M18 19l-1 1-1-1"/>',
+  users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 4.6a3.2 3.2 0 0 1 0 6.4M18 14.5a6 6 0 0 1 3 5.5"/>',
+  library:'<path d="M5 4h4v16H5zM10 4h4v16h-4z"/><path d="M15.5 5.2l3.8-1 3 15.5-3.8 1z"/>',
+  filter:'<path d="M4 6h16M7 12h10M10 18h4"/>',
+  flame:'<path d="M12 21a6 6 0 0 0 6-6c0-4-3-6-3.5-9.5C12 7 10 9.5 10 12c-1.2-.6-2-1.8-2-3.3C6.8 10 6 12.3 6 15a6 6 0 0 0 6 6z"/>',
+  apps:'<rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/>',
+  ext:'<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/>',
+  chev:'<path d="M9 6l6 6-6 6"/>'
 };
 function _icon(name){
   const p=_ICON_P[name]; if(!p) return '';
