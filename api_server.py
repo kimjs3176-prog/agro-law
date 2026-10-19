@@ -171,7 +171,6 @@ _LAW_SESSION = _make_session(verify=False)
 # 타임아웃: (연결 대기, 읽기 대기)
 _T_JSON = (5, 12)   # JSON 검색
 _T_XML  = (5, 20)   # XML 조문 전문
-_T_LONG = (5, 30)   # 긴 응답 (조문 전문 대용량)
 
 from contextlib import contextmanager
 
@@ -256,7 +255,6 @@ def _is_valid_law_xml(root: ET.Element) -> bool:
 _NO_TAGS = {"항번호","호번호","목번호","조번호","조문번호","항수","호수","목수",
             "조수","장번호","절번호","관번호","편번호"}
 # 구조 컨테이너 (직접 텍스트 없이 자식만 가짐)
-_SKIP_TAGS = {"조문단위","항","호","목","호목","조문","법령","조문내용그룹"}
 
 def _node_text(el) -> str:
     """단일 노드의 직접 텍스트만 반환 (자식 텍스트 제외)"""
@@ -367,9 +365,6 @@ def _struct_to_text(items: list) -> str:
     return "\n".join(l for l in lines if l.strip())
 
 
-def _render_jo(u: ET.Element) -> str:
-    """<조문단위> 하나를 읽어서 깔끔한 조문 텍스트를 반환한다."""
-    return _struct_to_text(_render_jo_struct(u))
 
 
 # ── 법령MST 취득 (XML 검색 → 태그 추출) ──────────────────────────────────────
@@ -754,7 +749,6 @@ def _parse_articles(root: ET.Element):
 
 
 # ── HTML ──────────────────────────────────────────────────────────────────────
-INDEX_HTML = None  # HTML은 index.html 파일로 분리됨
 
 
 # ── Flask 라우트 ──────────────────────────────────────────────────────────────
@@ -1734,10 +1728,16 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
     except Exception as e:
         return jsonify({"error": f"AI 연결 오류: {_safe_err(e)}"}), 502
 
-    laws_to_search  = ai.get("laws", []) or []
-    keywords        = ai.get("keywords", []) or []
-    guidance        = ai.get("guidance", "")
-    steps           = ai.get("steps", []) or []
+    if not isinstance(ai, dict):               # AI 가 배열·문자열 JSON 을 돌려준 경우
+        ai = {}
+
+    def _strs(v):
+        return [x.strip() for x in v if isinstance(x, str) and x.strip()] if isinstance(v, list) else []
+
+    laws_to_search  = _strs(ai.get("laws"))
+    keywords        = _strs(ai.get("keywords"))
+    guidance        = ai.get("guidance", "") if isinstance(ai.get("guidance"), str) else ""
+    steps           = _strs(ai.get("steps"))
     category        = ai.get("category", "공통")
     basis_type      = ai.get("basis_type", "일반")
     caution         = ai.get("caution")
@@ -2194,21 +2194,6 @@ def _default_model_for(provider: str, api_key: str = "") -> str:
     return _AI_MODEL_FALLBACK.get(provider, _AI_MODEL_FALLBACK["gemini"])
 
 
-@app.route("/api/ai/models")
-def ai_models():
-    """현재 선택될 기본 모델 확인용(설정 화면 표시).
-
-    이 엔드포인트는 명시 호출이므로 Gemini 는 실시간 ListModels 로 캐시를 채운다.
-    """
-    provider = (request.args.get("provider") or "gemini").lower()
-    key = (request.headers.get("X-AI-Key") or request.args.get("api_key") or "").strip()   # 서버 키 미사용
-    if provider == "gemini":
-        mdl = _gemini_latest_model(key)
-    else:
-        mdl = _default_model_for(provider, key)
-    return jsonify({"success": True, "provider": provider, "model": mdl,
-                    "resolved": provider == "gemini" and bool(key),
-                    "cached_at": _GEMINI_MODEL_CACHE["ts"] if provider == "gemini" else 0})
 
 
 def _gemini_thinking_cfg(mdl: str):
@@ -2232,7 +2217,7 @@ def _ai_generate(provider: str, api_key: str, mdl: str, system: str, user: str,
     try:
         if provider == "gemini":
             url = (f"https://generativelanguage.googleapis.com/v1beta/models"
-                   f"/{mdl}:generateContent?key={api_key}")
+                   f"/{mdl}:generateContent")
 
             def call(limit, think):
                 cfg = {"maxOutputTokens": limit, "temperature": temperature}
@@ -2241,7 +2226,8 @@ def _ai_generate(provider: str, api_key: str, mdl: str, system: str, user: str,
                 if think:
                     cfg["thinkingConfig"] = think
                 return _ai_post_retry(lambda: req_lib.post(
-                    url, timeout=60, headers={"Content-Type": "application/json"},
+                    url, timeout=60, headers={"Content-Type": "application/json",
+                                              "x-goog-api-key": api_key},
                     json={"contents": [{"parts": [{"text": f"{system}\n\n{user}"}]}],
                           "generationConfig": cfg}))
 
@@ -3992,7 +3978,11 @@ def serve_regulation_file(subpath):
     if any(part.startswith(".") for part in subpath.replace("\\", "/").split("/")):
         return Response("<h1>404</h1>", status=404, mimetype="text/html; charset=utf-8")
     try:
-        return send_from_directory(REG_DIR, subpath)
+        resp = send_from_directory(REG_DIR, subpath)
+        resp.headers["X-Content-Type-Options"] = "nosniff"
+        resp.headers["Content-Security-Policy"] = ("default-src 'self'; script-src 'none'; object-src 'none'; frame-src 'none'; "
+                                                   "style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'none'")
+        return resp
     except Exception:
         return Response("<h1>404 — 규정 파일을 찾을 수 없습니다</h1>",
                         status=404, mimetype="text/html; charset=utf-8")
@@ -4014,7 +4004,8 @@ def upload_page():
 def reg_upload_status():
     """업로드 가능 여부·카테고리·업로드 이력."""
     ups = _uploaded_regs()
-    chk = _gh_check(force=bool(request.args.get("recheck")))
+    # 강제 재확인은 GitHub API 를 부르므로 관리자(토큰·로컬)만
+    chk = _gh_check(force=bool(request.args.get("recheck")) and _upload_authorized()[0])
     return jsonify({
         "success": True,
         "writable": _reg_writable(),
@@ -4376,6 +4367,7 @@ _VEC_BIN = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 _VEC_META = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                          "regulations_vectors.json")
 _VEC_CACHE: dict = {"loaded": False, "meta": None, "mat": None, "np": None}
+_VEC_LOCK = threading.Lock()
 # 코사인 하한. 관련 없는 조문은 대체로 0.5 아래에 몰려 있어 노이즈를 걸러낸다.
 _SEM_MIN = float(os.environ.get("SEMANTIC_MIN_SCORE", "0.55"))
 
@@ -4384,7 +4376,14 @@ def _vec_load():
     """벡터 파일 로드(프로세스당 1회). numpy 가 없으면 의미 검색을 끈다."""
     if _VEC_CACHE["loaded"]:
         return _VEC_CACHE
-    _VEC_CACHE["loaded"] = True
+    with _VEC_LOCK:                            # 동시 첫 요청이 반쯤 채운 캐시를 보지 않도록
+        if not _VEC_CACHE["loaded"]:
+            _vec_load_locked()
+            _VEC_CACHE["loaded"] = True
+    return _VEC_CACHE
+
+
+def _vec_load_locked():
     try:
         import numpy as np
     except ImportError:
@@ -4417,13 +4416,13 @@ def _embed_query(text: str, api_key: str, model: str, dim: int = 0):
     """
     try:
         url = (f"https://generativelanguage.googleapis.com/v1beta/models"
-               f"/{model}:embedContent?key={api_key}")
+               f"/{model}:embedContent")
         body = {"model": f"models/{model}",
                 "content": {"parts": [{"text": text}]},
                 "taskType": "RETRIEVAL_QUERY"}
         if dim:
             body["outputDimensionality"] = dim
-        r = _SESSION.post(url, timeout=15, json=body)
+        r = _SESSION.post(url, timeout=15, json=body, headers={"x-goog-api-key": api_key})
         if r.status_code != 200:
             print(f"[vec] 질의 임베딩 실패({r.status_code})")
             return None
@@ -5420,27 +5419,6 @@ def _dart_find_corp(key, name):
     listed = [c for c in cand if c[2]]        # stock_code 있는(상장) 후보 우선
     return (listed or cand)[0]
 
-def _dart_search(key, q, limit=30):
-    """회사명(부분일치) → DART 후보 [(corp_code, corp_name, stock_code)].
-    정확 일치 → 부분 일치 순, 상장(종목코드 보유) 우선·상호 짧은 순."""
-    nq = _dart_norm(q)
-    if not nq:
-        return []
-    m = _dart_corp_map(key)
-    hits, seen = [], set()
-    for c in (m.get(nq) or []):               # 정확 일치 우선
-        if c[0] not in seen:
-            hits.append(c); seen.add(c[0])
-    for norm, lst in m.items():               # 부분 일치 보강
-        if norm == nq or nq not in norm:
-            continue
-        for c in lst:
-            if c[0] not in seen:
-                hits.append(c); seen.add(c[0])
-        if len(hits) >= limit * 4:
-            break
-    hits.sort(key=lambda c: (0 if c[2] else 1, len(c[1] or "")))
-    return hits[:limit]
 
 def _num(v):
     try:
@@ -5630,35 +5608,6 @@ def _fsc_financials(key, crno):
     return {"year": latest, "years": years, "series": series, "items": out,
             "report": "요약재무제표", "fs": fs, "source": "금융위 공공데이터"}
 
-def _dart_company(key, corp_code):
-    """corp_code → DART 기업개황(company.json) 라벨 dict. 실패 시 {}.
-    사업자등록번호는 '_bno' 키로 함께 반환(국세청 상태 연계용)."""
-    try:
-        r = _SESSION.get("https://opendart.fss.or.kr/api/company.json",
-                         params={"crtfcKey": key, "corp_code": corp_code}, timeout=15)
-        d = r.json() or {}
-    except Exception:
-        return {}
-    if d.get("status") != "000":
-        return {}
-    out = {}
-    for k, lab in _DART_COMPANY_FIELDS.items():
-        v = (d.get(k) or "").strip()
-        if not v:
-            continue
-        if k == "corp_cls":
-            v = _DART_CLS.get(v, v)
-        elif k == "acc_mt":
-            v = f"{v}월"
-        elif k == "est_dt":
-            v = _fmtymd(v)
-        out[lab] = v
-    out["상장여부"] = "상장" if (d.get("stock_code") or "").strip() else "비상장"
-    out["공시(DART)"] = f"https://dart.fss.or.kr/dsae001/main.do?corp_code={corp_code}"
-    bno = re.sub(r"\D", "", d.get("bizr_no", "") or "")
-    if bno:
-        out["_bno"] = bno
-    return out
 
 @app.route("/api/assist/company")
 def assist_company():
@@ -6530,7 +6479,6 @@ def _xesc(s):
             .replace(">", "&gt;").replace('"', "&quot;"))
 
 def _hwpx_cell(text, col, row, cspan, width, height, bf, align):
-    para_h = "PARA_ALIGN_CENTER" if align == "center" else "PARA_ALIGN_LEFT"
     return (
         f'<hp:tc name="" header="0" hasMargin="1" protect="0" editable="0" dirty="0" borderFillIDRef="{bf}">'
         f'<hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="CENTER" '
