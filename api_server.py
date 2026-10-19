@@ -6,6 +6,7 @@ KOAT 내규&국가법령 종합 검색 서비스
 
 import os, json, re, time, threading, webbrowser, base64
 import concurrent.futures as _cf
+from collections import OrderedDict
 import xml.etree.ElementTree as ET
 # 신뢰할 수 없는 XML(업로드 파일·외부 법령 XML)의 엔티티 폭탄(billion laughs) 방어.
 # defusedxml 이 있으면 그 파서를 쓰고, 없으면 표준 파서로 폴백한다.
@@ -89,6 +90,18 @@ def _debug_allowed() -> bool:
     return bool(tok and want and hmac.compare_digest(tok.encode(), want.encode()))
 
 
+_FANOUT_PER_MIN = max(10, int(os.environ.get("FANOUT_RATE_PER_MIN", "120") or 120))
+
+
+def _fanout_limited() -> bool:
+    """외부 API 를 수십 번 부르는 무거운 검색의 IP별 분당 호출 제한(기관 공용 IP 고려해 넉넉히)."""
+    return _stats_limited("fanout", _FANOUT_PER_MIN)
+
+
+def _too_many():
+    return jsonify({"error": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."}), 429
+
+
 def _json_body():
     """JSON 객체 본문만 받는다. 배열·숫자·문자열·깨진 JSON 이면 None(호출부에서 400)."""
     d = request.get_json(silent=True)
@@ -125,8 +138,8 @@ HEADERS = {
 # ── 재시도 정책이 적용된 requests 세션 ────────────────────────────────────────
 def _make_session(verify: bool = True) -> req_lib.Session:
     retry = Retry(
-        total=4,                              # 최대 4회 재시도
-        backoff_factor=0.8,                   # 0.8→1.6→3.2→6.4s
+        total=2,                              # 최대 2회 재시도(코드 쪽 재시도와 겹쳐 수십 초로 늘던 것 축소)
+        backoff_factor=0.5,                   # 0.5→1.0s
         status_forcelist={429, 500, 502, 503, 504},
         allowed_methods={"GET", "POST"},
         raise_on_status=False,
@@ -160,6 +173,21 @@ _T_JSON = (5, 12)   # JSON 검색
 _T_XML  = (5, 20)   # XML 조문 전문
 _T_LONG = (5, 30)   # 긴 응답 (조문 전문 대용량)
 
+from contextlib import contextmanager
+
+
+@contextmanager
+def _pool(n: int):
+    """ThreadPoolExecutor 대용 — with 블록을 벗어날 때 남은 작업을 기다리지 않는다.
+    (with ThreadPoolExecutor 는 shutdown(wait=True) 라 as_completed(timeout=…) 가 끝나도
+    느린 작업이 다 끝날 때까지 응답이 묶였다.)"""
+    ex = _cf.ThreadPoolExecutor(max_workers=n)
+    try:
+        yield ex
+    finally:
+        ex.shutdown(wait=False, cancel_futures=True)
+
+
 def _decode(raw: bytes) -> str:
     for enc in ("utf-8", "euc-kr"):
         try:
@@ -171,7 +199,7 @@ def _decode(raw: bytes) -> str:
 def _law_get_json(params: dict, timeout=None) -> dict:
     timeout = timeout or _T_JSON
     last_err = None
-    for attempt in range(3):
+    for attempt in range(2):                  # 세션 재시도(2회)와 합쳐 최대 6회 시도
         try:
             r = _LAW_SESSION.get(
                 f"{BASE}/lawSearch.do",
@@ -185,14 +213,14 @@ def _law_get_json(params: dict, timeout=None) -> dict:
             last_err = e
             # 공유 세션을 close() 하면 동시 실행 중인 다른 워커 스레드의 연결이
             # 끊긴다. 재시도는 풀에서 새 연결을 자동으로 받으므로 sleep만 한다.
-            time.sleep(1.5 * (attempt + 1))
+            time.sleep(0.6 * (attempt + 1))
             continue
     raise last_err
 
 def _law_get_xml(endpoint: str, params: dict, timeout=None) -> ET.Element:
     timeout = timeout or _T_XML
     last_err = None
-    for attempt in range(3):
+    for attempt in range(2):                  # 세션 재시도(2회)와 합쳐 최대 6회 시도
         try:
             r = _LAW_SESSION.get(
                 f"{BASE}/{endpoint}",
@@ -208,7 +236,7 @@ def _law_get_xml(endpoint: str, params: dict, timeout=None) -> ET.Element:
         except (req_lib.exceptions.ConnectionError,
                 req_lib.exceptions.ChunkedEncodingError) as e:
             last_err = e
-            time.sleep(1.5 * (attempt + 1))
+            time.sleep(0.6 * (attempt + 1))
             continue
     raise last_err
 
@@ -837,7 +865,30 @@ def validate_keyword():
 
 
 # ── 법령 조문 인메모리 캐시 (TTL 30분) ──────────────────────────────────────
-_LAW_ARTICLE_CACHE: dict = {}   # law_name → {"lname": str, "articles": list, "ts": float}
+class _LruDict(OrderedDict):
+    """개수 상한이 있는 캐시(가장 오래 안 쓴 항목부터 버림) — 오래 떠 있는 서버의 메모리 증가 방지."""
+
+    def __init__(self, maxsize: int):
+        super().__init__()
+        self._max = maxsize
+        self._lock = threading.Lock()
+
+    def get(self, key, default=None):
+        with self._lock:
+            if key not in self:
+                return default
+            self.move_to_end(key)
+            return super().__getitem__(key)
+
+    def __setitem__(self, key, value):
+        with self._lock:
+            super().__setitem__(key, value)
+            self.move_to_end(key)
+            while len(self) > self._max:
+                self.popitem(last=False)
+
+
+_LAW_ARTICLE_CACHE = _LruDict(300)   # law_name → {"lname": str, "articles": list, "ts": float}
 _CACHE_LOCK = threading.Lock()
 _CACHE_TTL  = 1800              # 30분
 
@@ -1097,24 +1148,28 @@ def _search_law_scoped(query: str):
                 if sub.get("rank") == 0 and sub.get("mst"):
                     targets.append((sub.get("name") or name + suf, "law", sub))
         laws = []
-        with _cf.ThreadPoolExecutor(max_workers=3) as ex:
+        truncated = False
+        with _pool(3) as ex:
             futs = {ex.submit(_fetch_matching_articles, n, kw, dt, False, inf): (n, dt, inf)
                     for n, dt, inf in targets}
-            for f in _cf.as_completed(futs, timeout=25):
-                n, dt, inf = futs[f]
-                try:
-                    res = f.result()
-                except Exception:
-                    res = None
-                if res:
-                    laws.append(_law_entry(res["law_name"], dt, inf,
-                                           [_art_brief(a) for a in res["articles"][:15]],
-                                           total=len(res["articles"])))
+            try:
+                for f in _cf.as_completed(futs, timeout=25):
+                    n, dt, inf = futs[f]
+                    try:
+                        res = f.result()
+                    except Exception:
+                        res = None
+                    if res:
+                        laws.append(_law_entry(res["law_name"], dt, inf,
+                                               [_art_brief(a) for a in res["articles"][:15]],
+                                               total=len(res["articles"])))
+            except _cf.TimeoutError:
+                truncated = True
         order = {n: i for i, (n, _, _) in enumerate(targets)}
         laws.sort(key=lambda x: order.get(x["법령명한글"], 9))
         return {"success": True, "mode": "law_scoped",
                 "scoped": {"law": name, "keyword": kw, "family": [t[0] for t in targets]},
-                "count": len(laws), "laws": laws, "truncated": False}
+                "count": len(laws), "laws": laws, "truncated": truncated}
     return None
 
 
@@ -1203,7 +1258,7 @@ def _search_by_sentence(query: str):
 
     found = []
     try:
-        with _cf.ThreadPoolExecutor(max_workers=12) as ex:
+        with _pool(12) as ex:
             futs = [ex.submit(_scan, n) for n in targets]
             for f in _cf.as_completed(futs, timeout=25):
                 try:
@@ -1240,6 +1295,8 @@ def search_by_article_keyword():
     법제처 API는 조문 내용 검색을 직접 지원하지 않으므로,
     핵심 법령 목록에서 조문을 불러와 서버 측 필터링한다.
     """
+    if _fanout_limited():
+        return _too_many()
     query = request.args.get("query", "").strip()
     if not query:
         return jsonify({"error": "검색어를 입력하세요"}), 400
@@ -1372,7 +1429,7 @@ def search_by_article_keyword():
 
     results, truncated = [], False
     try:
-        with _cf.ThreadPoolExecutor(max_workers=12) as ex:
+        with _pool(12) as ex:
             futures = {ex.submit(fetch_and_filter, name): name for name in all_target}
             for future in _cf.as_completed(futures, timeout=25):
                 try:
@@ -1429,6 +1486,8 @@ def search_legal_basis():
     Stage 1: 법제처 법령명 검색 API로 관련 법령 목록 확보
     Stage 2: 해당 법령 조문에서 시나리오 키워드(OR) 필터링
     """
+    if _fanout_limited():
+        return _too_many()
     scenario = request.args.get("scenario", "").strip()
     if not scenario:
         return jsonify({"error": "업무 상황을 입력하세요"}), 400
@@ -1558,7 +1617,7 @@ def search_legal_basis():
           f"(법령:{len(CANDIDATE_LAWS)} + 행정규칙:{len(CANDIDATE_ADMRUL)} + 추가:{len(extra_laws)})")
     results, truncated = [], False
     try:
-        with _cf.ThreadPoolExecutor(max_workers=10) as ex:
+        with _pool(10) as ex:
             futures = {ex.submit(fetch_law, name): name for name in all_target}
             for future in _cf.as_completed(futures, timeout=25):
                 try:
@@ -1592,6 +1651,8 @@ def search_legal_basis():
 @app.route("/api/scenario", methods=["POST"])
 def scenario_search():
     """실무 시나리오 검색: 사용자가 AI 설정에 넣은 키로만 AI 호출(서버 키는 쓰지 않음) → 관련 법령·조문"""
+    if _fanout_limited():
+        return _too_many()
     body = _json_body()
     if body is None:
         return _bad_body()
@@ -1720,7 +1781,7 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
 
     results = []
     try:
-        with _cf.ThreadPoolExecutor(max_workers=8) as ex:
+        with _pool(8) as ex:
             futs = {ex.submit(_fetch_for_law, ln): ln for ln in laws_to_search}
             for fut in _cf.as_completed(futs, timeout=20):
                 ln, arts = fut.result()
@@ -1859,7 +1920,7 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
 
 
 # ── 법령명 자동완성(검색창 입력 중 제안) ─────────────────────────────────────────
-_LAW_SUGGEST_CACHE: dict = {}
+_LAW_SUGGEST_CACHE = _LruDict(500)
 _SUGGEST_TTL = 3600
 
 @app.route("/api/law/suggest")
@@ -1897,7 +1958,7 @@ def law_suggest():
 
 
 # ── 연계 법령(법률 · 시행령 · 시행규칙) ────────────────────────────────────────
-_LAW_FAMILY_CACHE: dict = {}
+_LAW_FAMILY_CACHE = _LruDict(300)
 _FAMILY_TTL = 6 * 3600
 
 def _law_family_base(name: str) -> str:
@@ -2236,8 +2297,11 @@ def _ai_generate(provider: str, api_key: str, mdl: str, system: str, user: str,
                 return "", _ai_error(r)[0]
             return r.json()["choices"][0]["message"]["content"], ""
         if provider == "ollama":
-            base = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-            r = req_lib.post(f"{base}/api/chat", timeout=60,
+            # 관리자가 OLLAMA_BASE_URL 을 정한 경우에만, 허용 호스트 검사 후 리다이렉트 없이 호출
+            base = (os.environ.get("OLLAMA_BASE_URL") or "").rstrip("/")
+            if not base or not _ai_url_allowed(base):
+                return "", "이 서버에는 Ollama 가 설정되어 있지 않습니다."
+            r = req_lib.post(f"{base}/api/chat", timeout=60, allow_redirects=False,
                              json={"model": mdl or "gemma2", "stream": False,
                                    "messages": [{"role": "system", "content": system},
                                                 {"role": "user", "content": user}]})
@@ -2245,7 +2309,8 @@ def _ai_generate(provider: str, api_key: str, mdl: str, system: str, user: str,
                 return "", f"Ollama 오류({r.status_code})"
             return (r.json().get("message") or {}).get("content", ""), ""
     except Exception as e:
-        return "", f"AI 호출 오류: {e}"
+        print(f"[ai] 호출 오류: {_redact(e)}")
+        return "", f"AI 호출 오류: {_safe_err(e)}"
     return "", f"지원하지 않는 프로바이더: {provider}"
 
 
@@ -2630,6 +2695,8 @@ def get_prev_article():
 @app.route("/api/law/art_history")
 def get_art_history():
     """조문 단위 개정 히스토리 (버전별 내용 비교)"""
+    if _fanout_limited():
+        return _too_many()
     law_name = request.args.get("name", "").strip()
     art_no   = request.args.get("art_no", "").strip()
     if not law_name:
@@ -5841,7 +5908,7 @@ def assist_patent():
     date_field = "register" if request.args.get("date_field", "").strip().lower().startswith("reg") else "application"
     if not applicant and not query:
         return jsonify({"success": False, "error": "출원인 또는 검색어를 입력하세요."})
-    base = "http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice"
+    base = os.environ.get("KIPRIS_BASE_URL", "https://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice")  # 서비스키를 평문(http)으로 보내지 않음
 
     # 출원일 범위(YYYY→YYYY0101/YYYY1231). KIPRIS 는 'YYYYMMDD~YYYYMMDD' 형식.
     def _d(v, end=False):
@@ -5968,7 +6035,7 @@ def assist_patent_detail():
     appno = re.sub(r"\D", "", request.args.get("appno", ""))
     if not appno:
         return jsonify({"success": False, "error": "출원번호가 필요합니다."})
-    base = "http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice"
+    base = os.environ.get("KIPRIS_BASE_URL", "https://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice")  # 서비스키를 평문(http)으로 보내지 않음
     try:
         r = _SESSION.get(f"{base}/getBibliographyDetailInfoSearch",
                          params={"applicationNumber": appno, "ServiceKey": key}, timeout=20)
@@ -6227,6 +6294,8 @@ def assist_support():
     apis.data.go.kr/B552735/kisedKstartupService01/getAnnouncementInformation01.
     키워드(query)는 응답을 받아 제목·내용·분야·대상에서 부분일치로 걸러낸다.
     """
+    if _fanout_limited():
+        return _too_many()
     key = _assist_key("support")
     if not key:
         return _assist_need_key("support")
@@ -6325,6 +6394,8 @@ _NARA_BASE = {}   # {op: 동작 확인된 base URL} — 후보 탐색 결과 캐
 @app.route("/api/assist/procurement")
 def assist_procurement():
     """조달공고 조회 — 조달청 나라장터 입찰공고정보(최근 30일)."""
+    if _fanout_limited():
+        return _too_many()
     key = _assist_key("procurement")
     if not key:
         return _assist_need_key("procurement")
@@ -6355,8 +6426,7 @@ def assist_procurement():
         else:
             bases = [f"https://apis.data.go.kr/1230000/ad/BidPublicInfoService/{op}",
                      f"https://apis.data.go.kr/1230000/BidPublicInfoService04/{op}",
-                     f"https://apis.data.go.kr/1230000/BidPublicInfoService/{op}",
-                     f"http://apis.data.go.kr/1230000/ad/BidPublicInfoService/{op}"]
+                     f"https://apis.data.go.kr/1230000/BidPublicInfoService/{op}"]   # http 후보 제거(키 평문 전송 방지)
         j, chosen, attempts, r = None, "", [], None
         for b in bases:
             try:
@@ -6620,6 +6690,7 @@ _STATS_DAY_TTL = 400 * 86400                # 일별 키 보관 기간
 _VID_RE = re.compile(r"^[a-z0-9]{12,40}$")
 _BOT_RE = re.compile(r"bot|crawl|spider|slurp|facebookexternalhit|preview", re.I)
 _stats_rate: dict = {}
+_STATS_RATE_LOCK = threading.Lock()
 _stats_cache: dict = {}
 
 
@@ -6667,11 +6738,12 @@ def _stats_limited(kind: str, limit: int) -> bool:
     ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "").split(",")[0].strip()
     now = int(time.time() // 60)
     k = (kind, ip, now)
-    n = _stats_rate.get(k, 0) + 1
-    _stats_rate[k] = n
-    if len(_stats_rate) > 5000:
-        for kk in [x for x in _stats_rate if x[2] < now]:
-            _stats_rate.pop(kk, None)
+    with _STATS_RATE_LOCK:                    # 동시 요청 중 dict 순회·삭제 충돌 방지
+        n = _stats_rate.get(k, 0) + 1
+        _stats_rate[k] = n
+        if len(_stats_rate) > 5000:
+            for kk in [x for x in _stats_rate if x[2] < now]:
+                _stats_rate.pop(kk, None)
     return n > limit
 
 

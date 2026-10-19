@@ -8,6 +8,7 @@
   5. 요청 본문 크기 제한(413)
   6. 인기 검색어: 개인정보 형태·사람 이름 미기록, 2명 이상만 노출, 방문자 ID 미저장
   7. 조문 판별 정규식 과부하 방지, 오류 응답의 서비스키 가림·502, ?debug=1 관리자 전용
+  8. 동시 조회 시간 제한, 캐시 상한, 무거운 검색 호출 제한, Ollama 미설정 차단, KIPRIS https
 
 사용: python scripts/test_api_safety.py   (실패 시 종료 코드 1)
 """
@@ -132,6 +133,35 @@ check("SECRET123" not in A._safe_err(err) and A._err_status(err) == 502, f"연�
 check("SECRET" not in A._redact("...?ServiceKey=SECRET&crtfc_key=SECRET2&OC=SECRET3"), "로그용 키 가림")
 with A.app.test_request_context("/api/assist/company?debug=1"):
     check(A._debug_allowed() is False, "?debug=1 은 토큰 없으면 무시")
+
+print("8) 시간 제한·캐시 상한·호출 제한·Ollama·KIPRIS https")
+import time as _t
+_orig = A._fetch_matching_articles if hasattr(A, "_fetch_matching_articles") else None
+def _slow_pool_job():
+    with A._pool(2) as ex:
+        futs = [ex.submit(_t.sleep, 3)]
+        try:
+            for _ in A._cf.as_completed(futs, timeout=0.3):
+                pass
+        except A._cf.TimeoutError:
+            pass
+t0 = _t.time(); _slow_pool_job(); dt = _t.time() - t0
+check(dt < 1.0, f"동시 조회 시간 제한이 실제로 걸림(남은 작업을 기다리지 않음) {dt:.2f}s")
+lru = A._LruDict(3)
+for i in range(10):
+    lru[i] = i
+check(len(lru) == 3 and lru.get(9) == 9 and lru.get(0) is None, "캐시 개수 상한(LRU)")
+check(all(isinstance(x, A._LruDict) for x in (A._LAW_ARTICLE_CACHE, A._LAW_SUGGEST_CACHE, A._LAW_FAMILY_CACHE)),
+      "법령 조문·자동완성·연계 캐시는 상한 있음")
+A._FANOUT_PER_MIN = 3
+codes = [c.get("/api/search/article?query=x", headers={"X-Forwarded-For": "203.0.113.9"}).status_code for _ in range(5)]
+check(codes[-1] == 429, f"무거운 검색 IP별 분당 제한 → 429 ({codes})")
+A._FANOUT_PER_MIN = 120
+os.environ.pop("OLLAMA_BASE_URL", None)
+txt, err = A._ai_generate("ollama", "", "", "s", "u")
+check(not txt and "설정" in err, f"Ollama 미설정이면 호출하지 않음 ({err})")
+src = open(os.path.join(ROOT, "api_server.py"), encoding="utf-8").read()
+check("http://plus.kipris.or.kr" not in src and 'f"http://apis.data.go.kr' not in src, "KIPRIS·나라장터 서비스키를 http(평문)로 보내지 않음")
 
 if fails:
     sys.exit(f"\n실패 {len(fails)}건")
