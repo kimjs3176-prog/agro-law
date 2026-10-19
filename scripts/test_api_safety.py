@@ -9,6 +9,7 @@
   6. 인기 검색어: 개인정보 형태·사람 이름 미기록, 2명 이상만 노출, 방문자 ID 미저장
   7. 조문 판별 정규식 과부하 방지, 오류 응답의 서비스키 가림·502, ?debug=1 관리자 전용
   8. 동시 조회 시간 제한, 캐시 상한, 무거운 검색 호출 제한, Ollama 미설정 차단, KIPRIS https
+  9. Gemini 키는 URL 대신 헤더, AI 가 배열 JSON 을 돌려줘도 500 없음, 원본 파일 보안 헤더, 쓰지 않는 API 정리
 
 사용: python scripts/test_api_safety.py   (실패 시 종료 코드 1)
 """
@@ -162,6 +163,21 @@ txt, err = A._ai_generate("ollama", "", "", "s", "u")
 check(not txt and "설정" in err, f"Ollama 미설정이면 호출하지 않음 ({err})")
 src = open(os.path.join(ROOT, "api_server.py"), encoding="utf-8").read()
 check("http://plus.kipris.or.kr" not in src and 'f"http://apis.data.go.kr' not in src, "KIPRIS·나라장터 서비스키를 http(평문)로 보내지 않음")
+
+print("9) 키 전달 방식·AI 응답 형식·원본 파일 헤더·정리")
+check("?key={api_key}" not in src and "x-goog-api-key" in src, "Gemini 키를 URL 이 아닌 헤더로 보냄")
+_orig_gen = A._ai_generate
+A._ai_generate = lambda *a, **k: ('["농지법", 3]', "")
+r = c.post("/api/scenario", json={"query": "농지 전용 절차", "api_key": "user-k", "provider": "gemini"})
+check(r.status_code < 500, f"AI 가 배열 JSON 을 돌려줘도 500 없음 ({r.status_code})")
+A._ai_generate = _orig_gen
+reg = next((d for d in os.listdir(A.REG_DIR) if not d.startswith(".") and os.path.isdir(os.path.join(A.REG_DIR, d))), None)
+f = reg and next((x for x in os.listdir(os.path.join(A.REG_DIR, reg)) if not x.startswith(".")), None)
+if f:
+    r = c.get(f"/regulations/{reg}/{f}")
+    check(r.headers.get("X-Content-Type-Options") == "nosniff" and "script-src 'none'" in r.headers.get("Content-Security-Policy", ""),
+          f"원본 파일 nosniff·CSP ({r.status_code})")
+check(c.get("/api/ai/models").status_code == 404, "쓰지 않던 /api/ai/models 제거")
 
 if fails:
     sys.exit(f"\n실패 {len(fails)}건")

@@ -46,7 +46,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);-webkit-font-s
 .tree-toggle [data-icon]{display:inline-flex;font-size:19px;line-height:1;}
 /* 상단바 — Toss blur topbar */
 .topbar{background:rgba(255,255,255,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.06);padding:0 24px;display:flex;align-items:center;height:60px;gap:10px;position:sticky;top:0;z-index:200;box-shadow:0 1px 0 rgba(0,0,0,.04);}
-.logo{width:32px;height:32px;background:var(--g);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:800;flex-shrink:0;box-shadow:0 2px 8px rgba(37,110,244,.35);}
+
 .brand{font-size:17px;font-weight:800;letter-spacing:-.5px;color:var(--tx);}.brand-sub{font-size:11px;color:var(--mu);font-weight:500;letter-spacing:.1px;}
 .apibadge{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;background:var(--gl);color:var(--gd);}
 .tb-tools{margin-left:auto;display:flex;align-items:center;gap:1px;}
@@ -66,9 +66,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);-webkit-font-s
   background:var(--sf);border:1px solid rgba(0,0,0,.06);border-radius:var(--r);box-shadow:var(--shadow);
   padding:8px 12px;margin-bottom:16px;}
 .sm-sec{display:flex;flex-direction:row;align-items:center;gap:6px;}
-.sm-sec.sm-tools{margin-left:auto;}
-.sm-sec.sm-tools::before{content:'';width:1px;height:20px;background:rgba(0,0,0,.1);margin:0 4px 0 0;flex-shrink:0;}
-.sm-label{font-size:10px;font-weight:800;color:var(--ht);letter-spacing:.06em;padding:0 6px 0 2px;flex-shrink:0;}
+
 .sm-group{display:flex;align-items:center;gap:4px;flex-shrink:0;}
 .sm-glabel{font-size:10px;font-weight:800;color:var(--ht);letter-spacing:.04em;padding:0 5px 0 2px;white-space:nowrap;flex-shrink:0;}
 .sm-item{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border:none;background:transparent;
@@ -120,20 +118,18 @@ body.dark .rw-item.chg{background:rgba(239,68,68,.08);border-color:rgba(239,68,6
 .form-acts{display:flex;gap:5px;flex-shrink:0;}
 .ws-icon.wswatch.on{color:#e0a400;}
 body.dark .side-menu{border-color:rgba(255,255,255,.08);}
-body.dark .sm-sec.sm-tools::before{background:rgba(255,255,255,.14);}
+
 @media(max-width:900px){
   .side-menu{gap:5px;padding:7px 9px;}
-  .sm-label{display:none;}
-  .sm-tools{display:none;}   /* 모바일은 하단 내비게이션으로 대체 */
+  
+     /* 모바일은 하단 내비게이션으로 대체 */
   .sm-item{padding:7px 12px;font-size:12.5px;}
 }
 /* ── 메뉴 정리: 주요 기능(좌, 아이콘+텍스트) + 도구(우, 아이콘) ── */
 .sm-primary{flex-wrap:wrap;gap:4px;}
 .sm-div{width:1px;height:18px;background:var(--bd);margin:0 7px;flex-shrink:0;}
 body:not(.dark) .sm-div{background:rgba(0,0,0,.1);}
-.sm-item.sm-icon{gap:0;padding:8px 10px;}
-.sm-item.sm-icon .sm-ic{font-size:15px;}
-.sm-item.sm-icon .ai-active-badge{margin-left:2px;}
+
 /* ── 검색 유형 토글(키워드 ↔ AI 시나리오) ── */
 .search-toggle{display:inline-flex;background:var(--bg);border:1px solid var(--bd);border-radius:11px;padding:3px;gap:2px;margin:0 0 12px;}
 .stgl{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:none;background:transparent;border-radius:8px;
@@ -212,8 +208,7 @@ body.dark .stgl.active{background:#20222a;}
 .pat-inp:focus{border-color:var(--g);box-shadow:var(--shadow-focus);}
 .pat-frow2{gap:8px;max-width:620px;}
 .pat-frow2 .pat-inp:first-of-type{flex:1;min-width:160px;}
-.pat-year{width:120px;flex-shrink:0;}
-.pat-sel{padding:9px 12px;border:1px solid var(--bd);border-radius:9px;font-size:13px;background:var(--sf);color:var(--tx);cursor:pointer;font-family:var(--font);flex-shrink:0;}
+
 .pat-tilde{color:var(--mu);flex-shrink:0;}
 /* 기간: 숫자 직접입력(YYYY-MM-DD) + 달력 선택 */
 .pat-daterange{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
@@ -248,10 +243,10 @@ body.dark .stgl.active{background:#20222a;}
 .det-fav:hover{border-color:#f5b301;color:#b8860b;}
 .det-fav.on{background:#fff8e6;border-color:#f5b301;color:#b8860b;}
 body.dark .det-fav.on{background:rgba(245,179,1,.16);color:#fbbf24;}
-.fav-due{display:inline-block;font-size:12px;font-weight:700;color:var(--mu);padding:6px 0;}
+
 .pat-row-t{font-size:13.5px;font-weight:700;color:var(--tx);line-height:1.4;display:flex;align-items:center;gap:8px;min-width:0;}
 .pat-row-t .pat-ttl{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.pat-badge{font-size:10.5px;font-weight:800;color:var(--gp);background:var(--gl);border-radius:5px;padding:1px 7px;flex-shrink:0;}
+
 .pat-row-m{display:flex;gap:6px 10px;flex-wrap:wrap;font-size:11.5px;align-items:center;}
 .pat-row-appl{color:var(--g);font-weight:700;}
 .pat-row-meta{color:var(--mu);}
@@ -291,8 +286,7 @@ body.dark .comp-badge.closed{background:rgba(239,68,68,.2);color:#fca5a5;}
 .pat-d-row{display:flex;gap:10px;font-size:12.5px;}
 .pat-d-k{color:var(--mu);font-weight:700;flex-shrink:0;min-width:56px;}
 .pat-d-v{color:var(--tx);word-break:break-word;}
-.pat-d-abs{margin-top:10px;padding-top:12px;border-top:1px solid var(--bd);}
-.pat-d-abs p{font-size:12.5px;line-height:1.8;color:var(--tx);margin-top:6px;white-space:pre-wrap;}
+
 /* 등록원부(실시간) — 권리 변동 이력·실시권 등 */
 .pat-live{display:inline-block;font-size:10px;font-weight:800;color:#137a3e;background:#e7f6ec;border-radius:999px;padding:1px 8px;vertical-align:middle;margin-left:6px;letter-spacing:.02em;}
 body.dark .pat-live{background:rgba(34,197,94,.16);color:#6ee7a0;}
@@ -327,11 +321,7 @@ body.dark .pat-sb.dead{background:rgba(255,255,255,.08);color:#a7a7b2;}
 .fin-box{margin-top:14px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;}
 .fin-hd{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 13px;font-weight:700;font-size:13px;background:var(--gl);color:var(--gp);}
 .fin-meta{font-weight:500;font-size:11px;color:var(--mu);}
-.fin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1px;background:var(--bd);}
-.fin-row{background:var(--sf);padding:10px 13px;display:flex;flex-direction:column;gap:3px;}
-.fin-k{font-size:12px;color:var(--mu);}
-.fin-v{font-size:15px;font-weight:700;}
-.fin-p{font-size:11px;color:var(--mu);display:flex;gap:6px;align-items:center;}
+
 .fin-yoy{font-weight:700;}
 .fin-yoy.up{color:#dc2626;} .fin-yoy.dn{color:#2563eb;}
 .fin-charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1px;background:var(--bd);}
@@ -486,16 +476,7 @@ body.dark .exp-limit.ok{background:rgba(34,197,94,.16);color:#6ee7a0;} body.dark
 .memo-addbtn{height:36px;padding:0 16px;border:none;border-radius:9px;background:var(--g);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);}
 .memo-addbtn:hover{background:var(--gd);}
 /* 항목 카드 */
-.dday{font-size:10.5px;font-weight:800;border-radius:999px;padding:1px 8px;flex-shrink:0;}
-.dday.over{background:#fde6e6;color:#c0342b;}
-.dday.soon{background:#fdf2dc;color:#8a5a00;}
-.dday.ok{background:var(--gl);color:var(--gp);}
-body.dark .dday.over{background:rgba(239,68,68,.2);color:#fca5a5;}
-body.dark .dday.soon{background:rgba(245,158,11,.18);color:#fbbf24;}
-.prio{font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 6px;flex-shrink:0;}
-.prio.h{background:#fde6e6;color:#c0342b;}
-.prio.m{background:var(--gl);color:var(--gp);}
-.prio.l{background:var(--bg);color:var(--ht);}
+
 .memo-del{flex-shrink:0;width:26px;height:26px;border:none;background:transparent;color:var(--ht);cursor:pointer;border-radius:6px;font-size:14px;line-height:1;}
 .memo-del:hover{background:rgba(220,38,38,.1);color:#dc2626;}
 /* 공용 토스트(저장 실패 등 안내) */
@@ -506,15 +487,7 @@ body.dark .dday.soon{background:rgba(245,158,11,.18);color:#fbbf24;}
 .memo-del:hover{background:rgba(239,68,68,.1);color:#ef4444;}
 .memo-actions{display:flex;gap:4px;flex-shrink:0;}
 /* 월간 캘린더 */
-.cd-ev{font-size:10.5px;line-height:1.35;border-radius:4px;padding:1px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-.cd-ev.ev{background:var(--g);color:#fff;} .cd-ev.ev b{font-weight:800;}
-.cd-ev.due{background:#fff4e5;color:#b8730a;font-weight:700;}
-body.dark .cd-ev.due{background:rgba(245,158,11,.18);color:#fbbf24;}
-.cd-more{font-size:10px;font-weight:700;color:var(--mu);padding:0 4px;}
-.cd{width:5px;height:5px;border-radius:999px;display:inline-block;}
-.cd.ev{background:var(--g);} .cd.due{background:#f59e0b;}
-i.cd{vertical-align:middle;}
-@media (max-width:640px){  .cd-ev{font-size:9.5px;padding:1px 3px;} }
+
 .exp-print{flex:1;font-size:13.5px;font-weight:800;padding:11px;border:none;border-radius:10px;background:var(--g);color:#fff;cursor:pointer;white-space:nowrap;}
 .exp-print:hover{background:var(--gd);}
 .exp-mini2{font-size:13px;font-weight:700;padding:11px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);cursor:pointer;white-space:nowrap;}
@@ -600,13 +573,11 @@ body.dark .opp-dd.urgent{background:rgba(239,68,68,.2);color:#fca5a5;}
 body.dark .opp-dd.soon{background:rgba(245,158,11,.18);color:#fbbf24;}
 body.dark .opp-dd.far{background:rgba(37,110,244,.2);color:#aecbfd;}
 body.dark .opp-dd.done,body.dark .opp-dd.none{background:rgba(255,255,255,.08);color:#8a8f98;}
-.opp-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:#e7f6ec;color:#137a3e;}
-body.dark .opp-tag{background:rgba(34,197,94,.16);color:#6ee7a0;}
+
 .opp-card-t{font-size:14px;font-weight:700;color:var(--tx);line-height:1.45;word-break:keep-all;}
 .opp-card-t mark{background:var(--mark-bg,#fff3bf);color:inherit;padding:0 1px;border-radius:2px;}
 .opp-card-sub{font-size:12px;color:var(--mu);margin-top:3px;}
-.opp-card-meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:11.5px;color:var(--mu);}
-.opp-card-meta b{color:var(--tx);font-weight:600;margin-right:3px;}
+
 .opp-card .assist-card-link{display:inline-block;margin-top:8px;font-size:12px;font-weight:600;color:var(--g);text-decoration:none;}
 .opp-card .assist-card-link:hover{text-decoration:underline;}
 /* 기회 레이더 — 필터·리치 카드 */
@@ -640,7 +611,7 @@ body.dark .opp-gv.opp-due{color:#fca5a5;}
 .opp-btn:hover{border-color:var(--g);color:var(--g);}
 .opp-btn.primary{background:var(--g);border-color:var(--g);color:#fff;}
 .opp-btn.primary:hover{background:var(--gd);color:#fff;}
-@media(max-width:640px){ .pat-year{width:88px;} .pat-frow2 .pat-inp:first-of-type{min-width:120px;} .opp-bar{flex-direction:column;align-items:stretch;} }
+@media(max-width:640px){  .pat-frow2 .pat-inp:first-of-type{min-width:120px;} .opp-bar{flex-direction:column;align-items:stretch;} }
 .reg-sem-badge{font-size:10.5px;font-weight:800;color:#fff;background:#7c3aed;
   border-radius:5px;padding:2px 7px;white-space:nowrap;}
 .art-sem-badge{font-size:9.5px;font-weight:800;color:#fff;background:#7c3aed;
@@ -696,15 +667,9 @@ body.dark .opp-gv.opp-due{color:#fca5a5;}
 .tab:hover{border-color:var(--g);color:var(--g);background:var(--gl);}
 .tab.active{background:var(--g);border-color:var(--g);color:#fff;box-shadow:0 2px 10px rgba(37,110,244,.28);}
 /* 모드 토글 */
-.mtoggle{display:flex;gap:0;margin-bottom:14px;background:#f1f3f6;border-radius:999px;overflow:hidden;width:fit-content;padding:3px;}
-.mbtn{padding:7px 20px;font-size:13px;cursor:pointer;border:none;background:transparent;color:var(--mu);transition:.18s;border-radius:999px;}
-.mbtn:hover{background:rgba(255,255,255,.7);color:var(--tx);}
-.mbtn.active{background:var(--sf);color:var(--g);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.10);}
+
 /* 내규=메인(강조), 법령·시나리오=부가(약한 강조) — 세그먼트 토글은 유지 */
-.mtoggle{align-items:center;}
-.mbtn-primary{font-weight:700;}
-.mbtn-primary .mb-full,.mbtn-primary .mb-short{font-size:13.5px;}
-.mbtn-sub{font-size:12.5px;}
+
 /* 시나리오 API 키 안내 */
 .scen-apikey-note{font-size:12.5px;line-height:1.6;color:#92400e;background:#fff8ec;
   border:1px solid #fcd9a3;border-radius:10px;padding:10px 13px;margin:2px 0 12px;}
@@ -832,10 +797,7 @@ body.dark .rec-chip{background:#20242c;}
 .abtn.primary:hover{background:var(--gd);box-shadow:0 4px 14px rgba(37,110,244,.4);transform:translateY(-1px);}
 /* 조문 패널 (카드 내) */
 .art-wrap{margin-top:14px;border-top:1px solid var(--bd);padding-top:14px;}
-.art-filterrow{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
-.art-finput{flex:1;padding:7px 10px;border:1px solid var(--bd);border-radius:var(--rs);font-size:13px;background:var(--bg);color:var(--tx);outline:none;}
-.art-finput:focus{border-color:var(--g);}
-.art-cnt{font-size:12px;color:var(--mu);white-space:nowrap;}
+
 .art-item{border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:5px;overflow:hidden;}
 .art-head{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;background:var(--bg);}
 .art-head:hover{background:#eef0f2;}
@@ -905,13 +867,13 @@ body.dark .rec-chip{background:#20242c;}
 body.dark *::-webkit-scrollbar-thumb{background:rgba(148,163,184,.28);background-clip:content-box;}
 /* ── 카드 개선 ── */
 .card-head{position:relative;}
-.ldate{font-size:11px;color:var(--ht);margin-left:auto;white-space:nowrap;padding-right:6px;}
+
 .badge-new{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;background:#fffbeb;color:#92400e;border:1px solid #fcd34d;margin-left:6px;vertical-align:middle;font-weight:700;letter-spacing:.2px;}
-.lname-wrap{display:flex;align-items:center;flex:1;min-width:0;overflow:hidden;}
+
 /* ── 키보드 단축키 안내 (패널 하단) ── */
 .shortcut-hint{font-size:11px;color:var(--ht);padding:6px 16px;border-top:1px solid var(--bd);text-align:right;flex-shrink:0;background:var(--sf);}
 /* ── 즐겨찾기 localStorage 표시 ── */
-.fav-local-badge{font-size:10px;padding:1px 5px;border-radius:8px;background:var(--gl);color:var(--gd);margin-left:4px;}
+
 /* ── 조문 계층 렌더링 (항·호·목 매달린 들여쓰기) ──
    pre-wrap + 공백 들여쓰기는 줄이 넘어갈 때 두 번째 줄이 왼쪽 끝으로 붙어
    항·호·목 구분이 풀려 보인다. 번호와 본문을 분리한 flex 행으로 정렬을 유지한다. */
@@ -939,7 +901,7 @@ body.dark .art-l.hang-hl{background:rgba(250,204,21,.18);}
 .art-body mark,.fp-art-body mark,.ref-art-body mark{background:#fef08a;color:inherit;border-radius:2px;padding:0 1px;font-weight:600;}
 /* 다크모드: 밝은 노랑/초록 하이라이트 위 텍스트가 밝은색으로 상속돼 안 보이는 문제 방지 */
 body.dark mark{color:#1f2937;}
-.art-match-count{font-size:10px;color:var(--g);background:var(--gl);padding:1px 6px;border-radius:10px;margin-left:6px;}
+
 /* ── 관련 판례·자치법규(조례) 연계 ── */
 .rel-notice{font-size:13px;color:var(--tx);padding:10px 12px;background:var(--gl);border-radius:var(--rs);margin-bottom:14px;line-height:1.5;}
 .rel-section{margin-bottom:18px;}
@@ -975,35 +937,14 @@ body.dark mark{color:#1f2937;}
 .agc-chip.sc{color:#065f46;border-color:#a7f3d0;}
 .agc-chip.sc:hover{background:#059669;color:#fff;border-color:#059669;}
 /* ── 온보딩(빈 상태) 안내 패널 ── */
-.welcome{padding:10px 0 24px;}
-.wc-hero{text-align:center;margin:14px 0 22px;}
-.wc-hero-t{font-size:19px;font-weight:800;color:var(--tx);letter-spacing:-.4px;line-height:1.4;}
-.wc-hero-t b{color:var(--g);}
-.wc-hero-s{font-size:13px;color:var(--mu);margin-top:7px;}
-.wc-modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px;}
-.wc-mode{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;padding:16px;border-radius:16px;border:1.5px solid transparent;background:var(--sf);box-shadow:var(--shadow);cursor:pointer;transition:background-color .18s cubic-bezier(.4,0,.2,1),border-color .18s cubic-bezier(.4,0,.2,1),color .18s cubic-bezier(.4,0,.2,1),box-shadow .18s cubic-bezier(.4,0,.2,1),transform .18s cubic-bezier(.4,0,.2,1);font-family:var(--font);}
-.wc-mode:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:#c7dcfb;}
-.wc-mode.active{border-color:var(--g);background:var(--gl);}
-.wc-mode-ic{font-size:22px;line-height:1;}
-.wc-mode-t{font-size:14px;font-weight:700;color:var(--tx);}
-.wc-mode-d{font-size:12px;color:var(--mu);line-height:1.5;}
-.wc-feats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
-.wc-feat{display:flex;align-items:flex-start;gap:10px;padding:13px 14px;border-radius:14px;background:var(--sf);box-shadow:0 1px 4px rgba(0,0,0,.05);}
-.wc-feat-ic{font-size:18px;flex-shrink:0;line-height:1.3;}
-.wc-feat-t{font-size:13px;font-weight:700;color:var(--tx);}
-.wc-feat-d{font-size:11.5px;color:var(--mu);line-height:1.5;margin-top:2px;}
+
 /* ── 모드 토글 반응형 라벨 ── */
-.mb-short{display:none;}
+
 .brand-short{display:none;}
 /* ── 내규(사규) 검색 결과 ── */
-.int-wrap{display:flex;flex-direction:column;gap:12px;}
-.int-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+
 .int-badge{font-size:12px;font-weight:700;color:var(--gp);background:var(--gl);padding:4px 11px;border-radius:999px;}
-.int-q{font-size:15px;font-weight:700;color:var(--tx);}
-.int-src{margin-left:auto;font-size:11px;color:var(--ht);background:var(--sf);border-radius:999px;padding:3px 10px;box-shadow:0 1px 4px rgba(0,0,0,.05);}
-.int-laws{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:12px 14px;border-radius:14px;background:var(--gl);border:1px solid #dbeafe;}
-.int-laws-lbl{font-size:12px;font-weight:800;color:var(--gp);}
-.int-laws-none{color:var(--mu);font-size:12px;font-weight:500;background:var(--bg);border-color:transparent;}
+
 .int-law-chip{font-size:12px;font-weight:700;color:var(--g);background:var(--sf);border:none;border-radius:999px;padding:5px 12px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);transition:background-color .15s cubic-bezier(.4,0,.2,1),border-color .15s cubic-bezier(.4,0,.2,1),color .15s cubic-bezier(.4,0,.2,1),box-shadow .15s cubic-bezier(.4,0,.2,1),transform .15s cubic-bezier(.4,0,.2,1);}
 .int-law-chip-rule{color:#0f766e;}
 .int-law-chip .ilc-tag{display:inline-block;margin-left:5px;font-size:9.5px;font-weight:800;color:#0f766e;background:rgba(15,118,110,.12);border-radius:4px;padding:0 5px;vertical-align:middle;}
@@ -1015,7 +956,7 @@ body.dark .int-law-chip .ilc-tag{background:rgba(45,212,191,.16);color:#5eead4;}
 .rf-garbled{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0;padding:12px;border:1px dashed var(--bd);border-radius:10px;background:var(--bg);}
 .rf-garbled-t{font-size:12.5px;color:var(--mu);}
 .int-item{background:var(--sf);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);}
-.int-item-t{font-size:14px;font-weight:700;color:var(--tx);margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--bd);}
+
 .int-item-b{font-size:13.5px;line-height:1.95;color:var(--tx);white-space:pre-wrap;word-break:break-word;}
 .int-foot{font-size:11px;color:var(--ht);line-height:1.6;padding:2px 4px;}
 /* 통합 모드: 내규 요약 패널 */
@@ -1023,7 +964,7 @@ body.dark .int-law-chip .ilc-tag{background:rgba(45,212,191,.16);color:#5eead4;}
 .int-uni-card{display:block;cursor:pointer;transition:box-shadow .18s;}
 .int-uni-card:hover{box-shadow:var(--shadow-md);}
 .int-uni-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.int-uni-lawlbl{font-size:11px;font-weight:800;color:var(--gp);margin-left:4px;}
+
 .int-uni-err{border-color:#fca5a5;}
 /* 내규 카테고리 칩 */
 .chip.int-cat{background:var(--gl);color:var(--gp);}
@@ -1051,19 +992,7 @@ body.dark .int-badge-law{background:#13294d!important;color:#aecbfd!important;}
 .ws-pane.ws-shift{animation:wsPaneShift .34s cubic-bezier(.4,0,.2,1);}
 @keyframes wsPaneShift{from{transform:translateX(22px);}to{transform:translateX(0);}}
 /* 오른쪽 카드 스택(초과 문서) */
-.ws-stack{flex:0 0 52px;display:flex;flex-direction:column;gap:0;position:relative;padding-top:24px;align-items:stretch;}
-.ws-stack-h{position:absolute;top:0;left:0;right:0;font-size:10px;font-weight:800;color:var(--mu);
-  text-align:center;letter-spacing:.02em;}
-.ws-stack-card{position:relative;flex:1 1 0;min-height:72px;margin-bottom:-10px;
-  background:var(--sf);border:1px solid rgba(0,0,0,.1);border-left:3px solid var(--g);
-  border-radius:10px 4px 4px 10px;box-shadow:-3px 3px 10px rgba(0,0,0,.10);cursor:pointer;
-  display:flex;align-items:center;justify-content:center;padding:8px 2px;overflow:hidden;
-  transition:transform .16s,box-shadow .16s,border-color .16s;animation:wsStackIn .3s ease;}
-.ws-stack-card:hover{transform:translateX(-6px);border-left-color:var(--gd);box-shadow:-5px 4px 14px rgba(0,0,0,.16);z-index:5;}
-.ws-stack-card:last-child{margin-bottom:0;}
-.ws-stack-card.int{border-left-color:#0f766e;}
-.ws-stack-title{writing-mode:vertical-rl;text-orientation:mixed;font-size:11.5px;font-weight:700;
-  color:var(--tx);max-height:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
 @keyframes wsStackIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
 /* 하단 책갈피 도크 — 최소화·초과 문서를 가로 칩으로 모아 두고 클릭하면 비교뷰로 복원 */
 .ws-dock{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;
@@ -1209,9 +1138,7 @@ mark.ws-hl{background:var(--mark-bg);color:var(--mark-fg);border-radius:2px;padd
   .ws-grid{flex-direction:column;}
   .ws-resizer{display:none;}
   .ws-pane{height:auto;min-height:340px;max-height:75vh;}
-  .ws-stack{flex:1 1 auto;flex-direction:row;padding-top:20px;gap:8px;overflow-x:auto;}
-  .ws-stack-card{margin-bottom:0;min-height:56px;writing-mode:horizontal-tb;}
-  .ws-stack-title{writing-mode:horizontal-tb;}
+
   /* 모바일: 자유 배치는 좁은 화면에서 세로 스택으로 안전하게 대체 */
   .ws-grid.ws-free{display:flex;flex-direction:column;height:auto;border:none;background:none;overflow:visible;}
   .ws-grid.ws-free .ws-pane{position:static!important;left:auto!important;top:auto!important;
@@ -1219,7 +1146,7 @@ mark.ws-hl{background:var(--mark-bg);color:var(--mark-fg);border-radius:2px;padd
   .ws-grip{display:none;}
   .ws-grid.ws-free .ws-pane-head{cursor:default;}
 }
-body.dark .ws-bar,body.dark .ws-pane,body.dark .ws-stack-card{border-color:rgba(255,255,255,.08);}
+body.dark .ws-bar,body.dark .ws-pane{border-color:rgba(255,255,255,.08);}
 body.dark .ws-art-b{color:#c9ccd2;}
 /* ── 규정(법령/내규) 단위 카드 ── */
 .reg-card{margin-bottom:12px;}
@@ -1299,15 +1226,7 @@ body.dark .reg-artidx-chip:hover{background:var(--g);color:#fff;}
 .reg-card.rc-flash{animation:rcFlash 1.1s ease;}
 @keyframes rcFlash{0%{box-shadow:0 0 0 3px var(--g);}100%{box-shadow:var(--shadow);}}
 /* ── 랜딩 대시보드: 빠른 접근(최근 검색·자주 본 규정) ── */
-.idb-quick{display:flex;flex-direction:column;gap:10px;margin:2px 0 16px;}
-.idb-qrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.idb-qlab{font-size:11.5px;font-weight:700;color:var(--mu);flex-shrink:0;display:inline-flex;align-items:center;gap:4px;}
-.idb-qchip{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--tx);
-  background:var(--sf);border:1px solid var(--bd);border-radius:999px;padding:5px 12px;cursor:pointer;
-  font-family:var(--font);box-shadow:var(--shadow);transition:.12s;max-width:280px;}
-.idb-qchip:hover{border-color:var(--g);color:var(--g);}
-.idb-qchip .idb-qtxt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.idb-qchip .idb-qn{font-size:10.5px;color:var(--ht);font-weight:700;}
+
 .idb-pill{cursor:pointer;transition:.12s;font-family:var(--font);line-height:1.4;}
 .idb-pill:hover{border-color:var(--g);color:var(--tx);}
 .idb-pill.on{background:var(--g);border-color:var(--g);color:#fff;}
@@ -1456,7 +1375,7 @@ body.dark .rf-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .rf-toc-ldr{flex:1;border-bottom:1px dotted var(--bd);min-width:14px;margin-bottom:3px;}
 .rf-toc-p{color:var(--mu);font-variant-numeric:tabular-nums;flex-shrink:0;}
 .rf-toc-row.lv2 .rf-toc-t{padding-left:14px;color:var(--mu);}
-.int-doc-body{font-size:13.5px;line-height:1.95;color:var(--tx);white-space:pre-wrap;word-break:break-word;}
+
 /* 내규 전문 모드: 법령 전용 헤더/도구 버튼 숨김, 내규 전용 버튼 표시 */
 .fullpanel.internal-doc .law-only{display:none!important;}
 .int-only{display:none;}
@@ -1487,27 +1406,24 @@ body.dark .agc-chip.sc{color:#6ee7b7;border-color:#065f46;}
 body.dark .rel-notice{color:var(--tx);background:#13294d;}
 body.dark .rel-badge.prec{background:#1e2440;color:#a5b4fc;}
 body.dark .rel-badge.ordin{background:#0c3226;color:#6ee7b7;}
-body.dark .wc-mode.active{background:rgba(37,110,244,.16);}
+
 body.dark .int-badge{background:rgba(37,110,244,.15);color:#7fb3fb;}
-body.dark .int-laws{background:#13294d;border-color:#22344f;}
-body.dark .int-laws-lbl{color:#aecbfd;}
-body.dark .int-laws-none{background:#161920;color:var(--mu);}
+
 body.dark .int-law-chip{background:#161920;color:#aecbfd;}
 /* ── 모바일 반응형 ── */
 @media(max-width:640px){
   html,body{overflow-x:hidden;}
   .topbar{padding:0 10px;gap:3px;height:52px;overflow:hidden;}
   .topbar .brand{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .settings-btn{flex-shrink:0;}
+  
   .brand-sub,.brand-en{display:none;}
   .brand{font-size:16px;}
   .brand-full{display:none;}
   .brand-short{display:inline;}
   /* 하단 네비게이션과 중복되는 상단 버튼 숨김 */
-  .hide-mobile{display:none!important;}
+  
   /* 남은 설정 버튼(관계도·AI설정)은 아이콘만 표시 */
-  .sb-label{display:none;}
-  .settings-btn{padding:7px 9px;font-size:15px;margin-left:2px;}
+
   .apibadge{font-size:10px;padding:3px 9px;}
   .tb-tools{display:none;}   /* 모바일은 하단 내비게이션으로 대체 */
   .main{padding:12px 12px 76px;}
@@ -1515,24 +1431,16 @@ body.dark .int-law-chip{background:#161920;color:#aecbfd;}
   .tabs{gap:5px;flex-wrap:wrap;}
   .tab,.fav-tab-btn{font-size:12px;padding:6px 12px;}
   /* 모드 토글: 화면 폭에 맞춰 4등분(가로 넘침 방지) + 축약 라벨 */
-  .mtoggle{width:100%;padding:3px;}
-  .mbtn{flex:1;padding:8px 2px;font-size:11px;text-align:center;letter-spacing:-.4px;}
-  .mtoggle .mb-full{display:none;}
-  .mtoggle .mb-short{display:inline;}
+
   /* 온보딩 패널: 세로 1열 */
-  .wc-modes{grid-template-columns:1fr;gap:10px;}
-  .wc-feats{grid-template-columns:1fr;}
-  .wc-hero-t{font-size:17px;}
-  .wc-mode{flex-direction:row;align-items:center;flex-wrap:wrap;}
-  .wc-mode-ic{margin-right:4px;}
-  .wc-mode-d{flex-basis:100%;}
+
   /* ── 검색 영역: 가로 넘침 제거 + 세로 공간 절약 ── */
   .srow{gap:6px;}
   .sinput{font-size:16px;padding:11px 12px;min-width:0;}  /* 16px: iOS 자동확대 방지 */
   .sbtn{padding:11px 14px;font-size:14px;flex-shrink:0;box-shadow:none;}
   /* 즐겨찾기 한 줄이 통째로 차지하던 공간 축소 */
   .tabs{margin-bottom:10px;}
-  .mtoggle{margin-bottom:10px;}
+  
   .qlabel{margin:10px 0 6px;font-size:11.5px;}
   /* 카테고리 칩: 3줄 → 가로 스크롤 한 줄 */
   .chips{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
@@ -1553,7 +1461,7 @@ body.dark .int-law-chip{background:#161920;color:#aecbfd;}
   .res-filter{gap:5px;overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;scrollbar-width:none;}
   .res-filter::-webkit-scrollbar{display:none;}
   .rf-chip{flex:0 0 auto;}
-  .ldate{display:none;}
+  
   .lorg{font-size:10px;}
   .mgrid{grid-template-columns:1fr 1fr;}
   .actions{flex-wrap:wrap;gap:6px;}
@@ -1576,10 +1484,10 @@ body.dark .int-law-chip{background:#161920;color:#aecbfd;}
   .pat-flabel{min-width:44px;font-size:11px;}
   .pat-chip{font-size:12px;padding:5px 10px;}
   .pat-appl{gap:5px;}
-  .pat-year{width:84px;}
+  
   .opp-bar{gap:6px;} .opp-sort,.opp-tool{font-size:11.5px;padding:6px 9px;}
   .opp-card{padding:11px 36px 11px 12px;}
-  .opp-grid,.fin-grid{grid-template-columns:1fr;}
+  .opp-grid{grid-template-columns:1fr;}
   .comp-grid .pat-d-row{flex-basis:100%;}   /* 모바일: 정보 셀 1열로 */
   .comp-fbar .comp-qf{margin-left:0;flex-basis:100%;}
   /* ── 지출결의서: 여비 행 세로 정렬·표 가로 스크롤 ── */
@@ -1607,7 +1515,7 @@ body.dark .int-law-chip{background:#161920;color:#aecbfd;}
 /* ── 인쇄 스타일 개선 ── */
 @media print{
   .topbar,.spanel,.fbar,.status,.pagination,.footer,.overlay,
-  .fullpanel,.mobile-nav,.net-panel,.cmp-panel{display:none!important;}
+  .fullpanel,.mobile-nav,.cmp-panel{display:none!important;}
   .main{max-width:100%;padding:0;}
   .card{box-shadow:none;border:1px solid #ddd;page-break-inside:avoid;margin-bottom:8px;}
   .card-body{display:block!important;}
@@ -1672,7 +1580,7 @@ body.dark .int-law-chip{background:#161920;color:#aecbfd;}
 /* 푸터 */
 .footer{text-align:center;padding:22px 0 14px;font-size:12px;color:var(--ht);}
 /* 시나리오 검색 */
-.mbtn.scenario-active{background:linear-gradient(135deg,#059669,#0d9488);color:#fff;font-weight:700;box-shadow:0 1px 6px rgba(5,150,105,.3);}
+
 .scenario-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;}
 .scenario-chip{padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid #a7f3d0;background:#ecfdf5;color:#065f46;transition:.15s;white-space:nowrap;}
 .scenario-chip:hover{background:#d1fae5;border-color:#6ee7b7;}
@@ -1801,8 +1709,7 @@ body.dark .scenario-caution{background:#451a03;border-color:#b45309;color:#fde68
 .ai-test-btn{padding:8px 16px;border-radius:var(--rs);border:1px solid var(--bd);background:transparent;color:var(--mu);font-size:13px;cursor:pointer;}
 .ai-test-btn:hover{border-color:var(--g);color:var(--g);}
 /* 상단바 설정 버튼 */
-.settings-btn{padding:6px 12px;border:none;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;background:#f1f3f6;color:var(--mu);transition:.18s;margin-left:4px;white-space:nowrap;}
-.settings-btn:hover{background:var(--gl);color:var(--g);}
+
 .ai-active-badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:10px;background:#f5f3ff;color:#7c3aed;border:1px solid #a78bfa;margin-left:4px;vertical-align:middle;}
 /* ── 조문 메모 ── */
 .memo-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:var(--rs);border:1px solid var(--bd);font-size:11px;cursor:pointer;color:var(--mu);background:transparent;transition:.15s;}
@@ -1850,7 +1757,7 @@ body.dark .spanel,body.dark .card,body.dark .mbox{background:#1c1f27;box-shadow:
 body.dark .card-body{background:#161920;}
 body.dark .sinput{background:#161920;color:#e2e4e9;border-color:transparent;}
 body.dark .sinput:focus{background:#1c1f27;border-color:var(--g);}
-body.dark .ai-input,body.dark .cmp-search,body.dark .fp-finput,body.dark .art-finput{background:#161920;color:#e2e4e9;}
+body.dark .ai-input,body.dark .cmp-search,body.dark .fp-finput{background:#161920;color:#e2e4e9;}
 body.dark .ai-box{background:linear-gradient(135deg,#1e1b40,#2e1b5e);color:#c4b5fd;}
 body.dark .ai-box strong{color:#a78bfa;}
 body.dark .ai-box h3{color:#a78bfa;}
@@ -1904,7 +1811,7 @@ body.dark .fbar select{background:#1c1f27;color:#e2e4e9;}
 .diff-content{flex:1;overflow-y:auto;padding:12px 14px;font-size:13px;line-height:1.9;white-space:pre-wrap;}
 .diff-add{background:#d1fae5;color:#065f46;}
 .diff-del{background:#fee2e2;color:#991b1b;text-decoration:line-through;}
-.diff-same{color:var(--tx);}
+
 /* ── ② 컬렉션 ── */
 .coll-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;display:none;align-items:center;justify-content:center;}
 .coll-modal-bg.show{display:flex;}
@@ -1929,19 +1836,9 @@ body.dark .fbar select{background:#1c1f27;color:#e2e4e9;}
 .coll-input:focus{border-color:var(--g);}
 .coll-add-btn{padding:7px 14px;border-radius:var(--rs);border:none;background:var(--g);color:#fff;font-size:13px;cursor:pointer;}
 /* ── ③ 네트워크 그래프 ── */
-.net-panel{position:fixed;inset:0;background:var(--bg);z-index:700;display:none;flex-direction:column;}
-.net-panel.show{display:flex;}
-.net-hd{background:var(--sf);border-bottom:1px solid var(--bd);padding:12px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
-.net-canvas{flex:1;position:relative;overflow:hidden;}
+
 #netSvg{width:100%;height:100%;}
-.net-node{cursor:pointer;}
-.net-node circle{transition:.15s;}
-.net-node:hover circle{filter:brightness(.88);}
-.net-node text{pointer-events:none;font-size:11px;font-family:inherit;}
-.net-edge{stroke:var(--bd);stroke-width:1.5;fill:none;marker-end:url(#arrow);}
-.net-legend{position:absolute;bottom:16px;left:16px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--rs);padding:8px 12px;font-size:11px;}
-.net-legend-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
-.net-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
 /* ── ④ 조문 히스토리 ── */
 .hist-timeline{padding:4px 0;}
 .hist-entry{display:flex;gap:14px;position:relative;padding-bottom:16px;}
@@ -1955,23 +1852,22 @@ body.dark .fbar select{background:#1c1f27;color:#e2e4e9;}
 .hist-entry-date{font-size:11px;color:var(--ht);margin-bottom:3px;}
 .hist-entry-content{font-size:12px;line-height:1.8;white-space:pre-wrap;color:var(--tx);background:var(--bg);padding:8px 10px;border-radius:var(--rs);}
 /* ── ⑤ 자연어 검색 ── */
-.nl-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:1px 7px;border-radius:10px;background:#f0fdf4;color:#065f46;border:1px solid #6ee7b7;flex-shrink:0;}
-.nl-score{font-size:10px;color:var(--ht);margin-left:auto;}
+
 /* ── 키워드 편집 모달 ── */
 .kw-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:800;display:none;align-items:center;justify-content:center;}
 .kw-modal-bg.show{display:flex;}
 .kw-modal{background:var(--sf);border-radius:var(--r);width:min(520px,95vw);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.2);}
 .kw-hd{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;}
 .kw-body{flex:1;overflow-y:auto;padding:16px 18px;}
-.kw-agency-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+
 .kw-tab{padding:5px 12px;border-radius:20px;border:1px solid var(--bd);font-size:12px;cursor:pointer;background:transparent;color:var(--mu);transition:.15s;}
 .kw-tab.active{background:var(--g);border-color:var(--g);color:#fff;}
-.kw-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+
 .kw-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--bd);border-radius:var(--rs);background:var(--bg);}
 .kw-item-name{flex:1;font-size:13px;}
 .kw-item-del{width:22px;height:22px;border:none;background:transparent;color:var(--ht);cursor:pointer;font-size:15px;border-radius:4px;}
 .kw-item-del:hover{background:#fee2e2;color:#dc2626;}
-.kw-add-row{display:flex;gap:8px;}
+
 .kw-add-input{flex:1;padding:8px 11px;border:1px solid var(--bd);border-radius:var(--rs);font-size:13px;background:var(--bg);color:var(--tx);outline:none;}
 .kw-add-input:focus{border-color:var(--g);}
 .kw-add-btn{padding:8px 14px;border-radius:var(--rs);border:none;background:var(--g);color:#fff;font-size:13px;cursor:pointer;}
@@ -2003,10 +1899,7 @@ body.dark .fbar select{background:#1c1f27;color:#e2e4e9;}
 .ref-chain-name{color:#1d4ed8;font-weight:500;flex:1;}
 .ref-chain-cnt{font-size:10px;color:var(--ht);}
 /* ── 네트워크 개선 ── */
-.net-tooltip{position:fixed;z-index:850;background:#1a1a2e;color:#e2e8f0;font-size:12px;padding:7px 11px;border-radius:var(--rs);pointer-events:none;display:none;max-width:220px;line-height:1.5;}
-.net-controls{display:flex;gap:6px;padding:8px 14px;border-bottom:1px solid var(--bd);background:var(--sf);flex-shrink:0;flex-wrap:wrap;align-items:center;}
-.net-depth-btn{padding:4px 10px;border:1px solid var(--bd);border-radius:20px;font-size:12px;cursor:pointer;background:transparent;color:var(--mu);transition:.12s;}
-.net-depth-btn.active{background:var(--g);border-color:var(--g);color:#fff;}
+
 /* ── 준용법령 멀티탭 ───────────────────────────────────────── */
 .ref-tabs{display:flex;gap:0;overflow-x:auto;border-bottom:1px solid var(--bd);flex-shrink:0;background:var(--sf);scrollbar-width:none;}
 .ref-tabs::-webkit-scrollbar{display:none;}
@@ -2024,16 +1917,14 @@ body.dark .fbar select{background:#1c1f27;color:#e2e4e9;}
 .fullpanel.compare-mode .fp-right.open{width:min(560px,50vw);min-width:300px;}
 .fp-sync-btn{font-size:11px;padding:3px 8px;border-radius:12px;border:1px solid var(--bd);background:transparent;color:var(--mu);cursor:pointer;transition:.12s;}
 .fp-sync-btn.active{border-color:var(--g);color:var(--g);background:var(--gl);}
-.compare-divider{width:4px;background:var(--bd);cursor:col-resize;flex-shrink:0;position:relative;}
-.compare-divider:hover,.compare-divider.dragging{background:var(--g);}
+
 /* ── 인라인 팝오버 ─────────────────────────────────────────── */
 .ref-popover{position:fixed;z-index:900;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);box-shadow:0 8px 32px rgba(0,0,0,.18);width:340px;max-height:320px;overflow:hidden;display:none;flex-direction:column;}
 .ref-popover.show{display:flex;}
 .ref-popover-hd{padding:8px 12px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--gl);}
 .ref-popover-title{font-size:12px;font-weight:600;color:var(--gd);flex:1;}
 .ref-popover-body{overflow-y:auto;padding:10px 12px;font-size:12px;line-height:1.8;color:var(--tx);}
-.ref-popover-art{padding:6px 0;border-bottom:1px solid var(--bd);}
-.ref-popover-art:last-child{border:none;}
+
 .ref-popover-art-no{font-size:11px;font-weight:700;color:var(--g);margin-bottom:2px;}
 .ref-popover-footer{padding:8px 12px;border-top:1px solid var(--bd);flex-shrink:0;display:flex;gap:6px;}
 /* ── 조문 동기화 하이라이트 ────────────────────────────────── */
@@ -2071,10 +1962,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 .mlbl{font-size:10px;font-weight:600;color:var(--ht);letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px;}
 .mval{font-size:13px;color:var(--tx);font-weight:500;}
 /* ── 검색 결과 헤더 ── */
-.result-header{display:flex;align-items:baseline;gap:10px;margin-bottom:16px;}
-.result-count{font-size:22px;font-weight:800;color:var(--tx);letter-spacing:-.5px;}
-.result-label{font-size:13px;color:var(--mu);}
-.result-sort{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mu);}
+
 /* ── 검색 모드 탭: Toss blue active ── */
 .tab.active{background:var(--g);color:#fff;border-color:var(--g);}
 .tab:hover:not(.active){background:var(--gl);}
@@ -2098,9 +1986,7 @@ mark.hang-hl{background:#fef08a;border-radius:3px;padding:1px 2px;color:inherit;
 ::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:3px;}
 ::-webkit-scrollbar-thumb:hover{background:#9ca3af;}
 /* ── 페이지네이션 버튼 개선 ── */
-.page-btn{min-width:36px;height:36px;border-radius:10px;border:none;background:var(--sf);font-size:14px;cursor:pointer;font-weight:500;color:var(--mu);transition:.15s;box-shadow:0 1px 4px rgba(0,0,0,.06);}
-.page-btn:hover:not(.active){background:var(--gl);color:var(--g);}
-.page-btn.active{background:var(--g);color:#fff;font-weight:700;box-shadow:0 2px 8px rgba(37,110,244,.3);}
+
 /* ══════════════════════════════════════════════════════════════════════════
    디자인 리프레시(UX 패스) — 가독성·위계·주요 행동(검색) 강조
    · 대비: 보조 텍스트(--mu)·힌트(--ht)가 WCAG AA에 못 미쳐 한 단계 진하게
@@ -2698,7 +2584,7 @@ body.dark .ai-code{background:rgba(167,139,250,.22);color:#e9ddff;}
       <button class="fp-tbtn" id="swapPanelBtn" onclick="swapPanels()" title="왼쪽↔오른쪽 문서 바꾸기">⇆ 좌우</button>
       <button class="fp-sync-btn law-only" id="refSyncBtn" onclick="toggleRefSync()" title="현재 조문과 동기화">⇄ 동기화</button>
       <button class="fp-tbtn" onclick="toggleCompareMode()" id="compareModeBtn" title="비교 모드 (좌우 나란히)">⚖ 비교</button>
-      <a id="fpRightExtLink" href="#" target="_blank" class="fp-tbtn" style="flex-shrink:0;">↗</a>
+      <a id="fpRightExtLink" href="#" target="_blank" rel="noopener" class="fp-tbtn" style="flex-shrink:0;" aria-label="법제처 원문 새 창으로 열기" title="법제처 원문 새 창으로 열기">↗</a>
       <input class="fp-finput" id="fpRightFilter" placeholder="조문 검색" oninput="fpRightFilterFn()" style="width:110px;flex-shrink:0;">
       <button class="fp-close" aria-label="닫기" onclick="closeRefPanel()" title="닫기">✕</button>
     </div>
@@ -3085,13 +2971,6 @@ function agencyScenario(qtext){
 }
 
 // ── 기관 탭 ──
-function setAgency(ag){
-  agency=ag; favMode=false;
-  document.getElementById('favTabBtn').classList.remove('active');
-  renderAgencyTabs(); // 동적 탭 재렌더링 (active 반영)
-  renderChips();
-  renderAgencyInfo();
-}
 
 // ── 검색 모드 ──
 // ── 업무 도우미(공공 API 조회): 기업·특허·지원사업·조달 ──────────────────────
@@ -3352,7 +3231,6 @@ function _patPeriod(y, btn){
   const a=iso(from), b=iso(now);
   if(f) f.value=a; if(fd) fd.value=a; if(t) t.value=b; if(td) td.value=b;
 }
-function _patPeriodManual(){ _patChipsOff(); }
 // 결과가 적을 때 원클릭 필터 완화(재조회)
 function _patClearPeriod(){
   ['patFrom','patTo','patFromD','patToD'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
@@ -3704,7 +3582,6 @@ function _dday(end){
   if(n<=14) return {n,label:'D-'+n,cls:'soon'};
   return {n,label:'D-'+n,cls:'far'};
 }
-function _oppAgri(t){ t=String(t||''); return OPP_AGRI.some(k=>t.indexOf(k)>=0); }
 function _oppScore(it){
   const t=(it.title||'')+' '+(it.subtitle||'');
   let s=0; OPP_AGRI.forEach(k=>{ if(t.indexOf(k)>=0) s+=2; });
@@ -6889,25 +6766,6 @@ function renderScenarioResults(d){
 }
 
 // ── 조문 키워드 검색 ──
-async function doSearchArticle(q){
-  setStatus(`"${escHtml(q)}" 조문 내 키워드 검색 중...`,true);
-  addRecent(q);
-  try{
-    const r=await fetch(`/api/search/article?query=${encodeURIComponent(q)}&display=20`);
-    const d=await r.json();
-    if(d.error){setStatus(`오류: ${escHtml(d.error)}`);renderEmpty(escHtml(d.error));return;}
-    if(!d.success||!d.laws?.length){
-      setStatus(`"${escHtml(q)}" 조문 검색 결과가 없습니다`);
-      renderEmpty(`"${escHtml(q)}"을(를) 포함한 조문이 있는 법령을 찾지 못했습니다`);
-      return;
-    }
-    const truncNote = d.truncated
-      ? ` <span style="color:#e67e22;font-size:0.85em">⚠ 일부 법령만 탐색됨 (시간 초과)</span>`
-      : '';
-    setStatus(`조문 키워드 검색 · ${d.laws.length}건 · 클릭하면 관련 조문이 표시됩니다${truncNote}`);
-    renderArticleLawList(d.laws, q);  // 검색어 전달
-  }catch(e){setStatus('서버 연결 실패');renderEmpty('서버에 연결할 수 없습니다');}
-}
 
 // ── 내규(사규) 검색 ── 사규 MCP 연동 + 법령 참조 연계 ──
 // 내규 본문의 「법령명」·"○○법 제N조"에 마우스를 올리면 조문 미리보기,
@@ -7328,26 +7186,6 @@ async function renderRelatedLaws(text, q){
 }
 
 // ── 업무 근거 찾기 ──
-async function doSearchBasis(q){
-  setStatus(`"${escHtml(q)}" 근거법령 탐색 중...`, true);
-  addRecent(q);
-  try{
-    const r = await fetch(`/api/search/basis?scenario=${encodeURIComponent(q)}`);
-    const d = await r.json();
-    if(d.error){ setStatus(`오류: ${escHtml(d.error)}`); renderEmpty(escHtml(d.error)); return; }
-    if(!d.success || !d.laws?.length){
-      setStatus(`"${escHtml(q)}"에 해당하는 근거 조문을 찾지 못했습니다`);
-      renderEmpty(`근거 법령을 찾지 못했습니다.<br><small>업무 내용을 더 구체적으로 입력해보세요.</small>`);
-      return;
-    }
-    const truncNote = d.truncated
-      ? ` <span style="color:#e67e22;font-size:0.85em">⚠ 일부 법령만 탐색됨</span>` : '';
-    const kwTags = (d.extracted_keywords||[]).map(k=>`<span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:1px 6px;font-size:11px;">${escHtml(k)}</span>`).join(' ');
-    const scopeNote = `<span style="color:var(--mu);font-size:0.85em">(${d.searched_total||'?'}개 법령 탐색)</span>`;
-    setStatus(`근거법령 ${d.laws.length}건 · <b>${escHtml(d.basis_type)}</b> · 키워드: ${kwTags} ${scopeNote}${truncNote}`);
-    renderBasisResults(d.laws, d.basis_type, d.extracted_keywords||[]);
-  }catch(e){ setStatus('서버 연결 실패'); renderEmpty('서버에 연결할 수 없습니다'); }
-}
 
 const BASIS_TYPE_COLOR = {
   '허가·등록·신고': '#1d4ed8',
@@ -7356,69 +7194,6 @@ const BASIS_TYPE_COLOR = {
   '지원·권리':      '#065f46',
   '일반':           '#374151',
 };
-
-function renderBasisResults(laws, basisType, keywords){
-  const color = BASIS_TYPE_COLOR[basisType] || '#374151';
-  const kwL = keywords.map(k=>k.toLowerCase());
-
-  const _kwRe = kwL.map(k => new RegExp(escRegex(escHtml(k)),'gi'));  // 렌더당 1회 컴파일
-  function highlightKws(txt){
-    let h = escHtml(txt);
-    _kwRe.forEach(re=>{
-      h = h.replace(re,
-        m=>`<mark style="background:#fef08a;border-radius:2px;padding:0 1px;">${m}</mark>`);
-    });
-    return h;
-  }
-
-  document.getElementById('results').innerHTML = laws.map((law, i)=>{
-    const name = law['법령명한글'] || '';
-    const arts = law['matched_articles'] || [];
-    const matchedKws = (law['matched_keywords']||[]).map(k=>`<span style="background:#f0fdf4;color:#166534;border-radius:4px;padding:1px 5px;font-size:11px;">${escHtml(k)}</span>`).join(' ');
-    const lawUrl = `https://www.law.go.kr/법령/${encodeURIComponent(name)}`;
-
-    const artHtml = arts.map(a=>{
-      const no = artNoLabel(a);
-      const title = a['조문제목'] || '';
-      const content = a['조문내용'] || '';
-      return `<div class="art-item" style="margin-bottom:4px;">
-        <div class="art-head" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block';this.querySelector('.arrow').style.transform=this.nextElementSibling.style.display==='block'?'rotate(180deg)':''">
-          ${no?`<span class="art-no">${escHtml(no)}</span>`:''}
-          <span class="art-title">${highlightKws(title||no||'조문')}</span>
-          <span class="arrow" style="margin-left:auto;font-size:11px;color:var(--ht);transition:transform .2s;flex-shrink:0;">▼</span>
-        </div>
-        ${content?`<div class="art-body" style="display:none;">${artBodyHtml(a,{lawName:name,kws:kwL})}</div>`:''}
-      </div>`;
-    }).join('');
-
-    return `<div class="card" id="brc${i}">
-      <div class="card-head" onclick="this.nextElementSibling.classList.toggle('open2')">
-        <span class="ltype" style="background:${color}20;color:${color};border-color:${color}40;">${escHtml(basisType)}</span>
-        <span class="lname">${escHtml(name)}</span>
-        <span style="margin-left:auto;display:flex;gap:4px;align-items:center;flex-wrap:wrap;">${matchedKws}</span>
-        <span style="font-size:11px;color:var(--ht);margin-left:6px;flex-shrink:0;">${arts.length}개 조문 ▼</span>
-      </div>
-      <div class="card-body" style="display:none;" id="brb${i}">
-        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-          <button class="abtn primary" onclick="wsOpen('${argAttr(name)}','law','${argAttr(lawUrl)}')">📄 전문 보기</button>
-          <a class="abtn" href="${escAttr(safeUrl(lawUrl))}" target="_blank">↗ 법제처</a>
-        </div>
-        <div class="art-wrap">${artHtml}</div>
-      </div>
-    </div>`;
-  }).join('');
-
-  // 카드 헤더 토글 재연결 (card-body display 토글)
-  document.querySelectorAll('[id^="brc"] .card-head').forEach((h,i)=>{
-    h.onclick = ()=>{
-      const body = document.getElementById('brb'+i);
-      if(!body) return;
-      const open = body.style.display === 'block';
-      body.style.display = open ? 'none' : 'block';
-      h.querySelector('.lname') && (h.style.borderBottom = open ? 'none' : '1px solid var(--bd)');
-    };
-  });
-}
 
 // ── 최근 검색어 ──
 // ── 최근 검색: 클라이언트 localStorage 저장(서버 메모리 대신) ──
@@ -7748,10 +7523,6 @@ async function loadRecent(){
 }
 
 // ── 필터 ──
-function buildTypeFilter(){
-  const types=[...new Set(allLaws.map(l=>l['법령구분명']||'법률'))].sort();
-  document.getElementById('typeSel').innerHTML='<option value="">유형 전체</option>'+types.map(t=>`<option>${t}</option>`).join('');
-}
 function applyFilter(){
   const sort=document.getElementById('sortSel').value;
   const type=document.getElementById('typeSel').value;
@@ -7856,134 +7627,9 @@ function goPage(p){
 }
 
 // ── 조문 검색 모드: 법령 목록 렌더 ──
-function renderArticleLawList(laws, artKw=''){
-  document.getElementById('results').innerHTML=laws.map((law,i)=>{
-    const name=law['법령명한글']||'';
-    const type=law['법령구분명']||'법률';
-    const org=law['소관부처명']||guessOrg(name);
-    const lawUrl=`https://www.law.go.kr/법령/${encodeURIComponent(name)}`;
-    const kwAttr=artKw?` data-kw="${escHtml(artKw)}"` : '';
-    return `
-    <div class="card" id="alc${i}">
-      <div class="card-head" onclick="toggleArtCard(${i},'${argAttr(name)}','${argAttr(lawUrl)}')">
-        <span class="ltype">${type}</span>
-        <span class="lname">${name}</span>
-        <span class="lorg">${org}</span>
-        <span class="arrow">▼</span>
-      </div>
-      <div class="card-body" id="alb${i}"${kwAttr}>
-        <div style="text-align:center;padding:18px;color:var(--ht);font-size:13px;">
-          <div class="spinner" style="margin:0 auto 8px;"></div>조문을 불러오는 중...
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
 
-async function toggleArtCard(i, lawName, lawUrl){
-  const card=document.getElementById('alc'+i);
-  const body=document.getElementById('alb'+i);
-  if(card.classList.contains('open')){card.classList.remove('open');return;}
-  card.classList.add('open');
-  if(body.dataset.loaded==='1')return;
-  const kw = body.dataset.kw || '';
-  try{
-    const r=await fetch(`/api/law/articles?name=${encodeURIComponent(lawName)}`);
-    const d=await r.json();
-    if(d.error){body.innerHTML=`<div style="padding:14px;color:var(--err-fg);font-size:13px;">${escHtml(String(d.error))}</div>`;body.dataset.loaded='1';return;}
-    body.innerHTML=renderInlineArticles(d.articles||[], lawName, lawUrl, kw);
-    body.dataset.loaded='1';
-  }catch{
-    body.innerHTML=`<div style="padding:14px;color:var(--err-fg);font-size:13px;">조문 조회 중 오류가 발생했습니다.</div>`;
-    body.dataset.loaded='1';
-  }
-}
 
-function renderInlineArticles(arts, lawName, lawUrl, kw=''){
-  if(!arts.length) return `<div style="padding:14px;font-size:13px;color:var(--ht);">조문 정보를 가져오지 못했습니다. <a href="${escAttr(safeUrl(lawUrl))}" target="_blank" style="color:var(--g);">법제처에서 직접 확인 →</a></div>`;
-  const id='ia'+Date.now();
-  const kwL = kw.toLowerCase();
-  const abbrevMap = extractLawAbbrevs(arts, lawName); // 인라인 카드용 약칭 맵
 
-  // 키워드 있으면 관련 조문 필터링
-  let displayArts = arts;
-  let filtered_flag = false;
-  if(kw){
-    const matched = arts.filter(a=>
-      (a['조문내용']||'').toLowerCase().includes(kwL) ||
-      (a['조문제목']||'').toLowerCase().includes(kwL)
-    );
-    if(matched.length){ displayArts=matched; filtered_flag=true; }
-  }
-
-  function highlight(txt){
-    if(!kw) return escHtml(txt);
-    return escHtml(txt).replace(new RegExp(escRegex(escHtml(kw)),'gi'), m=>`<mark style="background:#fff176;border-radius:2px;padding:0 1px;">${m}</mark>`);
-  }
-
-  return `
-  <div class="art-wrap">
-    <div class="art-filterrow">
-      <input class="art-finput" placeholder="조문번호(예: 1) 또는 키워드 필터" value="${escHtml(kw)}"
-        oninput="filterInlineArts('${id}',${arts.length},this.value)">
-      <span class="art-cnt" id="${id}cnt">${filtered_flag?`관련 ${displayArts.length}/${arts.length}개`:`전체 ${arts.length}개 조문`}</span>
-      <a class="abtn primary" href="${escAttr(safeUrl(lawUrl))}" target="_blank" style="padding:6px 10px;font-size:12px;white-space:nowrap;">↗ 전문</a>
-    </div>
-    <div id="${id}list">`+
-    displayArts.map((a,i)=>{
-      const isHeader = a['type']==='header';
-      const no=artNoLabel(a);
-      const title=a['조문제목']||'';
-      const content=a['조문내용']||'';
-      const hno = a['header_no']||'';
-
-      if(isHeader){
-        return `<div class="art-item" id="${id}_${i}" style="background:var(--bg);border:1px solid var(--bd);">
-          <div style="padding:7px 12px;font-size:12px;font-weight:700;color:var(--mu);">
-            ${hno?hno+' ':''}${title}
-          </div>
-        </div>`;
-      }
-
-      const isMatch = kw && (
-        content.toLowerCase().includes(kwL) || title.toLowerCase().includes(kwL)
-      );
-      return `<div class="art-item" id="${id}_${i}">
-        <div class="art-head" onclick="toggleArt('${id}_${i}')">
-          ${no?`<span class="art-no">${no}</span>`:''}
-          <span class="art-title">${highlight(title||no||'조문')}</span>
-          <span class="arrow" style="font-size:11px;color:var(--ht);transition:transform .2s;flex-shrink:0;">▼</span>
-        </div>
-        ${content?`<div class="art-body" style="${isMatch?'display:block;':''}">${artBodyHtml(a,{lawName,abbrevMap,kws:kw?[kw]:[]})}</div>`:''}
-      </div>`;
-    }).join('')+
-    `</div></div>`;
-}
-
-function filterInlineArts(id, total, kw){
-  kw=kw.toLowerCase(); let shown=0;
-  document.querySelectorAll(`#${id}list .art-item`).forEach(el=>{
-    const v=!kw||el.innerText.toLowerCase().includes(kw);
-    el.style.display=v?'':'none'; if(v)shown++;
-  });
-  document.getElementById(id+'cnt').textContent=kw?`${shown}/${total}개`:`전체 ${total}개 조문`;
-  // 첫 번째 매칭 항목 자동 스크롤
-  if(kw && shown>0){
-    setTimeout(()=>{
-      const first=document.querySelector(`#${id} .art-item:not([style*="none"])`);
-      if(first) first.scrollIntoView({behavior:'smooth',block:'nearest'});
-    },80);
-  }
-}
-
-function toggleArt(id){
-  const body=document.querySelector(`#${id} .art-body`);
-  const arrow=document.querySelector(`#${id} .arrow`);
-  if(!body)return;
-  const open=body.style.display==='block';
-  body.style.display=open?'none':'block';
-  if(arrow)arrow.style.transform=open?'':'rotate(180deg)';
-}
 
 // ── 법령 전문 슬라이드 패널 (구버전 제거 - 아래 재정의 버전 사용) ──
 // openFullPanel, renderFpArts는 아래 '즐겨찾기·AI 통합' 섹션에 정의됨
@@ -8309,7 +7955,6 @@ function getFavs(){
 }
 function _saveFavs(arr){ _lsSet(_FAV_KEY, JSON.stringify(arr)); }
 // 기존 호출부 호환용 별칭
-function getLocalFavs(){ return getFavs(); }
 
 // ── 즐겨찾기 폴더(구 '컬렉션' 흡수) ─────────────────────────────────────────
 const _FAV_FOLDERS_KEY='koat_fav_folders';
@@ -8639,7 +8284,6 @@ function _hubScrollTo(idx){
     if(tries>40) clearInterval(tick);
   },150);
 }
-function toggleCard2(id){document.getElementById(id).classList.toggle('open');}
 
 // ═══════ 워크플레이스 추가 기능: 개정 모니터링 · 서식 라이브러리 ═══════
 // 공용 모달(정적 스캐폴딩 없이 동적 생성)
@@ -8922,10 +8566,6 @@ function removeFavAt(i){
   if(i>=0 && i<arr.length){ arr.splice(i,1); _saveFavs(arr); loadFavs(); renderFavList(); }
 }
 // 레거시 호환(이름·유형으로 제거)
-async function removeFav(name, type){
-  const arr = getFavs().filter(f => !_favEq(f, {type, name}));
-  _saveFavs(arr); await loadFavs();
-}
 
 async function updateFavBtn(panelName){
   const favs=await loadFavs();
@@ -9787,7 +9427,6 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(document.getElementById('bmHubBg')?.classList.contains('show')){ closeBmHub(); return; }
       if(document.getElementById('aiModalBg')?.classList.contains('show')){ closeAiModal(); return; }
       if(document.getElementById('diffPanel')?.classList.contains('show')){ closeDiff(); return; }
-      if(document.getElementById('netPanel')?.classList.contains('show')){ closeNetPanel(); return; }
       if(document.getElementById('cmpPanel')?.classList.contains('show')){ closeCmp(); return; }
       if(document.getElementById('snipBg')?.classList.contains('show')){ closeSnippets(); return; }
       if(document.getElementById('ruleCheckBg')?.classList.contains('show')){ closeRuleCheck(); return; }
@@ -10254,7 +9893,6 @@ let _wsMode='tile';  // 배치 방식: 'tile'(붙여 배치)|'free'(윈도우처
 let _wsZTop=10;      // 자유 배치 창의 z-index 최상단 카운터
 const WS_MAX_VISIBLE_RIGHT=2;  // 최초 규정 오른쪽으로 동시에 펼칠 최대 창 수
 function _wsKey(name,docType){ return _rnorm(name)+'|'+(docType||'law'); }
-function wsIsOpen(){ return _wsPanes.length>0; }
 function _wsFlash(el){ if(!el) return; el.classList.add('ws-flash'); setTimeout(()=>el.classList.remove('ws-flash'),900); }
 function wsShow(){
   const ws=document.getElementById('workspace'); if(!ws) return;
@@ -12085,53 +11723,8 @@ function syncArtHighlight(fpBody, refBody){
 // ── 인라인 팝오버 ───────────────────────────────────────────────
 const _popoverCache = {};
 
-function showRefPopoverDelayed(e, refName){
-  clearTimeout(_popoverTimer);
-  _popoverTimer = setTimeout(() => showRefPopover(e, refName), 600);
-}
 
-async function showRefPopover(e, refName){
-  const pop   = document.getElementById('refPopover');
-  const title = document.getElementById('refPopoverTitle');
-  const body  = document.getElementById('refPopoverBody');
-  if(!pop) return;
 
-  title.textContent = refName;
-  body.innerHTML = '<div style="color:var(--ht);font-size:12px;">불러오는 중...</div>';
-  pop.classList.add('show');
-
-  // 위치 계산 (뷰포트 벗어나지 않도록)
-  const x = Math.min(e.clientX + 12, window.innerWidth  - 360);
-  const y = Math.min(e.clientY + 8,  window.innerHeight - 340);
-  pop.style.left = x + 'px';
-  pop.style.top  = y + 'px';
-
-  // 캐시 확인
-  if(_popoverCache[refName]){
-    renderPopoverArts(_popoverCache[refName]);
-    return;
-  }
-
-  try{
-    const r = await fetch(`/api/law/articles?name=${encodeURIComponent(refName)}`);
-    const d = await r.json();
-    const arts = (d.articles||[]).filter(a=>a.type==='article').slice(0,6);
-    _popoverCache[refName] = arts;
-    renderPopoverArts(arts);
-  }catch{
-    body.innerHTML = '<div style="color:var(--ht);">조회 실패</div>';
-  }
-}
-
-function renderPopoverArts(arts){
-  const body = document.getElementById('refPopoverBody');
-  if(!arts.length){ body.innerHTML = '<div style="color:var(--ht);">조문 없음</div>'; return; }
-  body.innerHTML = arts.map(a=>`
-    <div class="ref-popover-art">
-      <div class="ref-popover-art-no">${escHtml(artNoLabel(a))} ${escHtml(a['조문제목']||'')}</div>
-      <div style="color:var(--mu);">${escHtml((a['조문내용']||'').slice(0,80))}${(a['조문내용']||'').length>80?'…':''}</div>
-    </div>`).join('');
-}
 
 function hideRefPopover(){
   clearTimeout(_popoverTimer);
@@ -12390,24 +11983,6 @@ function computeLCS(a, b){
 }
 
 // 개정 패널에서 diff 버튼 연결 (fpShowAmendments 보완)
-async function showDiffForAmendment(artNo, artTitle, lawName, prevLawDate){
-  try{
-    // 현재 조문 내용 가져오기
-    const curr=fpArts.find(a=>a['조문번호']===String(artNo)&&a.type!=='header');
-    if(!curr){alert('현재 조문을 찾을 수 없습니다.');return;}
-    // 이전 버전 조문 가져오기
-    const r=await fetch(`/api/law/prev_article?name=${encodeURIComponent(lawName)}&art_no=${artNo}`);
-    const d=await r.json();
-    const oldContent=d.content||'(이전 버전 정보 없음)';
-    openDiff(
-      artNo?`제${artNo}조`:'', artTitle,
-      oldContent, curr['조문내용']||'',
-      `이전 버전`, `현재 (${prevLawDate||'최신'})`
-    );
-  }catch(e){
-    alert(`diff 조회 오류: ${e.message}`);
-  }
-}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ② 업무별 법령 컬렉션
@@ -12417,7 +11992,6 @@ function getCollections(){
 }
 function saveCollections(c){localStorage.setItem('lawCollections',JSON.stringify(c));}
 
-function openCollModal(){renderCollModal();document.getElementById('collModalBg').classList.add('show');_modalFocusIn('collModalBg');}
 function closeCollModal(){document.getElementById('collModalBg').classList.remove('show');_modalFocusOut();}
 
 function renderCollModal(){
@@ -12474,25 +12048,7 @@ function deleteCollection(i){
   const c=getCollections(); c.splice(i,1); saveCollections(c); renderCollModal();
 }
 
-function addLawToCollection(lawName, org, url){
-  addItemToCollection(lawName, org, url, 'law');
-}
 // 법령·내규 공통 컬렉션 추가(type으로 재열람 경로 구분)
-function addItemToCollection(name, org, url, type){
-  const isInt = String(type||'')==='internal';
-  const colls=getCollections();
-  if(!colls.length){alert('먼저 컬렉션을 만들어주세요. (상단 📁 컬렉션 버튼)');return;}
-  const sel=colls.map((c,i)=>`${i+1}. ${c.name}`).join('\
-');
-  const idx=parseInt(prompt(`추가할 컬렉션 번호를 입력하세요:\
-${sel}`))-1;
-  if(isNaN(idx)||idx<0||idx>=colls.length)return;
-  const dup=colls[idx].laws.find(l=>l.name===name && (String(l.type||'')==='internal')===isInt);
-  if(dup){alert(isInt?'이미 추가된 내규입니다.':'이미 추가된 법령입니다.');return;}
-  colls[idx].laws.push({name, org, url, type:isInt?'internal':'law', addedAt:new Date().toISOString().slice(0,10)});
-  saveCollections(colls);
-  alert(`「${name}」을 '${colls[idx].name}'에 추가했습니다.`);
-}
 
 function removeLawFromColl(ci, li){
   const c=getCollections(); c[ci].laws.splice(li,1); saveCollections(c); renderCollModal();
@@ -12501,175 +12057,6 @@ function removeLawFromColl(ci, li){
 // renderPage에서 컬렉션 추가 버튼 포함
 // 컬렉션 기능은 즐겨찾기 폴더로 통합됨 — 카드 버튼 비활성(레거시 호출 안전)
 function makeCollBtnHtml(name, org, url){ return ''; }
-
-// ══════════════════════════════════════════════════════════════════════════════
-// ③ 법령 관계 네트워크 시각화
-// ══════════════════════════════════════════════════════════════════════════════
-function openNetPanel(){
-  // 즐겨찾기 + 최근 검색에서 법령 목록 수집
-  loadFavs().then(favs=>{
-    const sel=document.getElementById('netCenter');
-    const opts=new Set();
-    favs.forEach(f=>opts.add(f.name));
-    allLaws.forEach(l=>opts.add(l['법령명한글']||''));
-    sel.innerHTML=[...opts].filter(Boolean).map(n=>`<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
-    document.getElementById('netPanel').classList.add('show');
-    if(sel.options.length) buildNetwork();
-  });
-}
-function closeNetPanel(){document.getElementById('netPanel').classList.remove('show');}
-
-let _netDepth = 1;
-function setNetDepth(d){
-  _netDepth = d;
-  [1,2,3].forEach(i=>{
-    const b=document.getElementById('ndBtn'+i);
-    if(b) b.classList.toggle('active',i===d);
-  });
-  buildNetwork();
-}
-
-async function buildNetwork(){
-  const centerName = document.getElementById('netCenter').value;
-  if(!centerName) return;
-  const g = document.getElementById('netG');
-  const W = document.getElementById('netCanvas').offsetWidth  || 800;
-  const H = document.getElementById('netCanvas').offsetHeight || 500;
-  g.innerHTML = `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#9ca3af" font-size="14">법령 조문 분석 중...</text>`;
-
-  const lawRefRe = new RegExp('[「｢『《〈]([^」｣』》〉\\n]{2,50}(?:' + _LAW_SUFFIX + '))[」｣』》〉]', 'g');
-
-  // 노드·엣지 수집 (BFS로 depth까지)
-  const nodes = [{name:centerName, type:'center', refs:[], artCount:0}];
-  const nodeIdx = {[centerName]: 0};
-  const edges  = [];
-  const queue  = [{name:centerName, depth:0}];
-
-  while(queue.length){
-    const {name, depth} = queue.shift();
-    if(depth >= _netDepth) continue;
-    try{
-      const r = await fetch(`/api/law/articles?name=${encodeURIComponent(name)}`);
-      const d = await r.json();
-      const arts = d.articles || [];
-      const idx = nodeIdx[name];
-      if(idx !== undefined) nodes[idx].artCount = arts.filter(a=>a.type!=='header').length;
-
-      const refCounts = {};
-      arts.forEach(a=>{
-        const text=(a['조문내용']||'')+(a['조문제목']||'');
-        let m; lawRefRe.lastIndex=0;
-        while((m=lawRefRe.exec(text))!==null){
-          const rn=m[1];
-          if(rn===name) continue;
-          refCounts[rn]=(refCounts[rn]||0)+1;
-        }
-      });
-
-      // 상위 8개만
-      const topRefs = Object.entries(refCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
-      if(idx!==undefined) nodes[idx].refs = topRefs.map(([n])=>n);
-
-      topRefs.forEach(([refName, cnt])=>{
-        if(!nodeIdx.hasOwnProperty(refName)){
-          const isSub = refName.includes('시행령')||refName.includes('시행규칙');
-          nodeIdx[refName] = nodes.length;
-          nodes.push({name:refName, type:isSub?'sub':'ref', refs:[], artCount:0});
-          queue.push({name:refName, depth:depth+1});
-        }
-        edges.push({from:nodeIdx[name], to:nodeIdx[refName], count:cnt});
-      });
-    }catch{}
-  }
-
-  // 레이아웃: 방사형 배치
-  const cx=W/2, cy=H/2;
-  const centerNode = nodes[0];
-  centerNode.x=cx; centerNode.y=cy;
-  const depthGroups = {};
-  edges.forEach(e=>{ depthGroups[e.to]= Math.min(depthGroups[e.to]||99, 1); });
-  // 2단계 노드
-  edges.forEach(e=>{
-    if(depthGroups[e.from]===1) depthGroups[e.to]=Math.min(depthGroups[e.to]||99,2);
-  });
-
-  const byDepth = {1:[], 2:[], 3:[]};
-  nodes.forEach((n,i)=>{
-    if(i===0) return;
-    const d = depthGroups[i]||1;
-    (byDepth[d]||byDepth[1]).push(i);
-  });
-
-  [1,2,3].forEach(d=>{
-    const group = byDepth[d]||[];
-    const radius = d===1?Math.min(W,H)*0.32 : d===2?Math.min(W,H)*0.46 : Math.min(W,H)*0.55;
-    group.forEach((ni,gi)=>{
-      const angle = (2*Math.PI/group.length)*gi - Math.PI/2;
-      nodes[ni].x = cx + radius*Math.cos(angle);
-      nodes[ni].y = cy + radius*Math.sin(angle);
-    });
-  });
-
-  // 색상
-  const colors = {center:'#1D9E75', ref:'#3b82f6', sub:'#f59e0b'};
-
-  // SVG 생성
-  const edgeSvg = edges.map(e=>{
-    const f=nodes[e.from], t=nodes[e.to];
-    if(!f||!t||f.x===undefined||t.x===undefined) return '';
-    const dx=t.x-f.x, dy=t.y-f.y, len=Math.sqrt(dx*dx+dy*dy)||1;
-    const ux=dx/len, uy=dy/len;
-    const fr=f.type==='center'?34:26, tr=30;
-    const opacity = Math.min(1, 0.3 + e.count*0.15);
-    const strokeW = Math.min(3, 1+e.count*0.3);
-    return `<line x1="${f.x+ux*fr}" y1="${f.y+uy*fr}" x2="${t.x-ux*tr}" y2="${t.y-uy*tr}"
-      stroke="#aecbfd" stroke-width="${strokeW}" opacity="${opacity}" marker-end="url(#arrow)"/>
-      <text x="${(f.x+t.x)/2}" y="${(f.y+t.y)/2-3}" text-anchor="middle" fill="#9ca3af" font-size="9">${e.count}건</text>`;
-  }).join('');
-
-  const nodeSvg = nodes.map((n,i)=>{
-    if(n.x===undefined) return '';
-    const col = colors[n.type]||'#6b7280';
-    const r   = n.type==='center'?34:26;
-    const label = n.name.length>8 ? n.name.slice(0,7)+'…' : n.name;
-    const safeN = argAttr(n.name);
-    return `<g class="net-node" transform="translate(${n.x},${n.y})"
-        onmouseenter="showNetTooltip(event,'${safeN}',${n.artCount},${n.refs.length})"
-        onmouseleave="hideNetTooltip()"
-        onclick="netNodeClick('${safeN}')">
-      <circle r="${r}" fill="${col}" opacity="${n.type==='center'?1:.88}"/>
-      ${n.artCount>0?`<circle r="${r+4}" fill="none" stroke="${col}" stroke-width="1" opacity=".3"/>`:''}
-      <text text-anchor="middle" dy="3" fill="#fff" font-size="${n.type==='center'?11:10}" font-weight="${n.type==='center'?700:500}">${escHtml(label)}</text>
-      ${n.artCount>0?`<text text-anchor="middle" dy="${r+13}" fill="${col}" font-size="9">${n.artCount}조</text>`:''}
-    </g>`;
-  }).join('');
-
-  g.innerHTML = edgeSvg + nodeSvg;
-
-  // 중심 법령명 업데이트
-  document.getElementById('netCenter').value = centerName;
-}
-
-function showNetTooltip(e, name, artCount, refCount){
-  const tt = document.getElementById('netTooltip');
-  tt.innerHTML = `<b>「${escHtml(name)}」</b><br>조문 ${artCount}개 · 준용 ${refCount}개`;
-  tt.style.display='block';
-  tt.style.left = Math.min(e.clientX+12, window.innerWidth-230)+'px';
-  tt.style.top  = Math.min(e.clientY+12, window.innerHeight-80)+'px';
-}
-function hideNetTooltip(){ document.getElementById('netTooltip').style.display='none'; }
-
-function netNodeClick(name){
-  hideNetTooltip();
-  // 패널이 열려있으면 준용 패널로, 아니면 조문 전문 패널로
-  const fp = document.getElementById('fullpanel');
-  if(fp && fp.classList.contains('open')){
-    openRefAuto(name);
-  } else {
-    openFullPanel(name, `https://www.law.go.kr/법령/${encodeURIComponent(name)}`, '', '법률');
-    closeNetPanel();
-  }
-}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ④ 조문 히스토리 타임라인 (조문 단위 개정 이력)
@@ -12720,133 +12107,10 @@ async function showArtHistory(idx){
 // ══════════════════════════════════════════════════════════════════════════════
 // ⑤ 자연어 조문 검색
 // ══════════════════════════════════════════════════════════════════════════════
-function isNaturalLang(q){
-  // 물음표, 서술형 종결어, 조건어 패턴 감지
-  return /[?？]|은\s*무엇|이란|조건|요건|경우|방법|절차|할\s*수\s*있|해야\s*하|받을\s*수|어떻/.test(q);
-}
 
-function extractNLKeywords(q){
-  const stopSet=new Set(['이란','무엇','어떻게','경우','대한','관한','있는','없는','하는',
-    '되는','위한','따른','규정','조건','요건','방법','절차','있을','없을','합니까',
-    '하나요','인가요','일까요','어디서','어떤','어느','무슨']);
-  // 물음표·구두점 제거
-  const cleaned=q.replace(/[?？!！。.,·]/g,' ');
-  // 공백 분리
-  const tokens=cleaned.split(/\s+/).filter(Boolean);
-  const keywords=[];
-  tokens.forEach(token=>{
-    // 어미·조사 제거
-    const stem=token
-      .replace(/(이가|이란|이며|이고|이나|이라|에서|에게|에는|으로|로서|부터|까지|에도|에만|한테|보다|처럼|만큼|같이|대로)$/,'')
-      .replace(/(은|는|이|가|을|를|의|도|와|과)$/,'')
-      .trim();
-    if(stem.length>=2 && !stopSet.has(stem) && !stopSet.has(token))
-      keywords.push(stem);
-  });
-  // 원문 단어도 후보에 추가 (어미 제거 실패 대비)
-  tokens.forEach(t=>{
-    if(t.length>=2 && !stopSet.has(t) && !keywords.includes(t))
-      keywords.push(t);
-  });
-  return [...new Set(keywords)];
-}
 
-function scoreArticleNL(art, keywords){
-  const text=(art['조문내용']||'')+(art['조문제목']||'');
-  let score=0;
-  keywords.forEach(kw=>{
-    const re=new RegExp(escRegex(kw),'g');
-    const matches=text.match(re);
-    if(matches) score+=matches.length*(kw.length>=4?3:1);
-  });
-  return score;
-}
 
-async function doNLSearch(q){
-  clearResults();
-  setStatus('✨ 자연어 검색 중...', true);
 
-  const keywords = extractNLKeywords(q);
-  console.log('[NL] 추출 키워드:', keywords);
-
-  // 검색 후보 목록 구성 (짧은 키워드 우선, 원문 제외)
-  const candidates = [];
-  // 1) 개별 키워드 (2글자 이상, 짧을수록 히트율 높음)
-  keywords.slice(0,5).forEach(k => { if(k.length>=2) candidates.push(k); });
-  // 2) 키워드 2개 조합
-  if(keywords.length>=2) candidates.push(keywords[0]+' '+keywords[1]);
-  // 중복 제거
-  const unique = [...new Set(candidates)];
-
-  let laws=[], usedTerm='';
-
-  for(const term of unique){
-    if(!term.trim()) continue;
-    try{
-      const r = await fetch(`/api/search?query=${encodeURIComponent(term)}&display=15`);
-      const d = await r.json();
-      if(d.success && d.laws?.length){
-        laws=d.laws; usedTerm=term; break;
-      }
-    }catch{}
-  }
-
-  if(!laws.length){
-    setStatus(`"${escHtml(q)}" 관련 법령을 찾지 못했습니다`);
-    renderEmpty(`자연어 검색 결과가 없습니다.<br><small>검색어를 더 짧게 입력하거나 법령명을 직접 검색해보세요.</small>`);
-    document.getElementById('sbtn').disabled=false;
-    return;
-  }
-
-  addRecent(q);
-  allLaws=laws; buildTypeFilter(); applyFilter();
-  const nb=document.getElementById('nlBanner');
-  if(nb) nb.style.display='flex';
-  setStatus(`✨ 자연어 검색 · ${laws.length}건 (키워드: ${escHtml(usedTerm)})`);
-  document.getElementById('fbar').style.display='flex';
-  if(keywords.length) scoreAndReorderAsync(allLaws, keywords);
-  document.getElementById('sbtn').disabled=false;
-}
-
-async function scoreAndReorderAsync(laws, keywords){
-  if(!keywords||!keywords.length) return;
-  const scored=[];
-  for(const law of laws.slice(0,6)){
-    try{
-      const name=law['법령명한글']||'';
-      const r=await fetch(`/api/law/articles?name=${encodeURIComponent(name)}`);
-      const d=await r.json();
-      const arts=(d.articles||[]).filter(a=>a.type==='article');
-      const score=arts.reduce((s,a)=>s+scoreArticleNL(a,keywords),0);
-      if(score>0) scored.push({...law, _nlScore:score});
-    }catch{}
-  }
-  if(!scored.length) return;
-
-  scored.sort((a,b)=>b._nlScore-a._nlScore);
-  const scoredNames=new Set(scored.map(s=>s['법령명한글']));
-  const remaining=allLaws.filter(l=>!scoredNames.has(l['법령명한글']));
-  allLaws=[...scored,...remaining];
-  applyFilter(); // 카드 재렌더
-
-  // 배지: 재렌더된 카드에 붙이기 (filtered 기준 인덱스)
-  scored.forEach(law=>{
-    const fi=filtered.findIndex(l=>l['법령명한글']===law['법령명한글']);
-    if(fi<0) return;
-    const pageStart=(page-1)*PS, pageEnd=pageStart+PS;
-    if(fi<pageStart||fi>=pageEnd) return;
-    const card=document.getElementById('c'+fi);
-    if(!card||card.querySelector('.nl-badge')) return;
-    const head=card.querySelector('.card-head');
-    if(!head) return;
-    const pct=Math.min(99,Math.round(law._nlScore/2));
-    const badge=document.createElement('span');
-    badge.className='nl-badge'; badge.title=`관련도 점수: ${law._nlScore}`;
-    badge.innerHTML=`✨ ${pct}%`;
-    const lorg=head.querySelector('.lorg');
-    if(lorg) lorg.after(badge); else head.appendChild(badge);
-  });
-}
 
 // 검색창 입력 시 자연어 감지 힌트
 
