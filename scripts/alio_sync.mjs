@@ -28,6 +28,8 @@ const OUT = path.resolve(args.out || "alio_incoming");
 const MANIFEST = path.resolve(args.manifest || "regulations_manifest.json");
 const MAX = Number(args.max || 30);                                      // 한 번에 받을 최대 건수
 const ORG_PREFIX = /^\s*(?:\(재\)|재단법인)?\s*한국농업기술진흥원\s*/;   // 규정명 앞 기관명
+// 서비스에 싣지 않는 문서(예: 매뉴얼) — ALIO 에 있어도 신규로 가져오지 않는다. ALIO_EXCLUDE 로 바꿀 수 있음(정규식)
+const EXCLUDE_RE = new RegExp(process.env.ALIO_EXCLUDE || "(매뉴얼|메뉴얼)");
 
 // ── ALIO 클라이언트(alio-mcp) 또는 시험용 픽스처 ─────────────────────────────
 async function loadClient() {
@@ -155,8 +157,10 @@ async function main() {
   const manifest = JSON.parse(await fs.readFile(MANIFEST, "utf8"));
   const cli = await loadClient();
 
-  const rules = await cli.listRules();
-  console.error(`[alio-sync] ${cli.org.name}(${APBA}) ALIO 공개 규정 ${rules.length}건`);
+  const allRules = await cli.listRules();
+  const rules = allRules.filter((r) => !EXCLUDE_RE.test(String(r.title || "")));
+  const excluded = allRules.length - rules.length;
+  console.error(`[alio-sync] ${cli.org.name}(${APBA}) ALIO 공개 규정 ${allRules.length}건` + (excluded ? ` (제외 ${excluded}건)` : ""));
   const matched = matchRules(rules, manifest, cli.baseTitle);
 
   const added = [], revised = [], same = [], renamed = [], tracking = {};
@@ -212,7 +216,7 @@ async function main() {
   const today = new Date().toISOString().slice(0, 10);
   const changes = {
     checked_at: today, org: cli.org.name, apba_id: APBA, alio_total: rules.length,
-    items, errors, skipped, unchanged: same.length, tracking, renamed, missing,
+    items, errors, skipped, unchanged: same.length, tracking, renamed, missing, excluded,
   };
   await fs.mkdir(OUT, { recursive: true });
   await fs.writeFile(path.join(OUT, "changes.json"), JSON.stringify(changes, null, 2));
@@ -220,7 +224,8 @@ async function main() {
   const L = [];
   L.push(`## ALIO 내규 동기화 리포트 (${today})`, "");
   L.push(`- 기관: **${cli.org.name}** (\`${APBA}\`) · ALIO 공개 규정 ${rules.length}건 · 변경 없음 ${same.length}건`
-    + (missing.length ? ` · ALIO에 없는 서비스 규정 ${missing.length}건` : ""));
+    + (missing.length ? ` · ALIO에 없는 서비스 규정 ${missing.length}건` : "")
+    + (excluded ? ` · 제외(매뉴얼 등) ${excluded}건` : ""));
   L.push(`- 🆕 신규 ${items.filter((i) => i.kind === "new").length}건 · ✏️ 개정 ${items.filter((i) => i.kind === "revised").length}건`
     + (errors.length ? ` · ⚠ 실패 ${errors.length}건` : "") + (skipped ? ` · 다음 실행으로 미룸 ${skipped}건` : ""), "");
   if (items.length) {
