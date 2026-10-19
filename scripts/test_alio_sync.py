@@ -55,6 +55,8 @@ def main():
             # 새 시행일 → 개정 반영
             {"idx": "105", "title": "직원창업규칙", "enfDate": "2026.10.01", "modDate": "2026.10.01",
              "_file": "창업.hwp"},
+            # 매뉴얼은 서비스에 싣지 않음 → 신규로 가져오지 않음(제외)
+            {"idx": "107", "title": "한국농업기술진흥원 시험 사업 운영 매뉴얼", "enfDate": "2026.09.01", "modDate": "2026.09.01"},
             # 처음 보는 규정 → 신규 반영
             {"idx": "106", "title": "한국농업기술진흥원 시험용 신규 지침", "enfDate": "2026.09.15", "modDate": "2026.09.15",
              "_file": "신규.hwp"},
@@ -75,6 +77,7 @@ def main():
         ch = json.load(open(os.path.join(out, "changes.json"), encoding="utf-8"))
         kinds = {i["title"]: i["kind"] for i in ch["items"]}
         check(kinds == {"직원창업규칙": "revised", "시험용 신규 지침": "new"}, f"신규·개정 2건만 감지 {kinds}")
+        check(ch.get("excluded") == 1, f"매뉴얼 제외 {ch.get('excluded')}건")
         ren = {r["alio_title"]: r["how"] for r in ch["renamed"]}
         check(ren.get("지식재산권 관리에 관한 업무처리 규칙") == "alias", "괄호 별칭 → 같은 규정")
         check(ren.get("종자산업진흥센터 농업기계 임대 운영규칙") == "fuzzy", "유사 명칭 → 같은 규정")
