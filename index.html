@@ -5227,7 +5227,7 @@ function _looksLikeSentence(q){
 }
 async function doSearchLaw(q, _mySeq){
   if(_mySeq==null) _mySeq = _searchSeq;   // 직접 호출 대비
-  setStatus(_looksLikeSentence(q) ? '📝 이 문장이 들어 있는 법령·조문을 찾는 중... (법령 본문 대조)' : `"${q}" 법령 검색 중...`, true);
+  setStatus(_looksLikeSentence(q) ? '📝 이 문장이 들어 있는 법령·조문을 찾는 중... (법령 본문 대조)' : `"${escHtml(q)}" 법령 검색 중...`, true);
   addRecent(q);
   // 교차: 관련 내규 병렬 조회
   const crossEl = document.getElementById('internalResults');
@@ -5263,7 +5263,7 @@ async function doSearchLaw(q, _mySeq){
     const d = await fullPromise;
     if(_mySeq !== _searchSeq) return;
     if(!d){ throw new Error('network'); }
-    if(d.error){ setStatus(`오류: ${escHtml(d.error)}`); renderEmpty(d.error); }
+    if(d.error){ setStatus(`오류: ${escHtml(d.error)}`); renderEmpty(escHtml(d.error)); }
     else if(d.mode==='article_ref' && !(d.laws||[]).length){
       // 특정 조문 지정 검색인데 해당 조문이 없음 → 원인과 대안을 안내
       const ar=d.article_ref||{};
@@ -5274,7 +5274,7 @@ async function doSearchLaw(q, _mySeq){
     else if(!d.success || !d.laws?.length){
       if(_shown){ setStatus(`법령 우선 결과만 표시 · "${escHtml(q)}"`); }
       else{
-        setStatus(`"${q}" 법령 검색 결과가 없습니다`);
+        setStatus(`"${escHtml(q)}" 법령 검색 결과가 없습니다`);
         renderEmpty(`"${escHtml(q)}"을(를) 포함한 조문이 있는 법령을 찾지 못했습니다`);
       }
     } else {
@@ -5489,7 +5489,7 @@ function buildRegSummary(view, kw, kind){
   const topCnt=_regArtCount(top);
   let topHtml='';
   if(topName){
-    const enc=encodeURIComponent(topName);
+    const enc=_encArg(topName);
     let args;
     if(kind==='internal'){ args=`decodeURIComponent('${enc}'),'internal'`; }
     else{
@@ -5550,7 +5550,7 @@ function buildRegCards(items, kw, kind){
     }).join('') : `<div class="reg-none">키워드 매칭 미리보기가 없습니다. 전문에서 확인하세요.</div>`;
     const moreNote = (cnt > arts.length)
       ? `<div class="reg-more">총 ${cnt}개 매칭 중 상위 ${arts.length}개 표시 · <b>전문 →</b>에서 전체 확인</div>` : '';
-    const enc=encodeURIComponent(name);
+    const enc=_encArg(name);
     const orgEsc=argAttr(org||''), typeEsc=argAttr(type||''), urlEsc=argAttr(url||'');
     const dtArgs = kind==='internal'
       ? `decodeURIComponent('${enc}'),'internal'`
@@ -6600,7 +6600,7 @@ function renderInternalTree(items){
         <span class="it-arrow">▾</span><span class="it-ic">${g.ic}</span>${g.key}<span class="it-cnt">${list.length}</span>
       </div>
       <div class="it-items">${list.map(it=>{
-        const e=encodeURIComponent(it.title);
+        const e=_encArg(it.title);
         const tip=it.revision?`${it.title} · ${it.revision}`:it.title;
         return `<button class="it-item" title="${escHtml(tip)}" onclick="openInternalFromTree(decodeURIComponent('${e}'))">${escHtml(it.title)}</button>`;
       }).join('')}</div>
@@ -6655,7 +6655,7 @@ async function doSearchScenario(q, _mySeq){
     const d = await r.json();
     if(_mySeq !== _searchSeq) return;   // 더 새로운 검색이 시작됐으면 무시
     if(d.error){
-      setStatus(`오류: ${d.error}`);
+      setStatus(`오류: ${escHtml(d.error)}`);
       const needKey = /활성화되지 않았|API ?키|api_key|키가 (없|필요)|키를 입력|AI ?키/i.test(d.error||'');
       renderEmpty(`<span style="color:var(--err-fg);">⚠ ${escHtml(d.error)}</span>`+
         (needKey?`<br><button class="abtn primary" style="margin-top:10px;" onclick="openAiModal()">✦ AI 설정에서 키 입력</button>`:''));
@@ -6811,7 +6811,7 @@ function renderScenarioResults(d){
 
   // 내규 카드들
   const intCardsHtml = intItems.map((it)=>{
-    const nm=it.name; const arts=it.matched_articles||[]; const enc=encodeURIComponent(nm);
+    const nm=it.name; const arts=it.matched_articles||[]; const enc=_encArg(nm);
     const artHtml=arts.slice(0,5).map(a=>{
       const no=artNoLabel(a); let c=_dedupeLines(a['조문내용']||''); let t=a['조문제목']||'';
       if(!no&&!t){ const ls=c.split('\n'); t=(ls[0]||'').trim(); c=ls.slice(1).join('\n').trim(); }
@@ -6883,15 +6883,15 @@ function renderScenarioResults(d){
 
 // ── 조문 키워드 검색 ──
 async function doSearchArticle(q){
-  setStatus(`"${q}" 조문 내 키워드 검색 중...`,true);
+  setStatus(`"${escHtml(q)}" 조문 내 키워드 검색 중...`,true);
   addRecent(q);
   try{
     const r=await fetch(`/api/search/article?query=${encodeURIComponent(q)}&display=20`);
     const d=await r.json();
-    if(d.error){setStatus(`오류: ${d.error}`);renderEmpty(d.error);return;}
+    if(d.error){setStatus(`오류: ${escHtml(d.error)}`);renderEmpty(escHtml(d.error));return;}
     if(!d.success||!d.laws?.length){
-      setStatus(`"${q}" 조문 검색 결과가 없습니다`);
-      renderEmpty(`"${q}"을(를) 포함한 조문이 있는 법령을 찾지 못했습니다`);
+      setStatus(`"${escHtml(q)}" 조문 검색 결과가 없습니다`);
+      renderEmpty(`"${escHtml(q)}"을(를) 포함한 조문이 있는 법령을 찾지 못했습니다`);
       return;
     }
     const truncNote = d.truncated
@@ -7062,7 +7062,7 @@ let _lastInternalQ='';   // 최근 내규 검색어 — 전문 열 때 하이라
 async function doSearchInternal(q, _mySeq){
   if(_mySeq==null) _mySeq = _searchSeq;   // 직접 호출 대비
   _lastInternalQ=(q||'').trim();
-  setStatus(`"${q}" 내규 검색 중...`,true);
+  setStatus(`"${escHtml(q)}" 내규 검색 중...`,true);
   addRecent(q);
   // 클라이언트 캐시(5분) — 동일 검색 즉시 응답
   const cached=_cacheGet(`internal:${q}`);
@@ -7087,7 +7087,7 @@ async function doSearchInternal(q, _mySeq){
     const hasName=Array.isArray(d.name_matches)&&d.name_matches.length;
     // 본문 결과가 없어도 규정명이 일치하면 결과로 취급(명칭+본문 병행 검색)
     if(!d.success || (!hasText && !hasStruct && !hasName)){
-      setStatus(`"${q}" 내규 검색 결과가 없습니다`);
+      setStatus(`"${escHtml(q)}" 내규 검색 결과가 없습니다`);
       renderEmpty(`"${escHtml(q)}"에 해당하는 내규를 찾지 못했습니다`);
       document.getElementById('internalResults').innerHTML='';updateSplitLayout(); return;
     }
@@ -7306,10 +7306,10 @@ async function renderRelatedLaws(text, q){
     const inter=(typeof matchInternalRule==='function')?matchInternalRule(n):null;
     if(inter){
       return `<button class="int-law-chip int-law-chip-rule" title="「${escHtml(inter)}」 내규 전문 (왼쪽과 나란히)"
-        onclick="openDocSplit(decodeURIComponent('${encodeURIComponent(inter)}'),'internal')">「${escHtml(inter)}」<span class="ilc-tag">내규</span></button>`;
+        onclick="openDocSplit(decodeURIComponent('${_encArg(inter)}'),'internal')">「${escHtml(inter)}」<span class="ilc-tag">내규</span></button>`;
     }
     return `<button class="int-law-chip" title="「${escHtml(n)}」 조문 전문 (왼쪽 내규와 나란히)"
-      onclick="openDocSplit(decodeURIComponent('${encodeURIComponent(n)}'),'law')">「${escHtml(n)}」</button>`;
+      onclick="openDocSplit(decodeURIComponent('${_encArg(n)}'),'law')">「${escHtml(n)}」</button>`;
   };
   // 참조 법령이 많으면(직제·직무표 등) 화면을 뒤덮으므로 상한 후 '더 보기'로 접는다.
   const CAP=16;
@@ -7322,14 +7322,14 @@ async function renderRelatedLaws(text, q){
 
 // ── 업무 근거 찾기 ──
 async function doSearchBasis(q){
-  setStatus(`"${q}" 근거법령 탐색 중...`, true);
+  setStatus(`"${escHtml(q)}" 근거법령 탐색 중...`, true);
   addRecent(q);
   try{
     const r = await fetch(`/api/search/basis?scenario=${encodeURIComponent(q)}`);
     const d = await r.json();
-    if(d.error){ setStatus(`오류: ${d.error}`); renderEmpty(d.error); return; }
+    if(d.error){ setStatus(`오류: ${escHtml(d.error)}`); renderEmpty(escHtml(d.error)); return; }
     if(!d.success || !d.laws?.length){
-      setStatus(`"${q}"에 해당하는 근거 조문을 찾지 못했습니다`);
+      setStatus(`"${escHtml(q)}"에 해당하는 근거 조문을 찾지 못했습니다`);
       renderEmpty(`근거 법령을 찾지 못했습니다.<br><small>업무 내용을 더 구체적으로 입력해보세요.</small>`);
       return;
     }
@@ -7883,7 +7883,7 @@ async function toggleArtCard(i, lawName, lawUrl){
   try{
     const r=await fetch(`/api/law/articles?name=${encodeURIComponent(lawName)}`);
     const d=await r.json();
-    if(d.error){body.innerHTML=`<div style="padding:14px;color:var(--err-fg);font-size:13px;">${d.error}</div>`;body.dataset.loaded='1';return;}
+    if(d.error){body.innerHTML=`<div style="padding:14px;color:var(--err-fg);font-size:13px;">${escHtml(String(d.error))}</div>`;body.dataset.loaded='1';return;}
     body.innerHTML=renderInlineArticles(d.articles||[], lawName, lawUrl, kw);
     body.dataset.loaded='1';
   }catch{
@@ -8000,6 +8000,9 @@ function jsStr(s){
 }
 // onclick='f("...")' 인자 하나를 안전하게: JS문자열화 후 속성 이스케이프.
 function argAttr(v){ return escAttr(jsStr(v)); }
+// onclick="…decodeURIComponent('${_encArg(x)}')" 용 — encodeURIComponent 가 남기는 ' ( ) ! * ~ 까지 인코딩해
+// 따옴표가 든 규정명·법령명이 JS 문자열을 빠져나가지 못하게 한다(decodeURIComponent 로 그대로 복원됨).
+function _encArg(v){ return encodeURIComponent(String(v==null?'':v)).replace(/['()!*~]/g, c=>'%'+c.charCodeAt(0).toString(16).toUpperCase()); }
 // href/src 용: http/https 만 허용(javascript: 등 차단).
 function safeUrl(u){
   u=String(u==null?'':u).trim();
@@ -8897,7 +8900,7 @@ function _formsRender(q){
     `<div class="form-main"><span class="form-title">${escHtml(f.title)}</span>`+
     `<span class="form-sub"><span class="form-label">${escHtml(f.label)}</span> · ${escHtml(f.reg)}</span></div>`+
     `<div class="form-acts"><button class="wp-btn sm" onclick="_formOpenReg('${argAttr(f.reg)}')">규정 전문</button>`+
-    `${f.html?`<a class="wp-btn sm ghost" href="${escHtml(f.html)}" target="_blank" rel="noopener">원본↗</a>`:''}</div></div>`).join('')+
+    `${f.html?`<a class="wp-btn sm ghost" href="${escAttr(/^\/(?!\/)/.test(String(f.html))?f.html:safeUrl(f.html))}" target="_blank" rel="noopener">원본↗</a>`:''}</div></div>`).join('')+
     (items.length>300?`<div class="wp-note">상위 300건만 표시 — 검색어로 좁혀 주세요.</div>`:'');
 }
 function _formOpenReg(reg){ _wpClose('formsModal'); if(_assistMode&&typeof closeAssist==='function')closeAssist(); wsOpen(reg,'internal'); }
@@ -8940,7 +8943,7 @@ async function fpShowHistory(){
   const body=document.getElementById('fpBody');
   body.innerHTML='<div class="fp-loading"><div class="spinner" style="margin:0 auto 10px;"></div>개정이력 조회 중...</div>';
 
-  const backBtn=`<button class="fp-tbtn" onclick="openFullPanel(decodeURIComponent('${encodeURIComponent(name)}'),decodeURIComponent('${encodeURIComponent(lawUrl)}'))">← 조문으로 돌아가기</button>`;
+  const backBtn=`<button class="fp-tbtn" onclick="openFullPanel(decodeURIComponent('${_encArg(name)}'),decodeURIComponent('${_encArg(lawUrl)}'))">← 조문으로 돌아가기</button>`;
 
   try{
     const r=await fetch(`/api/law/history?name=${encodeURIComponent(name)}`);
@@ -9453,7 +9456,7 @@ async function openFullPanel(lawName, lawUrl, org, type){
             <div style="font-size:20px;margin-bottom:8px;">⚠️</div>
             <div style="margin-bottom:12px;">${escHtml(d.error)}</div>
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-              <button class="fp-tbtn" onclick="openFullPanel(decodeURIComponent('${encodeURIComponent(lawName)}'),'${argAttr(lawUrl)}','${argAttr(org||'')}','${argAttr(type||'법률')}')">🔄 다시 시도</button>
+              <button class="fp-tbtn" onclick="openFullPanel(decodeURIComponent('${_encArg(lawName)}'),'${argAttr(lawUrl)}','${argAttr(org||'')}','${argAttr(type||'법률')}')">🔄 다시 시도</button>
               <a class="fp-tbtn" href="${escAttr(safeUrl(lawUrl))}" target="_blank">↗ 법제처에서 직접 보기</a>
             </div>
           </div>`;
@@ -9479,7 +9482,7 @@ async function openFullPanel(lawName, lawUrl, org, type){
             ?'응답 시간이 초과됐습니다.<br>법령 데이터가 많거나 서버가 바쁜 상태입니다.'
             :'서버 연결에 실패했습니다.'}</div>
           <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-            <button class="fp-tbtn" onclick="openFullPanel(decodeURIComponent('${encodeURIComponent(lawName)}'),'${argAttr(lawUrl)}','${argAttr(org||'')}','${argAttr(type||'법률')}')">🔄 다시 시도</button>
+            <button class="fp-tbtn" onclick="openFullPanel(decodeURIComponent('${_encArg(lawName)}'),'${argAttr(lawUrl)}','${argAttr(org||'')}','${argAttr(type||'법률')}')">🔄 다시 시도</button>
             <a class="fp-tbtn" href="${escAttr(safeUrl(lawUrl))}" target="_blank">↗ 법제처에서 직접 보기</a>
           </div>
         </div>`;
@@ -10737,7 +10740,7 @@ function _lawFamBarHtml(name, items, version, where, id){
   else if(!items || items.length<2) chips='';
   else chips=items.map(it=>{
     const on=_rnorm(it.name)===cur;
-    const enc=encodeURIComponent(it.name);
+    const enc=_encArg(it.name);
     const act = where==='ws'
       ? `wsOpen(decodeURIComponent('${enc}'),'law')`
       : `openFullPanel(decodeURIComponent('${enc}'),'https://www.law.go.kr/법령/${enc}','${argAttr(currentPanelLaw&&currentPanelLaw.org||'')}','${argAttr(it.type||'')}')`;
@@ -11567,7 +11570,7 @@ async function fpShowAmendments(){
   btn.textContent='조회 중...'; btn.disabled=true;
 
   const body=document.getElementById('fpBody');
-  const backBtn=`<button class="fp-tbtn" style="margin-bottom:12px;" onclick="openFullPanel(decodeURIComponent('${encodeURIComponent(name)}'),decodeURIComponent('${encodeURIComponent(lawUrl)}'))">← 조문 전문으로 돌아가기</button>`;
+  const backBtn=`<button class="fp-tbtn" style="margin-bottom:12px;" onclick="openFullPanel(decodeURIComponent('${_encArg(name)}'),decodeURIComponent('${_encArg(lawUrl)}'))">← 조문 전문으로 돌아가기</button>`;
 
   body.innerHTML=`<div class="fp-loading"><div class="spinner" style="margin:0 auto 10px;"></div>이전 버전과 비교 중... (수초 소요)</div>`;
 
@@ -11576,7 +11579,7 @@ async function fpShowAmendments(){
     const d=await r.json();
 
     if(d.error){
-      body.innerHTML=`<div style="padding:16px;">${backBtn}<div class="fp-empty">${d.error}</div></div>`;
+      body.innerHTML=`<div style="padding:16px;">${backBtn}<div class="fp-empty">${escHtml(String(d.error))}</div></div>`;
       return;
     }
 
@@ -11616,7 +11619,7 @@ async function fpShowAmendments(){
               ${no?`<span class="fp-art-no">${escHtml(no)}</span>`:''}
               <span style="font-size:13px;font-weight:600;">${escHtml(title||no||'조문')}</span>
               ${adate?`<span style="font-size:11px;color:var(--ht);margin-left:4px;">${adate}</span>`:''}
-              <button class="amend-goto" onclick="event.stopPropagation();closeAmendView('${encodeURIComponent(name)}','${encodeURIComponent(lawUrl)}',${parseInt(a['조문번호'])||0})">조문 보기 →</button>
+              <button class="amend-goto" onclick="event.stopPropagation();closeAmendView('${_encArg(name)}','${_encArg(lawUrl)}',${parseInt(a['조문번호'])||0})">조문 보기 →</button>
             </div>
             ${content?`<div class="amend-item-body">${artBodyHtml(a,{})}</div>`:''}
           </div>`;
@@ -11638,7 +11641,7 @@ async function fpShowAmendments(){
     updateAmendBadge(arts.length);
 
   }catch(e){
-    body.innerHTML=`<div style="padding:16px;">${backBtn}<div class="fp-empty">조회 중 오류: ${e.message}</div></div>`;
+    body.innerHTML=`<div style="padding:16px;">${backBtn}<div class="fp-empty">조회 중 오류: ${escHtml(String(e.message||""))}</div></div>`;
   }
   btn.textContent='🔴 최근 개정'; btn.disabled=false;
 }
@@ -11681,7 +11684,7 @@ async function fpShowRelated(){
   if(btn){ btn.textContent='조회 중...'; btn.disabled=true; }
 
   const body=document.getElementById('fpBody');
-  const backBtn=`<button class="fp-tbtn" style="margin-bottom:12px;" onclick="openFullPanel(decodeURIComponent('${encodeURIComponent(name)}'),decodeURIComponent('${encodeURIComponent(lawUrl)}'))">← 조문 전문으로 돌아가기</button>`;
+  const backBtn=`<button class="fp-tbtn" style="margin-bottom:12px;" onclick="openFullPanel(decodeURIComponent('${_encArg(name)}'),decodeURIComponent('${_encArg(lawUrl)}'))">← 조문 전문으로 돌아가기</button>`;
   body.innerHTML=`<div class="fp-loading"><div class="spinner" style="margin:0 auto 10px;"></div>관련 판례·자치법규(조례)를 검색하는 중...</div>`;
 
   const renderList = (items, kind) => {
@@ -12665,7 +12668,7 @@ async function showArtHistory(idx){
   const no=artNoLabel(art);
   const title=art['조문제목']||'';
   const body=document.getElementById('fpBody');
-  const backBtn=`<button class="fp-tbtn" style="margin-bottom:14px;" onclick="openFullPanel(decodeURIComponent('${encodeURIComponent(lawName)}'),decodeURIComponent('${encodeURIComponent(lawUrl)}'))">← 조문 전문으로 돌아가기</button>`;
+  const backBtn=`<button class="fp-tbtn" style="margin-bottom:14px;" onclick="openFullPanel(decodeURIComponent('${_encArg(lawName)}'),decodeURIComponent('${_encArg(lawUrl)}'))">← 조문 전문으로 돌아가기</button>`;
 
   body.innerHTML=`<div class="fp-loading"><div class="spinner" style="margin:0 auto 10px;"></div>${escHtml(no)} 히스토리 조회 중...</div>`;
 
@@ -12682,11 +12685,11 @@ async function showArtHistory(idx){
 
     const timelineHtml=d.history.map(h=>`
       <div class="hist-entry">
-        <div class="hist-dot ${h.type||'개정'}">${h.type==='신설'?'新':h.type==='현행'?'現':'改'}</div>
+        <div class="hist-dot ${escAttr(h.type||'개정')}">${h.type==='신설'?'新':h.type==='현행'?'現':'改'}</div>
         <div class="hist-entry-body">
-          <div class="hist-entry-date">${h.date||''} · ${h.type||'개정'}</div>
+          <div class="hist-entry-date">${escHtml(String(h.date||''))} · ${escHtml(String(h.type||'개정'))}</div>
           <div class="hist-entry-content">${escHtml(h.content||'')}</div>
-          ${h.prev&&h.content?`<button class="fp-tbtn" style="margin-top:6px;font-size:11px;" onclick="openDiff('${no}','${escHtml(title)}',decodeURIComponent('${encodeURIComponent(h.prev||'')}'),decodeURIComponent('${encodeURIComponent(h.content||'')}'),'${escHtml(h.prev_date||'이전')}','${escHtml(h.date||'현재')}')">🔀 변경 비교 보기</button>`:''}
+          ${h.prev&&h.content?`<button class="fp-tbtn" style="margin-top:6px;font-size:11px;" onclick="openDiff('${argAttr(no)}','${argAttr(title)}',decodeURIComponent('${_encArg(h.prev||'')}'),decodeURIComponent('${_encArg(h.content||'')}'),'${argAttr(h.prev_date||'이전')}','${argAttr(h.date||'현재')}')">🔀 변경 비교 보기</button>`:''}
         </div>
       </div>`).join('');
 
@@ -12775,7 +12778,7 @@ async function doNLSearch(q){
   }
 
   if(!laws.length){
-    setStatus(`"${q}" 관련 법령을 찾지 못했습니다`);
+    setStatus(`"${escHtml(q)}" 관련 법령을 찾지 못했습니다`);
     renderEmpty(`자연어 검색 결과가 없습니다.<br><small>검색어를 더 짧게 입력하거나 법령명을 직접 검색해보세요.</small>`);
     document.getElementById('sbtn').disabled=false;
     return;
@@ -12785,7 +12788,7 @@ async function doNLSearch(q){
   allLaws=laws; buildTypeFilter(); applyFilter();
   const nb=document.getElementById('nlBanner');
   if(nb) nb.style.display='flex';
-  setStatus(`✨ 자연어 검색 · ${laws.length}건 (키워드: ${usedTerm})`);
+  setStatus(`✨ 자연어 검색 · ${laws.length}건 (키워드: ${escHtml(usedTerm)})`);
   document.getElementById('fbar').style.display='flex';
   if(keywords.length) scoreAndReorderAsync(allLaws, keywords);
   document.getElementById('sbtn').disabled=false;

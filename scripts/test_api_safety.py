@@ -7,6 +7,7 @@
   4. 사용자 간 공유되던 서버 메모리 API(즐겨찾기·최근 검색) 제거
   5. 요청 본문 크기 제한(413)
   6. 인기 검색어: 개인정보 형태·사람 이름 미기록, 2명 이상만 노출, 방문자 ID 미저장
+  7. 조문 판별 정규식 과부하 방지, 오류 응답의 서비스키 가림·502, ?debug=1 관리자 전용
 
 사용: python scripts/test_api_safety.py   (실패 시 종료 코드 1)
 """
@@ -117,6 +118,20 @@ print("5) 요청 크기 제한")
 r = c.post("/api/regs/upload", data={"file": (__import__("io").BytesIO(b"0" * (7 * 1024 * 1024)), "big.hwpx")},
            content_type="multipart/form-data")
 check(r.status_code == 413, f"제한(1+5MB) 초과 요청 413 ({r.status_code})")
+
+print("7) 정규식 과부하(ReDoS)·오류 응답 키 노출·디버그 출력")
+import time as _t
+q = "법 " + "1조 " * 200 + "x"
+t0 = _t.time(); A._ART_REF_RE.match(q); dt = _t.time() - t0
+check(dt < 0.5, f"'법 1조×200 x' 조문 판별 {dt:.3f}s (예전에는 18회만으로 1초, 25회 이상은 수 분)")
+m = A._ART_REF_RE.match("감사규정 제15조 제2항, 제16조")
+check(m and m.group("law") == "감사규정", "조문 참조 판별 결과는 그대로")
+err = requests.exceptions.ConnectionError(
+    "HTTPSConnectionPool(host='apis.data.go.kr'): Max retries exceeded with url: /x?serviceKey=SECRET123&a=1")
+check("SECRET123" not in A._safe_err(err) and A._err_status(err) == 502, f"연결 오류 문구에 키 없음·502 ({A._safe_err(err)})")
+check("SECRET" not in A._redact("...?ServiceKey=SECRET&crtfc_key=SECRET2&OC=SECRET3"), "로그용 키 가림")
+with A.app.test_request_context("/api/assist/company?debug=1"):
+    check(A._debug_allowed() is False, "?debug=1 은 토큰 없으면 무시")
 
 if fails:
     sys.exit(f"\n실패 {len(fails)}건")
