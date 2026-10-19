@@ -50,6 +50,45 @@ def _too_large(_e):
     return jsonify({"error": "요청이 너무 큽니다. 파일 크기를 확인하세요."}), 413
 
 
+_SECRET_PARAM_RE = re.compile(r"(?i)\b(service_?key|crtfc_?key|api_?key|key|oc|token|access_token)=([^&\s'\")]+)")
+
+
+def _redact(text: str) -> str:
+    """URL 쿼리에 실린 키·토큰 값을 *** 로 가린다(로그·응답 공용)."""
+    return _SECRET_PARAM_RE.sub(lambda m: f"{m.group(1)}=***", str(text or ""))
+
+
+def _safe_err(e) -> str:
+    """사용자에게 보여 줄 오류 문구. 외부 연결 오류는 원문(요청 URL·서비스키 포함) 대신 고정 문구로,
+    그 밖의 오류도 키 값을 가리고 길이를 줄인다. 상세 원문은 서버 로그에만(가려서) 남긴다."""
+    if isinstance(e, req_lib.exceptions.Timeout):
+        return "외부 서버 응답 시간 초과"
+    if isinstance(e, req_lib.exceptions.RequestException) or "ConnectionPool" in str(e) or "Max retries" in str(e):
+        return "외부 서버에 연결할 수 없습니다"
+    return _redact(str(e))[:200] or type(e).__name__
+
+
+def _err_status(e, default: int = 500) -> int:
+    """외부 API 장애는 서버 버그(500)가 아니라 502/504 로 응답한다."""
+    if isinstance(e, req_lib.exceptions.Timeout):
+        return 504
+    if isinstance(e, (req_lib.exceptions.RequestException, ConnectionError, TimeoutError, OSError)):
+        return 502
+    return default
+
+
+def _debug_allowed() -> bool:
+    """?debug=1 진단 출력(외부 응답 원문 등)은 관리자만 — 업로드 토큰이 맞거나 DEBUG_ENDPOINTS=1 일 때."""
+    if not request.args.get("debug"):
+        return False
+    if os.environ.get("DEBUG_ENDPOINTS") == "1":
+        return True
+    tok = (request.headers.get("X-Upload-Token") or "").strip()
+    want = os.environ.get("REG_UPLOAD_TOKEN", "").strip()
+    import hmac
+    return bool(tok and want and hmac.compare_digest(tok.encode(), want.encode()))
+
+
 def _json_body():
     """JSON 객체 본문만 받는다. 배열·숫자·문자열·깨진 JSON 이면 None(호출부에서 400)."""
     d = request.get_json(silent=True)
@@ -781,7 +820,7 @@ def search_laws():
         return jsonify({"success": True, "count": len(laws), "laws": laws})
     except Exception as e:
         import traceback; traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_err(e)}), _err_status(e)
 
 @app.route("/api/validate")
 def validate_keyword():
@@ -955,7 +994,10 @@ def _fetch_matching_articles(law_name: str, kw: str, doc_type: str = "law", alwa
 
 # ── 조문 검색: "농지법 제8조", "농지법 8조의2", "농지법 제8조, 제34조", "농지법 전용허가" ──
 _LAWISH_RE = re.compile(r"(법|법률|령|규칙|규정|지침|기준|고시|훈령|예규|세칙)$")
-_ART_REF_RE = re.compile(r"^(?P<law>.+?)\s*(?P<arts>(?:제?\s*\d+\s*조(?:\s*의\s*\d+)?(?:\s*제?\s*\d+\s*항)?[\s,·및와과]*)+)$")
+# 조문 토큰 사이 구분자를 '필수'로 둔 형태 — 예전 (토큰[구분자]*)+ 는 중첩 수량자라
+# "법 1조 1조 … x" 같은 짧은 입력에도 지수 시간 백트래킹(ReDoS)이 났다.
+_ART_TOK = r"제?\s*\d+\s*조(?:\s*의\s*\d+)?(?:\s*제?\s*\d+\s*항)?"
+_ART_REF_RE = re.compile(r"^(?P<law>.+?)\s*(?P<arts>" + _ART_TOK + r"(?:[\s,·및와과]+" + _ART_TOK + r")*)[\s,·]*$")
 _ART_ONE_RE = re.compile(r"제?\s*(\d+)\s*조(?:\s*의\s*(\d+))?(?:\s*제?\s*(\d+)\s*항)?")
 
 
@@ -1629,7 +1671,7 @@ laws는 위 목록에서만 선택(최대 4개), keywords는 3~6개."""
               "guidance": "관련 조문을 검색합니다.", "steps": [],
               "laws": [], "keywords": tokens[:5], "caution": None}
     except Exception as e:
-        return jsonify({"error": f"AI 연결 오류: {str(e)}"}), 502
+        return jsonify({"error": f"AI 연결 오류: {_safe_err(e)}"}), 502
 
     laws_to_search  = ai.get("laws", []) or []
     keywords        = ai.get("keywords", []) or []
@@ -1846,7 +1888,7 @@ def law_suggest():
             seen.add(k)
             items.append({"name": nm, "type": (it.findtext("법령구분명") or "").strip()})
     except Exception as e:
-        return jsonify({"success": False, "items": [], "error": str(e)})
+        return jsonify({"success": False, "items": [], "error": _safe_err(e)})
     # 입력어로 시작하는 이름 → 짧은 이름 순(본법이 시행령·시행규칙보다 앞)
     items.sort(key=lambda x: (0 if _norm_key(x["name"]).startswith(key) else 1, len(x["name"])))
     items = items[:8]
@@ -1895,7 +1937,7 @@ def law_family():
                 found[kind] = {"name": nm, "kind": kind, "status": status, "ef": ef,
                                "type": (it.findtext("법령구분명") or "").strip()}
     except Exception as e:
-        return jsonify({"success": False, "error": f"조회 실패: {e}", "base": base, "items": []})
+        return jsonify({"success": False, "error": f"조회 실패: {_safe_err(e)}", "base": base, "items": []})
     order = ["법률", "시행령", "시행규칙"]
     out = [found[k] for k in order if k in found]
     _LAW_FAMILY_CACHE[base] = {"items": out, "ts": time.time()}
@@ -1966,12 +2008,12 @@ def get_law_articles():
     except req_lib.exceptions.ReadTimeout:
         return jsonify({"error": "법제처 서버 응답 시간 초과. 법령 데이터가 클 수 있습니다. 잠시 후 다시 시도해주세요."}), 504
     except req_lib.exceptions.ConnectionError as e:
-        return jsonify({"error": f"법제처 서버에 연결할 수 없습니다: {e}"}), 502
+        return jsonify({"error": f"법제처 서버에 연결할 수 없습니다: {_safe_err(e)}"}), 502
     except req_lib.exceptions.Timeout:
         return jsonify({"error": "법제처 API 응답 시간 초과"}), 504
     except Exception as e:
         import traceback; traceback.print_exc()
-        return jsonify({"error": f"오류: {e}"}), 500
+        return jsonify({"error": f"오류: {_safe_err(e)}"}), _err_status(e)
 
 
 
@@ -2386,10 +2428,10 @@ def ai_interpret():
     except req_lib.exceptions.Timeout:
         return jsonify({"error": f"AI 응답 시간 초과 ({provider})"}), 504
     except req_lib.exceptions.ConnectionError as e:
-        return jsonify({"error": f"서버 연결 실패: {e}"}), 502
+        return jsonify({"error": f"서버 연결 실패: {_safe_err(e)}"}), 502
     except Exception as e:
         import traceback; traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_err(e)}), _err_status(e)
 
 
 @app.route("/api/law/amendments")
@@ -2513,7 +2555,7 @@ def get_law_amendments():
         return jsonify({"error": "법제처 API 응답 시간 초과"}), 504
     except Exception as e:
         import traceback; traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_err(e)}), _err_status(e)
 
 
 
@@ -2546,7 +2588,7 @@ def get_law_history():
         history.sort(key=lambda x: x["date"], reverse=True)
         return jsonify({"success": True, "law_name": law_name, "history": history})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_err(e)}), _err_status(e)
 
 
 @app.route("/api/law/prev_article")
@@ -2582,7 +2624,7 @@ def get_prev_article():
                 continue
         return jsonify({"content": "(이전 버전 조문 없음)"})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_err(e)}), _err_status(e)
 
 
 @app.route("/api/law/art_history")
@@ -2653,7 +2695,7 @@ def get_art_history():
                         "art_no": art_no, "history": history})
     except Exception as e:
         import traceback; traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_err(e)}), _err_status(e)
 
 
 # ── 관련 판례·자치법규(조례) 연계 ────────────────────────────────────────────
@@ -2764,7 +2806,7 @@ def get_law_related():
         })
     except Exception as e:
         import traceback; traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_err(e)}), _err_status(e)
 
 
 # ── 사규(내규) MCP 연동 ────────────────────────────────────────────────────────
@@ -2876,7 +2918,7 @@ def internal_forms():
                      if ql in (f["reg"] + f["label"] + f["title"]).replace(" ", "").lower()]
         return jsonify({"success": True, "count": len(forms), "forms": forms})
     except Exception as e:
-        return jsonify({"success": False, "error": f"서식 목록 조회 실패: {e}"})
+        return jsonify({"success": False, "error": f"서식 목록 조회 실패: {_safe_err(e)}"})
 
 
 def _norm_key(s: str) -> str:
@@ -4008,7 +4050,7 @@ def reg_upload():
     except zipfile.BadZipFile:
         return jsonify({"error": "파일을 열 수 없습니다. HWPX/DOCX 파일이 손상되었을 수 있습니다."}), 400
     except Exception as e:
-        return jsonify({"error": f"변환 실패: {e}"}), 400
+        return jsonify({"error": f"변환 실패: {_safe_err(e)}"}), 400
 
     slug = _reg_slug(title)
     if not slug:
@@ -4081,7 +4123,7 @@ def reg_upload():
             })
         except Exception as e:
             import traceback; traceback.print_exc()
-            return jsonify({"error": f"GitHub 커밋 실패: {e}"}), 502
+            return jsonify({"error": f"GitHub 커밋 실패: {_safe_err(e)}"}), 502
 
     # ── 읽기 전용 배포에서 GitHub 미설정: 변환 결과를 ZIP 으로 내려준다 ──
     if want_zip or not _reg_writable():
@@ -4115,7 +4157,7 @@ def reg_upload():
         entry = _upsert_manifest(entry, backup)
     except Exception as e:
         import traceback; traceback.print_exc()
-        return jsonify({"error": f"저장 실패: {e}"}), 500
+        return jsonify({"error": f"저장 실패: {_safe_err(e)}"}), _err_status(e)
 
     print(f"[reg-upload] 등록 완료: {title} ({revision}) → {slug}")
     return jsonify({"success": True, "entry": entry,
@@ -4218,7 +4260,7 @@ def reg_upload_delete():
             return _gh_revert(slug)
         except Exception as e:
             import traceback; traceback.print_exc()
-            return jsonify({"error": f"되돌리기 실패: {e}"}), 502
+            return jsonify({"error": f"되돌리기 실패: {_safe_err(e)}"}), 502
 
     man = list(_load_reg_manifest())
     idx = next((i for i, m in enumerate(man) if m.get("slug") == slug), -1)
@@ -4690,7 +4732,7 @@ def internal_status():
             "search_tool": picked.get("name") if picked else None,
         })
     except Exception as e:
-        return jsonify({"connected": False, "message": str(e)})
+        return jsonify({"connected": False, "message": _safe_err(e)})
 
 
 @app.route("/api/internal/search")
@@ -4753,7 +4795,7 @@ def internal_search():
             query, local_hits, f"사규 MCP 서버 연결 실패: {e}"))
     except Exception as e:
         import traceback; traceback.print_exc()
-        return jsonify(_local_only_search(query, local_hits, str(e)))
+        return jsonify(_local_only_search(query, local_hits, _safe_err(e)))
 
 
 @app.route("/api/internal/doc")
@@ -4842,7 +4884,7 @@ def internal_doc():
         if doc:
             doc["mcp_error"] = str(e)
             return jsonify(doc)
-        return jsonify({"error": f"내규 전문 조회 오류: {e}"}), 500
+        return jsonify({"error": f"내규 전문 조회 오류: {_safe_err(e)}"}), _err_status(e)
 
 
 # ── 내규 전체 목록 (사이드바 트리용) ──────────────────────────────────────
@@ -5087,7 +5129,7 @@ def internal_list():
         return jsonify({"error": "사규 MCP 서버 응답 시간 초과"}), 504
     except Exception as e:
         import traceback; traceback.print_exc()
-        return jsonify({"error": f"내규 목록 조회 오류: {e}"}), 500
+        return jsonify({"error": f"내규 목록 조회 오류: {_safe_err(e)}"}), _err_status(e)
 
 
 @app.route("/api/ping")
@@ -5122,7 +5164,7 @@ def law_check():
         has_result = bool(root.findall(".//law") or root.findall(".//법령"))
         return jsonify({"law_api": has_result})
     except Exception as e:
-        return jsonify({"law_api": False, "message": str(e)})
+        return jsonify({"law_api": False, "message": _safe_err(e)})
 
 
 @app.route("/api/debug/law")
@@ -5221,7 +5263,7 @@ def assist_status():
     """
     out = {k: bool(_assist_key(k))
            for k in ("company", "patent", "support", "procurement")}
-    if request.args.get("debug"):
+    if _debug_allowed():
         out["keys"] = {name: bool((os.environ.get(name, "") or "").strip())
                        for name in ("DART_API_KEY", "DATA_GO_KR_KEY",
                                     "KIPRIS_API_KEY", "BIZINFO_API_KEY", "LAW_OC")}
@@ -5596,7 +5638,7 @@ def assist_company():
                    "error": f"기업기본정보 응답 오류: {msg} (HTTP {r.status_code}). "
                             f"DATA_GO_KR_KEY의 '금융위원회_기업기본정보'(15043184) 활용신청·"
                             f"Decoding 키 여부를 확인하세요."}
-            if request.args.get("debug"):
+            if _debug_allowed():
                 out["_debug"] = {"http": r.status_code, "base": _FSC_BASE, "snippet": body_txt}
             return jsonify(out)
         # F06: 법인등록번호(crno)/사업자번호(bno) 기준 중복 제거 후 목록화.
@@ -5645,7 +5687,7 @@ def assist_company():
         resp = {"success": True, "count": len(shown),
                 "total": str(src_total or len(items)),
                 "items": shown, "mode": "name"}
-        if request.args.get("debug"):
+        if _debug_allowed():
             resp["_debug"] = {"http": r.status_code, "rows": len(recs),
                               "deduped": len(items), "src_total": src_total,
                               "resultMsg": (((r.json() or {}).get("response") or {})
@@ -5653,7 +5695,7 @@ def assist_company():
                               "base": _FSC_BASE}
         return jsonify(resp)
     except Exception as e:
-        return jsonify({"success": False, "error": f"조회 실패: {e}"})
+        return jsonify({"success": False, "error": f"조회 실패: {_safe_err(e)}"})
 
 @app.route("/api/assist/company/detail")
 def assist_company_detail():
@@ -5765,13 +5807,13 @@ def assist_company_detail():
         if skills:
             detail["skills"] = skills
         resp = {"success": True, "detail": detail}
-        if request.args.get("debug"):
+        if _debug_allowed():
             resp["_debug"] = {"crno": crno, "fsc_matched": bool(rec),
                               "finance_source": (finance or {}).get("source", ""),
                               "field_count": len(fields)}
         return jsonify(resp)
     except Exception as e:
-        return jsonify({"success": False, "error": f"상세 조회 실패: {e}"})
+        return jsonify({"success": False, "error": f"상세 조회 실패: {_safe_err(e)}"})
 
 @app.route("/api/assist/patent")
 def assist_patent():
@@ -5884,7 +5926,7 @@ def assist_patent():
         r, root, total, items, params, err = _search(field, appl_primary)
         if err:                                   # 인증/권한/쿼터/HTTP 오류 → 0건으로 위장하지 않음
             resp = {"success": False, "error": err, "kind": "api"}
-            if request.args.get("debug"):
+            if _debug_allowed():
                 resp["_debug"] = {"http": r.status_code,
                                   "snippet": r.content[:600].decode("utf-8", "replace")}
             return jsonify(resp)
@@ -5902,7 +5944,7 @@ def assist_patent():
         resp = {"success": True, "count": len(items),
                 "total": total or str(len(items)), "items": items,
                 "matchMode": ("word" if fell_back else ("title" if query else "all"))}
-        if request.args.get("debug"):         # 배포 진단: KIPRIS 응답 원문 요약
+        if _debug_allowed():         # 배포 진단: KIPRIS 응답 원문 요약
             def _t(tag):
                 el = root.find(f".//{tag}")
                 return (el.text or "").strip() if el is not None else ""
@@ -5915,7 +5957,7 @@ def assist_patent():
                               "snippet": r.content[:600].decode("utf-8", "replace")}
         return jsonify(resp)
     except Exception as e:
-        return jsonify({"success": False, "error": f"조회 실패: {e}"})
+        return jsonify({"success": False, "error": f"조회 실패: {_safe_err(e)}"})
 
 @app.route("/api/assist/patent/detail")
 def assist_patent_detail():
@@ -5973,7 +6015,7 @@ def assist_patent_detail():
             return jsonify({"success": False, "error": "상세 정보를 찾지 못했습니다."})
         return jsonify({"success": True, "detail": detail})
     except Exception as e:
-        return jsonify({"success": False, "error": f"상세 조회 실패: {e}"})
+        return jsonify({"success": False, "error": f"상세 조회 실패: {_safe_err(e)}"})
 
 def _patreg_key() -> str:
     """등록원부 실시간 조회(공공데이터포털) 서비스키.
@@ -6066,7 +6108,7 @@ def assist_patent_register():
             out = {"success": False, "kind": "api",
                    "error": f"등록원부 응답 오류: {msg} (HTTP {r.status_code}). "
                             f"PATENT_REG_API_KEY의 활용신청·Decoding 키 여부를 확인하세요."}
-            if request.args.get("debug"):
+            if _debug_allowed():
                 out["_debug"] = {"http": r.status_code, "snippet": raw[:800]}
             return jsonify(out)
         code = _reg_scalar(data, "resultCode")
@@ -6081,12 +6123,12 @@ def assist_patent_register():
         if record is None and not ok:
             out = {"success": False, "kind": "api",
                    "error": f"등록원부 조회 오류: {msg or code or '실패'}"}
-            if request.args.get("debug"):
+            if _debug_allowed():
                 out["_debug"] = {"http": r.status_code, "code": code, "msg": msg, "snippet": raw[:900]}
             return jsonify(out)
         if record is None:                        # 성공이지만 해당 등록번호 데이터 없음
             resp = {"success": True, "register": None, "empty": True}
-            if request.args.get("debug"):
+            if _debug_allowed():
                 resp["_debug"] = {"http": r.status_code, "code": code, "msg": msg, "snippet": raw[:900]}
             return jsonify(resp)
 
@@ -6149,11 +6191,11 @@ def assist_patent_register():
             "noelsLcns": _lcns("noelsLcnsPsnNm", "noelsLcns"),
         }
         resp = {"success": True, "register": reg}
-        if request.args.get("debug"):
+        if _debug_allowed():
             resp["_debug"] = {"http": r.status_code, "code": code, "msg": msg, "snippet": raw[:1200]}
         return jsonify(resp)
     except Exception as e:
-        return jsonify({"success": False, "error": f"등록원부 조회 실패: {e}"})
+        return jsonify({"success": False, "error": f"등록원부 조회 실패: {_safe_err(e)}"})
 
 def _pick_dates(s):
     """문자열에서 날짜(YYYYMMDD·YYYY-MM-DD·YYYY.MM.DD 등)를 모두 추출."""
@@ -6206,7 +6248,7 @@ def assist_support():
                    "error": f"K-Startup 응답 오류: {msg} (HTTP {r.status_code}). "
                             f"DATA_GO_KR_KEY의 'K-Startup 조회서비스'(15125364) 활용신청·"
                             f"Decoding 키 여부를 확인하세요."}
-            if request.args.get("debug"):
+            if _debug_allowed():
                 out["_debug"] = {"http": r.status_code, "base": base, "snippet": body_txt}
             return jsonify(out)
         import html as _html
@@ -6271,12 +6313,12 @@ def assist_support():
                 "scanned": scanned,
                 "truncated": bool(matched > len(items) or (query and src_total and scanned < src_total)),
                 "has_more": bool(query and src_total and scanned < src_total)}
-        if request.args.get("debug"):
+        if _debug_allowed():
             resp["_debug"] = {"http": r.status_code, "scanned": scanned,
                               "src_total": src_total, "matched": matched, "base": base}
         return jsonify(resp)
     except Exception as e:
-        return jsonify({"success": False, "error": f"조회 실패: {e}"})
+        return jsonify({"success": False, "error": f"조회 실패: {_safe_err(e)}"})
 
 _NARA_BASE = {}   # {op: 동작 확인된 base URL} — 후보 탐색 결과 캐시
 
@@ -6337,7 +6379,7 @@ def assist_procurement():
                    "error": "나라장터 응답 오류: 등록된 엔드포인트에서 데이터를 받지 못했습니다. "
                             "DATA_GO_KR_KEY의 '나라장터 입찰공고정보서비스'(15129394) 활용신청·"
                             "Decoding 키 여부를 확인하세요."}
-            if request.args.get("debug"):
+            if _debug_allowed():
                 out["_debug"] = {"op": op, "attempts": attempts}
             return jsonify(out)
         if not override:
@@ -6367,7 +6409,7 @@ def assist_procurement():
                          ["입찰마감", clse or "-"]],
                 "url": row.get("bidNtceDtlUrl") or row.get("bidNtceUrl") or ""})
         resp = {"success": True, "count": len(items), "items": items}
-        if request.args.get("debug"):         # 배포 진단: 나라장터 응답 상태
+        if _debug_allowed():         # 배포 진단: 나라장터 응답 상태
             resp["_debug"] = {"chosen": chosen, "op": op, "attempts": attempts,
                               "resultCode": header.get("resultCode", ""),
                               "resultMsg": header.get("resultMsg", ""),
@@ -6375,7 +6417,7 @@ def assist_procurement():
                               "item_count": len(items)}
         return jsonify(resp)
     except Exception as e:
-        return jsonify({"success": False, "error": f"조회 실패: {e}"})
+        return jsonify({"success": False, "error": f"조회 실패: {_safe_err(e)}"})
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -6527,7 +6569,7 @@ def expense_hwpx():
         return Response(out.getvalue(), mimetype="application/hwp+zip",
                         headers={"Content-Disposition": "attachment; filename*=UTF-8''" + _q(fname)})
     except Exception as e:
-        return jsonify({"success": False, "error": f"HWPX 생성 실패: {e}"}), 500
+        return jsonify({"success": False, "error": f"HWPX 생성 실패: {_safe_err(e)}"}), _err_status(e)
 
 
 # ── 실행 ─────────────────────────────────────────────────────────────────────
