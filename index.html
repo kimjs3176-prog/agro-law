@@ -8570,7 +8570,7 @@ async function openRegRanking(period){
   if(!d || !d.enabled){ b.innerHTML=_stOffHtml(); return; }
   const items=d.items||[];
   const lab={week:'최근 7일',month:'이번 달',all:'집계 시작 이후'}[period];
-  b.innerHTML=`<div class="rk-mhead">${_rkSeg(period,'openRegRanking')}<span class="rk-sub">${lab} · 내규 전문 열람 기준(같은 사람이 10분 안에 다시 연 것은 1회)</span></div>`+
+  b.innerHTML=`<div class="rk-mhead">${_rkSeg(period,'openRegRanking')}<span class="rk-sub">${lab} · 내규 전문 열람 기준(같은 사람이 10분 안에 다시 연 것은 1회) · 누가 열람했는지는 저장하지 않습니다</span></div>`+
     (items.length?`<ol class="rk-list rk-full">${_rkRows(items,20,true)}</ol>`
       :`<div class="rk-empty">${d.error?escHtml(d.error):'아직 집계된 열람 기록이 없습니다.'}</div>`);
   if(body) _rkFillBox(period);

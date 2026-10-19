@@ -10,6 +10,7 @@
   7. 조문 판별 정규식 과부하 방지, 오류 응답의 서비스키 가림·502, ?debug=1 관리자 전용
   8. 동시 조회 시간 제한, 캐시 상한, 무거운 검색 호출 제한, Ollama 미설정 차단, KIPRIS https
   9. Gemini 키는 URL 대신 헤더, AI 가 배열 JSON 을 돌려줘도 500 없음, 원본 파일 보안 헤더, 쓰지 않는 API 정리
+ 10. 방문자 수·내규 랭킹: 운영 저장소(Upstash Redis) 경로를 메모리 흉내로 재현해 집계·저장 내용 확인
 
 사용: python scripts/test_api_safety.py   (실패 시 종료 코드 1)
 """
@@ -178,6 +179,66 @@ if f:
     check(r.headers.get("X-Content-Type-Options") == "nosniff" and "script-src 'none'" in r.headers.get("Content-Security-Policy", ""),
           f"원본 파일 nosniff·CSP ({r.status_code})")
 check(c.get("/api/ai/models").status_code == 404, "쓰지 않던 /api/ai/models 제거")
+
+print("10) 방문자 수·내규 랭킹(Redis 경로)·저장 내용")
+c.post("/api/stats/visit", json={"vid": "ffffffffffff9", "new": True})
+check("ffffffffffff9" not in open(A._STATS_FILE, encoding="utf-8").read(), "로컬 파일에도 방문자 ID 원문 없음")
+DB = {}
+
+
+def _fake_redis(cmds):
+    out = []
+    for op, *a in cmds:
+        if op == "INCR":
+            DB[a[0]] = int(DB.get(a[0], 0)) + 1; out.append(DB[a[0]])
+        elif op == "GET":
+            out.append(DB.get(a[0]))
+        elif op == "EXPIRE":
+            out.append(1)
+        elif op == "PFADD":
+            DB.setdefault(a[0], set()).update(a[1:]); out.append(1)
+        elif op == "PFCOUNT":
+            out.append(len(set().union(*[DB.get(k, set()) for k in a])))
+        elif op == "ZADD":
+            DB.setdefault(a[0], {})[a[2]] = float(a[1]); out.append(1)
+        elif op == "ZINCRBY":
+            z = DB.setdefault(a[0], {}); z[a[2]] = z.get(a[2], 0) + float(a[1]); out.append(z[a[2]])
+        elif op == "ZREMRANGEBYSCORE":
+            z = DB.get(a[0], {})
+            for m in [m for m, v in z.items() if float(a[1]) <= v <= float(a[2])]:
+                z.pop(m)
+            out.append(0)
+        elif op == "ZCOUNT":
+            out.append(sum(1 for v in DB.get(a[0], {}).values() if v >= float(a[1])))
+        elif op in ("ZRANGE", "ZREVRANGE"):
+            z = sorted(DB.get(a[0], {}).items(), key=lambda x: x[1], reverse=op == "ZREVRANGE")
+            z = z[int(a[1]):(None if a[2] == "-1" else int(a[2]) + 1)]
+            out.append([v for m, sc in z for v in (m, str(sc))])
+        else:
+            raise RuntimeError(op)
+    return out
+
+
+_orig_redis, _orig_url = A._redis, (A._STATS_URL, A._STATS_TOKEN)
+A._redis, A._STATS_URL, A._STATS_TOKEN = _fake_redis, "https://x.upstash.io", "t"
+A._stats_cache.clear()
+for vid, new in [("aaaaaaaaaaaa1", True), ("aaaaaaaaaaaa1", False), ("aaaaaaaaaaaa1", True), ("bbbbbbbbbbbb2", True)]:
+    c.post("/api/stats/visit", json={"vid": vid, "new": new}, headers={"X-Forwarded-For": "203.0.113.7"})
+sm = c.get("/api/stats/summary").get_json()
+check(sm["today"]["pv"] == 3 and sm["today"]["uv"] == 2 and sm["online"] == 2 and sm["total"] == {"pv": 3, "uv": 2},
+      f"방문 3·방문자 2·현재 접속 2 ({sm['today']}, {sm['online']})")
+t1, t2 = (m["title"] for m in A._load_reg_manifest()[:2])
+for n in (t1, t1, t2, "임의 문자열"):
+    c.post("/api/stats/reg", json={"name": n})
+rk = c.get("/api/stats/ranking?period=week&limit=5").get_json()["items"]
+check(rk[:2] == [{"title": t1, "views": 2}, {"title": t2, "views": 1}] and len(rk) == 2, f"주간 랭킹 {rk}")
+check(all(c.get(f"/api/stats/ranking?period={p}").get_json()["items"][0]["views"] == 2 for p in ("month", "all")), "월간·누적 랭킹")
+dump = repr(DB)
+vid_keys = sorted(k for k, v in DB.items() if isinstance(v, (set, dict)) and "aaaaaaaaaaaa1" in v)
+check("203.0.113.7" not in dump, "IP 저장 안 함")
+check(vid_keys == ["st:online", f"st:uv:{A._stats_day()}", "st:uv:all"], f"방문자 ID는 현재 접속(5분)·방문자 수(HyperLogLog)에만 {vid_keys}")
+A._redis, (A._STATS_URL, A._STATS_TOKEN) = _orig_redis, _orig_url
+A._stats_cache.clear()
 
 if fails:
     sys.exit(f"\n실패 {len(fails)}건")

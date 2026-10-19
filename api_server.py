@@ -6720,6 +6720,8 @@ def _stats_record_visit(vid: str, new_session: bool) -> None:
                      ["PFADD", "st:uv:all", vid]]
         _redis(cmds)
     elif be == "file":
+        import hashlib
+        vid = hashlib.sha256(vid.encode()).hexdigest()[:12]   # 로컬 파일에도 방문자 ID 원문은 남기지 않는다
         with _STATS_LOCK:
             d = _stats_file_load()
             on = d.setdefault("online", {})
