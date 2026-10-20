@@ -2394,6 +2394,45 @@ footer{background:var(--bg)!important;}
 body.dark .scenario-chip{background:var(--sub);border-color:var(--bd);color:var(--tx);}
 body.dark .scenario-chip:hover{background:var(--gl);color:var(--gp);}
 .forms-q:focus{outline:none;border-color:var(--g);box-shadow:var(--shadow-focus);background:var(--sf);}
+
+/* 내규 체계도 */
+.idb-hier{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bd);background:var(--sf);color:var(--gp);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);white-space:nowrap;}
+.idb-hier:hover{border-color:var(--g);background:var(--gl);}
+.idb-hier svg{display:block;}
+.hr-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.hr-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--mu);font-weight:600;}
+.hr-legend span{display:inline-flex;align-items:center;gap:5px;}
+.hr-tools{display:flex;gap:6px;align-items:center;}
+.hr-q{width:200px;padding:6px 10px;}
+.hr-note{margin-bottom:10px;}
+.hr-tree{max-height:min(62vh,640px);overflow:auto;border:1px solid var(--bd);border-radius:12px;padding:10px 12px;background:var(--sf);}
+.hr-tree ul{list-style:none;margin:0;padding:0;}
+.hr-tree ul ul{margin-left:11px;padding-left:16px;border-left:1px solid var(--bd2);}
+.hr-li > ul{display:none;}
+.hr-li.open > ul{display:block;}
+.hr-tree ul ul > .hr-li{position:relative;}
+.hr-tree ul ul > .hr-li::before{content:"";position:absolute;left:-16px;top:16px;width:12px;border-top:1px solid var(--bd2);}
+.hr-row{display:flex;align-items:center;gap:7px;padding:4px 4px;border-radius:7px;min-width:0;flex-wrap:wrap;}
+.hr-row:hover{background:var(--sub);}
+.hr-tg{width:20px;height:20px;border:none;background:transparent;color:var(--mu);border-radius:5px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;transition:transform .15s;}
+.hr-tg svg{display:block;width:14px;height:14px;}
+.hr-tg:hover{background:var(--gl);color:var(--gp);}
+.hr-li.open > .hr-row > .hr-tg{transform:rotate(90deg);}
+.hr-tg-sp{width:20px;flex-shrink:0;}
+.hr-name{border:none;background:transparent;color:var(--tx);font-size:13.5px;font-weight:600;cursor:pointer;padding:0;font-family:var(--font);text-align:left;}
+.hr-name:hover{color:var(--gp);text-decoration:underline;}
+.hr-top-name{font-size:15px;font-weight:800;}
+.hr-gname{font-size:13px;font-weight:700;color:var(--mu);}
+.hr-cat{font-size:10.5px;font-weight:700;color:var(--mu);background:var(--sub);border-radius:4px;padding:1px 6px;}
+.hr-cnt{font-size:10.5px;font-weight:700;color:var(--gp);background:var(--gl);border-radius:999px;padding:1px 7px;}
+.hr-rel{font-size:11px;color:var(--ht);}
+.hr-li.hr-hit > .hr-row{background:var(--gl);}
+@media (max-width:640px){
+  .hr-tools{width:100%;flex-wrap:wrap;} .hr-q{flex:1 1 100%;width:auto;} .hr-tools .wp-btn{flex:1;justify-content:center;}
+  .hr-tree{padding:8px 6px;} .hr-tree ul ul{margin-left:6px;padding-left:10px;} .hr-tree ul ul > .hr-li::before{left:-10px;width:8px;}
+  .hr-row{flex-wrap:nowrap;align-items:flex-start;} .hr-row .cat-dot{margin-top:5px;} .hr-name{min-width:0;font-size:13px;}
+  .hr-cat,.hr-rel{display:none;}
+}
 </style>
 </head>
 <body>
@@ -2842,6 +2881,7 @@ body.dark .scenario-chip:hover{background:var(--gl);color:var(--gp);}
       <span class="scope-hint" id="scopeHint">규정명·키워드·"규정명 제N조"로 찾기</span>
     </div>
       <div class="scope-tools">
+        <button class="stool" id="stoolHier" onclick="openRegHierarchy()" title="내규 체계도 — 정관·규정·규칙·세칙·예규의 상하관계"><span class="stool-ic" data-icon="hier"></span>체계도</button>
         <button class="stool" id="stoolRank" onclick="openRegRanking()" title="내규 랭킹 — 많이 열람한 내규 순위(주간·월간·누적)"><span class="stool-ic" data-icon="rank"></span>내규 랭킹</button>
         <button class="stool policy-show" id="stoolForms" onclick="openForms()" title="서식 — 규정 별표·별지 서식 검색·열람"><span class="stool-ic" data-icon="forms"></span>서식</button>
       </div>
@@ -5159,6 +5199,7 @@ async function renderInternalDashboard(){
           <div class="idb-title">내규 전체 목록 <span class="idb-total">${total}건</span></div>
           <div class="idb-sub">규정을 클릭하면 전문을 봅니다 · 위 검색창에서 키워드로도 검색</div>
         </div>
+        <button class="idb-hier" onclick="openRegHierarchy()" title="정관·규정·규칙·세칙·예규의 상하관계를 나무 모양으로 봅니다"><span data-icon="hier"></span>체계도 보기</button>
         <div class="idb-fwrap"><span class="idb-fic" data-icon="filter"></span>
         <input id="idbFilter" class="idb-filter" type="search" placeholder="규정명으로 빠르게 찾기…" autocomplete="off"
                oninput="_applyDashFilter()" aria-label="규정명 빠른 필터"></div>
@@ -7588,6 +7629,7 @@ function _cmdkBuild(){
   act('지출결의서','도구',openExpense);
   act('서무비서','도구',openSecretary);
   act('자주 쓰는 문구','도구',openSnippets);
+  act('내규 체계도','도구',openRegHierarchy);
   act('내규 랭킹','통계',openRegRanking);
   act('이용 통계 (접속자 수)','통계',openUsageStats);
   act('서식 (별표·별지)','도구',openForms);
@@ -8651,6 +8693,74 @@ function _stBindTips(root){
     h.addEventListener('mouseleave',()=>{ tip.hidden=true; h.classList.remove('on'); });
   });
 }
+// ── 내규 체계도: 제1조(목적)에 적힌 근거 내규로 상하관계를 잇고, 근거가 없으면 단계 묶음 아래에 둔다 ──
+let _hierNodes=null;
+const _HIER_LEVELS=[['규정','규정'],['규칙','규칙'],['세칙','세칙'],['예규','예규']];
+async function openRegHierarchy(){
+  _wpModal('hierModal','내규 체계도','<div class="assist-loading"><div class="spinner"></div><span>체계도를 만드는 중…</span></div>',true);
+  if(!_hierNodes){
+    try{ const r=await fetch('/api/internal/hierarchy'); const d=await r.json(); if(d.success) _hierNodes=d.nodes; }catch(e){}
+  }
+  const b=document.getElementById('hierModal_b'); if(!b) return;
+  if(!_hierNodes||!_hierNodes.length){ b.innerHTML='<div class="wp-note chg">체계도를 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.</div>'; return; }
+  const linked=_hierNodes.filter(n=>n.parent).length;
+  b.innerHTML=`<div class="hr-top">`+
+      `<div class="hr-legend">${['정관','규정','규칙','세칙','예규'].map(c=>`<span><i class="cat-dot" data-c="${c}"></i>${c}</span>`).join('')}</div>`+
+      `<div class="hr-tools"><input id="hierQ" class="forms-q hr-q" type="search" placeholder="규정명으로 찾기" oninput="_hierFilter(this.value)" aria-label="체계도에서 규정 찾기">`+
+      `<button class="wp-btn sm" onclick="_hierAll(true)">모두 펼치기</button><button class="wp-btn sm" onclick="_hierAll(false)">접기</button></div></div>`+
+    `<div class="wp-note hr-note">각 내규 제1조(목적)에 적힌 근거 내규로 상하관계를 이었습니다(${linked}건, 시행세칙은 이름으로도 연결). `+
+      `근거가 적혀 있지 않은 내규는 단계별 묶음에 모았습니다. 이름을 누르면 전문이 열립니다.</div>`+
+    `<div class="hr-tree" id="hierTree">${_hierTreeHtml()}</div>`;
+}
+function _hierTreeHtml(){
+  const N=_hierNodes, kids={}, by={};
+  N.forEach(n=>{ by[n.title]=n; });
+  N.forEach(n=>{ if(n.parent&&by[n.parent]) (kids[n.parent]=kids[n.parent]||[]).push(n); });
+  const tier={'정관':0,'규정':1,'규칙':2,'세칙':3,'예규':4,'매뉴얼':5,'기타':6};
+  const sort=a=>a.slice().sort((x,y)=>(tier[x.category]??9)-(tier[y.category]??9)||x.title.localeCompare(y.title,'ko'));
+  const desc=t=>(kids[t]||[]).reduce((a,k)=>a+1+desc(k.title),0);
+  const node=(n,open)=>{
+    const ch=sort(kids[n.title]||[]), cnt=desc(n.title);
+    const rel=(n.related||[]).length?`<span class="hr-rel" title="목적 조문에 함께 적힌 내규">관련: ${n.related.map(escHtml).join(', ')}</span>`:'';
+    const row=`<div class="hr-row">${ch.length?`<button class="hr-tg" onclick="_hierToggle(this)" aria-expanded="${open}" aria-label="하위 내규 펼치기/접기">${_icon('chev')}</button>`:'<span class="hr-tg-sp"></span>'}`+
+      `<i class="cat-dot" data-c="${escAttr(n.category)}"></i><button class="hr-name" onclick="_hierOpen('${argAttr(n.title)}')" title="${escAttr(n.title)}${n.revision?' · '+escAttr(n.revision):''} — 전문 보기">${escHtml(n.title)}</button>`+
+      `<span class="hr-cat">${escHtml(n.category)}</span>${cnt?`<span class="hr-cnt">하위 ${cnt}</span>`:''}${rel}</div>`;
+    return `<li class="hr-li${open?' open':''}" data-t="${escAttr(n.title)}">${row}${ch.length?`<ul>${ch.map(c=>node(c,false)).join('')}</ul>`:''}</li>`;
+  };
+  const roots=N.filter(n=>!n.parent||!by[n.parent]);
+  const top=roots.find(n=>n.category==='정관');
+  const rest=roots.filter(n=>n!==top);
+  // 정관 바로 아래: 규정(상위 근거 없음) → 단계별 묶음(규칙·세칙·예규 중 근거 미기재)
+  const groups=_HIER_LEVELS.map(([c,l])=>{
+    const xs=sort(rest.filter(n=>n.category===c)); if(!xs.length) return '';
+    if(c==='규정') return xs.map(x=>node(x,true)).join('');
+    return `<li class="hr-li hr-grp" data-t=""><div class="hr-row"><button class="hr-tg" onclick="_hierToggle(this)" aria-expanded="false" aria-label="묶음 펼치기/접기">${_icon('chev')}</button>`+
+      `<i class="cat-dot" data-c="${c}"></i><span class="hr-gname">${l} · 상위 근거 미기재</span><span class="hr-cnt">${xs.length}</span></div><ul>${xs.map(x=>node(x,false)).join('')}</ul></li>`;
+  }).join('');
+  const others=sort(rest.filter(n=>!['규정','규칙','세칙','예규'].includes(n.category)&&n!==top)).map(x=>node(x,false)).join('');
+  const inner=groups+others;
+  return `<ul class="hr-root">${top?`<li class="hr-li open" data-t="${escAttr(top.title)}"><div class="hr-row"><button class="hr-tg" onclick="_hierToggle(this)" aria-expanded="true" aria-label="펼치기/접기">${_icon('chev')}</button>`+
+    `<i class="cat-dot" data-c="정관"></i><button class="hr-name hr-top-name" onclick="_hierOpen('${argAttr(top.title)}')">${escHtml(top.title)}</button><span class="hr-cat">정관</span></div><ul>${inner}</ul></li>`:inner}</ul>`;
+}
+function _hierToggle(btn){ const li=btn.closest('.hr-li'); const on=li.classList.toggle('open'); btn.setAttribute('aria-expanded',on); }
+function _hierAll(on){ document.querySelectorAll('#hierTree .hr-li').forEach(li=>{ if(li.querySelector('ul')){ li.classList.toggle('open',on); const t=li.querySelector('.hr-tg'); if(t) t.setAttribute('aria-expanded',on); } }); }
+function _hierFilter(q){
+  const tree=document.getElementById('hierTree'); if(!tree) return;
+  q=String(q||'').replace(/\s+/g,'').toLowerCase();
+  const lis=[...tree.querySelectorAll('.hr-li')];
+  if(!q){ lis.forEach(li=>{ li.classList.remove('hr-hit','hr-dim'); li.style.display=''; }); return; }
+  lis.forEach(li=>{ li.classList.remove('hr-hit'); li.style.display='none'; });
+  lis.forEach(li=>{
+    const t=(li.dataset.t||'').replace(/\s+/g,'').toLowerCase();
+    if(t && t.includes(q)){
+      li.classList.add('hr-hit'); li.style.display='';
+      li.querySelectorAll('.hr-li').forEach(c=>c.style.display='');      // 하위도 함께
+      let p=li.parentElement.closest('.hr-li');
+      while(p){ p.style.display=''; p.classList.add('open'); const tg=p.querySelector('.hr-tg'); if(tg) tg.setAttribute('aria-expanded','true'); p=p.parentElement.closest('.hr-li'); }
+    }
+  });
+}
+function _hierOpen(name){ _wpClose('hierModal'); if(_assistMode&&typeof closeAssist==='function') closeAssist(); wsOpen(name,'internal'); }
 async function openUsageStats(){
   _wpModal('usageModal','📊 이용 통계','<div class="assist-loading"><div class="spinner"></div><span>통계를 불러오는 중…</span></div>',true);
   const d=await _stGet('/api/stats/summary');
@@ -9455,7 +9565,8 @@ const _ICON_P={
   pin:'<path d="M9 3h6l-1 6 3 3v2H7v-2l3-3z"/><path d="M12 14v7"/>',
   toc:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h1M4 12h1M4 18h1"/>',
   check:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M14 3v5h5v3"/><circle cx="16.5" cy="16.5" r="3.5"/><path d="M19 19l2 2"/>',
-  panes:'<rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/>'
+  panes:'<rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/>',
+  hier:'<rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/>'
 };
 function _icon(name){
   const p=_ICON_P[name]; if(!p) return '';

@@ -11,6 +11,7 @@
   8. 동시 조회 시간 제한, 캐시 상한, 무거운 검색 호출 제한, Ollama 미설정 차단, KIPRIS https
   9. Gemini 키는 URL 대신 헤더, AI 가 배열 JSON 을 돌려줘도 500 없음, 원본 파일 보안 헤더, 쓰지 않는 API 정리
  10. 방문자 수·내규 랭킹: 운영 저장소(Upstash Redis) 경로를 메모리 흉내로 재현해 집계·저장 내용 확인
+ 11. 내규 체계도: 시행세칙→모규정 연결, 순환 없음, 규정끼리는 상하로 묶지 않음
 
 사용: python scripts/test_api_safety.py   (실패 시 종료 코드 1)
 """
@@ -239,6 +240,22 @@ check("203.0.113.7" not in dump, "IP 저장 안 함")
 check(vid_keys == ["st:online", f"st:uv:{A._stats_day()}", "st:uv:all"], f"방문자 ID는 현재 접속(5분)·방문자 수(HyperLogLog)에만 {vid_keys}")
 A._redis, (A._STATS_URL, A._STATS_TOKEN) = _orig_redis, _orig_url
 A._stats_cache.clear()
+
+print("11) 내규 체계도")
+hd = c.get("/api/internal/hierarchy").get_json()
+by = {n["title"]: n for n in hd["nodes"]}
+check(hd["success"] and hd["count"] == len(A._load_reg_manifest()), f"전체 {hd['count']}건, 연결 {hd['linked']}건")
+check(all(by[t]["parent"] == t.replace(" 시행세칙", "") for t in by if t.endswith("시행세칙") and t.replace(" 시행세칙", "") in by),
+      "시행세칙은 모두 해당 규정 아래")
+def _cyc(t):
+    seen = set()
+    while t:
+        if t in seen:
+            return True
+        seen.add(t); t = by.get(t, {}).get("parent", "")
+    return False
+check(not any(_cyc(t) for t in by), "상하관계 순환 없음")
+check(not any(n["category"] == "규정" and by.get(n["parent"], {}).get("category") == "규정" for n in by.values()), "규정끼리는 대등(상하로 묶지 않음)")
 
 if fails:
     sys.exit(f"\n실패 {len(fails)}건")
