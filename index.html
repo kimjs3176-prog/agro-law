@@ -2378,6 +2378,22 @@ body.dark .idb-card{background:#1a1c21;}
 /* 바닥글 */
 footer{background:var(--bg)!important;}
 #footBrand{color:var(--gp)!important;}
+
+/* 디자인 v2 보정: 남은 이모지 → 선 아이콘, AI 예시 칩·서식 검색창·빈 화면 */
+.ql-ic{display:inline-flex;vertical-align:-2px;margin-right:5px;font-size:14px;color:var(--g);}
+.ql-ic svg{display:block;}
+.ql-fav{color:#f59e0b;}
+.int-upload .ql-ic{margin-right:4px;color:inherit;}
+.ws-icon svg{display:block;width:15px;height:15px;}
+.ws-icon.wswatch.on{color:#ef4444;}
+.ws-float svg,.st-foot-btn svg{display:inline-block;vertical-align:-2px;}
+.empty-icon{opacity:1;display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:var(--gl);color:var(--g);font-size:30px;margin-bottom:14px;}
+.empty-icon svg{display:block;}
+.scenario-chip{border:1px solid var(--bd);background:var(--sub);color:var(--tx);font-weight:500;}
+.scenario-chip:hover{background:var(--gl);border-color:var(--g);color:var(--gp);}
+body.dark .scenario-chip{background:var(--sub);border-color:var(--bd);color:var(--tx);}
+body.dark .scenario-chip:hover{background:var(--gl);color:var(--gp);}
+.forms-q:focus{outline:none;border-color:var(--g);box-shadow:var(--shadow-focus);background:var(--sf);}
 </style>
 </head>
 <body>
@@ -2840,8 +2856,8 @@ footer{background:var(--bg)!important;}
     </div>
     <!-- 내규 카테고리 바로가기 (내규·통합 모드일 때 표시) -->
     <div id="internalExamples" style="display:none;">
-      <div class="qlabel int-ex-label">⭐ 즐겨찾기한 내규
-        <a class="int-upload" href="/upload" title="개정·신규 내규 문서를 업로드합니다">⬆ 내규 업로드</a>
+      <div class="qlabel int-ex-label"><span class="ql-ic ql-fav" data-icon="fav"></span>즐겨찾기한 내규
+        <a class="int-upload" href="/upload" title="개정·신규 내규 문서를 업로드합니다"><span class="ql-ic" data-icon="upload"></span>내규 업로드</a>
       </div>
       <div class="chips" id="internalChips"></div>
     </div>
@@ -2867,7 +2883,7 @@ footer{background:var(--bg)!important;}
     <div class="chips" id="chips"><span style="font-size:12px;color:var(--ht);">검증 중...</span></div>
     <!-- 저장된(핀) 검색 -->
     <div class="recent" id="savedRow" style="display:none">
-      <span class="rec-label">📌 저장된 검색</span>
+      <span class="rec-label"><span class="ql-ic" data-icon="pin"></span>저장된 검색</span>
       <div id="savedChips" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1;"></div>
       <button class="rec-save-btn" onclick="saveCurrentSearch()" title="현재 검색어를 저장된 검색으로 추가">＋ 검색 저장</button>
     </div>
@@ -2921,7 +2937,7 @@ footer{background:var(--bg)!important;}
   <!-- 다중 창(그리드) 열람 작업공간: 내규·법령을 한 페이지에서 나란히 -->
   <div id="workspace" class="ws" style="display:none;" aria-label="문서 열람 작업공간">
     <div class="ws-bar">
-      <span class="ws-bar-t">📑 열람 작업공간 <span class="ws-cnt" id="wsCnt">0</span></span>
+      <span class="ws-bar-t"><span class="ql-ic" data-icon="panes"></span>열람 작업공간 <span class="ws-cnt" id="wsCnt">0</span></span>
       <span class="ws-hint" id="wsHint">문서를 더 열면 이 화면에서 나란히 비교할 수 있어요</span>
       <span style="flex:1"></span>
       <span class="ws-seg" id="wsModeSeg" role="group" aria-label="창 배치 방식">
@@ -5067,7 +5083,7 @@ function renderWelcome(){
             :                     '검색어를 입력해 주세요';
   res.innerHTML=`
     <div class="empty" style="padding:44px 20px;">
-      <div class="empty-icon">🔍</div>
+      <div class="empty-icon">${_icon('search')}</div>
       <p>${hint}</p>
     </div>`;
 }
@@ -6160,7 +6176,7 @@ function buildApxIndex(container){
   const box=document.createElement('div');
   box.className='apx-idx';
   box.innerHTML=`<div class="apx-idx-h" onclick="const b=this.nextElementSibling;b.style.display=b.style.display==='none'?'flex':'none';">`+
-    `📎 별표·별지 목록<span class="cnt">${items.length}건</span></div>`+
+    `<span class="ql-ic">${_icon('forms')}</span>별표·별지 목록<span class="cnt">${items.length}건</span></div>`+
     `<div class="apx-idx-b">${chips}</div>`;
   container.insertBefore(box, container.firstChild);
 }
@@ -6860,7 +6876,7 @@ function renderScenarioResults(d){
 
   if(!laws.length && !intItems.length){
     document.getElementById('results').innerHTML = guideCard +
-      `<div class="empty" style="margin-top:8px;"><div class="empty-icon">🔍</div><p>관련 내규·조문을 찾지 못했습니다. 질문을 더 구체적으로 입력해보세요.</p></div>`;
+      `<div class="empty" style="margin-top:8px;"><div class="empty-icon">${_icon('search')}</div><p>관련 내규·조문을 찾지 못했습니다. 질문을 더 구체적으로 입력해보세요.</p></div>`;
     return;
   }
 
@@ -8041,7 +8057,7 @@ function renderEmpty(msg){
   const tb=document.getElementById('regToolbar'); if(tb){ tb.style.display='none'; tb.innerHTML=''; }
   const rf=document.getElementById('resFilter'); if(rf){ rf.style.display='none'; rf.innerHTML=''; }
   _currentResults=null;
-  document.getElementById('results').innerHTML=`<div class="empty"><div class="empty-icon">🔍</div><p>${msg}</p></div>`;
+  document.getElementById('results').innerHTML=`<div class="empty"><div class="empty-icon">${_icon('search')}</div><p>${msg}</p></div>`;
 }
 
 // ── API 상태 ──
@@ -8530,8 +8546,8 @@ async function _stFootRefresh(){
   const el=document.getElementById('statsFoot'); if(!el) return;
   const d=await _stGet('/api/stats/summary');
   if(!d || !d.enabled || d.error){ el.hidden=true; return; }
-  el.innerHTML=`<span>👥 오늘 방문자 <b>${_stNum(d.today.uv)}</b>명</span><span>현재 접속 <b>${_stNum(d.online)}</b>명</span>`+
-    `<span>누적 방문자 <b>${_stNum(d.total.uv)}</b>명</span><button class="st-foot-btn" onclick="openUsageStats()">📊 이용 통계</button>`;
+  el.innerHTML=`<span><span class="ql-ic">${_icon('users')}</span>오늘 방문자 <b>${_stNum(d.today.uv)}</b>명</span><span>현재 접속 <b>${_stNum(d.online)}</b>명</span>`+
+    `<span>누적 방문자 <b>${_stNum(d.total.uv)}</b>명</span><button class="st-foot-btn" onclick="openUsageStats()">${_icon('stats')} 이용 통계</button>`;
   el.hidden=false;
 }
 // ── 내규 랭킹 ──
@@ -9434,7 +9450,12 @@ const _ICON_P={
   flame:'<path d="M12 21a6 6 0 0 0 6-6c0-4-3-6-3.5-9.5C12 7 10 9.5 10 12c-1.2-.6-2-1.8-2-3.3C6.8 10 6 12.3 6 15a6 6 0 0 0 6 6z"/>',
   apps:'<rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/>',
   ext:'<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/>',
-  chev:'<path d="M9 6l6 6-6 6"/>'
+  chev:'<path d="M9 6l6 6-6 6"/>',
+  search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+  pin:'<path d="M9 3h6l-1 6 3 3v2H7v-2l3-3z"/><path d="M12 14v7"/>',
+  toc:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h1M4 12h1M4 18h1"/>',
+  check:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M14 3v5h5v3"/><circle cx="16.5" cy="16.5" r="3.5"/><path d="M19 19l2 2"/>',
+  panes:'<rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/>'
 };
 function _icon(name){
   const p=_ICON_P[name]; if(!p) return '';
@@ -10106,7 +10127,7 @@ function wsUpdateFloat(){
   if(_wsPanes.length && hidden){
     if(!f){ f=document.createElement('button'); f.id='wsFloat'; f.className='ws-float';
       f.setAttribute('aria-label','열람 작업공간 다시 열기'); f.onclick=wsReopen; document.body.appendChild(f); }
-    f.innerHTML=`📑 작업공간 <b>${_wsPanes.length}</b>`;
+    f.innerHTML=`${_icon('panes')} 작업공간 <b>${_wsPanes.length}</b>`;
     f.style.display='';
   } else if(f){ f.style.display='none'; }
 }
@@ -10218,9 +10239,9 @@ function wsPaneHtml(p, cls, pos){
       <input class="ws-pane-filter" placeholder="조문·키워드" value="${escAttr(p.filter||'')}"
              oninput="wsFilter(${p.id},this.value)" aria-label="이 문서 안에서 찾기">
       ${moveBtns}${maxBtn}
-      <button class="ws-icon wswatch${_revIsWatched(isInt?'internal':'law',p.name)?' on':''}" id="wswatch_${p.id}" title="개정 모니터링에 추가/해제" aria-pressed="${_revIsWatched(isInt?'internal':'law',p.name)}" onclick="_wsWatchToggle(${p.id})">🔔</button>
-      ${isInt?`<button class="ws-icon" title="조문 목차" onclick="_wsToc(${p.id})">📑</button>`:''}
-      ${isInt?`<button class="ws-icon" title="내규 오류 점검(조문번호·상호참조·괄호 등, AI 미사용)" onclick="wsRuleCheck(${p.id})">🔎</button>`:''}
+      <button class="ws-icon wswatch${_revIsWatched(isInt?'internal':'law',p.name)?' on':''}" id="wswatch_${p.id}" title="개정 모니터링에 추가/해제" aria-pressed="${_revIsWatched(isInt?'internal':'law',p.name)}" onclick="_wsWatchToggle(${p.id})">${_icon('bell')}</button>
+      ${isInt?`<button class="ws-icon" title="조문 목차" onclick="_wsToc(${p.id})">${_icon('toc')}</button>`:''}
+      ${isInt?`<button class="ws-icon" title="내규 오류 점검(조문번호·상호참조·괄호 등, AI 미사용)" onclick="wsRuleCheck(${p.id})">${_icon('check')}</button>`:''}
       <button class="ws-icon" title="최소화 — 하단 책갈피로 내리기(내용 유지)" onclick="wsMinimize(${p.id})">⌄</button>
       <button class="ws-icon" title="전체화면·상세 기능(AI·메모·비교)" onclick="wsExpand(${p.id})">⤢</button>
       <button class="ws-icon" title="이 창 닫기" onclick="wsClose(${p.id})">✕</button>
