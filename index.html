@@ -2832,7 +2832,7 @@ body.dark .scenario-chip:hover{background:var(--gl);color:var(--gp);}
     <div class="brand-txt">
     <span class="brand"><span class="brand-full">KOAT Work Place</span><span class="brand-short">KOAT</span></span>
     <span class="brand-en">Work Assistant</span><br>
-    <span class="brand-sub">AI내규똑똑 · 법령 · 기업 · 특허 · 지원사업 · 조달 통합 지원</span>
+    <span class="brand-sub">AI내규똑똑 · 법령 · 기업 · 특허 · 지원사업 통합 지원</span>
     </div>
   </div>
     <nav class="side-menu" id="sideMenu" aria-label="주요 메뉴">
@@ -3235,6 +3235,12 @@ async function _loadAssistStatus(){
   // 실패는 캐시하지 않는다 — 일시적 네트워크 오류로 전 세션 '서비스키 필요'가 뜨는 것을 방지
   try{ const r=await fetch('/api/assist/status'); const d=await r.json(); _assistStatus=d||{}; return _assistStatus; }
   catch(e){ return {}; }
+}
+// 하단 'Powered by' 출처: 실제로 쓰는(서비스키가 설정된) 서비스만
+function _footSources(st){
+  st=st||{};
+  const on={patent:!!st.patent, dart:!!st.dart, datago:!!(st.company_basic||st.support)};
+  document.querySelectorAll('.foot-ext[data-src]').forEach(el=>{ el.hidden=!on[el.dataset.src]; });
 }
 async function openAssist(kind){
   if(_policyBlocked()) return;
@@ -7668,7 +7674,7 @@ function _cmdkBuild(){
   const act=(label,hint,run)=>A.push({label,hint,run});
   act('AI내규똑똑 검색','모드',()=>{ if(_assistMode)closeAssist(); setMode('internal'); document.getElementById('q').focus(); });
   act('법령 조회','모드',()=>{ if(_assistMode)closeAssist(); setMode('law'); document.getElementById('q').focus(); });
-  act('AI 시나리오 검색','모드',()=>{ if(_assistMode)closeAssist(); setMode('scenario'); });
+  act('AI 질문','모드',()=>{ if(_assistMode)closeAssist(); setMode('scenario'); });
   act('지출결의서','도구',openExpense);
   act('서무비서','도구',openSecretary);
   act('자주 쓰는 문구','도구',openSnippets);
@@ -7678,10 +7684,11 @@ function _cmdkBuild(){
   act('서식 (별표·별지)','도구',openForms);
   act('즐겨찾기','도구',openFavModal);
   act('북마크·메모한 조문','도구',openBmHub);
-  act('기업 조회','공공조회',()=>openAssist('company'));
-  act('특허 조회','공공조회',()=>openAssist('patent'));
-  act('지원사업 조회','공공조회',()=>openAssist('support'));
-  act('조달공고 조회','공공조회',()=>openAssist('procurement'));
+  // 공공조회는 서비스키가 설정된 것만(설정 여부를 아직 모르면 일단 표시)
+  const _on=k=>!_assistStatus || _assistStatus[k]!==false;
+  if(_on('company')) act('기업 조회','공공조회',()=>openAssist('company'));
+  if(_on('patent')) act('특허 조회','공공조회',()=>openAssist('patent'));
+  if(_on('support')) act('지원사업 조회','공공조회',()=>openAssist('support'));
   act('내규 업로드','도구',()=>{ location.href='/upload'; });
   act('다크모드 전환','설정',toggleDark);
   // 즐겨찾기 항목
@@ -9621,7 +9628,8 @@ function _hydrateIcons(root){
 document.addEventListener('DOMContentLoaded',()=>{
   _hydrateIcons();
   try{ _migrateCollections(); }catch(_){}
-  try{ _statsStart(); }catch(_){}           // 이용 통계(접속자 수·내규 랭킹)
+  try{ _statsStart(); }catch(_){}
+  _loadAssistStatus().then(_footSources).catch(()=>{});           // 이용 통계(접속자 수·내규 랭킹)
   try{ _revWatchRefreshBadge(); }catch(_){}   // 개정 모니터링 배지(관심 규정 변동 건수)
   // ── 이벤트 위임: 클릭 ──────────────────────────────────────────────────
   document.addEventListener('click', e=>{
@@ -12508,13 +12516,13 @@ async function showArtHistory(idx){
     </div>
     <div class="st-foot" id="statsFoot" hidden></div>
     <div id="footSub" style="margin-bottom:6px;">
-      AI내규똑똑 · 국가법령 · 기업 · 특허 · 지원사업 · 조달 통합 업무 지원
+      AI내규똑똑 · 국가법령 · 기업 · 특허 · 지원사업 통합 업무 지원
     </div>
     <div style="line-height:1.7;max-width:760px;margin:0 auto;">
       © 2026 <strong>kimjs</strong> · Powered by
-      <a href="https://www.law.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">법제처 국가법령정보센터</a><span class="foot-ext"> ·
-      <a href="https://plus.kipris.or.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">특허청 KIPRIS</a> ·
-      <a href="https://opendart.fss.or.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">금융감독원 DART</a> ·
+      <a href="https://www.law.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">법제처 국가법령정보센터</a><span class="foot-ext" data-src="patent" hidden> ·
+      <a href="https://plus.kipris.or.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">특허청 KIPRIS</a></span><span class="foot-ext" data-src="dart" hidden> ·
+      <a href="https://opendart.fss.or.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">금융감독원 DART</a></span><span class="foot-ext" data-src="datago" hidden> ·
       <a href="https://www.data.go.kr" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none;">공공데이터포털</a></span>
     </div>
   </footer>
