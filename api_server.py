@@ -5410,6 +5410,9 @@ def assist_status():
     """
     out = {k: bool(_assist_key(k))
            for k in ("company", "patent", "support", "procurement")}
+    # 하단 출처 표시용: DART(기업 재무)·공공데이터포털(사업자 상태·지원사업) 키 설정 여부
+    out["dart"] = bool(_dart_key())
+    out["company_basic"] = bool(_dgk_key())
     if _debug_allowed():
         out["keys"] = {name: bool((os.environ.get(name, "") or "").strip())
                        for name in ("DART_API_KEY", "DATA_GO_KR_KEY",
