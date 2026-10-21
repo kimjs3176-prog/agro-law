@@ -5148,6 +5148,87 @@ def _harvest_internal_names(cli, tools):
 _REG_CAT_ORDER = ("정관", "규정", "규칙", "세칙", "예규", "매뉴얼")
 
 
+# ── 내규 체계도(상하관계) ─────────────────────────────────────────────────
+# 상위 내규는 각 규정 제1조(목적)에 적힌 근거 내규로 판단한다
+# (예: "이 규칙은 「복무규정」 제N조에 따라…" → 복무규정의 하위). 시행세칙은 이름으로도 연결한다.
+# 근거가 적혀 있지 않은 내규는 같은 단계(규정·규칙·예규) 묶음 아래에 둔다.
+_REG_TIER = {"정관": 0, "규정": 1, "규칙": 2, "세칙": 2, "예규": 3, "매뉴얼": 3}
+_HIER_CACHE: dict = {"sig": None, "data": None}
+
+
+def _reg_purpose_text(slug: str) -> str:
+    import reg_chunks as _rc
+    try:
+        for i, ch in enumerate(_rc.iter_chunks([slug])):
+            if str(ch.get("no")) == "1" or i >= 3:
+                return ch.get("text", "")[:600]
+    except Exception:
+        pass
+    return ""
+
+
+def _reg_hierarchy() -> list:
+    man = _load_reg_manifest()
+    sig = tuple((m.get("slug"), m.get("revision")) for m in man)
+    if _HIER_CACHE["sig"] == sig and _HIER_CACHE["data"] is not None:
+        return _HIER_CACHE["data"]
+    norm = lambda t: re.sub(r"\s+", "", t or "")
+    by_title = {m.get("title", ""): m for m in man if m.get("title")}
+    # 긴 이름부터 찾아 '보수규정'이 '임원보수규정' 안에서 잘못 잡히지 않게 한다
+    names = sorted(by_title, key=len, reverse=True)
+    short = {t: norm(t).replace("한국농업기술진흥원", "") for t in names}
+    nodes = []
+    for t, m in by_title.items():
+        cat = (m.get("category") or "기타").strip()
+        tier = _REG_TIER.get(cat, 3)
+        head = norm(_reg_purpose_text(m.get("slug", "")))
+        head = head.replace(norm(t), "", 1)               # 청크 앞머리의 자기 이름 제거
+        found = []                                         # (본문 위치, 이름)
+        for x in names:
+            sx = short[x]
+            if x == t or len(sx) < 3 or sx not in head:
+                continue
+            found.append((head.index(sx), x))
+            head = head.replace(sx, "\0" * len(sx))       # 위치는 유지하고 짧은 이름이 다시 잡히지 않게
+        refs = [x for _, x in sorted(found)]
+        mt = re.match(r"(.+?)\s*시행세칙$", t)
+        if mt and mt.group(1) in by_title and mt.group(1) not in refs:
+            refs.insert(0, mt.group(1))
+        # 상위: 목적 조문에 먼저 나오는 더 높은 단계의 내규. 같은 단계는 규칙 이하에서만 인정
+        # (규정끼리는 서로 근거를 들어도 대등한 관계로 본다 — 예: 인사규정 ↔ 직제규정)
+        def _ok(r):
+            rt = _REG_TIER.get(by_title[r].get("category", ""), 3)
+            return rt < tier or (rt == tier and tier >= 2)
+        parent = next((r for r in refs if _ok(r)), "")
+        nodes.append({"title": t, "category": cat, "revision": (m.get("revision") or "").strip(),
+                      "parent": parent, "related": [r for r in refs if r != parent]})
+    # 순환 방지: 조상 사슬에 자신이 다시 나오면 연결을 끊는다
+    par = {n["title"]: n["parent"] for n in nodes}
+    for n in nodes:
+        seen, cur = {n["title"]}, n["parent"]
+        while cur:
+            if cur in seen:
+                n["parent"] = ""
+                par[n["title"]] = ""
+                break
+            seen.add(cur)
+            cur = par.get(cur, "")
+    _HIER_CACHE.update(sig=sig, data=nodes)
+    return nodes
+
+
+@app.route("/api/internal/hierarchy")
+def internal_hierarchy():
+    """내규 체계도: [{title, category, revision, parent, related}] — parent 가 비면 단계 묶음 아래."""
+    try:
+        nodes = _reg_hierarchy()
+    except Exception as e:
+        print(f"[hier] 실패: {_redact(str(e))}")
+        return jsonify({"success": False, "error": "체계도를 만들지 못했습니다.", "nodes": []}), 500
+    return jsonify({"success": True, "count": len(nodes), "linked": sum(1 for n in nodes if n["parent"]),
+                    "nodes": nodes})
+
+
 @app.route("/api/internal/list")
 def internal_list():
     """내규 전체 목록 — 업로드 원본(regulations_manifest.json)을 기준으로 제공.
