@@ -12,6 +12,7 @@
   9. Gemini 키는 URL 대신 헤더, AI 가 배열 JSON 을 돌려줘도 500 없음, 원본 파일 보안 헤더, 쓰지 않는 API 정리
  10. 방문자 수·내규 랭킹: 운영 저장소(Upstash Redis) 경로를 메모리 흉내로 재현해 집계·저장 내용 확인
  11. 내규 체계도: 시행세칙→모규정 연결, 순환 없음, 규정끼리는 상하로 묶지 않음
+ 12. 내규 검색 보강: '규정명 제N조' 직접 조회·없는 조문 안내·문장형 질문 낱말 검색, 법령명 확인 묶음 요청
 
 사용: python scripts/test_api_safety.py   (실패 시 종료 코드 1)
 """
@@ -256,6 +257,24 @@ def _cyc(t):
     return False
 check(not any(_cyc(t) for t in by), "상하관계 순환 없음")
 check(not any(n["category"] == "규정" and by.get(n["parent"], {}).get("category") == "규정" for n in by.values()), "규정끼리는 대등(상하로 묶지 않음)")
+
+print("12) 내규 검색 보강·법령명 확인 묶음")
+d = c.get("/api/internal/search", query_string={"query": "여비규정 제5조"}).get_json()
+check(d.get("article_ref") == {"title": "여비규정", "no": "5"} and "제5조" in d["structured"][0]["content"][:12],
+      "'여비규정 제5조' → 그 조문")
+d = c.get("/api/internal/search", query_string={"query": "보수규정 제38조의2"}).get_json()
+check((d.get("article_ref") or {}).get("no") == "38의2", "'제38조의2' 가지 조문")
+d = c.get("/api/internal/search", query_string={"query": "감사규정 제999조"}).get_json()
+check(d.get("article_missing", {}).get("title") == "감사규정" and not d.get("structured"), "없는 조문은 원인 안내")
+d = c.get("/api/internal/search", query_string={"query": "출장을 가서 숙박비를 초과로 쓴 경우 어떻게 정산하나요"}).get_json()
+check(d.get("fallback") == "terms" and {"출장", "숙박비"} <= set(d.get("terms") or []) and
+      "여비규정" in [x["title"] for x in d["structured"][:3]], f"문장형 질문 → 낱말 검색 {d.get('terms')}")
+check(A._int_terms("연차휴가 사용 방법")[0] == "연차휴가", "규정 낱말은 조사로 자르지 않음(연차휴가)")
+d = c.get("/api/internal/search", query_string={"query": "여비"}).get_json()
+check(not d.get("fallback") and d.get("structured"), "일반 검색은 그대로")
+v = c.get("/api/validate", query_string={"qs": "농지법|특허법|" + "|".join(f"x{i}" for i in range(60))}).get_json()
+check(isinstance(v.get("valid"), list) and len(v["valid"]) + len(v["failed"]) <= 40, "법령명 확인 묶음 요청(최대 40개)")
+check("농지법" in v["failed"], "조회 실패는 '없음'으로 단정하지 않음")
 
 if fails:
     sys.exit(f"\n실패 {len(fails)}건")

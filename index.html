@@ -3133,17 +3133,27 @@ let _fpAbbrevMap = {}; // 현재 전문 패널 법령의 약칭 → 정식 법�
 const PS=10;
 
 // ── 키워드 유효성 검증 ──
+// 법령명마다 요청하던 것을 한 번의 묶음 요청으로 바꾸고, 결과는 브라우저에 하루 동안 기억한다
+// (첫 화면에서 요청 수십 개가 동시 연결을 차지해 첫 검색이 늦어지던 문제)
+const _VALID_KEY='koat_valid_kws', _VALID_TTL_MS=24*3600*1000;
 async function validateKeywords(){
-  const kws = [...new Set(Object.values(getKeywords()).flat())];
-  const valid = new Set();
-  await Promise.all(kws.map(async kw=>{
+  const kws = [...new Set(Object.values(getKeywords()).flat())].filter(Boolean);
+  let memo={}; try{ memo=JSON.parse(localStorage.getItem(_VALID_KEY)||'{}')||{}; }catch(e){ memo={}; }
+  const now=Date.now(), fresh=k=>memo[k] && now-memo[k].t<_VALID_TTL_MS;
+  const need=kws.filter(k=>!fresh(k));
+  // 확인 전에도 바로 보여 준다(아는 '없는 법령'만 감춤) — 확인이 끝나면 다시 그린다
+  window._validKws = new Set(kws.filter(k=>!memo[k] || memo[k].v));
+  renderChips();
+  if(need.length){
     try{
-      const r = await fetch(`/api/validate?q=${encodeURIComponent(kw)}`);
-      const d = await r.json();
-      if(d.valid) valid.add(kw);
-    }catch{}
-  }));
-  window._validKws = valid;
+      const d=await fetch(`/api/validate?qs=${encodeURIComponent(need.join('|'))}`).then(r=>r.json());
+      const ok=new Set(d.valid||[]), failed=new Set(d.failed||[]);
+      need.forEach(k=>{ if(!failed.has(k)) memo[k]={v:ok.has(k), t:now}; });
+      try{ localStorage.setItem(_VALID_KEY, JSON.stringify(memo)); }catch(e){}
+    }catch(e){}
+  }
+  // 확인하지 못한 법령은 감추지 않는다(일시적 오류로 칩이 사라지지 않게)
+  window._validKws = new Set(kws.filter(k=>!memo[k] || memo[k].v));
   renderChips();
 }
 
@@ -5190,8 +5200,7 @@ async function renderInternalDashboard(){
   res.innerHTML=`<div class="empty" style="padding:36px 20px;"><div class="spinner" style="margin:0 auto 10px;"></div><p>내규 목록 불러오는 중...</p></div>`;
   if(!_intDashItems){
     try{
-      const r=await fetch('/api/internal/list');
-      const d=await r.json();
+      const d=await _intListGet();
       _intDashItems=d.items||[];
     }catch(e){
       if(mode==='internal') res.innerHTML=`<div class="empty" style="padding:40px 20px;"><div class="empty-icon">⚠️</div><p>내규 목록을 불러오지 못했습니다.</p></div>`;
@@ -5674,6 +5683,18 @@ function buildRegSummary(view, kw, kind){
 }
 
 // 규정 카드 HTML 생성(교차 패널 등에서 재사용)
+// 문장형 질문을 낱말로 나눠 찾은 경우: 검색어 → 강조할 낱말 목록
+const _kwTerms=new Map();
+function _kwList(kw){ return _kwTerms.get(kw) || (kw?[kw]:[]); }
+// 낱말이 많이 들어 있는 조문 순으로(낱말이 없으면 전부)
+function _artsByTerms(content, terms){
+  const all=extractRuleArticles(content,'');
+  if(!terms||!terms.length) return all.slice(0,8);
+  const T=terms.map(t=>String(t).toLowerCase());
+  const scored=all.map(a=>{ const c=String(a['조문내용']||'').toLowerCase(); return {a, n:T.filter(t=>c.includes(t)).length}; })
+    .filter(x=>x.n>0).sort((x,y)=>y.n-x.n);
+  return (scored.length?scored.map(x=>x.a):all).slice(0,8);
+}
 function buildRegCards(items, kw, kind){
   return items.map((it,i)=>{
     const name = it['법령명한글'] || it.name || '';
@@ -5705,8 +5726,8 @@ function buildRegCards(items, kw, kind){
               title="클릭하면 전문에서 이 조문을 바로 봅니다"
               onclick="if(event.target.closest('.art-xref,.law-ref'))return;previewArticle(this,'${artNo}')"
               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();previewArticle(this,'${artNo}');}">
-        <div class="reg-art-h">${no?`<span class="art-no">${escHtml(no)}</span>`:''}<span class="reg-art-t">${highlightKwsSafe(escHtml(title||no||'조문'),kw?[kw]:[])}</span>${a._sem?'<span class="art-sem-badge" title="키워드가 달라도 의미가 비슷한 조문">의미</span>':''}${a._match?`<span class="art-sem-badge art-match-badge" title="검색한 문장과 이 조문의 일치도(띄어쓰기·문장부호 무시)">${a._match==='exact'?'문장 일치':'유사 '+escHtml(a._match)}</span>`:''}<span class="art-go">전문에서 보기 →</span></div>
-        ${content?`<div class="reg-art-b">${artBodyFrom(a,content,{lawName:name,abbrevMap,kws:kw?[kw]:[],stripHead:!!(no||title)})}</div>`:''}
+        <div class="reg-art-h">${no?`<span class="art-no">${escHtml(no)}</span>`:''}<span class="reg-art-t">${highlightKwsSafe(escHtml(title||no||'조문'),_kwList(kw))}</span>${a._sem?'<span class="art-sem-badge" title="키워드가 달라도 의미가 비슷한 조문">의미</span>':''}${a._match?`<span class="art-sem-badge art-match-badge" title="검색한 문장과 이 조문의 일치도(띄어쓰기·문장부호 무시)">${a._match==='exact'?'문장 일치':'유사 '+escHtml(a._match)}</span>`:''}<span class="art-go">전문에서 보기 →</span></div>
+        ${content?`<div class="reg-art-b">${artBodyFrom(a,content,{lawName:name,abbrevMap,kws:_kwList(kw),stripHead:!!(no||title)})}</div>`:''}
       </div>`;
     }).join('') : `<div class="reg-none">키워드 매칭 미리보기가 없습니다. 전문에서 확인하세요.</div>`;
     const moreNote = (cnt > arts.length)
@@ -6725,12 +6746,17 @@ function closeInternalTree(){
   document.getElementById('internalTree').classList.remove('open');
   document.getElementById('sidebarOverlay').classList.remove('show');
 }
+let _intListP=null;
+function _intListGet(force){
+  if(force || !_intListP) _intListP=fetch('/api/internal/list'+(force?'?t='+Date.now():'')).then(r=>r.json())
+    .catch(e=>{ _intListP=null; throw e; });
+  return _intListP;
+}
 async function loadInternalTree(force){
   const body=document.getElementById('internalTreeBody');
   body.innerHTML='<div class="fp-loading" style="padding:24px;"><div class="spinner" style="margin:0 auto 8px;"></div>내규 목록 불러오는 중...</div>';
   try{
-    const r=await fetch('/api/internal/list'+(force?'?t='+Date.now():''));
-    const d=await r.json();
+    const d=await _intListGet(force);
     if(d.error || !(d.names&&d.names.length)){
       _internalNames=[];
       body.innerHTML=`<div class="it-empty">${escHtml(d.error||'내규 목록을 불러오지 못했습니다.')}<br><br>사규 MCP 연결을 확인하세요.</div>`;
@@ -7133,14 +7159,16 @@ function extractRuleArticles(text, kw){
   }
   if(!text.trim()) return [];
   // 줄 시작의 "제N조"에서만 분리 (문장 중간 법령 참조로 잘리는 문제 방지)
-  let segs = text.split(/\n\s*(?=제\s*\d+\s*조)/).map(s=>s.trim()).filter(Boolean);
+  let segs = text.split(/\n\s*(?=제\s*\d+\s*(?:의\s*\d+\s*)?조)/).map(s=>s.trim()).filter(Boolean);
   if(segs.length<=1) segs = text.split(/\n{2,}|\r?\n/).map(s=>s.trim()).filter(Boolean);
   const kwL=(kw||'').toLowerCase();
   const arts=[];
   segs.forEach(s=>{
     if(!kw || s.toLowerCase().includes(kwL)){
-      const m=s.match(/^제\s*(\d+)\s*조(?:의\d+)?\s*(?:\(([^)]*)\))?/);
-      arts.push({조문번호:m?m[1]:'', 조문제목:m&&m[2]?m[2]:'', 조문내용:s});
+      // '제5조', '제5조의2', '제38의2조'(일부 규정 표기) 모두 인식
+      const m=s.match(/^제\s*(\d+)\s*(?:의\s*(\d+)\s*)?조(?:\s*의\s*(\d+))?\s*(?:\(([^)]*)\))?/);
+      const sub=m&&(m[2]||m[3]);
+      arts.push({조문번호:m?(sub?`${m[1]}의${sub}`:m[1]):'', 조문제목:m&&m[4]?m[4]:'', 조문내용:s});
     }
   });
   if(!arts.length && text.trim()) arts.push({조문번호:'',조문제목:'',조문내용:text.trim().slice(0,400)});
@@ -7228,6 +7256,13 @@ async function doSearchInternal(q, _mySeq){
     const hasStruct=Array.isArray(d.structured)&&d.structured.length;
     const hasName=Array.isArray(d.name_matches)&&d.name_matches.length;
     // 본문 결과가 없어도 규정명이 일치하면 결과로 취급(명칭+본문 병행 검색)
+    if(d.article_missing && !hasStruct){            // 규정은 있으나 그 조문이 없음
+      const am=d.article_missing;
+      setStatus(`「${escHtml(am.title)}」에 제${escHtml(String(am.no))}조가 없습니다`);
+      renderEmpty(`「${escHtml(am.title)}」에서 <b>제${escHtml(String(am.no))}조</b>를 찾지 못했습니다.<br>`+
+        `<small>조문 번호를 확인하거나 <a href="#" onclick="event.preventDefault();wsOpen('${argAttr(am.title)}','internal')">전문에서 목차 보기 →</a></small>`);
+      document.getElementById('internalResults').innerHTML='';updateSplitLayout(); return;
+    }
     if(!d.success || (!hasText && !hasStruct && !hasName)){
       setStatus(`"${escHtml(q)}" 내규 검색 결과가 없습니다`);
       renderEmpty(`"${escHtml(q)}"에 해당하는 내규를 찾지 못했습니다`);
@@ -7257,7 +7292,7 @@ function renderInternalResults(d, q){
       const name=String(it.title||it.name||it['제목']||it['규정명']||'사내 규정');
       const content=String(it.content||it.text||it['내용']||it['본문']||(typeof it==='string'?it:JSON.stringify(it,null,2)));
       _intDocCache[name]=content;
-      const arts=extractRuleArticles(content,q);
+      const arts=Array.isArray(d.terms) ? _artsByTerms(content, d.terms) : extractRuleArticles(content,q);
       return {name, org:String(it.org||it['소관']||'사내 규정'), matched_articles:arts, matched_count:arts.length,
               category:String(it.category||it['구분']||'')};
     });
@@ -7349,7 +7384,8 @@ function renderInternalResults(d, q){
     const occ = (qL && body) ? Math.max(0, body.split(qL).length-1) : it._kwHits;
     it._rel = occ>0 ? occ/Math.sqrt(Math.max(300, body.length||1)) : 0;
   });
-  items.sort((a,b)=>{
+  if(Array.isArray(d.terms)){ _kwTerms.set(q, d.terms.length?d.terms:[]); }   // 서버 순서(낱말 일치 수) 유지
+  else items.sort((a,b)=>{
     if(a._rank!==b._rank) return a._rank-b._rank;
     if(a._rank===3) return (b._score||0)-(a._score||0);   // 의미검색: 점수순
     // 이름·본문: 빈도 밀도(관련도)순, 동률이면 매칭 조문 수
@@ -7377,7 +7413,9 @@ function renderInternalResults(d, q){
   renderRelatedLaws(raw + ' ' + JSON.stringify(d.structured||''), q);
   const totalArts = items.reduce((s,it)=>s+(it.matched_count||0),0);
   const nmNote = nm.length?` · 명칭 일치 ${nm.length}건`:'';
-  setStatus(`내규 ${items.length}개 규정 · 매칭 조문 ${totalArts}건${nmNote} · "${escHtml(q)}" · 관련 법령 교차 제공`);
+  if(d.article_ref) setStatus(`📍 「${escHtml(d.article_ref.title)}」 제${escHtml(String(d.article_ref.no).replace('의','조의'))}${/의/.test(d.article_ref.no)?'':'조'} — 조문을 누르면 전문에서 바로 봅니다`);
+  else if(d.fallback==='terms') setStatus(`문장을 낱말로 나눠 찾았습니다: ${(d.terms||[]).map(t=>'<b>'+escHtml(t)+'</b>').join(' · ')} · 내규 ${items.length}개 규정`);
+  else setStatus(`내규 ${items.length}개 규정 · 매칭 조문 ${totalArts}건${nmNote} · "${escHtml(q)}" · 관련 법령 교차 제공`);
   // 의미 검색 미가용 안내: 키워드 결과는 있으나 임베딩 키가 없을 때 1회만 표시
   if(items.length && d.semantic_available===false){
     const res=document.getElementById('results');
@@ -8613,7 +8651,13 @@ function _stPost(url, body){
   return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),keepalive:true})
     .then(r=>r.json()).catch(()=>null);
 }
-function _stGet(url){ return fetch(url).then(r=>r.json()).catch(()=>null); }
+const _stGetMemo=new Map();
+function _stGet(url){
+  const hit=_stGetMemo.get(url); if(hit && Date.now()-hit.t<15000) return hit.p;
+  const p=fetch(url).then(r=>r.json()).catch(()=>{ _stGetMemo.delete(url); return null; });
+  _stGetMemo.set(url,{t:Date.now(),p}); return p;
+}
+function _stGetFresh(url){ _stGetMemo.delete(url); return _stGet(url); }
 function _statsStart(){
   let first=true;                              // 방문수는 탭 세션당 1회
   try{ first=!sessionStorage.getItem('koat_visit'); sessionStorage.setItem('koat_visit','1'); }catch(e){}
@@ -8673,7 +8717,7 @@ async function _rkFillBox(period){
 async function openRegRanking(period){
   period=period||_rkPeriod(); try{ localStorage.setItem(_RK_PERIOD_KEY,period); }catch(e){}
   const body=_wpModal('rankModal','🏆 내규 랭킹','<div class="assist-loading"><div class="spinner"></div><span>순위를 불러오는 중…</span></div>',true);
-  const d=await _stGet('/api/stats/ranking?period='+period+'&limit=20');
+  const d=await _stGetFresh('/api/stats/ranking?period='+period+'&limit=20');
   const b=document.getElementById('rankModal_b'); if(!b) return;
   if(!d || !d.enabled){ b.innerHTML=_stOffHtml(); return; }
   const items=d.items||[];
@@ -8813,7 +8857,7 @@ function _hierFilter(q){
 function _hierOpen(name){ _wpClose('hierModal'); if(_assistMode&&typeof closeAssist==='function') closeAssist(); wsOpen(name,'internal'); }
 async function openUsageStats(){
   _wpModal('usageModal','📊 이용 통계','<div class="assist-loading"><div class="spinner"></div><span>통계를 불러오는 중…</span></div>',true);
-  const d=await _stGet('/api/stats/summary');
+  const d=await _stGetFresh('/api/stats/summary');
   const b=document.getElementById('usageModal_b'); if(!b) return;
   if(!d || !d.enabled){ b.innerHTML=_stOffHtml(); return; }
   if(d.error){ b.innerHTML=`<div class="wp-note chg">${escHtml(d.error)}</div>`; return; }
