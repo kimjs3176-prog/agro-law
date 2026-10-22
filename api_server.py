@@ -844,18 +844,53 @@ def search_laws():
         import traceback; traceback.print_exc()
         return jsonify({"error": _safe_err(e)}), _err_status(e)
 
+_VALID_CACHE: dict = {}                      # 법령명 → (확인 시각, 결과) — 12시간 유지
+_VALID_TTL = 12 * 3600
+
+
+def _law_name_valid(q: str):
+    """법령 검색 결과가 있는지. 조회 실패는 None(캐시하지 않음)."""
+    hit = _VALID_CACHE.get(q)
+    if hit and time.time() - hit[0] < _VALID_TTL:
+        return hit[1]
+    try:
+        data = _law_get_json({"target": "law", "query": q, "display": "1"})
+    except Exception:
+        return None
+    if not isinstance(data, dict) or "LawSearch" not in data:   # 정상 응답이 아니면 '확인 실패'(캐시 안 함)
+        return None
+    ok = bool((data.get("LawSearch") or {}).get("law"))
+    if len(_VALID_CACHE) > 500:
+        _VALID_CACHE.clear()
+    _VALID_CACHE[q] = (time.time(), ok)
+    return ok
+
+
 @app.route("/api/validate")
 def validate_keyword():
-    """키워드가 실제 검색 결과를 가지는지 확인"""
+    """키워드가 실제 검색 결과를 가지는지 확인.
+
+    ?q=법령명 → {"valid": bool}
+    ?qs=법령명1|법령명2|… (최대 40개) → {"valid": [...], "failed": [...]} — 화면의 '자주 찾는 법령'을
+    한 번의 요청으로 확인한다(예전에는 법령마다 요청해 첫 화면의 다른 요청이 밀렸다).
+    """
+    qs = request.args.get("qs", "")
+    if qs:
+        names = list(dict.fromkeys(x.strip() for x in qs.split("|") if x.strip()))[:40]
+        res = {}
+        with _pool(4) as ex:
+            futs = {ex.submit(_law_name_valid, n): n for n in names}
+            try:
+                for f in _cf.as_completed(futs, timeout=20):
+                    res[futs[f]] = f.result()
+            except _cf.TimeoutError:
+                pass
+        return jsonify({"valid": [n for n in names if res.get(n)],
+                        "failed": [n for n in names if res.get(n) is None]})
     q = request.args.get("q", "").strip()
     if not q:
         return jsonify({"valid": False})
-    try:
-        data = _law_get_json({"target": "law", "query": q, "display": "1"})
-        laws = data.get("LawSearch", {}).get("law")
-        return jsonify({"valid": bool(laws)})
-    except Exception:
-        return jsonify({"valid": False})
+    return jsonify({"valid": bool(_law_name_valid(q))})
 
 
 # ── 법령 조문 인메모리 캐시 (TTL 30분) ──────────────────────────────────────
@@ -4801,6 +4836,106 @@ def internal_status():
         return jsonify({"connected": False, "message": _safe_err(e)})
 
 
+# ── 내규 검색 보강: "규정명 제N조" 직접 지정 · 문장형 질문의 낱말 검색 ─────────────
+_INT_ART_RE = re.compile(r"^(?P<reg>.+?)\s*제\s*(?P<no>\d+)\s*조(?:\s*의\s*(?P<sub>\d+))?(?:\s+(?P<rest>.+))?$")
+# 문장형 질문에서 떼어 낼 조사·어미(낱말 끝)와 의미 없는 말
+_INT_TAIL_RE = re.compile(r"(으로부터|에서는|에게서|으로는|이라도|까지는|부터는|에서|에게|으로|로서|로써|부터|까지|처럼|보다|이나|이며|이고|이면|하면|하나요|할때|할까요|인가요|인지|에는|에도|은|는|이|가|을|를|에|의|도|만|와|과|로|요)$")
+_INT_STOP = {"어떻게", "무엇", "무엇인가", "어디", "언제", "누가", "왜", "경우", "관련", "대한", "대해", "있는", "없는",
+             "하는", "되는", "해야", "하려면", "있나요", "되나요", "알려", "주세요", "궁금", "방법", "내규", "규정", "가서",
+             "그리고", "그런데", "때문", "때문에", "같은", "다른", "모든", "어떤", "알고", "싶어요", "싶습니다",
+             "얼마나", "얼마", "되나", "하나", "가능", "가능한", "가능한지", "있나", "없나", "언제까지", "몇", "몇일",
+             "필요", "필요한", "해야하나", "되는지", "하는지", "대하여"}
+
+
+def _int_article_ref(query: str):
+    """'여비규정 제5조', '여비규정 제5조의2 숙박' → (규정 항목, '5'·'5의2', 나머지 낱말) 또는 None."""
+    m = _INT_ART_RE.match((query or "").strip())
+    if not m:
+        return None
+    reg = _find_reg_exact(m.group("reg")) or _find_reg_original(m.group("reg"))
+    if not reg:
+        return None
+    no = m.group("no") + (f"의{m.group('sub')}" if m.group("sub") else "")
+    return reg, no, (m.group("rest") or "").strip()
+
+
+def _int_article_hit(reg: dict, no: str):
+    import reg_chunks as _rc
+    title = reg.get("title", "")
+    try:
+        for ch in _rc.iter_chunks([reg.get("slug", "")]):
+            if str(ch.get("no")) == no:
+                txt = ch.get("text", "")
+                if txt.startswith(title):
+                    txt = txt[len(title):].strip()
+                return {"title": title, "content": txt, "source": "local", "article_ref": no,
+                        "revision": reg.get("revision", ""), "category": reg.get("category", "")}
+    except Exception:
+        pass
+    return None
+
+
+def _int_terms(query: str) -> list:
+    """문장형 질문을 검색 낱말로 — 조사·어미를 떼고 의미 없는 말을 뺀다(최대 6개)."""
+    out = []
+    for w in re.findall(r"[가-힣A-Za-z0-9]+", query or ""):
+        if re.search(r"(합니다|습니다|해요|어요|나요|까요|세요|니다)$", w):   # 서술어(궁금합니다 등)
+            continue
+        # 조사를 뗀 말이 규정에 낱말로 나오면 뗀 말을, 아니면 원래 말이 규정 낱말이면 그대로 쓴다
+        # ('숙박비를'→'숙박비', '연차휴가'는 '연차휴'가 규정 낱말이 아니므로 그대로)
+        vocab = _query_vocab()
+        w2, cand = w, w
+        for _ in range(2):
+            n = _INT_TAIL_RE.sub("", cand)
+            if len(n) < 2 or n == cand:
+                break
+            cand = n
+            if cand.lower() in vocab:
+                w2 = cand
+                break
+        if w2 == w and w.lower() not in vocab and cand != w:
+            w2 = cand
+        if len(w2) >= 2 and w2 not in _INT_STOP and w2 not in out:
+            out.append(w2)
+    return out[:6]
+
+
+def _int_terms_hits(terms: list, limit: int = 12) -> list:
+    """낱말들이 많이 함께 나오는 규정 순으로(절반 이상 일치)."""
+    need = max(2, -(-len(terms) * 6 // 10))          # 60% 이상(올림), 최소 2개
+    rows = []
+    for m in _load_reg_manifest():
+        body = _reg_body_text(m.get("slug", ""))
+        if not body:
+            continue
+        low = body.lower()
+        hit = [t for t in terms if t.lower() in low]
+        if len(hit) >= min(need, len(terms)):
+            rows.append((len(hit), sum(low.count(t.lower()) for t in hit), m, body))
+    rows.sort(key=lambda r: (-r[0], -r[1]))
+    return [{"title": m.get("title", ""), "content": body[:20000], "source": "local",
+             "revision": m.get("revision", ""), "category": m.get("category", ""), "matched_terms": n}
+            for n, _, m, body in rows[:limit]]
+
+
+def _int_enrich(resp: dict, query: str) -> dict:
+    """검색 결과가 비었을 때 문장형 질문을 낱말로 나눠 다시 찾는다."""
+    if resp.get("error") or resp.get("article_ref"):
+        return resp
+    empty = not (resp.get("structured") or (resp.get("text") or "").strip() or resp.get("name_matches"))
+    if not empty:
+        return resp
+    terms = _int_terms(query)
+    if len(terms) < 2:
+        return resp
+    hits = _int_terms_hits(terms)
+    if hits:
+        resp["structured"] = hits
+        resp["terms"] = terms                      # 화면은 이 낱말들로 조문을 골라 보여 준다
+        resp["fallback"] = "terms"
+    return resp
+
+
 @app.route("/api/internal/search")
 def internal_search():
     """사규 MCP로 내규 검색. 결과 텍스트/구조화 데이터를 반환하며,
@@ -4811,12 +4946,28 @@ def internal_search():
     if len(query) < 2:
         return jsonify({"error": "검색어는 2자 이상 입력하세요"}), 400
 
+    # "규정명 제N조" → 그 조문을 바로 보여 준다(뒤에 낱말이 있으면 그 낱말로 강조)
+    ref = _int_article_ref(query)
+    if ref:
+        reg, no, rest = ref
+        hit = _int_article_hit(reg, no)
+        if not hit:                                # 규정은 있는데 그 조문이 없음 → 원인을 알려 준다
+            return jsonify({"success": True, "query": query, "tool": "article-ref", "text": "",
+                            "structured": [], "name_matches": _name_match_regs(reg.get("title", ""))[:1],
+                            "article_missing": {"title": reg.get("title", ""), "no": no},
+                            "semantic": [], "semantic_available": _semantic_available()})
+        if hit:
+            return jsonify({"success": True, "query": query, "tool": "article-ref", "text": "",
+                            "structured": [hit], "name_matches": [], "terms": [rest] if rest else [],
+                            "article_ref": {"title": reg.get("title", ""), "no": no},
+                            "semantic": [], "semantic_available": _semantic_available()})
+
     # 업로드된 개정 내규는 로컬 본문에서 먼저 찾는다(MCP 서버에는 아직 없음)
     local_hits = _local_reg_search(query)
 
     if not SAGYU_MCP_URL:
         # MCP 미설정이어도 번들된 규정 본문으로 자체 검색한다(외부 하드의존 제거).
-        return jsonify(_local_only_search(query, local_hits))
+        return jsonify(_int_enrich(_local_only_search(query, local_hits), query))
     try:
         cli = _McpClient(SAGYU_MCP_URL)
         cli.initialize()
@@ -4853,15 +5004,15 @@ def internal_search():
         cat = _catalog_reg_hits(query, present)
         if cat:
             merged["structured"] = (merged.get("structured") or []) + cat
-        return jsonify(merged)
+        return jsonify(_int_enrich(merged, query))
     except (req_lib.exceptions.Timeout,
             req_lib.exceptions.ConnectionError) as e:
         # MCP 서버가 죽어도 번들된 규정 본문으로 계속 검색되도록 한다
-        return jsonify(_local_only_search(
-            query, local_hits, f"사규 MCP 서버 연결 실패: {e}"))
+        return jsonify(_int_enrich(_local_only_search(
+            query, local_hits, f"사규 MCP 서버 연결 실패: {_safe_err(e)}"), query))
     except Exception as e:
         import traceback; traceback.print_exc()
-        return jsonify(_local_only_search(query, local_hits, _safe_err(e)))
+        return jsonify(_int_enrich(_local_only_search(query, local_hits, _safe_err(e)), query))
 
 
 @app.route("/api/internal/doc")
@@ -6960,6 +7111,14 @@ def _query_tokens() -> list:
         toks = set(re.findall(r"[가-힣A-Za-z0-9]{2,}", " ".join(map(str, parts)).lower()))
         _QUERY_CORPUS["tokens"] = sorted(toks)
     return _QUERY_CORPUS["tokens"]
+
+
+def _query_vocab() -> set:
+    """규정 낱말 집합(정확 일치 확인용)."""
+    v = _QUERY_CORPUS.get("vocab")
+    if v is None:
+        v = _QUERY_CORPUS["vocab"] = set(_query_tokens())
+    return v
 
 
 def _word_in_regs(w: str) -> bool:
