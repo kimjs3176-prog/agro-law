@@ -2441,6 +2441,60 @@ body.dark .scenario-chip:hover{background:var(--gl);color:var(--gp);}
 .int-uni-off{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .law-cross-btn{border:1px solid var(--bd);background:var(--sf);color:var(--gp);border-radius:8px;padding:4px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);}
 .law-cross-btn:hover{border-color:var(--g);background:var(--gl);}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   디자인 v3 — inspo 참고(developer.apple.com·biomejs.dev·public.com의 공통점을 응용)
+   · 그림자 대신 가는 선(hairline)으로 구획, 모서리는 절제(8~10px)
+   · 남색이 도는 글자색(ink)과 따뜻한 강조색 하나(개정·새 소식)
+   · 굵기 과용(800) 줄이고 본문 줄간격을 넉넉히(가독성)
+   ══════════════════════════════════════════════════════════════════════════ */
+:root{--tx:#14213d;--ink2:#334155;--mu:#5b6576;--ht:#8a93a3;--bd:#e3e7ee;--hair:#eceef2;--sub:#f5f6f8;
+  --warm:#d9542f;--warm-l:#fdf0eb;--r-card:10px;--r-ctl:8px;}
+body.dark{--tx:#e6e8ee;--ink2:#c9cdd6;--mu:#9aa1ad;--ht:#6f7683;--bd:rgba(255,255,255,.09);--hair:rgba(255,255,255,.06);--sub:#1b1d22;
+  --warm:#f08a68;--warm-l:rgba(240,138,104,.12);}
+body{line-height:1.6;}
+/* 카드: 그림자 → 선 */
+.spanel,.idb-panel,.rk-side,.rrev-box,.lr-card,.reg-card,.wp-modal,.ws-pane{box-shadow:none!important;}
+.spanel,.idb-panel,.search-row .rk-side{border:1px solid var(--bd);border-radius:var(--r-card);}
+.topbar{box-shadow:none;}
+/* 컨트롤 모서리 */
+.sinput,.sbtn,.idb-filter,.stool,.idb-hier,.lt-item,.rrev-item,.rrev-more,.idb-pill,.idb-item,.scope-toggle,.forms-q,.wp-btn{border-radius:var(--r-ctl);}
+.stgl,.rk-seg button{border-radius:6px;}
+.idb-card{border-radius:var(--r-card);}
+.sinput{border-color:var(--bd);}
+.sbtn{box-shadow:none;font-weight:700;}
+/* 굵기·글자 위계 */
+.brand{font-weight:700;letter-spacing:-.4px;}
+.idb-title,.rk-t,.lr-h,.pq-h,.idb-card-h{font-weight:700;}
+.rrev-t{font-weight:700;}
+.idb-title{font-size:18px;letter-spacing:-.3px;}
+.idb-item-t{font-weight:600;color:var(--tx);}
+.idb-rev,.rrev-sub,.idb-sub{color:var(--mu);}
+.reg-art-b,.ws-art-b{line-height:1.75;}
+/* 구획선 */
+.idb-top,.lr-h,.pq{border-color:var(--hair);}
+.idb-card{background:var(--sub);border:1px solid var(--hair);}
+.idb-item{border-color:var(--hair);}
+.idb-item:hover{border-color:var(--g);box-shadow:none;}
+/* 따뜻한 강조: 개정·새 소식(빨강 오류색 대신) */
+.rrev-box{background:var(--sf);border:1px solid var(--bd);border-left:3px solid var(--warm);}
+body.dark .rrev-box{background:var(--sf);border-color:var(--bd);border-left-color:var(--warm);}
+.rrev-new{background:var(--warm);}
+body.dark .rrev-new{background:var(--warm);color:#1b1d22;}
+.rrev-t,.rrev-t b{color:var(--tx);}
+.rrev-item{border-color:var(--hair);background:var(--sub);}
+.rrev-item:hover{border-color:var(--warm);background:var(--sf);}
+.rrev-rv{color:var(--warm);}
+.rrev-more{background:transparent;border-color:var(--bd);}
+.sm-badge,.tb-sub #smRevWatch .sm-ic{background:var(--warm);}
+.tb-sub #smRevWatch .sm-ic{background:transparent;color:var(--warm);}
+/* 랭킹 1~3위 표시를 차분하게 */
+.rk-no.top{background:var(--tx);color:#fff;}
+body.dark .rk-no.top{background:var(--gl);color:var(--gp);}
+/* 바닥글 */
+footer{border-top:1px solid var(--hair)!important;}
+/* 검색 카드는 내용 높이만(랭킹 창 높이에 맞춰 늘어나 빈 공간이 생기지 않게) */
+.search-row.has-rank{align-items:start;}
 </style>
 </head>
 <body>
