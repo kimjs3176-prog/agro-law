@@ -2558,6 +2558,11 @@ footer{border-top:1px solid var(--hair)!important;}
 .rrev-box.all .rrev-list{flex-wrap:wrap;}
 .rrev-box.all .rrev-list .rrev-item{flex:1 1 220px;}
 .rrev-more{flex:0 0 auto;white-space:nowrap;}
+
+.hc-groups{display:flex;flex-direction:column;gap:12px;}
+.hc-groups .hc-card{margin:0;}
+.hc-groups .hc-card[style*="none"]{display:none;}
+.hc-grid:not(:has(> .hc-card:not([style*="display: none"]))){display:none;}
 </style>
 </head>
 <body>
@@ -9016,9 +9021,11 @@ function _hierCardsHtml(){
   const looseRest=c=>loose(c).filter(n=>!(kids[n.title]||[]).length);
   const topBar=top?`<div class="hc-top"><i class="cat-dot" data-c="정관"></i><button class="hc-name" onclick="_hierOpen('${argAttr(top.title)}')">${escHtml(top.title)}</button>`+
       `<span class="hc-top-sub">최상위 · 아래 모든 내규의 근거</span></div>`:'';
+  // 규정 카드는 여러 단, 큰 묶음 카드는 전체 폭(칩이 가로로 넓게 흐르고, 걸러 볼 때 한쪽으로 몰리지 않게)
   return topBar+`<div class="hc-grid">`+
     withKids.map(card).join('')+
     looseHead('규칙').map(card).join('')+looseHead('세칙').map(card).join('')+
+    `</div><div class="hc-groups">`+
     group('하위 내규가 없는 규정','규정',alone)+
     group('규칙 · 상위 근거 미기재','규칙',looseRest('규칙'))+
     group('세칙 · 상위 근거 미기재','세칙',looseRest('세칙'))+
