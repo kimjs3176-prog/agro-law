@@ -2563,6 +2563,16 @@ footer{border-top:1px solid var(--hair)!important;}
 .hc-groups .hc-card{margin:0;}
 .hc-groups .hc-card[style*="none"]{display:none;}
 .hc-grid:not(:has(> .hc-card:not([style*="display: none"]))){display:none;}
+
+/* 체계도: 왼쪽 2단 = 규정 카드 · 오른쪽 2단 폭 = 묶음 카드(위아래로 쌓음) */
+.hc-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start;}
+.hc-body > .hc-grid{columns:2 240px;}
+.hc-body > .hc-groups{min-width:0;}
+.hc-body:not(:has(.hc-groups > .hc-card:not([style*="display: none"]))){grid-template-columns:minmax(0,1fr);}
+.hc-body:not(:has(.hc-groups > .hc-card:not([style*="display: none"]))) > .hc-grid{columns:4 240px;}
+.hc-body:not(:has(.hc-grid > .hc-card:not([style*="display: none"]))){grid-template-columns:minmax(0,1fr);}
+@media (max-width:1100px){ .hc-body{grid-template-columns:minmax(0,1fr);} .hc-body > .hc-grid{columns:2 240px;} }
+@media (max-width:640px){ .hc-body > .hc-grid{columns:1;} }
 </style>
 </head>
 <body>
@@ -9022,7 +9032,7 @@ function _hierCardsHtml(){
   const topBar=top?`<div class="hc-top"><i class="cat-dot" data-c="정관"></i><button class="hc-name" onclick="_hierOpen('${argAttr(top.title)}')">${escHtml(top.title)}</button>`+
       `<span class="hc-top-sub">최상위 · 아래 모든 내규의 근거</span></div>`:'';
   // 규정 카드는 여러 단, 큰 묶음 카드는 전체 폭(칩이 가로로 넓게 흐르고, 걸러 볼 때 한쪽으로 몰리지 않게)
-  return topBar+`<div class="hc-grid">`+
+  return topBar+`<div class="hc-body"><div class="hc-grid">`+
     withKids.map(card).join('')+
     looseHead('규칙').map(card).join('')+looseHead('세칙').map(card).join('')+
     `</div><div class="hc-groups">`+
@@ -9031,7 +9041,7 @@ function _hierCardsHtml(){
     group('세칙 · 상위 근거 미기재','세칙',looseRest('세칙'))+
     group('예규 · 상위 근거 미기재','예규',looseRest('예규').concat(looseHead('예규')))+
     group('기타','기타',others)+
-    `</div>`;
+    `</div></div>`;
 }
 // 카드 필터: 이름·구분에 맞는 칩만, 카드 이름이 맞으면 카드 전체, 남는 칩이 없으면 카드 숨김
 function _hierCardsFilter(root, q, cat){
