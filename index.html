@@ -2567,7 +2567,21 @@ footer{border-top:1px solid var(--hair)!important;}
 @media (min-width:860px){
   .search-row.has-rank{display:grid!important;grid-template-columns:minmax(0,1fr) 320px;align-items:stretch;}
   .search-row.has-rank > .rk-side{margin-top:0!important;align-self:start;height:auto;overflow:visible;}
+  /* 왼쪽 열: 검색 카드 + 최근 개정, 오른쪽 열: 랭킹(두 줄에 걸침) — 남는 높이는 둘째 줄이 흡수 */
+  .search-row.has-rank{grid-template-rows:auto 1fr;}
+  .search-row.has-rank > .spanel{grid-column:1;grid-row:1;}
+  .search-row.has-rank > .rk-side{grid-column:2;grid-row:1 / span 2;}
+  .search-row.has-rank > .rrev-slot{grid-column:1;grid-row:2;align-self:stretch;min-width:0;margin-top:0;display:flex;flex-direction:column;}
+  .search-row.has-rank > .rrev-slot > .rrev-box{flex:1;}
+  /* 왼쪽 열에서는 가로 스크롤 대신 줄바꿈해 여러 건을 한눈에 */
+  .search-row.has-rank > .rrev-slot .rrev-list{flex-wrap:wrap;overflow-x:visible;}
+  .search-row.has-rank > .rrev-slot .rrev-list .rrev-item{flex:1 1 200px;}
 }
+/* 최근 개정 슬롯은 내규 첫 화면(대시보드)일 때만 보임 */
+body:not(:has(#results > .int-dash)) #rrevSlot{display:none;}
+.rrev-slot:empty{display:none;}
+.search-row:not(.has-rank) > .rrev-slot{margin-bottom:20px;}
+@media (max-width:859px){ .search-row.has-rank > .rrev-slot{margin-top:14px;} }
 .search-row.has-rank > .spanel{align-self:start;}
 /* 빈 안내 줄은 숨겨 검색 카드를 짧게 */
 #internalChips:has(.int-fav-empty){display:none;}
@@ -2722,6 +2736,16 @@ footer{border-top:1px solid var(--hair)!important;}
 :root body .abtn:hover{background:var(--color-paper-2);color:var(--color-ink);transform:none;box-shadow:none;}
 :root body .abtn.primary{background:var(--color-accent);border-color:var(--color-accent);color:var(--color-on-solid);}
 :root body .abtn.primary:hover{background:var(--color-accent-hover);border-color:var(--color-accent-hover);color:var(--color-on-solid);}
+/* 랭킹(오른쪽 열): 줄 간격을 줄여 세로 길이를 검색 열에 가깝게 */
+:root body .rk-side .rk-row{padding:4px 6px;}
+:root body .rk-side .rk-no{width:22px;height:22px;}
+:root body .rk-side .pq{margin-top:10px;padding-top:8px;}
+:root body .rk-side .pq-list{gap:5px;}
+:root body .rk-side .pq-chip{padding:3px 9px 3px 4px;}
+/* 검색 결과 화면(최근 개정 슬롯이 숨는 때): 검색 카드를 랭킹 높이까지 늘려 왼쪽 열에 빈 구멍이 생기지 않게 */
+@media (min-width:860px){
+  body:not(:has(#results > .int-dash)) .search-row.has-rank > .spanel{grid-row:1 / span 2;align-self:stretch;}
+}
 /* 포커스는 즉시, 파랑 링 하나 */
 :root body :is(.sm-item,.stgl,.sbtn,.chip,.stool,.tb-tool,.dark-btn,.hc-chip,.idb-pill,.rrev-item):focus-visible{outline:2px solid var(--color-accent);outline-offset:2px;box-shadow:none;}
 </style>
@@ -3231,6 +3255,8 @@ footer{border-top:1px solid var(--hair)!important;}
     <div class="agency-info" id="agencyInfo" style="display:none;"></div>
   </div>
   <aside class="rk-box rk-side" id="regRankBox" hidden aria-label="내규 랭킹"></aside>
+  <!-- 최근 개정 알림: 랭킹 옆 왼쪽 열(검색 카드 아래)에 표시 -->
+  <div class="rrev-slot" id="rrevSlot"></div>
   </div><!-- /search-row -->
 
   <!-- 결과 헤더 -->
@@ -5502,7 +5528,6 @@ async function renderInternalDashboard(){
     `title="${escHtml(g.key)}만 보기"><i class="cat-dot" data-c="${argAttr(g.key)}"></i>${escHtml(g.key)} <b>${groups0[g.key].length}</b></button>`).join('');
   res.innerHTML=`<div class="int-dash">
    <div class="land-main">
-    ${_recentRevBoxHtml(items)}
     <section class="idb-panel" aria-label="내규 전체 목록">
     <div class="idb-head">
       <div class="idb-top">
@@ -5523,6 +5548,7 @@ async function renderInternalDashboard(){
     </section>
    </div>
   </div>`;
+  const rslot=document.getElementById('rrevSlot'); if(rslot){ rslot.innerHTML=_recentRevBoxHtml(items); _hydrateIcons(rslot); }
   _hydrateIcons(res);
   const cnt=document.getElementById('stglIntCnt'); if(cnt) cnt.textContent=total;
   _rkFillBox();
