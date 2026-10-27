@@ -4,23 +4,65 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>개정 내규 업로드 · KOAT 내규&국가법령 종합 검색</title>
-<style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600&display=swap">
+<style>/* Hallmark · v2.0.0 · redesign: full (app scope) · shape: app screen · theme: garden (dealt: manual) · genre: editorial · modes: light+dark · type: Pretendard Variable (body, data, controls) + Noto Serif KR 600 (screen and document titles) · signature: the regulation sheet, a pale printed page on oat paper · built: the project · page: /upload */
+/* critique: a stock navy KRDS tool with cards in cards, shadows and emoji icons; now oat paper, green-black ink, hairlines, one leaf-green action, flat 4px wells and pill controls */
+/* Hallmark · waive 48 for print/export templates in script (hwpx, print window, excel): they render outside this document and need literal colours · waive 48 for the category data palette in script (chart and tree dots) */
 :root{
-  --bg:#f6f7f9; --sf:#fff; --tx:#1a1d21; --mu:#5b6472; --ht:#8b95a5;
-  --bd:#e5e8ec; --g:#1D9E75; --gd:#158060; --gl:#eafaf3;
-  --rs:8px; --rm:12px;
-  --font:'Malgun Gothic','맑은 고딕',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
-  --warn-bg:#fffbeb; --warn-tx:#92400e; --warn-bd:#fcd34d;
-  --err-bg:#fef2f2; --err-tx:#991b1b; --err-bd:#fecaca;
-  --done-bg:#eafaf3; --done-tx:#158060;
+  color-scheme:light;
+  /* Garden 팔레트(oklch 기준값을 sRGB로 환산) — 모든 색은 여기서만 정의 */
+  --color-paper:#f7f1df;--color-paper-2:#eee6d1;--color-paper-3:#e3dac2;--color-sheet:#fcfbf3;
+  --color-ink:#072311;--color-ink-2:#223c28;--color-muted:#4d5d4c;--color-hint:#616d5d;
+  --color-rule:#cfcfbf;--color-rule-soft:#e1ded0;--color-rule-2:#8c9f86;--color-accent:#1f6a19;
+  --color-accent-hover:#095717;--color-accent-ink:#095119;--color-accent-tint:#dcebcb;--color-accent-line:#acc896;
+  --color-accent-2:#c3dba6;--color-on-solid:#f9f7ee;--color-danger:#ad2f22;--color-danger-ink:#8d261b;
+  --color-danger-tint:#ffe5de;--color-danger-line:#eeb4aa;--color-warn:#de9d16;--color-warn-ink:#79480c;
+  --color-warn-tint:#faecc7;--color-warn-line:#ebc57d;--color-clay:#ae4f17;--color-clay-ink:#893b0b;
+  --color-clay-tint:#f6e7d6;--color-clay-line:#e1c5a8;--color-ok:#0b7643;--color-ok-ink:#085630;
+  --color-ok-tint:#d6f0da;--color-ok-line:#9dcba8;--color-shade:#081b0e;--color-mark:#d1e28d;
+  --color-cat-1:#af3e30;--color-cat-2:#30752a;--color-cat-3:#326893;--color-cat-4:#666c59;--color-cat-5:#bd871c;--color-cat-6:#7d4778;
+  --font-body:'Pretendard Variable',Pretendard,'Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+  --font-display:'Noto Serif KR','Nanum Myeongjo',ui-serif,Georgia,serif;
+  --radius-card:4px;--radius-ctl:4px;--radius-pill:999px;
+  --dur-micro:90ms;--dur-short:160ms;--ease-out:cubic-bezier(.16,1,.3,1);
+  --t-state:background-color var(--dur-short) var(--ease-out),border-color var(--dur-short) var(--ease-out),color var(--dur-short) var(--ease-out),box-shadow var(--dur-short) var(--ease-out),opacity var(--dur-short) var(--ease-out),transform var(--dur-micro) var(--ease-out);
 }
 body.dark{
-  --bg:#161a1f; --sf:#1e232a; --tx:#e8ecf1; --mu:#9aa5b4; --ht:#6b7684;
-  --bd:#2c333c; --gl:#14312a;
-  --warn-bg:#2a2310; --warn-tx:#fbbf24; --warn-bd:#78350f;
-  --err-bg:#2a1215; --err-tx:#fca5a5; --err-bd:#7f1d1d;
-  --done-bg:#14312a; --done-tx:#6ee7b7;
+  color-scheme:dark;
+  --color-cat-1:#e47d6d;--color-cat-2:#73b96b;--color-cat-3:#7aaad4;--color-cat-4:#9ca18d;--color-cat-5:#e0ae57;--color-cat-6:#bf8ab9;
+  --color-paper:#0a0f0a;--color-paper-2:#121812;--color-paper-3:#1a221a;--color-sheet:#101710;
+  --color-ink:#eeebdf;--color-ink-2:#d3d1c4;--color-muted:#a9ad9e;--color-hint:#8f9586;
+  --color-rule:#2c332a;--color-rule-soft:#20261f;--color-rule-2:#4b5747;--color-accent:#75b966;
+  --color-accent-hover:#8fca7a;--color-accent-ink:#a7d48e;--color-accent-tint:#1f341c;--color-accent-line:#416239;
+  --color-accent-2:#375028;--color-on-solid:#07150a;--color-danger:#ed7668;--color-danger-ink:#faa498;
+  --color-danger-tint:#3e1f1b;--color-danger-line:#83433b;--color-warn:#eab444;--color-warn-ink:#efc876;
+  --color-warn-tint:#37290f;--color-warn-line:#755822;--color-clay:#e18c5f;--color-clay-ink:#eead89;
+  --color-clay-tint:#352516;--color-clay-line:#784c34;--color-ok:#60bb83;--color-ok-ink:#91d7a9;
+  --color-ok-tint:#152f1f;--color-ok-line:#326445;--color-shade:#010201;--color-mark:#475411;
 }
+/* 기존 이름 → Garden 토큰(별칭). body에서도 다시 계산해야 body.dark 값이 반영됨 */
+:root,body{
+  --bg:var(--color-paper);--sf:var(--color-sheet);--sub:var(--color-paper-2);--card:var(--color-sheet);--cd:var(--color-sheet);--bg2:var(--color-paper-2);
+  --bd:var(--color-rule);--hair:var(--color-rule-soft);--bd2:var(--color-rule-2);
+  --tx:var(--color-ink);--fg:var(--color-ink);--ink2:var(--color-ink-2);--mu:var(--color-muted);--ht:var(--color-hint);
+  --g:var(--color-accent);--gd:var(--color-accent-hover);--gp:var(--color-accent-ink);--gl:var(--color-accent-tint);
+  --blue:var(--color-accent);--blue-l:var(--color-accent-tint);--chart-bar:var(--color-accent);
+  --amber:var(--color-warn);--amber-l:var(--color-warn-tint);--red:var(--color-danger);--red-l:var(--color-danger-tint);
+  --warm:var(--color-clay);--warm-l:var(--color-clay-tint);
+  --err-fg:var(--color-danger-ink);--err-bg:var(--color-danger-tint);--mark-bg:var(--color-mark);--mark-fg:var(--color-ink);
+  --r:var(--radius-card);--rs:var(--radius-ctl);--r-card:var(--radius-card);--r-ctl:var(--radius-ctl);
+  --font:var(--font-body);
+  --shadow:none;--elev-1:none;
+  --shadow-md:0 14px 36px -14px color-mix(in oklab,var(--color-shade) 34%,transparent);--elev-2:var(--shadow-md);
+  --shadow-focus:0 0 0 3px color-mix(in oklab,var(--color-accent) 30%,transparent);
+}
+:root,body{--rm:var(--radius-card);
+  --warn-bg:var(--color-warn-tint);--warn-tx:var(--color-warn-ink);--warn-bd:var(--color-warn-line);
+  --err-bg:var(--color-danger-tint);--err-tx:var(--color-danger-ink);--err-bd:var(--color-danger-line);
+  --done-bg:var(--color-ok-tint);--done-tx:var(--color-ok-ink);}
+html,body{overflow-x:clip;}
+:where(a,button,input,select,textarea,summary,[tabindex],label):focus-visible{outline:2px solid var(--color-accent);outline-offset:2px;}
 *{box-sizing:border-box;}
 body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--font);font-size:14px;line-height:1.6;}
 a{color:var(--g);}
@@ -28,7 +70,7 @@ a{color:var(--g);}
 
 /* header */
 .hd{display:flex;align-items:center;gap:10px;padding:14px 0 18px;flex-wrap:wrap;}
-.hd-logo{width:36px;height:36px;border-radius:10px;background:var(--g);color:#fff;
+.hd-logo{width:36px;height:36px;border-radius:var(--radius-card);background:var(--g);color:var(--color-on-solid);
   display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
 .hd-t{font-size:17px;font-weight:700;}
 .hd-s{font-size:12px;color:var(--mu);}
@@ -42,7 +84,7 @@ a{color:var(--g);}
 .tabs{display:flex;gap:4px;border-bottom:2px solid var(--bd);margin-bottom:16px;padding:0;overflow-x:auto;}
 .tab{padding:10px 18px;font-size:13.5px;font-weight:600;color:var(--mu);cursor:pointer;
   border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;
-  font-family:var(--font);white-space:nowrap;transition:.15s;}
+  font-family:var(--font);white-space:nowrap;transition:var(--t-state);}
 .tab:hover{color:var(--tx);}
 .tab.active{color:var(--g);border-bottom-color:var(--g);}
 .tab-panel{display:none;}
@@ -50,7 +92,7 @@ a{color:var(--g);}
 
 /* card */
 .card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rm);
-  padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 3px color-mix(in oklab,var(--color-shade) 4%,transparent);}
 .card-t{font-size:14px;font-weight:700;margin:0 0 4px;display:flex;align-items:center;gap:7px;}
 .card-d{font-size:12.5px;color:var(--mu);margin:0 0 16px;}
 .badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;
@@ -59,21 +101,21 @@ a{color:var(--g);}
 /* status banner */
 .banner{display:flex;gap:9px;align-items:flex-start;padding:11px 14px;border-radius:var(--rs);
   font-size:12.5px;line-height:1.55;margin-bottom:14px;}
-.banner.ok{background:var(--gl);color:var(--gd);border:1px solid #a7f3d0;}
+.banner.ok{background:var(--gl);color:var(--gd);border:1px solid var(--color-ok-line);}
 .banner.warn{background:var(--warn-bg);color:var(--warn-tx);border:1px solid var(--warn-bd);}
 .banner.err{background:var(--err-bg);color:var(--err-tx);border:1px solid var(--err-bd);}
 .banner b{font-weight:700;}
 .banner .muted{opacity:.75;font-size:11.5px;}
 .banner .lnk{margin-top:6px;background:none;border:1px solid currentColor;color:inherit;
-  border-radius:6px;padding:2px 10px;font-size:11.5px;cursor:pointer;font-family:var(--font);}
-.banner code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px;font-size:11.5px;}
-body.dark .banner code{background:rgba(255,255,255,.08);}
-body.dark .banner.ok{border-color:#065f46;}
+  border-radius:var(--radius-ctl);padding:2px 10px;font-size:11.5px;cursor:pointer;font-family:var(--font);}
+.banner code{background:color-mix(in oklab,var(--color-shade) 6%,transparent);padding:1px 5px;border-radius:4px;font-size:11.5px;}
+body.dark .banner code{background:color-mix(in oklab,var(--color-ink) 8%,transparent);}
+body.dark .banner.ok{border-color:var(--color-ok-line);}
 
 /* ---- DASHBOARD ---- */
 .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px;}
 .stat-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rm);padding:16px 18px;
-  box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  box-shadow:0 1px 3px color-mix(in oklab,var(--color-shade) 4%,transparent);}
 .stat-label{font-size:12px;color:var(--mu);font-weight:600;margin-bottom:4px;}
 .stat-val{font-size:26px;font-weight:800;color:var(--g);}
 .stat-sub{font-size:11.5px;color:var(--ht);margin-top:2px;}
@@ -92,7 +134,7 @@ body.dark .banner.ok{border-color:#065f46;}
   background:var(--gl);color:var(--gd);}
 .quick-actions{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;}
 .qa-btn{flex:1;min-width:160px;padding:14px 18px;border:1px solid var(--bd);border-radius:var(--rm);
-  background:var(--sf);cursor:pointer;text-align:left;font-family:var(--font);transition:.15s;}
+  background:var(--sf);cursor:pointer;text-align:left;font-family:var(--font);transition:var(--t-state);}
 .qa-btn:hover{border-color:var(--g);background:var(--gl);}
 .qa-icon{font-size:22px;margin-bottom:6px;}
 .qa-label{font-size:13px;font-weight:700;color:var(--tx);}
@@ -100,7 +142,7 @@ body.dark .banner.ok{border-color:#065f46;}
 
 /* ---- BATCH UPLOAD ---- */
 .drop{border:2px dashed var(--bd);border-radius:var(--rm);padding:30px 20px;text-align:center;
-  cursor:pointer;transition:.15s;background:var(--bg);}
+  cursor:pointer;transition:var(--t-state);background:var(--bg);}
 .drop:hover,.drop.over{border-color:var(--g);background:var(--gl);}
 .drop-i{font-size:30px;line-height:1;margin-bottom:8px;}
 .drop-t{font-size:13.5px;font-weight:600;margin-bottom:4px;}
@@ -111,7 +153,7 @@ body.dark .banner.ok{border-color:#065f46;}
 .f{display:flex;flex-direction:column;gap:5px;}
 .f.full{grid-column:1 / -1;}
 .f label{font-size:12px;font-weight:600;color:var(--mu);}
-.f label .req{color:#dc2626;}
+.f label .req{color:var(--color-danger-ink);}
 .f input,.f select,.f textarea{padding:8px 11px;border:1px solid var(--bd);border-radius:var(--rs);
   background:var(--bg);color:var(--tx);font-size:13px;font-family:var(--font);outline:none;width:100%;}
 .f input:focus,.f select:focus,.f textarea:focus{border-color:var(--g);background:var(--sf);}
@@ -125,7 +167,7 @@ body.dark .banner.ok{border-color:#065f46;}
   font-weight:600;font-size:11.5px;border-bottom:1px solid var(--bd);white-space:nowrap;}
 .queue-table td{padding:8px 10px;border-bottom:1px solid var(--bd);vertical-align:middle;}
 .queue-table tr:hover td{background:var(--bg);}
-.queue-table input,.queue-table select{padding:5px 8px;border:1px solid var(--bd);border-radius:6px;
+.queue-table input,.queue-table select{padding:5px 8px;border:1px solid var(--bd);border-radius:var(--radius-ctl);
   background:var(--bg);color:var(--tx);font-size:12px;font-family:var(--font);outline:none;width:100%;min-width:80px;}
 .queue-table input:focus,.queue-table select:focus{border-color:var(--g);background:var(--sf);}
 .q-fname{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
@@ -137,7 +179,7 @@ body.dark .banner.ok{border-color:#065f46;}
 .q-status.done{background:var(--done-bg);color:var(--done-tx);}
 .q-status.error{background:var(--err-bg);color:var(--err-tx);}
 .q-remove{border:none;background:none;color:var(--mu);cursor:pointer;font-size:14px;padding:2px 4px;}
-.q-remove:hover{color:#dc2626;}
+.q-remove:hover{color:var(--color-danger-ink);}
 .q-check{width:16px;height:16px;cursor:pointer;accent-color:var(--g);}
 .q-replace{font-size:10px;color:var(--gd);font-weight:600;}
 
@@ -151,8 +193,8 @@ body.dark .banner.ok{border-color:#065f46;}
 /* batch summary */
 .batch-summary{margin-top:14px;padding:14px 16px;border-radius:var(--rs);font-size:13px;display:none;}
 .batch-summary.show{display:block;}
-.batch-summary.ok{background:var(--done-bg);border:1px solid #a7f3d0;}
-body.dark .batch-summary.ok{border-color:#065f46;}
+.batch-summary.ok{background:var(--done-bg);border:1px solid var(--color-ok-line);}
+body.dark .batch-summary.ok{border-color:var(--color-ok-line);}
 .batch-summary.mixed{background:var(--warn-bg);border:1px solid var(--warn-bd);}
 .batch-summary h4{margin:0 0 8px;font-size:13.5px;}
 
@@ -161,13 +203,13 @@ body.dark .batch-summary.ok{border-color:#065f46;}
 .btn{padding:9px 18px;border:1px solid var(--bd);border-radius:var(--rs);background:var(--sf);
   color:var(--tx);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);}
 .btn:hover{background:var(--bg);}
-.btn.primary{background:var(--g);border-color:var(--g);color:#fff;}
+.btn.primary{background:var(--g);border-color:var(--g);color:var(--color-on-solid);}
 .btn.primary:hover{background:var(--gd);}
-.btn.danger{background:#dc2626;border-color:#dc2626;color:#fff;}
-.btn.danger:hover{background:#b91c1c;}
+.btn.danger{background:var(--color-danger);border-color:var(--color-danger);color:var(--color-on-solid);}
+.btn.danger:hover{background:var(--color-danger);}
 .btn:disabled{opacity:.5;cursor:not-allowed;}
-.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.45);
-  border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px;}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid color-mix(in oklab,var(--color-sheet) 45%,transparent);
+  border-top-color:var(--color-rule-soft);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px;}
 @keyframes sp{to{transform:rotate(360deg);}}
 
 /* ---- MANAGEMENT ---- */
@@ -189,27 +231,27 @@ body.dark .batch-summary.ok{border-color:#065f46;}
 .mgmt-date{font-size:11.5px;color:var(--ht);white-space:nowrap;}
 .mgmt-acts{display:flex;gap:5px;flex-shrink:0;}
 .mgmt-acts a,.mgmt-acts button{padding:4px 9px;font-size:11px;border:1px solid var(--bd);
-  border-radius:6px;background:var(--sf);color:var(--mu);cursor:pointer;text-decoration:none;
+  border-radius:var(--radius-ctl);background:var(--sf);color:var(--mu);cursor:pointer;text-decoration:none;
   font-family:var(--font);white-space:nowrap;}
 .mgmt-acts a:hover{border-color:var(--g);color:var(--g);}
-.mgmt-acts button:hover{border-color:#dc2626;color:#dc2626;}
+.mgmt-acts button:hover{border-color:var(--color-danger);color:var(--color-danger-ink);}
 .no-search{font-size:10px;color:var(--warn-tx);background:var(--warn-bg);border:1px solid var(--warn-bd);
   padding:1px 5px;border-radius:999px;}
 
 /* bottom action bar for batch operations */
 .bottom-bar{position:sticky;bottom:0;left:0;right:0;background:var(--sf);border-top:1px solid var(--bd);
-  padding:10px 18px;display:none;align-items:center;gap:12px;box-shadow:0 -2px 8px rgba(0,0,0,.08);
+  padding:10px 18px;display:none;align-items:center;gap:12px;box-shadow:0 -2px 8px color-mix(in oklab,var(--color-shade) 8%,transparent);
   border-radius:var(--rm) var(--rm) 0 0;z-index:10;}
 .bottom-bar.show{display:flex;}
 .bottom-bar-text{font-size:13px;font-weight:600;flex:1;}
 
 /* confirm dialog overlay */
-.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:color-mix(in oklab,var(--color-shade) 45%,transparent);
   display:none;align-items:center;justify-content:center;z-index:100;}
 .overlay.show{display:flex;}
 .dialog{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rm);
   padding:22px 24px;max-width:480px;width:90%;max-height:80vh;overflow-y:auto;
-  box-shadow:0 8px 30px rgba(0,0,0,.15);}
+  box-shadow:0 8px 30px color-mix(in oklab,var(--color-shade) 15%,transparent);}
 .dialog h3{margin:0 0 10px;font-size:15px;}
 .dialog p{font-size:13px;color:var(--mu);margin:0 0 14px;}
 .dialog .d-list{font-size:12.5px;margin:0 0 14px;max-height:200px;overflow-y:auto;
@@ -221,8 +263,8 @@ body.dark .batch-summary.ok{border-color:#065f46;}
 /* result messages */
 .result{margin-top:14px;padding:14px 16px;border-radius:var(--rs);font-size:13px;display:none;}
 .result.show{display:block;}
-.result.ok{background:var(--done-bg);border:1px solid #a7f3d0;}
-body.dark .result.ok{border-color:#065f46;}
+.result.ok{background:var(--done-bg);border:1px solid var(--color-ok-line);}
+body.dark .result.ok{border-color:var(--color-ok-line);}
 .result.err{background:var(--err-bg);border:1px solid var(--err-bd);color:var(--err-tx);}
 .result h4{margin:0 0 8px;font-size:13.5px;}
 .result dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:0 0 10px;font-size:12.5px;}
@@ -260,20 +302,24 @@ body.dark .result.ok{border-color:#065f46;}
   .stats-row{grid-template-columns:1fr;}
   .tab{padding:8px 12px;font-size:12.5px;}
 }
+
+/* Hallmark · Garden: 제목 세리프, 주 동작 녹색 알약, 면은 시트+헤어라인 */
+.hd-t{font-family:var(--font-display);font-weight:600;}
+.hd-logo{background:var(--color-ink);color:var(--color-paper);border-radius:var(--radius-card);}
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <div class="hd">
-    <div class="hd-logo">&#x1F4E4;</div>
+    <div class="hd-logo">K</div>
     <div>
       <div class="hd-t">개정 내규 업로드</div>
       <div class="hd-s">개정된 사규(내규)를 올리면 내규 조회 및 전문 화면에 최신본으로 반영됩니다</div>
     </div>
     <div class="hd-actions">
-      <a class="tbtn" href="/">&#x2190; 검색으로</a>
-      <button class="tbtn" id="darkBtn" onclick="toggleDark()">&#x1F319;</button>
+      <a class="tbtn" href="/">검색으로</a>
+      <button class="tbtn" id="darkBtn" onclick="toggleDark()" aria-label="화면 밝기 전환">어둡게</button>
     </div>
   </div>
 
@@ -281,9 +327,9 @@ body.dark .result.ok{border-color:#065f46;}
 
   <!-- Tab navigation -->
   <div class="tabs" role="tablist">
-    <button class="tab active" role="tab" data-tab="dashboard" onclick="switchTab('dashboard')">&#x1F4CA; 대시보드</button>
-    <button class="tab" role="tab" data-tab="upload" onclick="switchTab('upload')">&#x1F4E4; 일괄 업로드</button>
-    <button class="tab" role="tab" data-tab="manage" onclick="switchTab('manage')">&#x1F5C2;&#xFE0F; 업로드 관리</button>
+    <button class="tab active" role="tab" data-tab="dashboard" onclick="switchTab('dashboard')">대시보드</button>
+    <button class="tab" role="tab" data-tab="upload" onclick="switchTab('upload')">일괄 업로드</button>
+    <button class="tab" role="tab" data-tab="manage" onclick="switchTab('manage')">업로드 관리</button>
   </div>
 
   <!-- ============ TAB 1: DASHBOARD ============ -->
@@ -313,12 +359,12 @@ body.dark .result.ok{border-color:#065f46;}
 
     <div class="quick-actions">
       <button class="qa-btn" onclick="switchTab('upload')">
-        <div class="qa-icon">&#x1F4E4;</div>
+        <div class="qa-icon"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></div>
         <div class="qa-label">새 규정 업로드</div>
         <div class="qa-desc">개정된 내규 파일을 일괄 업로드합니다</div>
       </button>
       <button class="qa-btn" onclick="switchTab('manage')">
-        <div class="qa-icon">&#x1F5C2;&#xFE0F;</div>
+        <div class="qa-icon"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
         <div class="qa-label">규정 관리</div>
         <div class="qa-desc">업로드된 규정 검색, 필터, 되돌리기</div>
       </button>
@@ -336,7 +382,7 @@ body.dark .result.ok{border-color:#065f46;}
       <div class="drop" id="drop" tabindex="0"
            onclick="document.getElementById('fileInput').click()"
            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('fileInput').click();}">
-        <div class="drop-i">&#x1F4C4;</div>
+        <div class="drop-i"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></div>
         <div class="drop-t">파일을 끌어다 놓거나 클릭해서 선택</div>
         <div class="drop-s" id="dropSub">최대 40MB &middot; 여러 파일 선택 가능</div>
       </div>
@@ -411,7 +457,7 @@ body.dark .result.ok{border-color:#065f46;}
     <div class="card">
       <div class="card-t">업로드한 개정 내규
         <span class="badge" id="mgmtCount">0건</span>
-        <button class="tbtn" style="margin-left:auto;" onclick="loadStatus()">&#x21BB; 새로고침</button>
+        <button class="tbtn" style="margin-left:auto;" onclick="loadStatus()">새로고침</button>
       </div>
       <p class="card-d">이 화면에서 올린 규정만 표시됩니다. 되돌리면 등록이 해제되고 파일도 삭제됩니다.</p>
 
@@ -478,11 +524,11 @@ function toggleDark(){
   var dark=!document.body.classList.contains('dark');
   document.body.classList.toggle('dark',dark);
   localStorage.setItem('dark',dark?'1':'0');
-  $('darkBtn').textContent=dark?'\u2600':'\uD83C\uDF19';
+  $('darkBtn').textContent=dark?'밝게':'어둡게';
 }
 if(localStorage.getItem('dark')==='1'){
   document.body.classList.add('dark');
-  $('darkBtn').textContent='\u2600';
+  $('darkBtn').textContent='밝게';
 }
 
 /* ── tabs ── */
@@ -546,7 +592,7 @@ async function loadStatus(recheck){
     /* status banner */
     var b=$('statusBanner');
     if(d.github && d.github_ok===false){
-      b.innerHTML='<div class="banner err"><span>\u26D4</span><div>'
+      b.innerHTML='<div class="banner err"><div>'
         +'<b>GitHub 저장소에 연결할 수 없어 지금은 등록할 수 없습니다.</b><br>'
         +esc(d.github_error||'원인을 확인할 수 없습니다.')+'<br>'
         +'<span class="muted">저장소 <code>'+esc(d.github_repo)+'</code> \xB7 브랜치 '
@@ -554,17 +600,17 @@ async function loadStatus(recheck){
         +'<button type="button" class="lnk" onclick="loadStatus(1)">다시 확인</button>'
         +'</div></div>';
     }else if(d.github){
-      b.innerHTML='<div class="banner ok"><span>\u2705</span><div>'
+      b.innerHTML='<div class="banner ok"><div>'
         +'업로드하면 <b>자동으로 저장 및 배포</b>됩니다(<code>'+esc(d.github_repo)+'</code>에 커밋). '
         +'현재 등록된 내규 <b>'+d.total+'건</b>. '
         +'반영까지 <b>1~2분</b> 정도 걸립니다.</div></div>';
     }else if(d.writable){
-      b.innerHTML='<div class="banner ok"><span>\u2705</span><div>'
+      b.innerHTML='<div class="banner ok"><div>'
         +'업로드하면 <b>즉시 반영</b>됩니다. 현재 등록된 내규 <b>'+d.total+'건</b>. '
         +'배포본(Vercel)에도 반영하려면 <code>regulations/</code>와 '
         +'<code>regulations_manifest.json</code> 변경분을 커밋 및 푸시하세요.</div></div>';
     }else{
-      b.innerHTML='<div class="banner warn"><span>\u26A0\uFE0F</span><div>'
+      b.innerHTML='<div class="banner warn"><div>'
         +'<b>읽기 전용 환경</b>입니다(서버리스 배포). 등록하기를 누르면 저장 대신 '
         +'<b>변환 결과 ZIP</b>이 내려옵니다. ZIP을 리포지토리에 풀고 커밋하면 반영됩니다. '
         +'바로 저장하려면 로컬에서 <code>python run_local.py</code>로 실행하세요.</div></div>';
@@ -596,7 +642,7 @@ async function loadStatus(recheck){
 
   }catch(e){
     $('statusBanner').innerHTML=
-      '<div class="banner err"><span>\u26A0\uFE0F</span><div>서버 상태를 확인할 수 없습니다: '+esc(e.message)+'</div></div>';
+      '<div class="banner err"><div>서버 상태를 확인할 수 없습니다: '+esc(e.message)+'</div></div>';
   }
 }
 
@@ -847,7 +893,7 @@ async function doBatchUpload(){
   var sm=$('batchSummary');
   if(failures===0){
     sm.className='batch-summary show ok';
-    sm.innerHTML='<h4>\u2705 전체 '+successes+'건 업로드 완료</h4>'
+    sm.innerHTML='<h4>전체 '+successes+'건 업로드 완료</h4>'
       +'<p style="margin:0;font-size:12.5px;">배포 반영까지 1~2분 걸립니다.</p>';
   }else{
     sm.className='batch-summary show mixed';
@@ -1025,7 +1071,7 @@ async function doBatchRevert(){
   _mgmtSelected.clear();
 
   if(failures===0){
-    showMgmtResult(true,'<h4>\u2705 '+successes+'건 되돌리기 완료</h4>'
+    showMgmtResult(true,'<h4>'+successes+'건 되돌리기 완료</h4>'
       +'<p style="margin:0;font-size:12.5px;">배포 반영까지 1~2분 걸립니다.</p>');
   }else{
     var failList=results.filter(function(r){return !r.ok;}).map(function(r){return esc(r.msg);}).join(', ');
