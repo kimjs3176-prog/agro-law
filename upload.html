@@ -5,25 +5,24 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>개정 내규 업로드 · KOAT 내규&국가법령 종합 검색</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.min.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600&display=swap">
-<style>/* Hallmark · v2.0.0 · redesign: full (app scope) · shape: app screen · theme: garden (dealt: manual) · genre: editorial · modes: light+dark · type: Pretendard Variable (body, data, controls) + Noto Serif KR 600 (screen and document titles) · signature: the regulation sheet, a pale printed page on oat paper · built: the project · page: /upload */
-/* critique: a stock navy KRDS tool with cards in cards, shadows and emoji icons; now oat paper, green-black ink, hairlines, one leaf-green action, flat 4px wells and pill controls */
+<style>/* Hallmark · v2.0.0 · redesign: full (app scope) · shape: app screen · theme: brand (KRDS primary #256EF4, by request) on garden surfaces · genre: modern-minimal · modes: light+dark · type: Pretendard Variable throughout (SIL OFL) · signature: the regulation sheet, one printed page ruled in hairlines · built: the project · page: /upload */
+/* critique: a stock navy tool with cards in cards, shadows and emoji icons; now cool paper, hairlines, one KRDS blue action, flat 4px wells and pill controls */
 /* Hallmark · waive 48 for print/export templates in script (hwpx, print window, excel): they render outside this document and need literal colours · waive 48 for the category data palette in script (chart and tree dots) */
 :root{
   color-scheme:light;
-  /* Garden 팔레트(oklch 기준값을 sRGB로 환산) — 모든 색은 여기서만 정의 */
-  --color-paper:#f7f1df;--color-paper-2:#eee6d1;--color-paper-3:#e3dac2;--color-sheet:#fcfbf3;
-  --color-ink:#072311;--color-ink-2:#223c28;--color-muted:#4d5d4c;--color-hint:#616d5d;
-  --color-rule:#cfcfbf;--color-rule-soft:#e1ded0;--color-rule-2:#8c9f86;--color-accent:#1f6a19;
-  --color-accent-hover:#095717;--color-accent-ink:#095119;--color-accent-tint:#dcebcb;--color-accent-line:#acc896;
-  --color-accent-2:#c3dba6;--color-on-solid:#f9f7ee;--color-danger:#ad2f22;--color-danger-ink:#8d261b;
+  /* 주색은 KRDS(대한민국 정부 디자인 시스템) Primary #256EF4, 무채색은 차가운 회색 — 모든 색은 여기서만 정의 */
+  --color-paper:#f6f7f9;--color-paper-2:#eef0f2;--color-paper-3:#e2e5e8;--color-sheet:#ffffff;
+  --color-ink:#1d2126;--color-ink-2:#383e46;--color-muted:#575e68;--color-hint:#676e77;
+  --color-rule:#dde0e3;--color-rule-soft:#e9ebee;--color-rule-2:#a5acb2;--color-accent:#256ef4;
+  --color-accent-hover:#1b5fd9;--color-accent-ink:#0b4bc2;--color-accent-tint:#eaf2fe;--color-accent-line:#a9c5f5;
+  --color-accent-2:#c5d9f9;--color-on-solid:#ffffff;--color-danger:#ad2f22;--color-danger-ink:#8d261b;
   --color-danger-tint:#ffe5de;--color-danger-line:#eeb4aa;--color-warn:#de9d16;--color-warn-ink:#79480c;
   --color-warn-tint:#faecc7;--color-warn-line:#ebc57d;--color-clay:#ae4f17;--color-clay-ink:#893b0b;
-  --color-clay-tint:#f6e7d6;--color-clay-line:#e1c5a8;--color-ok:#0b7643;--color-ok-ink:#085630;
-  --color-ok-tint:#d6f0da;--color-ok-line:#9dcba8;--color-shade:#081b0e;--color-mark:#d1e28d;
+  --color-clay-tint:#fdece5;--color-clay-line:#e5baa2;--color-ok:#0b7643;--color-ok-ink:#085630;
+  --color-ok-tint:#d6f0da;--color-ok-line:#9dcba8;--color-shade:#11161d;--color-mark:#b8f6cc;
   --color-cat-1:#af3e30;--color-cat-2:#30752a;--color-cat-3:#326893;--color-cat-4:#666c59;--color-cat-5:#bd871c;--color-cat-6:#7d4778;
   --font-body:'Pretendard Variable',Pretendard,'Malgun Gothic','Apple SD Gothic Neo',sans-serif;
-  --font-display:'Noto Serif KR','Nanum Myeongjo',ui-serif,Georgia,serif;
+  --font-display:var(--font-body);
   --radius-card:4px;--radius-ctl:4px;--radius-pill:999px;
   --dur-micro:90ms;--dur-short:160ms;--ease-out:cubic-bezier(.16,1,.3,1);
   --t-state:background-color var(--dur-short) var(--ease-out),border-color var(--dur-short) var(--ease-out),color var(--dur-short) var(--ease-out),box-shadow var(--dur-short) var(--ease-out),opacity var(--dur-short) var(--ease-out),transform var(--dur-micro) var(--ease-out);
@@ -31,17 +30,17 @@
 body.dark{
   color-scheme:dark;
   --color-cat-1:#e47d6d;--color-cat-2:#73b96b;--color-cat-3:#7aaad4;--color-cat-4:#9ca18d;--color-cat-5:#e0ae57;--color-cat-6:#bf8ab9;
-  --color-paper:#0a0f0a;--color-paper-2:#121812;--color-paper-3:#1a221a;--color-sheet:#101710;
-  --color-ink:#eeebdf;--color-ink-2:#d3d1c4;--color-muted:#a9ad9e;--color-hint:#8f9586;
-  --color-rule:#2c332a;--color-rule-soft:#20261f;--color-rule-2:#4b5747;--color-accent:#75b966;
-  --color-accent-hover:#8fca7a;--color-accent-ink:#a7d48e;--color-accent-tint:#1f341c;--color-accent-line:#416239;
-  --color-accent-2:#375028;--color-on-solid:#07150a;--color-danger:#ed7668;--color-danger-ink:#faa498;
+  --color-paper:#0b0d11;--color-paper-2:#13161b;--color-paper-3:#1b2025;--color-sheet:#121519;
+  --color-ink:#eceff1;--color-ink-2:#cdd1d6;--color-muted:#a5acb2;--color-hint:#8c939b;
+  --color-rule:#2c3136;--color-rule-soft:#212429;--color-rule-2:#4d535b;--color-accent:#6d9df5;
+  --color-accent-hover:#87b1fd;--color-accent-ink:#a4c5ff;--color-accent-tint:#1d2d4c;--color-accent-line:#3c578a;
+  --color-accent-2:#33476d;--color-on-solid:#0c121a;--color-danger:#ed7668;--color-danger-ink:#faa498;
   --color-danger-tint:#3e1f1b;--color-danger-line:#83433b;--color-warn:#eab444;--color-warn-ink:#efc876;
   --color-warn-tint:#37290f;--color-warn-line:#755822;--color-clay:#e18c5f;--color-clay-ink:#eead89;
-  --color-clay-tint:#352516;--color-clay-line:#784c34;--color-ok:#60bb83;--color-ok-ink:#91d7a9;
-  --color-ok-tint:#152f1f;--color-ok-line:#326445;--color-shade:#010201;--color-mark:#475411;
+  --color-clay-tint:#392317;--color-clay-line:#784c34;--color-ok:#60bb83;--color-ok-ink:#91d7a9;
+  --color-ok-tint:#152f1f;--color-ok-line:#326445;--color-shade:#010202;--color-mark:#245337;
 }
-/* 기존 이름 → Garden 토큰(별칭). body에서도 다시 계산해야 body.dark 값이 반영됨 */
+/* 기존 이름 → 색 토큰(별칭). body에서도 다시 계산해야 body.dark 값이 반영됨 */
 :root,body{
   --bg:var(--color-paper);--sf:var(--color-sheet);--sub:var(--color-paper-2);--card:var(--color-sheet);--cd:var(--color-sheet);--bg2:var(--color-paper-2);
   --bd:var(--color-rule);--hair:var(--color-rule-soft);--bd2:var(--color-rule-2);
@@ -303,9 +302,9 @@ body.dark .result.ok{border-color:var(--color-ok-line);}
   .tab{padding:8px 12px;font-size:12.5px;}
 }
 
-/* Hallmark · Garden: 제목 세리프, 주 동작 녹색 알약, 면은 시트+헤어라인 */
+/* Hallmark: 주 동작은 KRDS 파랑 알약, 면은 시트+헤어라인 */
 .hd-t{font-family:var(--font-display);font-weight:600;}
-.hd-logo{background:var(--color-ink);color:var(--color-paper);border-radius:var(--radius-card);}
+.hd-logo{background:var(--color-accent);color:var(--color-on-solid);border-radius:var(--radius-card);}
 </style>
 </head>
 <body>

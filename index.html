@@ -6,27 +6,24 @@
 <script>/* /policy: 규정조회 전용 화면 */ if(/^\/policy\/?$/.test(location.pathname)) document.documentElement.classList.add('policy-only');</script>
 <title>KOAT Work Place</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.min.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600&display=swap">
-<style>/* Hallmark · v2.0.0 · redesign: full (app scope) · shape: app screen · theme: garden (dealt: manual) · genre: editorial · modes: light+dark · type: Pretendard Variable (body, data, controls) + Noto Serif KR 600 (screen and document titles) · signature: the regulation sheet, a pale printed page on oat paper · built: the project */
-/* critique: a stock navy KRDS tool with cards in cards, shadows and emoji icons; now oat paper, green-black ink, hairlines, one leaf-green action, flat 4px wells and pill controls */
+<style>/* Hallmark · v2.0.0 · redesign: full (app scope) · shape: app screen · theme: brand (KRDS primary #256EF4, by request) on garden surfaces · genre: modern-minimal · modes: light+dark · type: Pretendard Variable throughout (SIL OFL) · signature: the regulation sheet, one printed page ruled in hairlines · built: the project */
+/* critique: a stock navy tool with cards in cards, shadows and emoji icons; now cool paper, hairlines, one KRDS blue action, flat 4px wells and pill controls */
 /* Hallmark · waive 48 for print/export templates in script (hwpx, print window, excel): they render outside this document and need literal colours · waive 48 for the category data palette in script (chart and tree dots) */
 :root{
   color-scheme:light;
-  /* Garden 팔레트(oklch 기준값을 sRGB로 환산) — 모든 색은 여기서만 정의 */
-  --color-paper:#f7f1df;--color-paper-2:#eee6d1;--color-paper-3:#e3dac2;--color-sheet:#fcfbf3;
-  --color-ink:#072311;--color-ink-2:#223c28;--color-muted:#4d5d4c;--color-hint:#616d5d;
-  --color-rule:#cfcfbf;--color-rule-soft:#e1ded0;--color-rule-2:#8c9f86;--color-accent:#1f6a19;
-  --color-accent-hover:#095717;--color-accent-ink:#095119;--color-accent-tint:#dcebcb;--color-accent-line:#acc896;
-  --color-accent-2:#c3dba6;--color-on-solid:#f9f7ee;--color-danger:#ad2f22;--color-danger-ink:#8d261b;
+  /* 주색은 KRDS(대한민국 정부 디자인 시스템) Primary #256EF4, 무채색은 차가운 회색 — 모든 색은 여기서만 정의 */
+  --color-paper:#f6f7f9;--color-paper-2:#eef0f2;--color-paper-3:#e2e5e8;--color-sheet:#ffffff;
+  --color-ink:#1d2126;--color-ink-2:#383e46;--color-muted:#575e68;--color-hint:#676e77;
+  --color-rule:#dde0e3;--color-rule-soft:#e9ebee;--color-rule-2:#a5acb2;--color-accent:#256ef4;
+  --color-accent-hover:#1b5fd9;--color-accent-ink:#0b4bc2;--color-accent-tint:#eaf2fe;--color-accent-line:#a9c5f5;
+  --color-accent-2:#c5d9f9;--color-on-solid:#ffffff;--color-danger:#ad2f22;--color-danger-ink:#8d261b;
   --color-danger-tint:#ffe5de;--color-danger-line:#eeb4aa;--color-warn:#de9d16;--color-warn-ink:#79480c;
   --color-warn-tint:#faecc7;--color-warn-line:#ebc57d;--color-clay:#ae4f17;--color-clay-ink:#893b0b;
-  --color-clay-tint:#f6e7d6;--color-clay-line:#e1c5a8;--color-ok:#0b7643;--color-ok-ink:#085630;
-  --color-ok-tint:#d6f0da;--color-ok-line:#9dcba8;--color-shade:#081b0e;--color-mark:#d1e28d;
+  --color-clay-tint:#fdece5;--color-clay-line:#e5baa2;--color-ok:#0b7643;--color-ok-ink:#085630;
+  --color-ok-tint:#d6f0da;--color-ok-line:#9dcba8;--color-shade:#11161d;--color-mark:#b8f6cc;
   --color-cat-1:#af3e30;--color-cat-2:#30752a;--color-cat-3:#326893;--color-cat-4:#666c59;--color-cat-5:#bd871c;--color-cat-6:#7d4778;
   --font-body:'Pretendard Variable',Pretendard,'Malgun Gothic','Apple SD Gothic Neo',sans-serif;
-  --font-display:'Noto Serif KR','Nanum Myeongjo',ui-serif,Georgia,serif;
+  --font-display:var(--font-body);
   --radius-card:4px;--radius-ctl:4px;--radius-pill:999px;
   --dur-micro:90ms;--dur-short:160ms;--ease-out:cubic-bezier(.16,1,.3,1);
   --t-state:background-color var(--dur-short) var(--ease-out),border-color var(--dur-short) var(--ease-out),color var(--dur-short) var(--ease-out),box-shadow var(--dur-short) var(--ease-out),opacity var(--dur-short) var(--ease-out),transform var(--dur-micro) var(--ease-out);
@@ -34,17 +31,17 @@
 body.dark{
   color-scheme:dark;
   --color-cat-1:#e47d6d;--color-cat-2:#73b96b;--color-cat-3:#7aaad4;--color-cat-4:#9ca18d;--color-cat-5:#e0ae57;--color-cat-6:#bf8ab9;
-  --color-paper:#0a0f0a;--color-paper-2:#121812;--color-paper-3:#1a221a;--color-sheet:#101710;
-  --color-ink:#eeebdf;--color-ink-2:#d3d1c4;--color-muted:#a9ad9e;--color-hint:#8f9586;
-  --color-rule:#2c332a;--color-rule-soft:#20261f;--color-rule-2:#4b5747;--color-accent:#75b966;
-  --color-accent-hover:#8fca7a;--color-accent-ink:#a7d48e;--color-accent-tint:#1f341c;--color-accent-line:#416239;
-  --color-accent-2:#375028;--color-on-solid:#07150a;--color-danger:#ed7668;--color-danger-ink:#faa498;
+  --color-paper:#0b0d11;--color-paper-2:#13161b;--color-paper-3:#1b2025;--color-sheet:#121519;
+  --color-ink:#eceff1;--color-ink-2:#cdd1d6;--color-muted:#a5acb2;--color-hint:#8c939b;
+  --color-rule:#2c3136;--color-rule-soft:#212429;--color-rule-2:#4d535b;--color-accent:#6d9df5;
+  --color-accent-hover:#87b1fd;--color-accent-ink:#a4c5ff;--color-accent-tint:#1d2d4c;--color-accent-line:#3c578a;
+  --color-accent-2:#33476d;--color-on-solid:#0c121a;--color-danger:#ed7668;--color-danger-ink:#faa498;
   --color-danger-tint:#3e1f1b;--color-danger-line:#83433b;--color-warn:#eab444;--color-warn-ink:#efc876;
   --color-warn-tint:#37290f;--color-warn-line:#755822;--color-clay:#e18c5f;--color-clay-ink:#eead89;
-  --color-clay-tint:#352516;--color-clay-line:#784c34;--color-ok:#60bb83;--color-ok-ink:#91d7a9;
-  --color-ok-tint:#152f1f;--color-ok-line:#326445;--color-shade:#010201;--color-mark:#475411;
+  --color-clay-tint:#392317;--color-clay-line:#784c34;--color-ok:#60bb83;--color-ok-ink:#91d7a9;
+  --color-ok-tint:#152f1f;--color-ok-line:#326445;--color-shade:#010202;--color-mark:#245337;
 }
-/* 기존 이름 → Garden 토큰(별칭). body에서도 다시 계산해야 body.dark 값이 반영됨 */
+/* 기존 이름 → 색 토큰(별칭). body에서도 다시 계산해야 body.dark 값이 반영됨 */
 :root,body{
   --bg:var(--color-paper);--sf:var(--color-sheet);--sub:var(--color-paper-2);--card:var(--color-sheet);--cd:var(--color-sheet);--bg2:var(--color-paper-2);
   --bd:var(--color-rule);--hair:var(--color-rule-soft);--bd2:var(--color-rule-2);
@@ -2566,10 +2563,10 @@ footer{border-top:1px solid var(--hair)!important;}
 .hc-grp{background:var(--sub);border-style:dashed;}
 .hc-grp .hc-chip{background:var(--sf);}
 @media (max-width:640px){ .hc-grid{columns:1;} }
-/* 랭킹: 검색창 오른쪽 고정(중간 폭까지), 높이는 검색 카드에 맞추고 안에서 스크롤 */
+/* 랭킹: 검색창 오른쪽 고정(중간 폭까지), 스크롤 없이 목록 전체를 그대로 보여 줌 */
 @media (min-width:860px){
   .search-row.has-rank{display:grid!important;grid-template-columns:minmax(0,1fr) 320px;align-items:stretch;}
-  .search-row.has-rank > .rk-side{margin-top:0!important;min-height:100%;height:0;overflow:auto;}
+  .search-row.has-rank > .rk-side{margin-top:0!important;align-self:start;height:auto;overflow:visible;}
 }
 .search-row.has-rank > .spanel{align-self:start;}
 /* 빈 안내 줄은 숨겨 검색 카드를 짧게 */
@@ -2599,11 +2596,11 @@ footer{border-top:1px solid var(--hair)!important;}
 @media (max-width:640px){ .hc-body > .hc-grid{columns:1;} }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Hallmark · Garden 구성 레이어 (마지막에 둬서 이전 층을 정리)
-   · 귀리색 종이(paper) 위에 옅은 인쇄 시트(sheet) 한 장 — 상자 속 상자 없이 헤어라인으로 구획
-   · 녹색 잉크 글자, 잎사귀 녹색 하나는 주 동작·현재 선택·포커스에만
+   Hallmark 구성 레이어 (마지막에 둬서 이전 층을 정리)
+   · 옅은 회색 종이(paper) 위에 흰 시트(sheet) 한 장 — 상자 속 상자 없이 헤어라인으로 구획
+   · KRDS 파랑 하나는 주 동작·현재 선택·포커스에만
    · 모서리 4px(웰·입력), 버튼과 칩은 알약형, 그림자 없음(떠 있는 팝업·모달만 예외)
-   · 화면·문서 제목은 Noto Serif KR 600, 본문·데이터·컨트롤은 Pretendard
+   · 서체는 Pretendard(SIL OFL) 하나로 통일, 제목은 600
    ══════════════════════════════════════════════════════════════════════════ */
 :root body{background:var(--color-paper);color:var(--color-ink);letter-spacing:0;font-size:15px;line-height:1.6;}
 :root body :is(table,.num,.rk-n,.hc-cnt,.idb-cnt,.reg-tb-count,.tb-cnt,.stgl-cnt){font-variant-numeric:tabular-nums lining-nums;}
@@ -2619,7 +2616,7 @@ footer{border-top:1px solid var(--hair)!important;}
 :root body .topbar{background:var(--color-sheet);border-bottom:1px solid var(--color-rule);box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;}
 :root body .tb-sub{background:var(--color-paper);border-top:1px solid var(--color-rule-soft);}
 :root body .tb-sub-l,:root body .sm-glabel{font-size:12px;font-weight:500;color:var(--color-muted);}
-:root body .brand-mark{background:var(--color-ink);color:var(--color-paper);border-radius:var(--radius-card);font-family:var(--font-display);font-weight:600;box-shadow:none;}
+:root body .brand-mark{background:var(--color-accent);color:var(--color-on-solid);border-radius:var(--radius-card);font-family:var(--font-display);font-weight:600;box-shadow:none;}
 :root body .brand-en{background:transparent;border:0;padding:0;margin-left:8px;color:var(--color-muted);font-weight:500;font-size:12px;}
 :root body .brand-sub{color:var(--color-muted);}
 :root body .sm-item{color:var(--color-ink-2);font-weight:500;border-radius:var(--radius-pill);box-shadow:none;}
@@ -2668,7 +2665,7 @@ footer{border-top:1px solid var(--hair)!important;}
 :root body :is(.wp-btn.primary,.kw-save-btn,.coll-add-btn){background:var(--color-accent);border-color:var(--color-accent);color:var(--color-on-solid);border-radius:var(--radius-pill);}
 :root body :is(.wp-btn.primary,.kw-save-btn,.coll-add-btn):hover{background:var(--color-accent-hover);border-color:var(--color-accent-hover);}
 
-/* 칩: 녹색 면 대신 종이색 웰, 고르면 잉크색 */
+/* 칩: 색 면 대신 종이색 웰, 고르면 파랑 */
 :root body .chip,:root body .chip.int-cat{background:var(--color-paper-2);color:var(--color-ink);font-weight:500;border-radius:var(--radius-pill);box-shadow:none;}
 :root body .chip:hover,:root body .chip.int-cat:hover{background:var(--color-accent-tint);color:var(--color-accent-ink);transform:none;box-shadow:none;}
 :root body .qlabel{color:var(--color-muted);font-weight:500;font-size:13px;}
@@ -2720,12 +2717,12 @@ footer{border-top:1px solid var(--hair)!important;}
 /* 비어 있음 상태 아이콘 */
 :root body .empty-icon{background:var(--color-paper-2);color:var(--color-muted);}
 
-/* 문서 동작 버튼: 주 동작은 녹색 알약 하나, 나머지는 헤어라인 */
+/* 문서 동작 버튼: 주 동작은 파랑 알약 하나, 나머지는 헤어라인 */
 :root body .abtn{background:transparent;border:1px solid var(--color-rule-2);border-radius:var(--radius-pill);color:var(--color-ink);box-shadow:none;}
 :root body .abtn:hover{background:var(--color-paper-2);color:var(--color-ink);transform:none;box-shadow:none;}
 :root body .abtn.primary{background:var(--color-accent);border-color:var(--color-accent);color:var(--color-on-solid);}
 :root body .abtn.primary:hover{background:var(--color-accent-hover);border-color:var(--color-accent-hover);color:var(--color-on-solid);}
-/* 포커스는 즉시, 녹색 링 하나 */
+/* 포커스는 즉시, 파랑 링 하나 */
 :root body :is(.sm-item,.stgl,.sbtn,.chip,.stool,.tb-tool,.dark-btn,.hc-chip,.idb-pill,.rrev-item):focus-visible{outline:2px solid var(--color-accent);outline-offset:2px;box-shadow:none;}
 </style>
 </head>
@@ -5920,7 +5917,7 @@ function previewArticle(el, artNo){
 // (교차 패널은 buildRegCards를 직접 쓰므로 요약은 붙지 않는다 — 주 결과에서만 노출)
 const _REG_TYPE_ORDER=['법률','대통령령','총리령','부령','농림축산식품부령','행정규칙',
   '정관','규정','규칙','세칙','예규','매뉴얼','내규','기타'];
-const _REG_DIST_PALETTE=['#3f7a2c','#b5582f','#3d6b8c','#c08a1e','#7a4f78','#5f8f86','#a3473f','#6f7563'];
+const _REG_DIST_PALETTE=['#256ef4','#7c3aed','#059669','#f59e0b','#ef4444','#0ea5e9','#ec4899','#64748b'];
 function _regItemType(it, kind){
   return String(it['법령구분명'] || (kind==='internal'?(it.category||'내규'):'법률')).trim()||'기타';
 }
