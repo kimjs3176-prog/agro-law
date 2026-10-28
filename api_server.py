@@ -4933,15 +4933,16 @@ def _int_terms(query: str) -> list:
 def _int_terms_hits(terms: list, limit: int = 12) -> list:
     """낱말들이 많이 함께 나오는 규정 순으로(절반 이상 일치)."""
     need = max(2, -(-len(terms) * 6 // 10))          # 60% 이상(올림), 최소 2개
+    groups = [[v.lower() for v in _int_term_group(t)] for t in terms]   # 낱말마다 같은 뜻의 말 포함
     rows = []
     for m in _load_reg_manifest():
         body = _reg_body_text(m.get("slug", ""))
         if not body:
             continue
         low = body.lower()
-        hit = [t for t in terms if t.lower() in low]
+        hit = [g for g in groups if any(v in low for v in g)]
         if len(hit) >= min(need, len(terms)):
-            rows.append((len(hit), sum(low.count(t.lower()) for t in hit), m, body))
+            rows.append((len(hit), sum(low.count(v) for g in hit for v in g), m, body))
     rows.sort(key=lambda r: (-r[0], -r[1]))
     return [{"title": m.get("title", ""), "content": body[:20000], "source": "local",
              "revision": m.get("revision", ""), "category": m.get("category", ""), "matched_terms": n}
@@ -4952,6 +4953,7 @@ def _int_enrich(resp: dict, query: str) -> dict:
     """검색 결과가 비었을 때 문장형 질문을 낱말로 나눠 다시 찾는다."""
     if resp.get("error") or resp.get("article_ref"):
         return resp
+    resp = _onto_expand(resp, query)
     empty = not (resp.get("structured") or (resp.get("text") or "").strip() or resp.get("name_matches"))
     if not empty:
         return resp
@@ -4963,6 +4965,130 @@ def _int_enrich(resp: dict, query: str) -> dict:
         resp["structured"] = hits
         resp["terms"] = terms                      # 화면은 이 낱말들로 조문을 골라 보여 준다
         resp["fallback"] = "terms"
+        flat = [v for t in terms for v in _int_term_group(t)]
+        if len(flat) > len(terms):
+            resp["expand_terms"] = flat            # 같은 뜻의 말까지 강조·조문 고르기에 쓴다
+    return resp
+
+
+# ── 내규 용어 사전(경량 온톨로지) ─────────────────────────────────────────────
+# ontology.json: 개념마다 대표어·같은 뜻의 말과 상위(broader)·관련(related) 관계를 둔다.
+# 검색어가 개념에 해당하면 같은 뜻의 말(규정 본문에 실제로 나오는 낱말만)로 넓혀 찾고,
+# 상위·하위·관련 개념은 화면에서 바로가기로만 보여 준다(검색 결과를 흐리지 않게).
+_ONTO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ontology.json")
+_ONTO: dict = {}
+_ONTO_MAX_VARIANTS = 4                              # 같은 뜻의 말로 더 찾는 최대 낱말 수
+_ONTO_MAX_ADD = 8                                  # 같은 뜻의 말로 덧붙이는 최대 규정 수
+
+
+def _onto_key(s: str) -> str:
+    return re.sub(r"\s+", "", str(s or "")).lower()
+
+
+def _onto() -> dict:
+    """{'by_id': 개념, 'by_term': 낱말→개념 id, 'children': 상위 id→하위 id} — 파일이 바뀌면 다시 읽는다."""
+    try:
+        mtime = os.path.getmtime(_ONTO_PATH)
+    except OSError:
+        return {"by_id": {}, "by_term": {}, "children": {}}
+    if _ONTO.get("mtime") != mtime:
+        try:
+            with open(_ONTO_PATH, encoding="utf-8") as f:
+                concepts = json.load(f).get("concepts") or []
+        except Exception as e:
+            print(f"[onto] 용어 사전 읽기 실패: {e}")
+            concepts = []
+        by_id, by_term, children = {}, {}, {}
+        for c in concepts:
+            if not isinstance(c, dict) or not c.get("id") or not c.get("label"):
+                continue
+            by_id[c["id"]] = c
+            for t in [c["label"]] + list(c.get("synonyms") or []):
+                by_term.setdefault(_onto_key(t), c["id"])
+            if c.get("broader"):
+                children.setdefault(c["broader"], []).append(c["id"])
+        _ONTO.clear()
+        _ONTO.update(mtime=mtime, by_id=by_id, by_term=by_term, children=children)
+    return _ONTO
+
+
+def _onto_concept(word: str):
+    """낱말(조사 하나는 떼어 봄)에 해당하는 개념, 없으면 None."""
+    o = _onto()
+    k = _onto_key(word)
+    if not (2 <= len(k) <= 20):
+        return None
+    cid = o["by_term"].get(k)
+    if cid is None:
+        k2 = _INT_TAIL_RE.sub("", k)
+        if len(k2) >= 2 and k2 != k:
+            cid = o["by_term"].get(k2)
+    return o["by_id"].get(cid) if cid else None
+
+
+def _onto_variants(c: dict, word: str = "") -> list:
+    """개념의 같은 뜻 낱말 중 규정에 실제로 나오는 것. 검색어를 품은 말은
+    검색어로 이미 찾히므로 뺀다('연차'로 찾으면 '연차휴가'도 나온다)."""
+    vocab = _query_vocab()
+    q = _onto_key(word)
+    out = []
+    for t in [c["label"]] + list(c.get("synonyms") or []):
+        k = _onto_key(t)
+        if k == q or (q and q in k) or k not in vocab or t in out:
+            continue
+        out.append(t)
+    return out[:_ONTO_MAX_VARIANTS]
+
+
+def _int_term_group(t: str) -> list:
+    """낱말과 그 같은 뜻의 말들."""
+    c = _onto_concept(t)
+    return [t] + (_onto_variants(c, t) if c else [])
+
+
+def _onto_info(c: dict, word: str) -> dict:
+    """화면에 보여 줄 개념 정보(같은 말·상위·하위·관련)."""
+    o = _onto()
+    by_id = o["by_id"]
+    labels = lambda ids: [by_id[i]["label"] for i in ids if i in by_id]
+    q = _onto_key(word)
+    return {"label": c["label"],
+            "same": [t for t in [c["label"]] + list(c.get("synonyms") or []) if _onto_key(t) != q],
+            "broader": labels([c["broader"]] if c.get("broader") else []),
+            "narrower": labels(o["children"].get(c["id"], [])),
+            "related": labels(c.get("related") or [])}
+
+
+def _onto_expand(resp: dict, query: str) -> dict:
+    """검색어가 사전의 개념이면 개념 정보를 싣고, 같은 뜻의 말로 찾은 규정을 뒤에 덧붙인다
+    (기존 결과의 순서는 그대로). 덧붙인 항목에는 via(찾은 낱말)를 단다."""
+    c = _onto_concept(query)
+    if not c:
+        return resp
+    resp["concept"] = _onto_info(c, query)
+    variants = _onto_variants(c, query)
+    if not variants:
+        return resp
+    resp["expand_terms"] = [query.strip()] + variants
+    s = resp.get("structured")
+    if s and not isinstance(s, list):
+        return resp
+    items = list(s or [])
+    present = {_norm_key(_item_title(it)) for it in items}
+    added, used = [], []
+    for v in variants:
+        hits = _catalog_reg_hits(v, present, limit=_ONTO_MAX_ADD)
+        for h in hits[:_ONTO_MAX_ADD - len(added)]:
+            h["via"] = v
+            present.add(_norm_key(h["title"]))
+            added.append(h)
+            if v not in used:
+                used.append(v)
+        if len(added) >= _ONTO_MAX_ADD:
+            break
+    if added:
+        resp["structured"] = items + added
+        resp["expanded"] = used
     return resp
 
 
