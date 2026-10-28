@@ -1156,6 +1156,33 @@ def _search_article_ref(query: str):
     }
 
 
+def _search_law_name(query: str):
+    """검색어 전체가 법령·행정규칙 이름과 정확히 같으면 그 법령을 바로 돌려준다.
+
+    '지식재산성과 관리 및 사용에 관한 업무처리 규정'처럼 긴 이름은 단어가 많아
+    문장 검색으로 오인되고, 조문 본문에는 자기 이름이 없어 결과가 0건이 되던 문제를 막는다.
+    """
+    q = (query or "").strip()
+    if not _LAWISH_RE.search(q):
+        return None
+    # 짧은 이름('농지법')은 지금처럼 관련 조문 검색을 하고, 문장으로 오인되던 긴 이름만 여기서 처리
+    if not (_is_sentence_query(q) or len(re.sub(r"\s+", "", q)) >= 12):
+        return None
+    hit = _resolve_law_exact(q)
+    if not hit:
+        return None
+    name, doc_type, info = hit
+    arts = []
+    try:
+        _, articles = _law_articles_cached(name, doc_type, info=info)
+        arts = [_art_brief(a) for a in (articles or []) if a.get("type") == "article"][:3]
+    except Exception as e:
+        print(f"[law-name] 조문 미리보기 실패: {_redact(str(e))}")
+    return {"success": True, "mode": "law_name", "count": 1,
+            "laws": [_law_entry(name, doc_type, info, arts, total=len(arts))],
+            "law_name": {"name": name, "doc_type": doc_type}}
+
+
 def _search_law_scoped(query: str):
     """'법령명 키워드' → 그 법령(+시행령·시행규칙) 안에서만 키워드 조문 검색. 해당 없으면 None."""
     toks = query.split()
@@ -1337,6 +1364,9 @@ def search_by_article_keyword():
         ref = _search_article_ref(query)
         if ref is not None:
             return jsonify(ref)
+        named = _search_law_name(query)          # 이름 전체가 법령·행정규칙명과 같으면 그 법령
+        if named is not None:
+            return jsonify(named)
         scoped = _search_law_scoped(query)
         if scoped is not None and scoped.get("laws"):
             return jsonify(scoped)

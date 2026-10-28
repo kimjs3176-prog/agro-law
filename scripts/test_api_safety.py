@@ -13,6 +13,7 @@
  10. 방문자 수·내규 랭킹: 운영 저장소(Upstash Redis) 경로를 메모리 흉내로 재현해 집계·저장 내용 확인
  11. 내규 체계도: 시행세칙→모규정 연결, 순환 없음, 규정끼리는 상하로 묶지 않음
  12. 내규 검색 보강: '규정명 제N조' 직접 조회·없는 조문 안내·문장형 질문 낱말 검색, 법령명 확인 묶음 요청
+ 13. 법령 검색: 긴 행정규칙 이름 전체를 넣으면 그 규정(문장 검색으로 오인하지 않음)
 
 사용: python scripts/test_api_safety.py   (실패 시 종료 코드 1)
 """
@@ -275,6 +276,27 @@ check(not d.get("fallback") and d.get("structured"), "일반 검색은 그대로
 v = c.get("/api/validate", query_string={"qs": "농지법|특허법|" + "|".join(f"x{i}" for i in range(60))}).get_json()
 check(isinstance(v.get("valid"), list) and len(v["valid"]) + len(v["failed"]) <= 40, "법령명 확인 묶음 요청(최대 40개)")
 check("농지법" in v["failed"], "조회 실패는 '없음'으로 단정하지 않음")
+
+print("13) 긴 행정규칙 이름 검색")
+import xml.etree.ElementTree as _ET
+_NM = "지식재산성과 관리 및 사용에 관한 업무처리 규정"
+_orig_xml, _orig_arts = A._law_get_xml, A._law_articles_cached
+def _fake_xml(ep, params, *a, **k):
+    if params.get("target") == "admrul":
+        return _ET.fromstring(f"<AdmRulSearch><admrul><행정규칙명>농림축산검역본부 {_NM}</행정규칙명><행정규칙일련번호>1</행정규칙일련번호></admrul>"
+                              f"<admrul><행정규칙명>{_NM}</행정규칙명><행정규칙일련번호>2</행정규칙일련번호><행정규칙종류명>훈령</행정규칙종류명>"
+                              f"<소관부처명>농촌진흥청</소관부처명></admrul></AdmRulSearch>")
+    return _ET.fromstring("<LawSearch><totalCnt>0</totalCnt></LawSearch>")
+A._law_get_xml = _fake_xml
+A._law_articles_cached = lambda n, dt, info=None: (n, [{"type": "article", "조문번호": "1", "조문제목": "목적", "조문내용": "제1조(목적) …"}])
+A._FANOUT_PER_MIN = 1000
+for q in (_NM, _NM.replace(" ", "")):
+    d = c.get("/api/search/article", query_string={"query": q}).get_json()
+    check(d.get("mode") == "law_name" and d["laws"][0]["법령명한글"] == _NM and d["laws"][0]["법령구분명"] == "훈령",
+          f"'{q[:12]}…' → 그 행정규칙(농촌진흥청 훈령), 비슷한 이름(농림축산검역본부)과 혼동 없음")
+check(A._search_law_name("농지법") is None, "짧은 법령명은 기존 관련 조문 검색 유지")
+A._law_get_xml, A._law_articles_cached = _orig_xml, _orig_arts
+A._FANOUT_PER_MIN = 120
 
 if fails:
     sys.exit(f"\n실패 {len(fails)}건")
