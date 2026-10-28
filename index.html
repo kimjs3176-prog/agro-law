@@ -1351,6 +1351,14 @@ body.dark .rf-table tr:nth-child(even) td{background:color-mix(in oklab,var(--co
 .law-ref.rule-ref::before{content:'내규';font-size:9.5px;font-weight:800;background:var(--g);color:var(--color-on-solid);
   border-radius:3px;padding:0 3px;margin-right:3px;vertical-align:1px;}
 /* 명칭 검색 결과 섹션 */
+.onto-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:0 0 12px;padding:8px 12px;border:1px solid var(--bd);border-radius:var(--radius-card);background:var(--cd);font-size:12.5px;}
+.onto-h{display:inline-flex;align-items:center;gap:6px;color:var(--g);}
+.onto-h svg{width:14px;height:14px;flex-shrink:0;}
+.onto-grp{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px;}
+.onto-k{color:var(--mu);font-size:11.5px;font-weight:700;margin-right:2px;white-space:nowrap;}
+.onto-chip{border:1px solid var(--bd);background:var(--bg);color:inherit;border-radius:999px;padding:2px 9px;font-size:12px;cursor:pointer;}
+.onto-chip:hover,.onto-chip:focus-visible{border-color:var(--g);color:var(--g);}
+.reg-via-badge{background:var(--gl);color:var(--g);}
 .nm-sec{margin:0 0 12px;border:1px solid var(--bd);border-radius:var(--radius-card);background:var(--cd);overflow:hidden;}
 .nm-sec-h{background:var(--gl);padding:8px 12px;font-size:12.5px;font-weight:800;color:var(--gd);
   display:flex;align-items:center;gap:7px;}
@@ -6001,6 +6009,14 @@ function buildRegSummary(view, kw, kind){
     `</div>${distHtml}${topHtml}</div>`;
 }
 
+// 용어 사전 바: 대표어와 같은 말·상위·하위·관련 개념(누르면 그 말로 검색)
+function _ontoBarHtml(c){
+  if(!c||!c.label) return '';
+  const chip=t=>`<button class="onto-chip" onclick="quick('${argAttr(t)}')">${escHtml(t)}</button>`;
+  const grp=(k,arr)=>Array.isArray(arr)&&arr.length?`<span class="onto-grp"><span class="onto-k">${k}</span>${arr.map(chip).join('')}</span>`:'';
+  return `<div class="onto-bar" title="내규 용어 사전"><span class="onto-h">${_icon('hier')}<b>${escHtml(c.label)}</b></span>`+
+    grp('같은 말',c.same)+grp('상위',c.broader)+grp('하위',c.narrower)+grp('관련',c.related)+`</div>`;
+}
 // 규정 카드 HTML 생성(교차 패널 등에서 재사용)
 // 문장형 질문을 낱말로 나눠 찾은 경우: 검색어 → 강조할 낱말 목록
 const _kwTerms=new Map();
@@ -6085,6 +6101,7 @@ function buildRegCards(items, kw, kind){
           ${rank1}
           ${it._exact?'<span class="reg-exact-badge">규정명 일치</span>':''}
           ${it._semantic?'<span class="reg-sem-badge" title="키워드가 달라도 의미가 비슷한 조문">의미 검색</span>':''}
+          ${it.via?`<span class="reg-sem-badge reg-via-badge" title="검색어와 같은 뜻의 말로 찾은 규정">같은 말 · ${escHtml(it.via)}</span>`:''}
           <span class="reg-badge">${cnt}개 조문 매칭</span>
           ${fullBtn}${splitBtn}${saveBtns}
         </div>
@@ -7605,19 +7622,25 @@ function renderInternalError(msg){
 function renderInternalResults(d, q){
   const raw=(d.text||'').trim();
   let items=[];
-  if(Array.isArray(d.structured) && d.structured.length){
+  const expT=Array.isArray(d.expand_terms)&&d.expand_terms.length?d.expand_terms:null;   // 같은 뜻의 말 포함 낱말
+  const toItem=it=>{
+    const name=String(it.title||it.name||it['제목']||it['규정명']||'사내 규정');
+    const content=String(it.content||it.text||it['내용']||it['본문']||(typeof it==='string'?it:JSON.stringify(it,null,2)));
+    _intDocCache[name]=content;
+    const arts=Array.isArray(d.terms) ? _artsByTerms(content, expT||d.terms)
+             : (it.via ? _artsByTerms(content, expT||[q,it.via]) : extractRuleArticles(content,q));
+    return {name, org:String(it.org||it['소관']||'사내 규정'), matched_articles:arts, matched_count:arts.length,
+            category:String(it.category||it['구분']||''), via:it.via?String(it.via):''};
+  };
+  const st=Array.isArray(d.structured)?d.structured:[];
+  const viaOnly=st.length>0 && st.every(it=>it&&it.via);   // 같은 뜻의 말로만 찾은 규정
+  if(st.length && !(viaOnly && raw)){
     // 구조화 응답: 각 항목이 곧 규정 단위
-    items = d.structured.map(it=>{
-      const name=String(it.title||it.name||it['제목']||it['규정명']||'사내 규정');
-      const content=String(it.content||it.text||it['내용']||it['본문']||(typeof it==='string'?it:JSON.stringify(it,null,2)));
-      _intDocCache[name]=content;
-      const arts=Array.isArray(d.terms) ? _artsByTerms(content, d.terms) : extractRuleArticles(content,q);
-      return {name, org:String(it.org||it['소관']||'사내 규정'), matched_articles:arts, matched_count:arts.length,
-              category:String(it.category||it['구분']||'')};
-    });
+    items = st.map(toItem);
   } else if(raw){
     // 텍스트 응답: 《규정명》 블록 기준으로 규정별 그룹화(+조문 중복 제거)
     items = parseInternalGrouped(raw, q);
+    if(viaOnly) items = items.concat(st.map(toItem));
   }
   // 의미 검색(임베딩) 보완: 키워드로 못 찾은 규정을 뒤에 덧붙인다.
   // 어휘가 달라 놓친 조문을 살리되, 키워드 상위 결과의 순서는 건드리지 않는다.
@@ -7703,8 +7726,9 @@ function renderInternalResults(d, q){
     const occ = (qL && body) ? Math.max(0, body.split(qL).length-1) : it._kwHits;
     it._rel = occ>0 ? occ/Math.sqrt(Math.max(300, body.length||1)) : 0;
   });
-  if(Array.isArray(d.terms)){ _kwTerms.set(q, d.terms.length?d.terms:[]); }   // 서버 순서(낱말 일치 수) 유지
-  else items.sort((a,b)=>{
+  if(Array.isArray(d.terms)){ _kwTerms.set(q, expT||(d.terms.length?d.terms:[])); }   // 서버 순서(낱말 일치 수) 유지
+  else{ if(expT) _kwTerms.set(q, expT); else _kwTerms.delete(q); }
+  if(!Array.isArray(d.terms)) items.sort((a,b)=>{
     if(a._rank!==b._rank) return a._rank-b._rank;
     if(a._rank===3) return (b._score||0)-(a._score||0);   // 의미검색: 점수순
     // 이름·본문: 빈도 밀도(관련도)순, 동률이면 매칭 조문 수
@@ -7728,13 +7752,21 @@ function renderInternalResults(d, q){
     const res=document.getElementById('results');
     if(res) res.insertAdjacentHTML('afterbegin', box);
   }
+  // 용어 사전: 검색어의 대표어·같은 말·상위·하위·관련 개념 바로가기
+  if(d.concept){
+    const res=document.getElementById('results');
+    if(res) res.insertAdjacentHTML('afterbegin', _ontoBarHtml(d.concept));
+  }
   // 교차: 관련 법령 chips
   renderRelatedLaws(raw + ' ' + JSON.stringify(d.structured||''), q);
   const totalArts = items.reduce((s,it)=>s+(it.matched_count||0),0);
   const nmNote = nm.length?` · 명칭 일치 ${nm.length}건`:'';
   if(d.article_ref) setStatus(`「${escHtml(d.article_ref.title)}」 제${escHtml(String(d.article_ref.no).replace('의','조의'))}${/의/.test(d.article_ref.no)?'':'조'} — 조문을 누르면 전문에서 바로 봅니다`);
   else if(d.fallback==='terms') setStatus(`문장을 낱말로 나눠 찾았습니다: ${(d.terms||[]).map(t=>'<b>'+escHtml(t)+'</b>').join(' · ')} · 내규 ${items.length}개 규정`);
-  else setStatus(`내규 ${items.length}개 규정 · 매칭 조문 ${totalArts}건${nmNote} · "${escHtml(q)}" · 관련 법령 교차 제공`);
+  else{
+    const viaNote=(d.expanded||[]).length?` · 같은 말 ${d.expanded.map(t=>'<b>'+escHtml(t)+'</b>').join('·')} 포함`:'';
+    setStatus(`내규 ${items.length}개 규정 · 매칭 조문 ${totalArts}건${nmNote}${viaNote} · "${escHtml(q)}" · 관련 법령 교차 제공`);
+  }
   // 의미 검색 미가용 안내: 키워드 결과는 있으나 임베딩 키가 없을 때 1회만 표시
   if(items.length && d.semantic_available===false){
     const res=document.getElementById('results');

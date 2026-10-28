@@ -298,6 +298,31 @@ check(A._search_law_name("농지법") is None, "짧은 법령명은 기존 관�
 A._law_get_xml, A._law_articles_cached = _orig_xml, _orig_arts
 A._FANOUT_PER_MIN = 120
 
+print("14) 내규 용어 사전(온톨로지)")
+import json as _json
+_on = _json.load(open(os.path.join(os.path.dirname(A.__file__), "ontology.json"), encoding="utf-8"))["concepts"]
+_ids = {x["id"] for x in _on}
+check(all(r in _ids for x in _on for r in [x.get("broader")] + x.get("related", []) if r), "사전의 상위·관련 개념 id 모두 존재")
+_terms = [A._onto_key(t) for x in _on for t in [x["label"]] + x["synonyms"]]
+check(len(_terms) == len(set(_terms)), "한 낱말이 두 개념에 겹치지 않음")
+d = c.get("/api/internal/search", query_string={"query": "출장비"}).get_json()
+check((d.get("concept") or {}).get("label") == "여비" and "여비" in (d.get("expanded") or [])
+      and any(x.get("via") == "여비" and x["title"] == "여비규정" for x in d["structured"]),
+      "'출장비' → 같은 말 '여비'로 여비규정까지 찾음")
+_direct = [x for x in d["structured"] if not x.get("via")]
+check(_direct and d["structured"][:len(_direct)] == _direct, "기존 결과가 앞, 같은 말로 찾은 규정은 뒤")
+d = c.get("/api/internal/search", query_string={"query": "인사고과"}).get_json()
+check(d["structured"] and all(x.get("via") for x in d["structured"]),
+      f"규정에 없는 말(인사고과)도 대표어로 찾음 {d.get('expanded')}")
+d = c.get("/api/internal/search", query_string={"query": "휴가"}).get_json()
+check({"연차휴가", "병가"} <= set(d["concept"]["narrower"]) and not d.get("expanded"),
+      "상위 개념은 하위 개념을 바로가기로만(검색 결과는 넓히지 않음)")
+d = c.get("/api/internal/search", query_string={"query": "연차"}).get_json()
+check("연차휴가" not in (d.get("expand_terms") or []), "검색어를 품은 말(연차휴가)은 다시 찾지 않음")
+check(A._int_term_group("야근")[0] == "야근" and "시간외근무" in A._int_term_group("야근"), "문장형 낱말도 같은 말 포함")
+check(A._onto_concept("농지법") is None and not c.get("/api/internal/search", query_string={"query": "여비규정"}).get_json().get("concept"),
+      "사전에 없는 말은 그대로")
+
 if fails:
     sys.exit(f"\n실패 {len(fails)}건")
 print("\n모두 통과")
