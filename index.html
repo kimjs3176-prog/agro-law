@@ -5786,6 +5786,10 @@ function _lawSearchStatus(d, q){
     const miss=(ar.missing||[]).length?` · 없음: ${escHtml(ar.missing.join(', '))}`:'';
     return `「${escHtml(ar.law||'')}」 ${escHtml(ar.label||'')} 조문${miss}`;
   }
+  if(d.mode==='law_name'){
+    const ln=d.law_name||{};
+    return `📘 「${escHtml(ln.name||'')}」 ${ln.doc_type==='admrul'?'(행정규칙)':''} — 이름이 일치하는 법령 · 전문에서 전체 조문을 봅니다`;
+  }
   if(d.mode==='sentence'){
     const n=(d.laws||[]).length;
     const top=(d.laws||[])[0], a=top&&(top.matched_articles||[])[0];
