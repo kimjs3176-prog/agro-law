@@ -482,25 +482,50 @@ body.dark .exp-bnostat.dead,body.dark .exp-vstat.dead{background:color-mix(in ok
 .tcz-add{margin-top:0;}
 .tcz-note{margin-top:9px;font-size:11px;line-height:1.5;color:var(--ht);}
 /* 출장 증빙 서식(Excel) */
-.exp-fg.rcpt{border-style:dashed;}
-.rcpt-sec-t{font-size:11.5px;font-weight:800;color:var(--mu);margin:10px 0 6px;}
+/* 여비: ① 본문 입력 / ② 증빙 사진·서식 생성 영역 구분 */
+.exp-zone-h{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--tx);}
+.exp-zone-h .exp-hint2{margin-left:0;}
+.exp-zone-no{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--g);color:var(--color-on-solid);font-size:12px;font-weight:800;}
+.rcpt-zone{margin-top:14px;border:2px solid var(--g);border-radius:var(--radius-card);background:var(--gl);padding:14px 14px 12px;position:relative;}
+.rcpt-zone::before{content:'';position:absolute;left:0;right:0;top:-16px;border-top:1px dashed var(--bd);}
+.rcpt-zone-h{display:flex;gap:9px;align-items:flex-start;margin-bottom:10px;}
+.rcpt-zone-t{font-size:13.5px;font-weight:800;color:var(--gp);}
+.rcpt-zone-s{font-size:11.5px;line-height:1.55;color:var(--mu);margin-top:3px;}
+.rcpt-zone-s b{color:var(--tx);}
+.rcpt-steps{display:flex;flex-wrap:wrap;gap:4px;list-style:none;margin:0 0 10px;padding:0;counter-reset:rs;}
+.rcpt-steps li{counter-increment:rs;font-size:11px;font-weight:700;color:var(--gp);background:var(--sf);border:1px solid var(--bd);border-radius:999px;padding:3px 10px;}
+.rcpt-steps li::before{content:counter(rs) ". ";}
+#rcptBox{background:var(--sf);border:1px solid var(--bd);border-radius:var(--radius-card);padding:10px 12px;}
+.rcpt-sec-t{font-size:11.5px;font-weight:800;color:var(--mu);margin:12px 0 6px;}
 .rcpt-sec-t:first-of-type{margin-top:2px;}
 .rcpt-frow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
 .rcpt-f{flex:1 1 180px;display:flex;flex-direction:column;gap:3px;font-size:11.5px;font-weight:700;color:var(--mu);}
 .rcpt-f input{font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--bd);border-radius:var(--radius-ctl);background:var(--card);color:var(--tx);}
 .rcpt-thead{display:flex;gap:5px;font-size:10.5px;font-weight:700;color:var(--ht);padding:0 2px 3px;}
-.rcpt-thead span:nth-child(1){flex:1 1 40%;} .rcpt-thead span:nth-child(2){flex:0 0 84px;}
+.rcpt-thead span:nth-child(1){flex:1 1 40%;} .rcpt-thead span:nth-child(2){flex:0 0 96px;}
 .rcpt-thead span:nth-child(3),.rcpt-thead span:nth-child(4){flex:1 1 22%;} .rcpt-thead span:nth-child(5){flex:0 0 26px;}
 .rcpt-trow{display:flex;gap:5px;margin-bottom:5px;align-items:center;}
 .rcpt-tin{font:inherit;font-size:12.5px;padding:6px 7px;border:1px solid var(--bd);border-radius:var(--radius-ctl);background:var(--card);color:var(--tx);min-width:0;}
-.rcpt-tin.rc-c{flex:1 1 40%;} .rcpt-tin.rc-d{flex:0 0 84px;} .rcpt-tin.rc-a{flex:1 1 22%;}
+.rcpt-tin.rc-c{flex:1 1 40%;} .rcpt-tin.rc-d{flex:0 0 96px;} .rcpt-tin.rc-a{flex:1 1 22%;}
+.rcpt-trow.ocr .rcpt-tin{background:var(--color-warn-tint);}
+.rcpt-mk{background:var(--color-warn-tint);color:inherit;padding:0 3px;border-radius:3px;}
 .rcpt-imgs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
-.rcpt-thumb{position:relative;width:84px;height:84px;border:1px solid var(--bd);border-radius:var(--radius-ctl);overflow:hidden;background:var(--bg);}
-.rcpt-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-.rcpt-thumb button{position:absolute;top:2px;right:2px;width:20px;height:20px;border:none;border-radius:50%;background:color-mix(in oklab,var(--color-shade) 60%,transparent);color:var(--color-on-solid);font-size:12px;line-height:1;cursor:pointer;}
+.rcpt-thumb{width:112px;display:flex;flex-direction:column;gap:4px;}
+.rc-img{position:relative;width:112px;height:96px;border:1px solid var(--bd);border-radius:var(--radius-ctl);overflow:hidden;background:var(--bg);}
+.rc-img img{width:100%;height:100%;object-fit:cover;display:block;}
+.rc-del{position:absolute;top:2px;right:2px;width:20px;height:20px;border:none;border-radius:50%;background:color-mix(in oklab,var(--color-shade) 60%,transparent);color:var(--color-on-solid);font-size:12px;line-height:1;cursor:pointer;}
+.rc-cap{font-size:10.5px;line-height:1.35;color:var(--ht);font-variant-numeric:tabular-nums;}
+.rc-cap.ok{color:var(--tx);font-weight:700;} .rc-cap.run{color:var(--g);font-weight:700;} .rc-cap.bad{color:var(--color-danger-ink);font-weight:700;}
+.rc-ocr{font:inherit;font-size:10.5px;font-weight:700;padding:3px 4px;border:1px solid var(--bd);border-radius:var(--radius-ctl);background:var(--card);color:var(--g);cursor:pointer;}
+.rc-ocr:hover{border-color:var(--g);} .rc-ocr:disabled{opacity:.5;cursor:default;}
 .rcpt-empty{font-size:11.5px;color:var(--ht);padding:12px;border:1px dashed var(--bd);border-radius:var(--radius-ctl);width:100%;text-align:center;}
-.rcpt-attach{display:inline-block;font-size:12px;font-weight:700;padding:7px 12px;border:1px dashed var(--bd);border-radius:var(--radius-ctl);color:var(--g);cursor:pointer;}
-.rcpt-attach:hover{border-color:var(--g);background:var(--gl);}
+.rcpt-imgbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
+.rcpt-attach{display:inline-block;font-size:12px;font-weight:700;padding:7px 12px;border:1px dashed var(--g);border-radius:var(--radius-ctl);color:var(--g);cursor:pointer;}
+.rcpt-attach:hover{background:var(--gl);}
+.exp-form label.rcpt-auto{flex:0 0 auto;flex-direction:row;align-items:center;gap:5px;font-size:11.5px;}
+.exp-form label.rcpt-auto input{width:auto;padding:0;}
+.rcpt-ocrstat{font-size:11.5px;color:var(--g);font-weight:700;margin-top:6px;min-height:1em;}
+.rcpt-ocrstat:empty{display:none;}
 .rcpt-actions{margin-top:12px;}
 .rcpt-gen{width:100%;font-size:13px;font-weight:800;padding:11px;border:none;border-radius:var(--radius-card);background:var(--g);color:var(--color-on-solid);cursor:pointer;box-shadow:0 2px 10px color-mix(in oklab,var(--color-accent) 28%,transparent);}
 .rcpt-gen:hover{filter:brightness(1.05);}
@@ -4753,6 +4778,7 @@ function _expRenderFields(){
       `<input class="exp-tin tc" id="tvContent${i}" value="${_ev(r.content)}" placeholder="출장목적 / 용무">`+
       `</div>`).join('');
     box.innerHTML=
+      `<div class="exp-zone-h"><span class="exp-zone-no">1</span>지출결의서 본문(여비) 입력 <span class="exp-hint2">오른쪽 미리보기·ERP 본문에 반영</span></div>`+
       `<div class="exp-fg"><div class="exp-fgt">출장자</div><div class="exp-frow">`+
         `<label>성명<input id="tvName" value="${_ev(tv.name)}"></label>`+
         `<label>소속<input id="tvDept" value="${_ev(tv.dept)}" placeholder="예: 기술사업부"></label></div></div>`+
@@ -4972,8 +4998,11 @@ function _travCalcAdd(){ _travCalcReadInputs(); const r=_travCalc();
   _expRenderFields(); _expUpdate(); _expSaveState();
 }
 // ── 출장 증빙 서식(Excel) 자동 작성 ─────────────────────────────────────────
-// 여비 내역 + 첨부 증빙 사진으로 기관 '출장 증빙 서식'(.xlsx)을 서버에서 자동 완성해 내려받는다.
+// 증빙 사진 첨부 → 브라우저 OCR로 금액·일자 인식 → 사용내역 자동 입력 → 기관 '출장 증빙 서식'(.xlsx) 내려받기.
+// 사진·인식 모두 브라우저에서 처리한다(서버 전송 없음).
 let _rcptImages=[];   // 첨부 증빙 사진 dataURL (메모리 전용, localStorage 미저장 — 용량 보호)
+let _rcptOcr=[];      // _rcptImages와 같은 순서의 인식 상태 {st:'wait'|'run'|'ok'|'fail', amt, date, kind, row}
+let _rcptAutoOcr=true;
 function _rcpt(){ if(!_expState.receipt) _expState.receipt={user:'',dept:'',region:'',summary:'',rows:[],init:false}; return _expState.receipt; }
 function _rcptEnsure(){
   const rc=_rcpt(); if(rc.init) return rc;
@@ -4991,54 +5020,198 @@ function _rcptEnsure(){
 }
 function _rcptSectionHtml(){
   const rc=_rcptEnsure();
-  return `<div class="exp-fg rcpt"><div class="exp-fgt">출장 증빙 서식(Excel) 자동 작성 <span class="exp-hint2">여비 내역·증빙 사진으로 기관 서식(.xlsx)을 완성</span></div>`+
+  return `<div class="rcpt-zone"><div class="rcpt-zone-h"><span class="exp-zone-no">2</span><div><div class="rcpt-zone-t">증빙 사진 첨부 · 증빙 서식(Excel) 생성</div>`+
+    `<div class="rcpt-zone-s">영수증·승차권 사진을 올리면 <b>금액·일자를 자동 인식(OCR)</b>해 기관 서식에 채워 내려받습니다. 지출결의서 본문과 별개 문서입니다.</div></div></div>`+
+    `<ol class="rcpt-steps"><li>사진 첨부</li><li>금액·일자 자동 인식</li><li>확인·수정</li><li>엑셀 다운로드</li></ol>`+
     `<div id="rcptBox">${_rcptInnerHtml(rc)}</div></div>`;
 }
 function _rcptInnerHtml(rc){
   const f=(id,label,val,ph)=>`<label class="rcpt-f">${label}<input id="rc_${id}" value="${_ev(val)}" placeholder="${ph||''}" oninput="_rcptField('${id}',this.value)"></label>`;
   const head=`<div class="rcpt-frow">${f('user','사용자',rc.user,'성명')}${f('dept','부서명',rc.dept,'예: 기술거래이전팀')}</div>`+
     `<div class="rcpt-frow">${f('region','사용지역',rc.region,'예: 세종특별자치시')}${f('summary','적요',rc.summary,'출장 목적 요약')}</div>`;
-  const rows=(rc.rows||[]).map((r,i)=>`<div class="rcpt-trow">`+
+  const imgs=`<div class="rcpt-imgs" id="rcptImgs">${_rcptThumbsHtml()}</div>`+
+    `<div class="rcpt-imgbar"><label class="rcpt-attach">＋ 증빙 사진 첨부<input type="file" accept="image/*" multiple style="display:none" onchange="_rcptPickImages(this)"></label>`+
+    `<label class="rcpt-auto"><input type="checkbox" ${_rcptAutoOcr?'checked':''} onchange="_rcptAutoOcr=this.checked"> 첨부 시 금액·일자 자동 인식</label></div>`+
+    `<div class="rcpt-ocrstat" id="rcptOcrStat">${_rcptOcrStatText()}</div>`;
+  const table=`<div class="rcpt-thead"><span>내용</span><span>날짜</span><span>대중교통비</span><span>숙박비용</span><span></span></div><div id="rcptRows">${_rcptRowsHtml(rc)}</div>`+
+    `<button type="button" class="exp-addrow" onclick="_rcptAddRow()">＋ 내역 행 추가</button>`;
+  return `<div class="rcpt-sec-t">① 증빙 사진</div>${imgs}`+
+    `<div class="rcpt-sec-t">② 사용내역 <span class="exp-hint2">자동 인식 값은 <mark class="rcpt-mk">표시</mark>됨 · 반드시 사진과 대조해 확인</span></div>${table}`+
+    `<div class="rcpt-sec-t">③ 문서 정보</div>${head}`+
+    `<div class="rcpt-actions"><button type="button" class="rcpt-gen" onclick="_rcptGenerate(this)">증빙 엑셀 생성·다운로드</button></div>`+
+    `<div class="tcz-note">첨부한 사진은 <b>서버로 전송하지 않고</b> 브라우저에서 글자 인식·엑셀 삽입까지 처리해 바로 내려받습니다(로컬 처리). 자동 인식은 사진 상태에 따라 틀릴 수 있습니다.</div>`;
+}
+function _rcptRowsHtml(rc){
+  return (rc.rows||[]).map((r,i)=>{ const o=r.ocr?' ocr':'';
+    return `<div class="rcpt-trow${o}">`+
     `<input class="rcpt-tin rc-c" value="${_ev(r.content)}" placeholder="내용" oninput="_rcptRow(${i},'content',this.value)">`+
     `<input class="rcpt-tin rc-d" value="${_ev(r.date)}" placeholder="날짜" oninput="_rcptRow(${i},'date',this.value)">`+
     `<input class="rcpt-tin rc-a" inputmode="numeric" value="${_ev(r.transit)}" placeholder="대중교통비" oninput="_rcptRow(${i},'transit',this.value)">`+
     `<input class="rcpt-tin rc-a" inputmode="numeric" value="${_ev(r.lodging)}" placeholder="숙박비용" oninput="_rcptRow(${i},'lodging',this.value)">`+
-    `<button type="button" class="exp-trdel" onclick="_rcptDelRow(${i})" title="행 삭제" ${rc.rows.length<=1?'disabled':''}>✕</button></div>`).join('');
-  const table=`<div class="rcpt-thead"><span>내용</span><span>날짜</span><span>대중교통비</span><span>숙박비용</span><span></span></div>${rows}`+
-    `<button type="button" class="exp-addrow" onclick="_rcptAddRow()">＋ 내역 행 추가</button>`;
-  const imgs=`<div class="rcpt-imgs" id="rcptImgs">${_rcptThumbsHtml()}</div>`+
-    `<label class="rcpt-attach">증빙 사진 첨부<input type="file" accept="image/*" multiple style="display:none" onchange="_rcptPickImages(this)"></label>`;
-  return `<div class="rcpt-sec-t">문서 정보</div>${head}`+
-    `<div class="rcpt-sec-t">사용내역 <span class="exp-hint2">여비 내역에서 자동 채움 · 대중교통비/숙박비용으로 구분</span></div>${table}`+
-    `<div class="rcpt-sec-t">증빙 사진</div>${imgs}`+
-    `<div class="rcpt-actions"><button type="button" class="rcpt-gen" onclick="_rcptGenerate(this)">증빙 엑셀 생성·다운로드</button></div>`+
-    `<div class="tcz-note">첨부한 사진은 <b>서버로 전송하지 않고</b> 브라우저에서 엑셀에 삽입해 바로 내려받습니다(로컬 처리). 사진은 내 PC에만 있습니다.</div>`;
+    `<button type="button" class="exp-trdel" onclick="_rcptDelRow(${i})" title="행 삭제" ${rc.rows.length<=1?'disabled':''}>✕</button></div>`; }).join('');
 }
 function _rcptField(id,val){ _rcpt()[id]=val; _expSaveState(); }
 function _rcptRow(i,k,val){ const rc=_rcpt(); if(rc.rows[i]){ rc.rows[i][k]=val; _expSaveState(); } }
-function _rcptAddRow(){ _rcpt().rows.push({content:'',date:_today(),transit:'',lodging:''}); _rcptRerender(); _expSaveState(); }
-function _rcptDelRow(i){ const rc=_rcpt(); rc.rows.splice(i,1); if(!rc.rows.length) rc.rows=[{content:'',date:_today(),transit:'',lodging:''}]; _rcptRerender(); _expSaveState(); }
+function _rcptAddRow(){ _rcpt().rows.push({content:'',date:_today(),transit:'',lodging:''}); _rcptRenderRows(); _expSaveState(); }
+function _rcptDelRow(i){ const rc=_rcpt(); rc.rows.splice(i,1); if(!rc.rows.length) rc.rows=[{content:'',date:_today(),transit:'',lodging:''}];
+  _rcptOcr.forEach(o=>{ if(o.row===i) o.row=-1; else if(o.row>i) o.row--; });
+  _rcptRenderRows(); _expSaveState(); }
 function _rcptRerender(){ const b=document.getElementById('rcptBox'); if(b) b.innerHTML=_rcptInnerHtml(_rcpt()); }
+function _rcptRenderRows(){ const el=document.getElementById('rcptRows'); if(el) el.innerHTML=_rcptRowsHtml(_rcpt()); }
 function _rcptThumbsHtml(){
-  if(!_rcptImages.length) return `<div class="rcpt-empty">첨부한 증빙 사진이 없습니다. 아래 버튼으로 영수증·승차권 등을 담으세요.</div>`;
-  return _rcptImages.map((d,i)=>`<div class="rcpt-thumb"><img src="${d}" alt="증빙${i+1}"><button type="button" onclick="_rcptDelImage(${i})" title="삭제">✕</button></div>`).join('');
+  if(!_rcptImages.length) return `<div class="rcpt-empty">첨부한 증빙 사진이 없습니다. 영수증·승차권·숙박 영수증 사진을 담으세요.</div>`;
+  return _rcptImages.map((d,i)=>{ const o=_rcptOcr[i]||{st:'idle'};
+    let cap;
+    if(o.st==='run') cap='<span class="rc-cap run">인식 중…</span>';
+    else if(o.st==='wait') cap='<span class="rc-cap run">대기 중</span>';
+    else if(o.st==='ok') cap=`<span class="rc-cap ok">${o.amt?_won(o.amt):'금액 미인식'}<br>${o.date?_ev(o.date):'일자 미인식'}</span>`;
+    else if(o.st==='fail') cap='<span class="rc-cap bad">인식 실패</span>';
+    else cap='<span class="rc-cap">미인식</span>';
+    const busy=o.st==='run'||o.st==='wait';
+    return `<div class="rcpt-thumb"><div class="rc-img"><img src="${d}" alt="증빙${i+1}"><button type="button" class="rc-del" onclick="_rcptDelImage(${i})" title="삭제">✕</button></div>`+
+      `${cap}<button type="button" class="rc-ocr" onclick="_rcptOcrQueue([${i}])" ${busy?'disabled':''}>${o.st==='ok'||o.st==='fail'?'↻ 다시 인식':'금액·일자 인식'}</button></div>`; }).join('');
 }
 function _rcptRenderThumbs(){ const el=document.getElementById('rcptImgs'); if(el) el.innerHTML=_rcptThumbsHtml(); }
 function _rcptPickImages(input){
   const files=[...(input.files||[])]; if(!files.length) return;
-  let pending=files.length;
-  const done=()=>{ pending--; if(pending<=0) _rcptRenderThumbs(); };
+  let pending=files.length; const added=[];
+  const done=()=>{ pending--; if(pending<=0){ _rcptRenderThumbs(); if(_rcptAutoOcr&&added.length) _rcptOcrQueue(added); } };
   files.forEach(f=>{
     if(!/^image\//.test(f.type)){ if(typeof _toast==='function')_toast('이미지 파일만 첨부할 수 있습니다.',2600); return done(); }
     if(f.size>8*1024*1024){ if(typeof _toast==='function')_toast('8MB 이하 이미지만 첨부할 수 있습니다.',3000); return done(); }
     const rd=new FileReader();
-    rd.onload=()=>{ if(_rcptImages.length<20) _rcptImages.push(rd.result); done(); };
+    rd.onload=()=>{ if(_rcptImages.length<20){ _rcptImages.push(rd.result); _rcptOcr.push({st:'idle',row:-1}); added.push(_rcptImages.length-1); } done(); };
     rd.onerror=()=>done();
     rd.readAsDataURL(f);
   });
   input.value='';
 }
-function _rcptDelImage(i){ _rcptImages.splice(i,1); _rcptRenderThumbs(); }
+function _rcptDelImage(i){ _rcptImages.splice(i,1); _rcptOcr.splice(i,1); _rcptRenderThumbs(); _rcptOcrStatus(); }
+// ── 증빙 사진 OCR(금액·일자) — tesseract.js(앱에 내장된 로컬 파일, 한국어 모델)로 브라우저에서 인식 ──
+let _ocrLibP=null, _ocrWorkerP=null, _ocrBusy=false, _ocrQ=[], _ocrMsg='';
+function _rcptOcrStatText(){ return _ocrMsg?_ev(_ocrMsg):''; }
+function _rcptOcrStatus(msg){ if(msg!==undefined) _ocrMsg=msg; const el=document.getElementById('rcptOcrStat'); if(el) el.textContent=_ocrMsg; }
+function _loadTesseract(){
+  if(window.Tesseract) return Promise.resolve(window.Tesseract);
+  if(_ocrLibP) return _ocrLibP;
+  _ocrLibP=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='/assets/ocr/tesseract.min.js';
+    s.onload=()=>window.Tesseract?res(window.Tesseract):rej(new Error('OCR 라이브러리 로드 실패'));
+    s.onerror=()=>{ _ocrLibP=null; rej(new Error('OCR 라이브러리를 불러오지 못했습니다.')); }; document.head.appendChild(s); });
+  return _ocrLibP;
+}
+function _ocrWorker(){
+  if(_ocrWorkerP) return _ocrWorkerP;
+  const abs=p=>new URL(p,location.origin).href;
+  _ocrWorkerP=_loadTesseract().then(T=>T.createWorker('kor',1,{
+    workerPath:abs('/assets/ocr/worker.min.js'), corePath:abs('/assets/ocr/core'), langPath:abs('/assets/ocr/lang'),
+    workerBlobURL:false,
+    logger:m=>{ if(m&&m.status&&/load|initializ/i.test(m.status)) _rcptOcrStatus('인식 엔진 준비 중… '+Math.round((m.progress||0)*100)+'%'); }
+  })).catch(e=>{ _ocrWorkerP=null; throw e; });
+  return _ocrWorkerP;
+}
+// 큰 휴대폰 사진은 축소·흑백 처리해 인식 속도·정확도를 높인다(원본은 엑셀용으로 그대로 둔다)
+function _ocrPrep(dataURL){ return new Promise(res=>{ const im=new Image();
+  im.onload=()=>{ try{ const max=1800; let w=im.naturalWidth, h=im.naturalHeight; const k=Math.min(1, max/Math.max(w,h)); w=Math.round(w*k); h=Math.round(h*k);
+      const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const cx=cv.getContext('2d');
+      cx.filter='grayscale(1) contrast(1.25)'; cx.drawImage(im,0,0,w,h); res(cv); }catch(e){ res(dataURL); } };
+  im.onerror=()=>res(dataURL); im.src=dataURL; }); }
+function _rcptOcrQueue(idxs){
+  const imgs=idxs.map(i=>_rcptImages[i]).filter(Boolean);
+  imgs.forEach(src=>{ const i=_rcptImages.indexOf(src); if(i>=0){ _rcptOcr[i]=Object.assign(_rcptOcr[i]||{row:-1},{st:'wait'}); if(!_ocrQ.includes(src)) _ocrQ.push(src); } });
+  _rcptRenderThumbs(); _rcptOcrRun();
+}
+async function _rcptOcrRun(){
+  if(_ocrBusy) return; _ocrBusy=true;
+  let n=0, okCnt=0;
+  try{
+    while(_ocrQ.length){
+      const src=_ocrQ.shift(); let i=_rcptImages.indexOf(src); if(i<0) continue;   // 대기 중 삭제된 사진
+      n++; _rcptOcr[i].st='run'; _rcptRenderThumbs(); _rcptOcrStatus('증빙 사진 글자 인식 중… ('+n+'/'+(n+_ocrQ.length)+')');
+      try{
+        const w=await _ocrWorker();
+        const {data}=await w.recognize(await _ocrPrep(src));
+        i=_rcptImages.indexOf(src); if(i<0) continue;
+        const p=_ocrParseReceipt((data&&data.text)||'');
+        Object.assign(_rcptOcr[i],{st:'ok',amt:p.amount,date:p.date,kind:p.kind});
+        if(p.amount||p.date){ _rcptApplyOcr(i,p); okCnt++; }
+      }catch(e){
+        i=_rcptImages.indexOf(src); if(i>=0) _rcptOcr[i].st='fail';
+        _rcptOcrStatus('인식 실패: '+(e.message||e));
+      }
+      _rcptRenderThumbs();
+    }
+    if(n) _rcptOcrStatus(okCnt?`자동 인식 완료 — ${okCnt}건을 사용내역에 채웠습니다. 금액·일자를 사진과 대조해 확인하세요.`
+                              :'금액·일자를 찾지 못했습니다. 사진을 밝고 반듯하게 다시 찍거나 직접 입력하세요.');
+  } finally { _ocrBusy=false; }
+}
+// 인식 결과를 사용내역 행에 반영: 같은 사진을 다시 인식하면 그 행을 갱신, 아니면 빈 행 → 새 행 순
+function _rcptApplyOcr(i,p){
+  const rc=_rcpt(), o=_rcptOcr[i];
+  const isBlank=r=>!String(r.content||'').trim()&&!_digits(r.transit)&&!_digits(r.lodging);
+  let row=(o.row>=0&&rc.rows[o.row])?rc.rows[o.row]:null;
+  if(!row){ const bi=rc.rows.findIndex(isBlank); if(bi>=0){ row=rc.rows[bi]; o.row=bi; } else { row={content:'',date:'',transit:'',lodging:''}; rc.rows.push(row); o.row=rc.rows.length-1; } }
+  const lodge=p.kind==='lodging';
+  row.content=p.label||row.content||('증빙 '+(i+1));
+  if(p.date) row.date=p.date;
+  if(p.amount){ const v=String(p.amount); if(lodge){ row.lodging=v; row.transit=''; } else { row.transit=v; row.lodging=''; } }
+  row.ocr=true;
+  _rcptRenderRows(); _expSaveState();
+}
+// 영수증 텍스트에서 금액·일자·종류 추출(휴리스틱)
+function _ocrParseReceipt(raw){
+  const text=String(raw||'').replace(/[，]/g,',').replace(/[．]/g,'.').replace(/[－–—]/g,'-').replace(/[￦₩]/g,'원 ');
+  const lines=text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+  const flat=lines.join(' ').replace(/\s+/g,'');
+  // 종류
+  let kind='transit', label='교통비';
+  const KINDS=[[/호텔|모텔|숙박|리조트|펜션|게스트하우스|객실|체크인|HOTEL|RESORT/i,'lodging','숙박비'],
+    [/KTX|SRT|ITX|코레일|korail|승차권|열차|철도|무궁화|새마을/i,'transit','철도 승차권'],
+    [/고속버스|시외버스|버스|티머니|BUS/i,'transit','버스 승차권'],
+    [/택시|TAXI|카카오T/i,'transit','택시비'],
+    [/항공|탑승권|boarding|AIR/i,'transit','항공 운임'],
+    [/지하철|도시철도|메트로/i,'transit','지하철'],
+    [/통행료|하이패스|톨게이트|주유|주차/i,'transit','자가용 경비']];
+  for(const [re,k,l] of KINDS){ if(re.test(flat)){ kind=k; label=l; break; } }
+  // 금액: 합계·결제금액 등 키워드 줄의 숫자 우선, 없으면 '원'·천단위 쉼표 숫자 중 최댓값
+  const numIn=s=>{ const out=[];
+    const re=/(\d{1,3}(?:[,.]\d{3})+|\d{3,8})(?:\s*원)?/g; let m;
+    while((m=re.exec(s))){ const before=s.slice(Math.max(0,m.index-1),m.index), after=s.slice(m.index+m[0].length, m.index+m[0].length+1);
+      if(/[-:\/]/.test(before)||/^[-:\/]/.test(after)) continue;              // 날짜·시각·전화·사업자번호 조각
+      const v=parseInt(m[1].replace(/[,.]/g,''),10);
+      if(!/[,.]/.test(m[1])&&!/원/.test(m[0])&&m[1].length>6) continue;      // 쉼표·원 없는 긴 숫자(승인번호 등)
+      if(v>=100&&v<=20000000) out.push(v); }
+    return out; };
+  const SKIP=/부가|세액|VAT|과세|면세|공급가|할인|잔액|포인트|거스름|받은금액|마일리지|승인번호|카드번호|사업자|전화|TEL/i;
+  const KEYS=[/결제금액|총결제|합계금액|총합계|받을금액|승인금액|청구금액|총금액|총액|합계|운임|결제/, /금액|요금|판매/];
+  let amount=0;
+  for(const key of KEYS){
+    for(let li=0;li<lines.length&&!amount;li++){
+      const ln=lines[li], c=ln.replace(/\s+/g,'');
+      if(!key.test(c)||SKIP.test(c)) continue;
+      let nums=numIn(ln); if(!nums.length&&lines[li+1]&&!SKIP.test(lines[li+1].replace(/\s+/g,''))) nums=numIn(lines[li+1]);
+      if(nums.length) amount=Math.max(...nums);
+    }
+    if(amount) break;
+  }
+  if(!amount){ const cand=[]; lines.forEach(ln=>{ if(SKIP.test(ln.replace(/\s+/g,''))) return;
+      const re=/(\d{1,3}(?:,\d{3})+)|(\d{3,7})\s*원/g; let m; while((m=re.exec(ln))){ const v=parseInt((m[1]||m[2]).replace(/,/g,''),10); if(v>=100&&v<=20000000) cand.push(v); } });
+    if(cand.length) amount=Math.max(...cand); }
+  // 일자: 거래일·이용일 등 키워드 줄 우선, 없으면 처음 나온 유효 날짜
+  const fmt=(y,mo,d)=>{ y=+y; mo=+mo; d=+d; if(y<100) y+=2000; if(y<2000||y>2100||mo<1||mo>12||d<1||d>31) return '';
+    return y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0'); };
+  const dateIn=s=>{ let m;
+    if((m=/(?:^|[^\d])(\d{4})\s*[.\-\/년]\s*(\d{1,2})\s*[.\-\/월]\s*(\d{1,2})/.exec(s))){
+      const y=+m[1]; return fmt((y>=2000&&y<=2100)?y:new Date().getFullYear(),m[2],m[3]); }   // 연도 오인식(2026→2226 등)은 올해로 보정
+    if((m=/(?:^|[^\d])(\d{2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})(?!\d)/.exec(s))) return fmt(m[1],m[2],m[3]);
+    if((m=/(?:^|[^\d])(20\d{2})(\d{2})(\d{2})(?!\d)/.exec(s))) return fmt(m[1],m[2],m[3]);
+    if((m=/(\d{1,2})\s*월\s*(\d{1,2})\s*일/.exec(s))) return fmt(new Date().getFullYear(),m[1],m[2]);
+    return ''; };
+  let date='';
+  const DKEY=/거래일|거래일시|결제일|승인일|이용일|승차일|출발|탑승일|체크인|발행일|일시|날짜/;
+  for(const ln of lines){ if(DKEY.test(ln.replace(/\s+/g,''))){ date=dateIn(ln); if(date) break; } }
+  if(!date) for(const ln of lines){ date=dateIn(ln); if(date) break; }
+  return {amount, date, kind, label};
+}
 // exceljs 지연 로드(앱에 내장된 로컬 파일) — 첨부 사진을 서버로 보내지 않고 브라우저에서 처리
 let _exceljsP=null;
 function _loadExcelJS(){
