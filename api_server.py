@@ -4053,6 +4053,20 @@ def serve_regulation_file(subpath):
                         status=404, mimetype="text/html; charset=utf-8")
 
 
+@app.route("/assets/<path:subpath>")
+def serve_asset_file(subpath):
+    """앱 내장 정적 파일(엑셀 라이브러리·증빙 서식·OCR 엔진) 서빙(로컬 실행용 — Vercel은 vercel.json이 정적 처리)."""
+    from flask import send_from_directory
+    if any(part.startswith(".") for part in subpath.replace("\\", "/").split("/")):
+        return Response("<h1>404</h1>", status=404, mimetype="text/html; charset=utf-8")
+    try:
+        resp = send_from_directory(os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets"), subpath)
+        resp.headers["X-Content-Type-Options"] = "nosniff"
+        return resp
+    except Exception:
+        return Response("<h1>404</h1>", status=404, mimetype="text/html; charset=utf-8")
+
+
 @app.route("/upload")
 @app.route("/upload.html")
 def upload_page():
