@@ -5658,6 +5658,189 @@ def debug_law_xml():
         return str(e), 500
 
 
+# ── 내규 질의응답 — 찾은 조문 안에서만 답하고, 인용이 실제 조문에 있는지 서버가 확인한다 ────────────
+# 사용자 AI 설정의 키로만 AI 를 부른다(서버 키 미사용). 키가 없으면 관련 조문만 돌려준다.
+_ASK_CHUNKS = None
+_ASK_DF: dict = {}                       # 낱말 → 그 낱말이 든 조문 수
+_ASK_STOP = {"어떻게", "얼마", "얼마나", "언제", "언제까지", "무엇", "뭔가요", "뭐야", "되나요", "되나", "가능", "가능한가요",
+             "있나요", "있어요", "있는지", "없나요", "하나요", "해야", "하는", "알려줘", "알려주세요", "궁금", "궁금해요",
+             "경우", "때", "우리", "제가", "저는", "그럼", "그리고", "어디", "누가", "어떤", "무슨", "몇", "인가요"}
+_ASK_SYSTEM = (
+    "당신은 한국농업기술진흥원 직원의 내규 질문에 답하는 도우미입니다. 아래에 [A1]·[A2]… 번호를 붙인 우리 기관 내규 조문만 근거로 씁니다. "
+    "조문에 없는 내용은 추측하거나 일반 상식·법령으로 채우지 마세요. 조문으로 답할 수 없으면 found 를 false 로 두고 "
+    "answer 에 '제시된 조문에서 답을 찾지 못했다'는 취지와 확인할 곳(담당 부서)을 짧게 씁니다. "
+    "답할 수 있으면 answer 에 결론을 먼저 2~5문장으로 쓰고, 숫자(일수·금액·횟수·기한)는 조문 그대로 옮깁니다. "
+    "citations 에는 답의 근거가 된 조문 번호(id)와, 그 조문에서 그대로 복사한 핵심 문장(quote, 120자 이내)을 넣습니다. "
+    "quote 는 조문 원문과 글자가 같아야 하며 고쳐 쓰지 마세요. 해석이 갈리거나 예외가 있으면 caution 에 한 문장으로 적습니다. "
+    'JSON 만 반환하세요: {"found": true|false, "answer": "...", "citations": [{"id": "A1", "quote": "..."}], "caution": "..."}'
+)
+
+
+def _ask_chunks() -> list:
+    global _ASK_CHUNKS
+    if _ASK_CHUNKS is None:
+        try:
+            import reg_chunks
+            _ASK_CHUNKS = [(c["title"], str(c["no"]), c["art_title"] or "", c["text"])
+                           for c in reg_chunks.iter_chunks(max_chars=4000) if not c["boiler"]]
+        except Exception as e:
+            print(f"[ask] 조문 색인 실패: {e}")
+            _ASK_CHUNKS = []
+    return _ASK_CHUNKS
+
+
+def _ask_norm(t: str) -> str:
+    return re.sub(r"[\s·ㆍ·「」『』\"'“”‘’]", "", str(t or ""))
+
+
+def _ask_terms(q: str) -> list:
+    """질문 문장 → 검색 낱말(어미·조사를 대충 떼고, 용어 사전의 같은 뜻의 말까지)."""
+    terms = set()
+    for w in re.split(r"[\s,.!?？~·()]+", q):
+        if len(w) < 2:
+            continue
+        terms.add(w)
+        s = re.sub(r"(해야|하려면|하고|해서|했는데|하는|할|해요|합니다|하나요|되나요|돼요|되면|하면|인가요|에서|으로|에게|까지|부터|"
+                   r"이랑|를|을|이|가|은|는|에|로|와|과|도|만|면|요)$", "", w)
+        if len(s) >= 2:
+            terms.add(s)
+    terms -= _ASK_STOP
+    out = set(terms)
+    for t in terms:
+        try:
+            out.update(v for v in _int_term_group(t) if len(v) >= 2)
+        except Exception:
+            pass
+    return sorted(out)
+
+
+def _ask_related(q: str, n: int = 8) -> list:
+    """질문 → 관련 조문 [{reg, art, art_title, text, src}] (드문 낱말 가중 키워드 + 의미 검색)."""
+    import math
+    chunks = _ask_chunks()
+    terms = _ask_terms(q)
+    n_all = max(1, len(chunks))
+    idf = {}
+    for t in terms:
+        if t not in _ASK_DF:
+            if len(_ASK_DF) > 5000:
+                _ASK_DF.clear()
+            _ASK_DF[t] = sum(1 for _, _, at, text in chunks if t in text or t in at)
+        df = _ASK_DF[t]
+        idf[t] = math.log((n_all + 1) / (df + 1)) if df else 0.0
+    scored = []
+    for title, no, at, text in chunks:
+        head = title + " " + at
+        sc, hit = 0.0, 0
+        for t in terms:
+            w = idf.get(t, 0.0)
+            if not w:
+                continue
+            got = (3 if t in head else 0) + min(text.count(t), 4)
+            if got:
+                sc += w * got
+                hit += 1
+        if sc:
+            scored.append((sc * (1 + 0.5 * (hit - 1)), title, no, at, text))   # 여러 낱말이 함께 맞을수록 위로
+    scored.sort(key=lambda x: -x[0])
+    kw, seen = [], set()
+    for _, title, no, at, text in scored[:40]:
+        if (title, no) not in seen:
+            seen.add((title, no))
+            kw.append({"reg": title, "art": no, "art_title": at, "text": text, "src": "keyword"})
+        if len(kw) >= 8:
+            break
+    index = {(_norm_key(t), no): (t, no, at, text) for t, no, at, text in chunks}
+    sem = []
+    for h in _semantic_for_search(q, top_k=6):
+        c = index.get((_norm_key(h["title"]), str(h["no"])))
+        if c and (c[0], c[1]) not in seen:
+            seen.add((c[0], c[1]))
+            sem.append({"reg": c[0], "art": c[1], "art_title": c[2], "text": c[3], "src": "semantic"})
+    picks = kw[:5] + sem[:4] + kw[5:] + sem[4:]      # 키워드·의미 검색을 섞는다
+    return picks[:n]
+
+
+def _ask_cand(x: dict) -> dict:
+    body = re.sub(r"^\S+(?:\s\S+)*?\s제\d+조(?:의\d+)?(?:\([^)]*\))?\s*", "", x["text"], count=1)
+    return {"reg": x["reg"], "art": x["art"], "art_title": x["art_title"], "preview": body[:200], "src": x["src"]}
+
+
+@app.route("/api/internal/ask", methods=["POST"])
+def internal_ask():
+    """내규 질문(자연어) → 관련 조문 + (AI 키가 있으면) 조문을 인용한 답. 근거 인용이 확인되지 않으면 답을 내지 않는다."""
+    if _fanout_limited():
+        return _too_many()
+    body = _json_body()
+    if body is None:
+        return _bad_body()
+    q = body.get("q")
+    if not isinstance(q, str) or len(q.strip()) < 2:
+        return jsonify({"success": False, "error": "질문을 입력하세요."}), 400
+    q = q.strip()[:300]
+    picks = _ask_related(q)
+    cands = [_ask_cand(x) for x in picks]
+    if not picks:
+        return jsonify({"success": True, "mode": "search", "found": False, "answer": "", "citations": [], "candidates": []})
+    provider = str(body.get("provider") or "").lower()
+    api_key = str(body.get("api_key") or "").strip()      # 서버 환경변수 키로 대신 부르지 않는다
+    if provider not in ("gemini", "claude", "gpt", "openai", "ollama") or (not api_key and provider != "ollama"):
+        return jsonify({"success": True, "mode": "search", "found": False, "answer": "", "citations": [],
+                        "candidates": cands, "need_key": True})
+    mdl = str(body.get("model") or "").strip() or _default_model_for(provider, api_key)
+    ids = [f"A{i + 1}" for i in range(len(picks))]
+    ctx, budget = [], 16000
+    for i, x in zip(ids, picks):
+        t = x["text"][:3000]
+        budget -= len(t)
+        if budget < 0:
+            break
+        ctx.append(f"[{i}] 「{x['reg']}」 제{x['art']}조{('(' + x['art_title'] + ')') if x['art_title'] else ''}\n{t}")
+    ids = ids[:len(ctx)]
+    text, err = _ai_generate(provider, api_key, mdl, _ASK_SYSTEM, "조문:\n" + "\n\n".join(ctx) + "\n\n질문: " + q,
+                             max_tokens=1500, temperature=0.1, json_mode=True)
+    if err:
+        return jsonify({"success": False, "error": f"AI 오류: {err}", "candidates": cands}), 502
+    try:
+        clean = re.sub(r"```(?:json)?|```", "", text).strip()
+        m = re.search(r"\{.*\}", clean, re.S)
+        data = json.loads(m.group(0) if m else clean)
+        if not isinstance(data, dict):
+            raise ValueError
+    except Exception:
+        return jsonify({"success": True, "mode": "ai", "found": False, "answer": "", "citations": [], "candidates": cands,
+                        "note": "AI 답을 읽지 못했습니다. 아래 조문을 직접 확인하세요."})
+    cites, used = [], set()
+    for c in data.get("citations") or []:
+        if not isinstance(c, dict) or c.get("id") not in ids:
+            continue
+        x = picks[ids.index(c["id"])]
+        quote_ = str(c.get("quote") or "").strip()[:200]
+        # 인용문이 실제 조문에 있는지 확인 — 없으면(지어낸 문장) 인용문은 버리고 조문만 근거로 남긴다
+        nq = _ask_norm(quote_)
+        ok = len(nq) >= 8 and nq in _ask_norm(x["text"])   # 짧은 조각('제'·'출장')은 어디에나 있어 확인이 아니다
+        key = (x["reg"], x["art"])
+        if key in used and not ok:
+            continue
+        used.add(key)
+        cites.append({"reg": x["reg"], "art": x["art"], "art_title": x["art_title"], "quote": quote_ if ok else "", "verified": ok})
+    ans = str(data.get("answer") or "").strip()
+    found = bool(data.get("found")) and any(c["verified"] for c in cites)   # 확인된 인용이 없으면 답으로 내지 않는다
+    if found:   # 답에 나온 숫자(일수·금액·횟수)가 근거 조문에 실제로 있는지도 본다 — 지어낸 숫자로 답하지 않게
+        cited = " ".join(picks[ids.index(c["id"])]["text"] for c in data.get("citations") or []
+                         if isinstance(c, dict) and c.get("id") in ids)
+        nums = {n.replace(",", "") for n in re.findall(r"\d[\d,]*", ans)}
+        have = {n.replace(",", "") for n in re.findall(r"\d[\d,]*", cited)}
+        if nums - have:
+            found = False
+            data["found"] = True                       # note 문구를 '확인 못함' 쪽으로
+    note = "" if found else (ans[:400] if not data.get("found") else
+                             "AI 답의 근거(인용 문장·숫자)를 조문에서 확인하지 못해 답을 보여 드리지 않습니다. 아래 조문을 직접 확인하세요.")
+    return jsonify({"success": True, "mode": "ai", "found": found, "answer": ans[:1200] if found else "", "note": note,
+                    "caution": str(data.get("caution") or "").strip()[:300] if found else "",
+                    "citations": cites[:4] if found else [], "candidates": cands})
+
+
 # ── 실행 ─────────────────────────────────────────────────────────────────────
 PORT = int(os.environ.get("PORT", 5100))
 

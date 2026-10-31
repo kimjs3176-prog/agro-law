@@ -391,6 +391,27 @@ body.dark .rec-chip{background:var(--color-paper-2);}
 .art-no{font-size:11px;font-weight:700;color:var(--gd);background:var(--gl);padding:2px 7px;border-radius:var(--radius-card);white-space:nowrap;flex-shrink:0;}
 .art-title{font-size:13px;font-weight:600;flex:1;}
 .art-body{display:none;padding:10px 14px;font-size:13px;line-height:1.95;white-space:pre-wrap;color:var(--tx);border-top:1px solid var(--bd);}
+/* 내규 질의응답 카드 */
+.ask-box{border:1px solid var(--bd);border-left:3px solid var(--g);border-radius:var(--radius-card);background:var(--sf);padding:14px 16px;margin:0 0 12px;}
+.ask-box[hidden]{display:none;}
+.ask-h{display:flex;align-items:center;gap:7px;font-size:13.5px;color:var(--gp);margin-bottom:10px;}
+.ask-ic{display:inline-flex;width:16px;height:16px;}
+.ask-sub{font-size:11.5px;color:var(--mu);font-weight:500;}
+.ask-x{margin-left:auto;border:none;background:transparent;color:var(--ht);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:var(--radius-ctl);}
+.ask-x:hover{background:var(--bg);color:var(--tx);}
+.ask-ans{font-size:14px;line-height:1.75;color:var(--tx);white-space:pre-wrap;word-break:keep-all;}
+.ask-caution{margin-top:8px;font-size:12.5px;line-height:1.6;color:var(--color-warn-ink);background:var(--color-warn-tint);border-radius:var(--radius-ctl);padding:7px 10px;}
+.ask-note{font-size:13px;line-height:1.65;color:var(--mu);}
+.ask-link{border:none;background:none;padding:0;color:var(--g);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline;}
+.ask-sec{font-size:11.5px;font-weight:800;color:var(--mu);margin:12px 0 6px;}
+.ask-cites,.ask-cands{display:flex;flex-direction:column;gap:6px;}
+.ask-cite,.ask-cand{display:flex;flex-direction:column;gap:3px;text-align:left;border:1px solid var(--bd);border-radius:var(--radius-ctl);background:var(--bg);padding:8px 10px;cursor:pointer;font-family:var(--font);color:var(--tx);}
+.ask-cite:hover,.ask-cand:hover{border-color:var(--g);}
+.ask-cite-t,.ask-cand-t{font-size:12.5px;font-weight:700;color:var(--gp);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.ask-quote,.ask-cand-p{font-size:12.5px;line-height:1.55;color:var(--ink2,var(--tx));}
+.ask-cand-p{color:var(--mu);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.ask-ok{font-size:10.5px;font-weight:700;color:var(--color-ok-ink);background:var(--color-ok-tint);border-radius:999px;padding:1px 7px;}
+.ask-foot{margin-top:10px;font-size:11px;color:var(--ht);}
 /* ── 분할 패널 레이아웃 ── */
 .fullpanel{position:fixed;top:0;right:-900px;width:min(900px,100vw);height:100vh;background:var(--sf);border-left:1px solid var(--bd);z-index:500;display:flex;flex-direction:row;transition:right .3s cubic-bezier(.4,0,.2,1);box-shadow:-4px 0 24px color-mix(in oklab,var(--color-shade) 12%,transparent);}
 .fullpanel.open{right:0;}
@@ -2626,8 +2647,8 @@ body:not(:has(#results > .int-dash)) #rrevSlot{display:none;}
     <div class="search-toggle scope-toggle" id="searchToggle" role="tablist" aria-label="검색 범위">
       <button class="stgl active" id="stglInt" role="tab" aria-selected="true" onclick="_scopeSwitch('internal')" title="사내 규정(내규)에서 찾기 — 관련 법령도 함께 표시"><span class="stgl-ic" data-icon="internal"></span>내규<span class="stgl-cnt" id="stglIntCnt"></span></button>
       <button class="stgl" id="stglLaw" role="tab" aria-selected="false" onclick="_scopeSwitch('law')" title="국가법령에서 찾기 — 관련 내규는 선택해서 함께 조회"><span class="stgl-ic" data-icon="law"></span>법령</button>
-      <button class="stgl" id="stglScen" role="tab" aria-selected="false" onclick="_scopeSwitch('scenario')" title="업무 상황을 문장으로 물어보면 AI가 근거 법령·조문을 제안합니다"><span class="stgl-ic" data-icon="ai"></span>AI 질문</button>
-      <span class="scope-hint" id="scopeHint">규정명·키워드·"규정명 제N조"로 찾기</span>
+      <button class="stgl" id="stglScen" role="tab" aria-selected="false" onclick="_scopeSwitch('scenario')" title="업무 상황을 문장으로 물어보면 AI가 근거 국가법령·조문을 제안합니다(내규 질문은 '내규'에서 문장으로 물어보세요)"><span class="stgl-ic" data-icon="ai"></span>AI 질문</button>
+      <span class="scope-hint" id="scopeHint">규정명·키워드로 찾거나 문장으로 물어보기</span>
     </div>
       <div class="scope-tools">
         <button class="stool" id="stoolHier" onclick="openRegHierarchy()" title="내규 체계도 — 정관·규정·규칙·세칙·예규의 상하관계"><span class="stool-ic" data-icon="hier"></span>체계도</button>
@@ -2637,7 +2658,7 @@ body:not(:has(#results > .int-dash)) #rrevSlot{display:none;}
     </div>
     <!-- 검색창 -->
     <div class="srow">
-      <input id="q" class="sinput" style="padding-left:40px;" aria-label="검색어 입력" placeholder="내규 검색 (예: 직무발명, 여비)"
+      <input id="q" class="sinput" style="padding-left:40px;" aria-label="검색어 입력" placeholder="내규 검색·질문 (예: 여비 정산 기한은?)"
              autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="acBox" aria-expanded="false"
              onkeydown="if(_acKey(event))return; if(event.key==='Enter'){_acHide();doSearch();}">
       <button id="sbtn" class="sbtn" onclick="_acHide();doSearch()">검색</button>
@@ -2716,6 +2737,8 @@ body:not(:has(#results > .int-dash)) #rrevSlot{display:none;}
   <!-- 검색 상태 메시지 -->
   <div id="status" role="status" aria-live="polite" style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mu);margin-bottom:8px;min-height:20px;"></div>
 
+  <!-- 내규 질의응답(문장으로 물으면 내규 조문을 근거로 답) -->
+  <div id="askBox" class="ask-box" hidden></div>
   <!-- 결과 도구모음(카드 뷰): 건수 · 정렬 · CSV -->
   <div id="regToolbar" class="reg-toolbar" style="display:none;"></div>
   <!-- 결과 필터(카드 뷰) -->
@@ -2986,7 +3009,7 @@ function setMode(m){
   const lo=document.getElementById('lawOpt'); if(lo){ lo.style.display = m==='law' ? '' : 'none'; const cb=document.getElementById('lawWithInt'); if(cb) cb.checked=_lawWithInt(); }
   const sh=document.getElementById('scopeHint');
   if(sh) sh.textContent = m==='scenario' ? '업무 상황을 문장으로 물어보세요'
-                        : m==='law' ? '"법령명 제N조" · "법령명 키워드" · 조문 문장으로도 찾기' : '규정명·키워드·"규정명 제N조"로 찾기';
+                        : m==='law' ? '"법령명 제N조" · "법령명 키워드" · 조문 문장으로도 찾기' : '규정명·키워드로 찾거나 문장으로 물어보기';
   try{ _acHide(); }catch(e){}
   // 모드별 보조 UI: 내규→카테고리 칩, 법령→자주 찾는 법령, 시나리오→예시 질문
   examples.style.display = (m==='scenario') ? '' : 'none';
@@ -2999,10 +3022,10 @@ function setMode(m){
   // 모바일은 짧은 문구 — 긴 placeholder 는 입력창 최소폭을 키워 버튼을 밀어낸다
   const _narrow = window.matchMedia('(max-width:640px)').matches;
   document.getElementById('q').placeholder = _narrow
-    ? (m==='internal' ? '내규 검색 (예: 직무발명, 여비)'
+    ? (m==='internal' ? '내규 검색·질문 (예: 여비 정산 기한은?)'
      : m==='law'      ? '법령·조문 검색 (예: 농지법 제34조)'
      :                  '실무 질문을 입력하세요')
-    : (m==='internal' ? '내규 키워드 검색 (예: 직무발명, 기술이전, 여비) — 관련 법령도 함께 표시'
+    : (m==='internal' ? '내규 검색 또는 질문 (예: 직무발명, 여비 / 연차휴가는 며칠까지 이월되나요?)'
      : m==='law'      ? '법령명·키워드·조문 검색 (예: 농지법 제34조, 농지법 전용허가, 직무발명)'
      :                  '실무 질문을 입력하세요 (예: 농약을 수입·판매하려면 어떤 절차가 필요한가요?)');
   renderAgencyInfo();
@@ -3033,6 +3056,7 @@ function clearResults(){
   _currentResults=null;
   const pag=document.getElementById('pagination'); if(pag) pag.innerHTML='';
   const ir=document.getElementById('internalResults'); if(ir) ir.innerHTML='';
+  _askClear();
   renderWelcome();
   setStatus('');
   const rh=document.getElementById('resultHeader'); if(rh) rh.style.display='none';
@@ -5150,6 +5174,7 @@ async function doSearchInternal(q, _mySeq){
   _lastInternalQ=(q||'').trim();
   setStatus(`"${escHtml(q)}" 내규 검색 중...`,true);
   addRecent(q);
+  if(_isQuestion(q)) _askRun(q, _mySeq);   // 문장으로 물으면 내규 조문을 근거로 한 답을 위에 함께 보여 준다
   // 클라이언트 캐시(5분) — 동일 검색 즉시 응답
   const cached=_cacheGet(`internal:${q}`);
   if(cached){ if(_mySeq!==_searchSeq) return; renderInternalResults(cached, q); setStatus(`내규 검색(캐시) · "${escHtml(q)}"`); return; }
@@ -5190,6 +5215,63 @@ async function doSearchInternal(q, _mySeq){
     document.getElementById('internalResults').innerHTML='';updateSplitLayout(); }
 }
 
+// ── 내규 질의응답 — 문장으로 물으면 찾은 조문 안에서만 답한다(인용·숫자는 서버가 조문과 대조) ──
+// AI 설정의 사용자 키로만 답을 만든다. 키가 없으면 관련 조문만 보여 준다.
+function _isQuestion(q){
+  const t=String(q||'').trim();
+  if(/제\s*\d+\s*조/.test(t)) return false;                         // "규정명 제N조"는 조문 바로가기
+  if(/[?？]$/.test(t)) return true;
+  if(/(나요|까요|가요|인가|는지|건가|ㄹ까|을까|할까|되나|돼요|에요|예요|어요|아요|해요|죠|줘|주세요|있어|없어|하나|되지|알려)\s*$/.test(t)) return true;
+  return /^(어떻게|언제|얼마|몇|누가|무엇|뭐|왜|어디)/.test(t) && t.split(/\s+/).length>=2;
+}
+function _askClear(){ const b=document.getElementById('askBox'); if(b){ b.hidden=true; b.innerHTML=''; } }
+function _askOpen(reg, art){ wsOpen(reg,'internal'); if(art) _wsJumpAfterOpen(reg,'internal','제'+art+'조'); }
+function _askArtLabel(x){ return `「${escHtml(x.reg)}」 제${escHtml(String(x.art))}조${x.art_title?'('+escHtml(x.art_title)+')':''}`; }
+async function _askRun(q, seq){
+  const box=document.getElementById('askBox'); if(!box) return;
+  const s=getAiSettings(), prov=s.provider||'';
+  const hasKey=!!prov && (!!s['key_'+prov] || prov==='ollama');
+  box.hidden=false;
+  box.innerHTML=`<div class="ask-h"><span class="ask-ic" data-icon="ai"></span><b>내규 답변</b><span class="ask-sub">${hasKey?'내규 조문에서 답을 찾는 중...':'관련 조문을 찾는 중...'}</span></div>`+
+    `<div class="skeleton" style="height:64px;margin:0"></div>`;
+  try{ _hydrateIcons&&_hydrateIcons(box); }catch(e){}
+  const hd={'Content-Type':'application/json'};
+  const gk=(s.key_gemini||'').trim(); if(gk) hd['X-Gemini-Key']=gk;      // 의미 검색(임베딩)용
+  const payload={q}; if(hasKey){ payload.provider=prov; payload.api_key=s['key_'+prov]||''; payload.model=s['model_'+prov]||''; }
+  let d;
+  try{ const r=await fetch('/api/internal/ask',{method:'POST',headers:hd,body:JSON.stringify(payload)}); d=await r.json(); }
+  catch(e){ d={success:false,error:'서버에 연결할 수 없습니다.'}; }
+  if(seq!==_searchSeq) return;                                           // 더 새로운 검색이 시작됨
+  box.innerHTML=_askHtml(d||{});
+  try{ _hydrateIcons&&_hydrateIcons(box); }catch(e){}
+}
+function _askHtml(d){
+  const cands=(d.candidates||[]);
+  const head=sub=>`<div class="ask-h"><span class="ask-ic" data-icon="ai"></span><b>내규 답변</b><span class="ask-sub">${sub}</span>`+
+    `<button class="ask-x" onclick="_askClear()" title="닫기" aria-label="내규 답변 닫기">✕</button></div>`;
+  const candList=(title)=>cands.length?`<div class="ask-sec">${title}</div><div class="ask-cands">`+cands.map(x=>
+      `<button class="ask-cand" onclick="_askOpen('${argAttr(x.reg)}','${argAttr(String(x.art))}')"><span class="ask-cand-t">${_askArtLabel(x)}</span>`+
+      `<span class="ask-cand-p">${escHtml(x.preview||'')}</span></button>`).join('')+`</div>`:'';
+  if(d.success===false){
+    return head('')+`<div class="ask-note">${escHtml(d.error||'답을 만들지 못했습니다.')}</div>`+candList('관련 조문');
+  }
+  if(!d.found && !cands.length) return head('')+`<div class="ask-note">이 질문과 관련된 내규 조문을 찾지 못했습니다. 낱말을 바꿔 다시 물어보세요.</div>`;
+  if(d.need_key){
+    return head('AI 키 없이 관련 조문만 보여 줍니다')+
+      `<div class="ask-note">상단 <button class="ask-link" onclick="openAiModal()">✦ AI 설정</button>에 키를 넣으면 아래 조문을 근거로 답을 만들어 드립니다.</div>`+candList('관련 조문');
+  }
+  if(!d.found){
+    return head('조문에서 확인한 답이 없습니다')+`<div class="ask-note">${escHtml(d.note||'제시된 조문에서 답을 찾지 못했습니다.')}</div>`+candList('살펴볼 조문');
+  }
+  const cites=(d.citations||[]).map(c=>`<button class="ask-cite" onclick="_askOpen('${argAttr(c.reg)}','${argAttr(String(c.art))}')">`+
+      `<span class="ask-cite-t">${_askArtLabel(c)}${c.verified?'<span class="ask-ok" title="인용 문장이 조문 원문에 있는지 확인했습니다">원문 확인</span>':''}</span>`+
+      (c.quote?`<span class="ask-quote">“${escHtml(c.quote)}”</span>`:'')+`</button>`).join('');
+  return head('찾은 조문만 근거로 한 답 · 원문과 대조해 확인하세요')+
+    `<div class="ask-ans">${escHtml(d.answer||'')}</div>`+
+    (d.caution?`<div class="ask-caution">${escHtml(d.caution)}</div>`:'')+
+    `<div class="ask-sec">근거 조문</div><div class="ask-cites">${cites}</div>`+
+    `<div class="ask-foot">AI가 만든 답입니다. 최종 판단은 조문 원문과 담당 부서 확인을 거쳐 주세요.</div>`;
+}
 function renderInternalError(msg){
   document.getElementById('results').innerHTML=`
     <div class="empty" style="padding:36px 20px;">
