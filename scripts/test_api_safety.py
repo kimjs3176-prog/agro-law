@@ -8,7 +8,7 @@
   5. 요청 본문 크기 제한(413)
   6. 인기 검색어: 개인정보 형태·사람 이름 미기록, 2명 이상만 노출, 방문자 ID 미저장
   7. 조문 판별 정규식 과부하 방지, 오류 응답의 서비스키 가림·502, ?debug=1 관리자 전용
-  8. 동시 조회 시간 제한, 캐시 상한, 무거운 검색 호출 제한, Ollama 미설정 차단, KIPRIS https
+  8. 동시 조회 시간 제한, 캐시 상한, 무거운 검색 호출 제한, Ollama 미설정 차단
   9. Gemini 키는 URL 대신 헤더, AI 가 배열 JSON 을 돌려줘도 500 없음, 원본 파일 보안 헤더, 쓰지 않는 API 정리
  10. 방문자 수·내규 랭킹: 운영 저장소(Upstash Redis) 경로를 메모리 흉내로 재현해 집계·저장 내용 확인
  11. 내규 체계도: 시행세칙→모규정 연결, 순환 없음, 규정끼리는 상하로 묶지 않음
@@ -82,7 +82,7 @@ check(r.status_code != 401, f"맞는 토큰은 인증 통과 ({r.status_code})")
 A.REG_UPLOAD_TOKEN = ""
 
 print("3) 잘못된 입력 → 500 없음")
-posts = ["/api/scenario", "/api/ai/interpret", "/api/regs/upload/delete", "/api/expense/hwpx",
+posts = ["/api/scenario", "/api/ai/interpret", "/api/regs/upload/delete",
          "/api/stats/visit", "/api/stats/reg"]
 bad_bodies = ["[1, 2]", "123", '"str"', "{not json",
               json.dumps({"query": 12345, "name": [1], "vid": 5, "slug": ["a"], "rows": "x", "art_content": 5})]
@@ -136,10 +136,10 @@ err = requests.exceptions.ConnectionError(
     "HTTPSConnectionPool(host='apis.data.go.kr'): Max retries exceeded with url: /x?serviceKey=SECRET123&a=1")
 check("SECRET123" not in A._safe_err(err) and A._err_status(err) == 502, f"연결 오류 문구에 키 없음·502 ({A._safe_err(err)})")
 check("SECRET" not in A._redact("...?ServiceKey=SECRET&crtfc_key=SECRET2&OC=SECRET3"), "로그용 키 가림")
-with A.app.test_request_context("/api/assist/company?debug=1"):
+with A.app.test_request_context("/api/internal/search?debug=1"):
     check(A._debug_allowed() is False, "?debug=1 은 토큰 없으면 무시")
 
-print("8) 시간 제한·캐시 상한·호출 제한·Ollama·KIPRIS https")
+print("8) 시간 제한·캐시 상한·호출 제한·Ollama")
 import time as _t
 _orig = A._fetch_matching_articles if hasattr(A, "_fetch_matching_articles") else None
 def _slow_pool_job():
@@ -166,7 +166,6 @@ os.environ.pop("OLLAMA_BASE_URL", None)
 txt, err = A._ai_generate("ollama", "", "", "s", "u")
 check(not txt and "설정" in err, f"Ollama 미설정이면 호출하지 않음 ({err})")
 src = open(os.path.join(ROOT, "api_server.py"), encoding="utf-8").read()
-check("http://plus.kipris.or.kr" not in src and 'f"http://apis.data.go.kr' not in src, "KIPRIS·나라장터 서비스키를 http(평문)로 보내지 않음")
 
 print("9) 키 전달 방식·AI 응답 형식·원본 파일 헤더·정리")
 check("?key={api_key}" not in src and "x-goog-api-key" in src, "Gemini 키를 URL 이 아닌 헤더로 보냄")
@@ -322,6 +321,29 @@ check("연차휴가" not in (d.get("expand_terms") or []), "검색어를 품은 
 check(A._int_term_group("야근")[0] == "야근" and "시간외근무" in A._int_term_group("야근"), "문장형 낱말도 같은 말 포함")
 check(A._onto_concept("농지법") is None and not c.get("/api/internal/search", query_string={"query": "여비규정"}).get_json().get("concept"),
       "사전에 없는 말은 그대로")
+
+print("15) 내규 질의응답(근거 인용·숫자 대조)")
+d = c.post("/api/internal/ask", json={"q": "출장 다녀오면 여비 정산은 언제까지 해야 하나요?"}).get_json()
+check(d["success"] and d.get("need_key") and any(x["reg"] == "여비규정" for x in d["candidates"]),
+      "AI 키 없으면 관련 조문만(여비규정 포함)")
+check(c.post("/api/internal/ask", json={"q": 5}).status_code == 400, "질문이 문자열이 아니면 400")
+with A.app.test_request_context("/api/internal/ask"):
+    _t = A._ask_related("연차휴가는 며칠까지 이월할 수 있나요?")[0]["text"]
+_orig_gen2 = A._ai_generate
+def _fake(answer, quote, found=True):
+    A._ai_generate = lambda *a, **k: (json.dumps({"found": found, "answer": answer,
+                                                  "citations": [{"id": "A1", "quote": quote}], "caution": ""}), "")
+_real = " ".join(_t.split())[60:110]
+_fake("조문에 따릅니다.", _real)
+d = c.post("/api/internal/ask", json={"q": "연차휴가는 며칠까지 이월할 수 있나요?", "provider": "gemini", "api_key": "k"}).get_json()
+check(d["found"] and d["citations"][0]["verified"], f"조문에 있는 인용이면 답을 보여 줌 ({d.get('note')})")
+_fake("조문에 따릅니다.", "이 문장은 어느 조문에도 없는 지어낸 인용문입니다")
+d = c.post("/api/internal/ask", json={"q": "연차휴가는 며칠까지 이월할 수 있나요?", "provider": "gemini", "api_key": "k"}).get_json()
+check(not d["found"] and not d["answer"] and d["candidates"], "지어낸 인용이면 답을 숨기고 조문만")
+_fake("최대 987654일까지 이월됩니다.", _real)
+d = c.post("/api/internal/ask", json={"q": "연차휴가는 며칠까지 이월할 수 있나요?", "provider": "gemini", "api_key": "k"}).get_json()
+check(not d["found"] and "확인하지 못해" in d["note"], "조문에 없는 숫자로 답하면 숨김")
+A._ai_generate = _orig_gen2
 
 if fails:
     sys.exit(f"\n실패 {len(fails)}건")

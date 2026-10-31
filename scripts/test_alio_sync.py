@@ -36,7 +36,7 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         work = os.path.join(tmp, "repo")
         os.makedirs(os.path.join(work, "regulations"))
-        for f in ("api_server.py", "hwpx_base.py", "reg_chunks.py", "regulations_manifest.json"):
+        for f in ("api_server.py", "reg_chunks.py", "regulations_manifest.json"):
             shutil.copy(os.path.join(ROOT, f), work)
         shutil.copytree(os.path.join(ROOT, "scripts"), os.path.join(work, "scripts"))
         man0 = json.load(open(os.path.join(work, "regulations_manifest.json"), encoding="utf-8"))
